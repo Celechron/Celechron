@@ -31,10 +31,10 @@ class _CalendarPageState extends State<CalendarPage> {
             title: Text(period.summary),
             content: SizedBox(
               width: double.maxFinite,
-              height: 128,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     period.getTimePeriodHumanReadable(),
@@ -175,6 +175,11 @@ class _CalendarPageState extends State<CalendarPage> {
     }
 
     return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          '${_focusedDay.year} 年 ${_focusedDay.month} 月',
+        ),
+      ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -188,12 +193,17 @@ class _CalendarPageState extends State<CalendarPage> {
               CalendarFormat.month: '显示整月',
               CalendarFormat.week: '显示一周',
             },
-            headerVisible: true,
+            headerVisible: false,
             focusedDay: _focusedDay,
             selectedDayPredicate: (day) {
               return isSameDay(_selectedDay, day);
             },
             calendarFormat: _calendarFormat,
+            onPageChanged: (focusedDay) {
+              setState(() {
+                _focusedDay = focusedDay;
+              });
+            },
             onDaySelected: (selectedDay, focusedDay) {
               setState(() {
                 _selectedDay = selectedDay;
@@ -208,13 +218,17 @@ class _CalendarPageState extends State<CalendarPage> {
             eventLoader: (day) {
               return getEventsForDay(day);
             },
-            calendarStyle: const CalendarStyle(
+            calendarStyle: CalendarStyle(
               selectedDecoration: BoxDecoration(
-                color: Colors.black12,
+                color: Theme.of(context).primaryColorLight,
                 shape: BoxShape.circle,
               ),
-              selectedTextStyle:
-                  TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+              selectedTextStyle: const TextStyle(fontWeight: FontWeight.bold),
+              todayDecoration: BoxDecoration(
+                color: Theme.of(context).focusColor,
+                shape: BoxShape.circle,
+              ),
+              todayTextStyle: const TextStyle(fontWeight: FontWeight.bold),
             ),
             calendarBuilders: CalendarBuilders(
               singleMarkerBuilder: singleMarkerBuilder,

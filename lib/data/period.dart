@@ -1,8 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import '../utils/utils.dart';
 import 'package:icalendar_parser/icalendar_parser.dart';
 import 'dart:io';
 import 'package:const_date_time/const_date_time.dart';
+import 'package:flutter/services.dart' show rootBundle;
 
 // TZID=Asia/Shanghai
 
@@ -65,9 +67,13 @@ DateTime formatToDateTime(String val) {
 
 var basePeriodList = <Period>[];
 
-void updateBasePeriodList() {
-  var baseCalendar =
-      ICalendar.fromLines(File('assets/ugrsical.ics').readAsLinesSync());
+Future<String> loadAsset() async {
+  return await rootBundle.loadString('assets/ugrsical.ics');
+}
+
+void updateBasePeriodList() async {
+  var baseCalendar = ICalendar.fromString(await loadAsset());
+  // ICalendar.fromLines(File('assets/ugrsical.ics').readAsLinesSync());
   var baseData = baseCalendar.data;
 
   basePeriodList.clear();
