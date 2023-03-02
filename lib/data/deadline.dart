@@ -11,15 +11,14 @@ class Deadline {
   String location;
   String summary;
 
-  Deadline({
-    this.deadlineType = DeadlineType.running,
-    this.description = "1. 到变隐龙商店购买一个苹果\n2. 把苹果存到袋兽阿姨仓库里",
-    this.timeSpent = const Duration(minutes: 0),
-    this.timeNeeded = const Duration(days: 0, hours: 1, minutes: 30),
-    this.endTime = const ConstDateTime(2023, 3, 2, 8, 00, 00, 00),
-    this.location = "宝藏镇",
-    this.summary = "作业：不可思议迷宫导论"
-  });
+  Deadline(
+      {this.deadlineType = DeadlineType.running,
+      this.description = "1. 到变隐龙商店购买一个苹果\n2. 把苹果存到袋兽阿姨仓库里",
+      this.timeSpent = const Duration(minutes: 0),
+      this.timeNeeded = const Duration(days: 0, hours: 1, minutes: 30),
+      this.endTime = const ConstDateTime(2023, 3, 2, 8, 00, 00, 00),
+      this.location = "宝藏镇",
+      this.summary = "作业：不可思议迷宫导论"});
 
   Deadline copyWith({
     DeadlineType? deadlineType,
@@ -40,6 +39,20 @@ class Deadline {
       summary: summary ?? this.summary,
     );
   }
+
+  double getProgress() {
+    return 100.00 * timeSpent.inMicroseconds / timeNeeded.inMicroseconds;
+  }
+
+  void forceRefreshType() {
+    if (timeSpent >= timeNeeded) {
+      deadlineType = DeadlineType.completed;
+    } else if (endTime.isBefore(DateTime.now())) {
+      deadlineType = DeadlineType.failed;
+    } else {
+      deadlineType = DeadlineType.running;
+    }
+  }
 }
 
 int compareDeadline(Deadline a, Deadline b) {
@@ -47,8 +60,13 @@ int compareDeadline(Deadline a, Deadline b) {
 }
 
 var deadlineList = <Deadline>[];
+int __got = 0;
 
 void updateDeadlineList() {
+  deadlineList.sort(compareDeadline);
+  if (__got == 1) return;
+  __got = 1;
+
   deadlineList.clear();
 
   Deadline tmp = Deadline();
@@ -76,7 +94,6 @@ void updateDeadlineList() {
   tmp6.timeSpent = tmp6.timeNeeded;
   deadlineList.add(tmp6);
 
-  deadlineList.sort(compareDeadline);
   for (var deadline in deadlineList) {
     if (deadline.timeSpent >= deadline.timeNeeded) {
       deadline.deadlineType = DeadlineType.completed;
@@ -84,4 +101,6 @@ void updateDeadlineList() {
       deadline.deadlineType = DeadlineType.failed;
     }
   }
+
+  deadlineList.sort(compareDeadline);
 }
