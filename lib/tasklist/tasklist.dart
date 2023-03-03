@@ -101,8 +101,9 @@ class _TaskListPageState extends State<TaskListPage> {
                   Deadline res = await Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (context) => DeadlineEditPage(deadline)))
-                      as Deadline;
+                              builder: (context) =>
+                                  DeadlineEditPage(deadline))) ??
+                      deadline;
                   setState(() {
                     deadline.summary = res.summary;
                     deadline.description = res.description;
