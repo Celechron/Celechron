@@ -9,18 +9,6 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPageState extends State<TaskListPage> {
-  String durationToString(Duration duration) {
-    String str = '';
-    if (duration.inHours != 0) {
-      str = '${duration.inHours} 小时';
-    }
-    if (duration.inMinutes % 60 != 0 || duration.inHours == 0) {
-      if (str != '') str = '$str ';
-      str = '$str${duration.inMinutes % 60} 分钟';
-    }
-    return str;
-  }
-
   String toStringHumanReadable(DateTime dateTime) {
     String str = dateTime.toIso8601String().replaceFirst(RegExp(r'T'), ' ');
     str = str.substring(0, str.length - 7);
@@ -59,7 +47,7 @@ class _TaskListPageState extends State<TaskListPage> {
                   ),
                   const SizedBox(height: 8.0),
                   Text(
-                    '${(deadline.getProgress()).toInt()}%：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded - deadline.timeSpent)}',
+                    deadlineProgress(deadline),
                     style: const TextStyle(),
                   ),
                   const SizedBox(height: 8.0),
@@ -107,14 +95,24 @@ class _TaskListPageState extends State<TaskListPage> {
                       : '继续'),
                 ),
               TextButton(
-                onPressed: () => setState(() {
-                  print('pushed');
+                onPressed: () async {
                   Navigator.of(context).pop();
-                  Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (context) => DeadlineEditPage(deadline)));
-                }),
+
+                  Deadline res = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => DeadlineEditPage(deadline)))
+                      as Deadline;
+                  setState(() {
+                    deadline.summary = res.summary;
+                    deadline.description = res.description;
+                    deadline.timeSpent = res.timeSpent;
+                    deadline.timeNeeded = res.timeNeeded;
+                    deadline.endTime = res.endTime;
+                    deadline.location = res.location;
+                    deadline.deadlineType = res.deadlineType;
+                  });
+                },
                 child: const Text('编辑'),
               ),
             ],
@@ -162,7 +160,7 @@ class _TaskListPageState extends State<TaskListPage> {
                   ),
                   const SizedBox(height: 8.0),
                   Text(
-                    '${(deadline.getProgress()).toInt()}%：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded - deadline.timeSpent)}',
+                    deadlineProgress(deadline),
                     style: const TextStyle(),
                   ),
                   const SizedBox(height: 8.0),
