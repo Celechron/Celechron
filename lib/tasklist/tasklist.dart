@@ -105,6 +105,7 @@ class _TaskListPageState extends State<TaskListPage> {
                                   DeadlineEditPage(deadline))) ??
                       deadline;
                   setState(() {
+                    deadline.uid = res.uid;
                     deadline.summary = res.summary;
                     deadline.description = res.description;
                     deadline.timeSpent = res.timeSpent;
@@ -112,6 +113,7 @@ class _TaskListPageState extends State<TaskListPage> {
                     deadline.endTime = res.endTime;
                     deadline.location = res.location;
                     deadline.deadlineType = res.deadlineType;
+                    deadline.isBreakable = res.isBreakable;
                   });
                 },
                 child: const Text('编辑'),
@@ -167,6 +169,11 @@ class _TaskListPageState extends State<TaskListPage> {
                   const SizedBox(height: 8.0),
                   Text(
                     deadline.location,
+                    style: const TextStyle(),
+                  ),
+                  const SizedBox(height: 8.0),
+                  Text(
+                    deadline.uid,
                     style: const TextStyle(),
                   ),
                 ],
