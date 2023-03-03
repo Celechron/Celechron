@@ -17,13 +17,11 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
   void saveAndExit() {
     FormState().save();
     now.forceRefreshType();
-    print('send res ${now.summary}');
     Navigator.of(context).pop(now);
   }
 
   void exitWithoutSave() {
     now = widget.deadline.copyWith();
-    print('send now ${now.summary}');
     Navigator.of(context).pop(now);
   }
 
@@ -80,7 +78,6 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                         lastDate: DateTime(2099, 1, 1),
                       );
                       if (res != null) {
-                        print(res);
                         setState(() {
                           now.endTime = now.endTime.copyWith(
                             year: res.year,
