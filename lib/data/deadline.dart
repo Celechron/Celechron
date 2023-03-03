@@ -63,6 +63,7 @@ var deadlineList = <Deadline>[];
 int __got = 0;
 
 void updateDeadlineList() {
+  print('sorted deadlineList');
   deadlineList.sort(compareDeadline);
   if (__got == 1) return;
   __got = 1;
@@ -103,4 +104,21 @@ void updateDeadlineList() {
   }
 
   deadlineList.sort(compareDeadline);
+  print('rebulit deadlineList');
+}
+
+String durationToString(Duration duration) {
+  String str = '';
+  if (duration.inHours != 0) {
+    str = '${duration.inHours} 小时';
+  }
+  if (duration.inMinutes % 60 != 0 || duration.inHours == 0) {
+    if (str != '') str = '$str ';
+    str = '$str${duration.inMinutes % 60} 分钟';
+  }
+  return str;
+}
+
+String deadlineProgress(Deadline deadline) {
+  return '${(deadline.getProgress()).toInt()}%：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded <= deadline.timeSpent ? Duration.zero : (deadline.timeNeeded - deadline.timeSpent))}';
 }

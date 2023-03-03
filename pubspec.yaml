@@ -1,5 +1,5 @@
 name: celechron
-description: Celechron, a Time manager and Task arranger. For ZJU Only.
+description: Cele, a calendar and task manager for ZJU only.
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev
@@ -31,6 +31,8 @@ dependencies:
   flutter:
     sdk: flutter
 
+  flutter_localizations:
+    sdk: flutter
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
@@ -38,10 +40,15 @@ dependencies:
   provider: ^6.0.5
   animations: ^2.0.7
 
-  table_calendar: ^3.0.9
+  table_calendar: any
   hive: ^2.2.3
   icalendar_parser: ^1.1.1
   const_date_time: ^1.0.2
+  intl: ^0.18.0
+
+dependency_overrides:
+  intl: ^0.18.0
+
 
   
 dev_dependencies:
