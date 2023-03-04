@@ -1,6 +1,6 @@
-enum PeriodType { classes, test, user, virtual }
+enum PeriodType { classes, test, user, virtual, flow }
 
-enum DeadlineType { running, suspended, completed, failed }
+enum DeadlineType { running, suspended, completed, failed, deleted }
 
 Map<DeadlineType, String> deadlineTypeName = {
   DeadlineType.running: '进行中',

@@ -2,10 +2,13 @@ import '../utils/utils.dart';
 import 'package:icalendar_parser/icalendar_parser.dart';
 import 'package:const_date_time/const_date_time.dart';
 import 'package:flutter/services.dart' show rootBundle;
+import 'package:uuid/uuid.dart';
 
 // TZID=Asia/Shanghai
 
 class Period {
+  String uid;
+  String? fromUid;
   PeriodType periodType;
   String description;
   DateTime startTime;
@@ -14,6 +17,8 @@ class Period {
   String summary;
 
   Period({
+    this.uid = '1919810',
+    this.fromUid,
     this.periodType = PeriodType.classes,
     this.description = "教师: 空之探险队的 Kate\n课程代码: PMD00001\n教学时间安排: 春夏 第1-2节",
     this.startTime = const ConstDateTime(2023, 3, 1, 8, 00),
@@ -23,6 +28,8 @@ class Period {
   });
 
   Period copyWith({
+    String? uid,
+    String? fromUid,
     PeriodType? periodType,
     String? description,
     DateTime? startTime,
@@ -31,6 +38,8 @@ class Period {
     String? summary,
   }) {
     return Period(
+      uid: uid ?? this.uid,
+      fromUid: fromUid ?? this.fromUid,
       periodType: periodType ?? this.periodType,
       description: description ?? this.description,
       startTime: startTime ?? this.startTime,
@@ -38,6 +47,10 @@ class Period {
       location: location ?? this.location,
       summary: summary ?? this.summary,
     );
+  }
+
+  void genUid() {
+    uid = const Uuid().v4();
   }
 
   String getTimePeriodHumanReadable() {
@@ -77,6 +90,7 @@ void updateBasePeriodList() async {
   for (var element in baseData) {
     if (element['type'] == 'VEVENT') {
       var newPeriod = Period();
+      newPeriod.genUid();
       newPeriod.description =
           element['description']?.trim().replaceAll('\\n', '\n') ?? "";
       newPeriod.startTime = formatToDateTime(element['dtstart'].dt);
