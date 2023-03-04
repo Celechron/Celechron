@@ -1,10 +1,18 @@
+import 'package:celechron/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'calendar/calendar.dart';
+import 'flow/flow.dart';
 import 'tasklist/tasklist.dart';
+import 'options/options.dart';
+import 'options/optionspage.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
-void main() {
+void main() async {
+  await Hive.initFlutter();
+  options = Options();
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
@@ -99,9 +107,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget _getPagesWidget(int index) {
     List<Widget> widgetList = [
       CalendarPage(),
-      const Icon(Icons.av_timer),
+      FlowPage(),
       TaskListPage(),
-      const Icon(Icons.settings),
+      OptionsPage(),
     ];
 
     return Offstage(
