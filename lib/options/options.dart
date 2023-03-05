@@ -18,6 +18,8 @@ class Options {
   late final Box optionsBox;
 
   final String dbOptions = 'dbOptions';
+  final String kWorkTime = 'workTime';
+  final String kRestTime = 'restTime';
 
   Future<void> init() async {
     Hive.registerAdapter(DurationAdapter());
@@ -25,10 +27,25 @@ class Options {
   }
 
   Duration getWorkTime() {
-    if (optionsBox.get('workTime') == null) {
-      optionsBox.put('workTime', const Duration(minutes: 45));
+    if (optionsBox.get(kWorkTime) == null) {
+      optionsBox.put(kWorkTime, const Duration(minutes: 45));
     }
-    return optionsBox.get('workTime');
+    return optionsBox.get(kWorkTime);
+  }
+
+  void setWorkTime(Duration workTime) {
+    optionsBox.put(kWorkTime, workTime);
+  }
+
+  Duration getRestTime() {
+    if (optionsBox.get(kRestTime) == null) {
+      optionsBox.put(kRestTime, const Duration(minutes: 15));
+    }
+    return optionsBox.get(kRestTime);
+  }
+
+  void setRestTime(Duration restTime) {
+    optionsBox.put(kRestTime, restTime);
   }
 }
 
