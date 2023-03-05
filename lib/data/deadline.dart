@@ -20,7 +20,7 @@ class Deadline {
     this.description = "1. 到变隐龙商店购买一个苹果\n2. 把苹果存到袋兽阿姨仓库里",
     this.timeSpent = const Duration(minutes: 0),
     this.timeNeeded = const Duration(days: 0, hours: 1, minutes: 30),
-    this.endTime = const ConstDateTime(2023, 3, 2, 8, 00, 00, 00),
+    this.endTime = const ConstDateTime(2023, 3, 5, 8, 00, 00, 00),
     this.location = "宝藏镇",
     this.summary = "作业：不可思议迷宫导论",
     this.isBreakable = false,

@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:hive/hive.dart';
 import 'package:settings_ui/settings_ui.dart';
@@ -24,7 +25,73 @@ class _OptionsPageState extends State<OptionsPage> {
               SettingsTile(
                 title: Text('工作段时间长度'),
                 value: Text(durationToString(options.getWorkTime())),
-              )
+                onPressed: (context) async {
+                  Duration newWorkTime = options.getWorkTime();
+                  await showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text(
+                            '工作段时间长度',
+                          ),
+                          content: SizedBox(
+                            width: double.maxFinite,
+                            height: 200,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: CupertinoTimerPicker(
+                                    mode: CupertinoTimerPickerMode.hm,
+                                    initialTimerDuration: newWorkTime,
+                                    onTimerDurationChanged: (value) {
+                                      newWorkTime = value;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      });
+                  options.setWorkTime(newWorkTime);
+                  setState(() {});
+                },
+              ),
+              SettingsTile(
+                title: Text('休息段时间长度'),
+                value: Text(durationToString(options.getRestTime())),
+                onPressed: (context) async {
+                  Duration newRestTime = options.getRestTime();
+                  await showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: const Text(
+                            '休息段时间长度',
+                          ),
+                          content: SizedBox(
+                            width: double.maxFinite,
+                            height: 200,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child: CupertinoTimerPicker(
+                                    mode: CupertinoTimerPickerMode.hm,
+                                    initialTimerDuration: newRestTime,
+                                    onTimerDurationChanged: (value) {
+                                      newRestTime = value;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      });
+                  options.setRestTime(newRestTime);
+                  setState(() {});
+                },
+              ),
             ],
           )
         ],
