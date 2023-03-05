@@ -13,6 +13,7 @@ import 'package:intl/date_symbol_data_local.dart';
 void main() async {
   await Hive.initFlutter();
   options = Options();
+  await options.init();
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
