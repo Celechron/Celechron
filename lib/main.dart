@@ -2,7 +2,7 @@ import 'package:celechron/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'calendar/calendar.dart';
-import 'flow/flow.dart';
+import 'flow/flowpage.dart';
 import 'tasklist/tasklist.dart';
 import 'options/options.dart';
 import 'options/optionspage.dart';
@@ -34,8 +34,9 @@ class MyApp extends StatelessWidget {
       ],
       locale: Locale('zh'),
       builder: (context, child) => MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!),
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
       title: 'Cele',
       theme: ThemeData(
         primarySwatch: Colors.pink,
