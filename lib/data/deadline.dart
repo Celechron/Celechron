@@ -58,6 +58,19 @@ class Deadline {
     return 100.00 * timeSpent.inMicroseconds / timeNeeded.inMicroseconds;
   }
 
+  void addTimeSpent(Duration length) {
+    timeSpent += length;
+    refreshType();
+  }
+
+  void refreshType() {
+    if (timeSpent >= timeNeeded) {
+      deadlineType = DeadlineType.completed;
+    } else if (endTime.isBefore(DateTime.now())) {
+      deadlineType = DeadlineType.failed;
+    }
+  }
+
   void forceRefreshType() {
     if (timeSpent >= timeNeeded) {
       deadlineType = DeadlineType.completed;
