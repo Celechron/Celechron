@@ -4,16 +4,13 @@ import '../data/deadline.dart';
 import 'deadlineeditpage.dart';
 
 class TaskListPage extends StatefulWidget {
+  const TaskListPage({super.key});
+
   @override
   State<TaskListPage> createState() => _TaskListPageState();
 }
 
 class _TaskListPageState extends State<TaskListPage> {
-  String toStringHumanReadable(DateTime dateTime) {
-    String str = dateTime.toIso8601String().replaceFirst(RegExp(r'T'), ' ');
-    str = str.substring(0, str.length - 7);
-    return str;
-  }
 
   Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
     return showDialog<void>(

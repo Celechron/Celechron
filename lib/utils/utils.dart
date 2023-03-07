@@ -20,3 +20,9 @@ String durationToString(Duration duration) {
   }
   return str;
 }
+
+String toStringHumanReadable(DateTime dateTime) {
+  String str = dateTime.toIso8601String().replaceFirst(RegExp(r'T'), ' ');
+  str = str.substring(0, str.length - 7);
+  return str;
+}

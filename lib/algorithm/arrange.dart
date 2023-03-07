@@ -17,6 +17,17 @@ class TimeAssignSet {
 
 TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
     List<Deadline> deadlineList, List<Period> ableList) {
+  print('findSolution: ');
+  print('$workTime $targetRestTime');
+  for (var x in deadlineList) {
+    print(x.endTime);
+    print(x.endTime.timeZoneOffset);
+  }
+  for (var x in ableList) {
+    print('${x.startTime} ${x.endTime}');
+    print(x.startTime.timeZoneOffset);
+  }
+
   deadlineList = List.from(deadlineList);
   ableList = List.from(ableList);
 

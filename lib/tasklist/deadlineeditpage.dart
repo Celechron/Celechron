@@ -5,7 +5,7 @@ import '../utils/utils.dart';
 
 class DeadlineEditPage extends StatefulWidget {
   final Deadline deadline;
-  DeadlineEditPage(this.deadline);
+  const DeadlineEditPage(this.deadline, {super.key});
 
   @override
   State<DeadlineEditPage> createState() => _DeadlineEditPageState();

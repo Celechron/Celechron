@@ -1,11 +1,12 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:settings_ui/settings_ui.dart';
 import 'options.dart';
 import '../utils/utils.dart';
 
 class OptionsPage extends StatefulWidget {
+  const OptionsPage({super.key});
+
   @override
   State<OptionsPage> createState() => _OptionsPageState();
 }
@@ -15,15 +16,15 @@ class _OptionsPageState extends State<OptionsPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('工具与设置'),
+        title: const Text('工具与设置'),
       ),
       body: SettingsList(
         sections: [
           SettingsSection(
-            title: Text('时间规划'),
+            title: const Text('时间规划'),
             tiles: <SettingsTile>[
               SettingsTile(
-                title: Text('工作段时间长度'),
+                title: const Text('工作段时间长度'),
                 value: Text(durationToString(options.getWorkTime())),
                 onPressed: (context) async {
                   Duration newWorkTime = options.getWorkTime();
@@ -58,7 +59,7 @@ class _OptionsPageState extends State<OptionsPage> {
                 },
               ),
               SettingsTile(
-                title: Text('休息段时间长度'),
+                title: const Text('休息段时间长度'),
                 value: Text(durationToString(options.getRestTime())),
                 onPressed: (context) async {
                   Duration newRestTime = options.getRestTime();

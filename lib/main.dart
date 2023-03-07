@@ -1,4 +1,3 @@
-import 'package:celechron/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'calendar/calendar.dart';
@@ -6,9 +5,11 @@ import 'flow/flowpage.dart';
 import 'tasklist/tasklist.dart';
 import 'options/options.dart';
 import 'options/optionspage.dart';
-import 'package:hive/hive.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 
 void main() async {
   await Hive.initFlutter();
@@ -17,8 +18,25 @@ void main() async {
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Future<void> initTimezone() async {
+    tz.initializeTimeZones();
+    final String locationName = await FlutterNativeTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(locationName));
+    print(locationName);
+  }
+
+  @override
+  void initState() {
+    initTimezone();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +50,7 @@ class MyApp extends StatelessWidget {
         Locale('zh'),
         Locale('en'),
       ],
-      locale: Locale('zh'),
+      locale: const Locale('zh'),
       builder: (context, child) => MediaQuery(
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
         child: child!,
@@ -108,10 +126,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _getPagesWidget(int index) {
     List<Widget> widgetList = [
-      CalendarPage(),
-      FlowPage(),
-      TaskListPage(),
-      OptionsPage(),
+      const CalendarPage(),
+      const FlowPage(),
+      const TaskListPage(),
+      const OptionsPage(),
     ];
 
     return Offstage(
