@@ -27,6 +27,8 @@ dependencies:
   intl: ^0.18.0
   uuid: ^3.0.7
   settings_ui: ^2.0.2
+  timezone: ^0.9.1
+  flutter_native_timezone: ^2.0.0
 
 dependency_overrides:
   intl: ^0.18.0

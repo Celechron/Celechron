@@ -4,6 +4,8 @@ import '../utils/utils.dart';
 import '../data/period.dart';
 
 class CalendarPage extends StatefulWidget {
+  const CalendarPage({super.key});
+
   @override
   State<CalendarPage> createState() => _CalendarPageState();
 }
