@@ -29,6 +29,7 @@ dependencies:
   settings_ui: ^2.0.2
   timezone: ^0.9.1
   flutter_native_timezone: ^2.0.0
+  fast_gbk: ^1.0.0
 
 dependency_overrides:
   intl: ^0.18.0
