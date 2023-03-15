@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'calendar/calendar.dart';
+import 'data/user.dart';
 import 'flow/flowpage.dart';
 import 'tasklist/tasklist.dart';
 import 'options/options.dart';
@@ -15,6 +16,11 @@ void main() async {
   await Hive.initFlutter();
   options = Options();
   await options.init();
+
+  // 初始化在这里，打断点看数据（断点打在./data/user第78行）（因为不想糊前端页面捏）
+  User user = User("学号", "密码");
+  await user.init();
+
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
