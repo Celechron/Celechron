@@ -68,7 +68,7 @@ class Spider {
     return [double.parse(majorGpa), double.parse(majorCredit)];
   }
 
-  Future<List<Semester>> getEverything(Map<String, List<Grade>> grades) async {
+  Future<List<bool>> getSemesterDetails(List<Semester> outSemesters, Map<String, List<Grade>> outGrades) async {
     List<Semester> semesters = [];
 
     // 从考试查询API获取课程信息
@@ -113,7 +113,7 @@ class Spider {
               if (key.startsWith('401')) {
                 key = (e.group(1) as String).substring(0, 22);
               }
-              grades.putIfAbsent(key, () => <Grade>[]).add(Grade(e));
+              outGrades.putIfAbsent(key, () => <Grade>[]).add(Grade(e));
             }))
         .whenComplete(() {
       for (var e in semesters) {
@@ -156,10 +156,12 @@ class Spider {
     }
     await Future.wait(fetches);
 
-    return semesters
+    outSemesters = semesters
         .where((e) => (e.exams.isNotEmpty ||
             e.grades.isNotEmpty ||
             e.sessions.isNotEmpty))
         .toList();
+
+    return [true];
   }
 }
