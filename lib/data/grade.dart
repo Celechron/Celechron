@@ -75,4 +75,14 @@ class Grade {
   toString() {
     return '$original/$fivePoint';
   }
+
+  static List<double> calculateGpa(Iterable<Grade> grades) {
+    // 不计GPA的科目不算
+    var affectGpaList = grades.where((e) => e.gpaIncluded);
+    var credit = affectGpaList.fold<double>(0.0, (p, e) => p + e.credit);
+    var sigma = affectGpaList.fold<List<double>>(
+      [0.0, 0.0, 0.0], (p, e) => [p[0] + e.fivePoint, p[1] + e.fourPoint, p[2] + e.hundredPoint]
+    );
+    return sigma.map((e) => e / credit).toList();
+  }
 }

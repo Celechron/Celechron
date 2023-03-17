@@ -18,7 +18,7 @@ void main() async {
   await options.init();
 
   // 初始化在这里，打断点看数据（断点打在./data/user第78行）（因为不想糊前端页面捏）
-  User user = User("学号", "密码");
+  User user = User("3200104742", "SZj1602176565@");
   await user.init();
 
   initializeDateFormatting().then((_) => runApp(const MyApp()));

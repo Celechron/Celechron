@@ -91,20 +91,11 @@ class Semester {
   }
 
   void calculateGPA() {
-    var affectGpaList = _grades.where((e) => e.gpaIncluded);
-    if (affectGpaList.isNotEmpty) {
-      // 这个算的是计入GPA的总学分，包括挂科的
-      var credits = affectGpaList.fold<double>(0.0, (p, e) => p + e.credit);
-      fivePointGpa = affectGpaList.fold<double>(
-          0.0, (p, e) => p + e.credit * e.fivePoint) / credits;
-      fourPointGpa = affectGpaList.fold<double>(
-          0.0, (p, e) => p + e.credit * e.fourPoint) / credits;
-      hundredPointGpa = affectGpaList.fold<double>(
-          0.0, (p, e) => p + e.credit * e.hundredPoint) / credits;
-      // 这个算的是所获学分，不包括挂科的
-      this.credits = _grades.fold<double>(
-          0.0, (p, e) => p + e.effectiveCredit);
-    }
+    var gpa = Grade.calculateGpa(_grades);
+    fivePointGpa = gpa[0];
+    fourPointGpa = gpa[1];
+    hundredPointGpa = gpa[2];
+    credits = _grades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
   }
 
   void sortExams() {
