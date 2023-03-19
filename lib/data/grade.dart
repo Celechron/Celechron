@@ -49,40 +49,50 @@ class Grade {
     "待录": 0,
   };
 
-  Grade(RegExpMatch match)
-      : id = match.group(1)!,
-        name = match.group(2)!,
-        credit = double.parse(match.group(4)!),
-        original = match.group(3)!,
-        fivePoint = double.parse(match.group(5)!) {
+  Grade(List<String> list)
+      : id = list[0],
+        name = list[1],
+        credit = double.parse(list[3]),
+        original = list[2],
+        fivePoint = double.parse(list[4]) {
     hundredPoint = _toHundredPoint[original] ?? int.parse(original);
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
-    creditIncluded = original != "弃修" && original != "待录" && original != "缓考";
+    creditIncluded =
+        original != "弃修" && original != "待录" && original != "缓考";
     gpaIncluded = creditIncluded && original != "合格" && original != "不合格";
-  }
-
-  /*Grade.fromDingtalkTranscript(Map<String, dynamic> transcript)
-      : original = transcript['cj'] as String,
-        fivePoint = double.parse(transcript['jd'].toString())
-  {
-    this.hundredPoint = _toHundredPoint[original] ?? int.parse(original);
-    this.fourPoint =
-        this.fivePoint > 4.0 ? _toFourPoint[this.fivePoint]! : this.fivePoint;
-    this.affectGpa = this.original != "弃修" && this.original != "合格" && this.original != "不合格" && this.original != "待录" && this.original != "缓考";
-  }*/
-
-  @override
-  toString() {
-    return '$original/$fivePoint';
   }
 
   static List<double> calculateGpa(Iterable<Grade> grades) {
     // 不计GPA的科目不算
     var affectGpaList = grades.where((e) => e.gpaIncluded);
     var credit = affectGpaList.fold<double>(0.0, (p, e) => p + e.credit);
+    if (credit == 0.0) return [0.0, 0.0, 0.0];
     var sigma = affectGpaList.fold<List<double>>(
-      [0.0, 0.0, 0.0], (p, e) => [p[0] + e.fivePoint, p[1] + e.fourPoint, p[2] + e.hundredPoint]
+      [0.0, 0.0, 0.0], (p, e) => [p[0] + e.fivePoint * e.credit, p[1] + e.fourPoint * e.credit, p[2] + e.hundredPoint * e.credit]
     );
     return sigma.map((e) => e / credit).toList();
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'credit': credit,
+    'original': original,
+    'fivePoint': fivePoint,
+    'fourPoint': fourPoint,
+    'hundredPoint': hundredPoint,
+    'gpaIncluded': gpaIncluded,
+    'creditIncluded': creditIncluded,
+  };
+
+  Grade.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        name = json['name'],
+        credit = json['credit'],
+        original = json['original'],
+        fivePoint = json['fivePoint'],
+        fourPoint = json['fourPoint'],
+        hundredPoint = json['hundredPoint'],
+        gpaIncluded = json['gpaIncluded'],
+        creditIncluded = json['creditIncluded'];
 }

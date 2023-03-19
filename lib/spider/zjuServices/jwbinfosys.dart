@@ -4,9 +4,9 @@ import 'package:fast_gbk/fast_gbk.dart';
 
 class JwbInfoSys {
 
-  late Cookie _aspNetSessionId;
+  Cookie? _aspNetSessionId;
 
-  Future<bool> init(
+  Future<bool> login(
       HttpClient httpClient, Cookie iPlanetDirectoryPro) async {
 
     late HttpClientRequest request;
@@ -34,6 +34,10 @@ class JwbInfoSys {
     return true;
   }
 
+  void logout() {
+    _aspNetSessionId = null;
+  }
+
   Future<String> getMajorGradeHtml(
       HttpClient httpClient, String username) async {
 
@@ -43,7 +47,7 @@ class JwbInfoSys {
     request = await httpClient.getUrl(
         Uri.parse(
             "http://jwbinfosys.zju.edu.cn/xscj_zg.aspx?xh=$username"));
-    request.cookies.add(_aspNetSessionId);
+    request.cookies.add(_aspNetSessionId!);
     request.followRedirects = false;
     response = await request.close();
 
@@ -60,7 +64,7 @@ class JwbInfoSys {
 
     request = await httpClient.getUrl(
         Uri.parse("http://jwbinfosys.zju.edu.cn/xscj.aspx?xh="));
-    request.cookies.add(_aspNetSessionId);
+    request.cookies.add(_aspNetSessionId!);
     request.followRedirects = false;
     response = await request.close();
 
@@ -71,7 +75,7 @@ class JwbInfoSys {
     request = await httpClient.postUrl(
         Uri.parse(
             "http://jwbinfosys.zju.edu.cn/xscj.aspx?xh=$username"));
-    request.cookies.add(_aspNetSessionId);
+    request.cookies.add(_aspNetSessionId!);
     request.followRedirects = false;
     request.headers.contentType =
         ContentType('application', 'x-www-form-urlencoded', charset: 'gb2312');
