@@ -17,6 +17,8 @@ void main() async {
   await Hive.initFlutter();
   options = Options();
   await options.init();
+  User user = User();
+  await user.loadFromSp();
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
@@ -38,13 +40,12 @@ class _MyAppState extends State<MyApp> {
   Future<void> initUser() async {
     // 初始化在这里，打断点看数据（因为不想糊前端页面捏）
     User user = User();
-    if (await user.loadFromSp()) {
+    if (user.isLogin) {
       print("数据加载成功，GPA为${user.gpa[0]}");
+      await user.init();
     } else {
-      user.configUser("3200104742", "SZj1602176565@");
       print("数据加载失败");
     }
-    await user.init();
   }
 
   @override
