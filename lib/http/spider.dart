@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
-import '../data/grade.dart';
-import '../data/semester.dart';
+import '../model/grade.dart';
+import '../model/semester.dart';
 import 'zjuServices/appservice.dart';
 import 'zjuServices/jwbinfosys.dart';
 import 'zjuServices/zjuam.dart';
@@ -15,8 +15,6 @@ class Spider {
   late JwbInfoSys _jwbInfoSys;
   Cookie? _iPlanetDirectoryPro;
 
-  String get cookie => _iPlanetDirectoryPro.toString();
-
   Spider(String username, String password) {
     _httpClient = HttpClient();
     _httpClient.userAgent =
@@ -27,13 +25,13 @@ class Spider {
     _password = password;
   }
 
-  Future<List<bool>> login() async {
+  Future<bool> login() async {
     _iPlanetDirectoryPro =
         await ZjuAm.getSsoCookie(_httpClient, _username, _password);
     return await Future.wait([
-      _appService.login(_httpClient, _iPlanetDirectoryPro!).catchError((e) => false),
-      _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!).catchError((e) => false),
-    ]);
+      _appService.login(_httpClient, _iPlanetDirectoryPro!),
+      _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!),
+    ]).then((value) => value[0] && value[1]).catchError((e) => false);
   }
 
   void logout() {

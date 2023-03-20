@@ -1,29 +1,24 @@
 import 'package:hive/hive.dart';
+import '../model/user.dart';
+import 'adapters/duration_adapter.dart';
+import 'adapters/user_adapter.dart';
 
-class DurationAdapter extends TypeAdapter<Duration> {
-  @override
-  final typeId = 4;
-
-  @override
-  void write(BinaryWriter writer, Duration obj) =>
-      writer.writeInt(obj.inMicroseconds);
-
-  @override
-  Duration read(BinaryReader reader) =>
-      Duration(microseconds: reader.readInt());
-}
-
-class Options {
+class DatabaseHelper {
   late final Box optionsBox;
+  late final Box userBox;
 
   final String dbOptions = 'dbOptions';
   final String kWorkTime = 'workTime';
   final String kRestTime = 'restTime';
   final String kAllowTime = 'allowTime';
 
+  final String dbUser = 'dbUser';
+
   Future<void> init() async {
     Hive.registerAdapter(DurationAdapter());
+    Hive.registerAdapter(UserAdapter());
     optionsBox = await Hive.openBox(dbOptions);
+    userBox = await Hive.openBox(dbUser);
   }
 
   Duration getWorkTime() {
@@ -61,6 +56,15 @@ class Options {
   void setAllowTime(Map<DateTime, DateTime> allowTime) {
     optionsBox.put(kAllowTime, allowTime);
   }
+
+  User? getUser() {
+    return userBox.get('user');
+  }
+
+  Future<bool> setUser(User user) async {
+    return await userBox.put('user', user).then((value) => true).catchError((e) => false);
+  }
+
 }
 
-late Options options;
+DatabaseHelper db = DatabaseHelper();

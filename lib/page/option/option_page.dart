@@ -1,17 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:settings_ui/settings_ui.dart';
-import 'options.dart';
-import '../utils/utils.dart';
+import '../../database/database_helper.dart';
+import '../../utils/utils.dart';
 
-class OptionsPage extends StatefulWidget {
-  const OptionsPage({super.key});
+class OptionPage extends StatefulWidget {
+  const OptionPage({super.key});
 
   @override
-  State<OptionsPage> createState() => _OptionsPageState();
+  State<OptionPage> createState() => _OptionPageState();
 }
 
-class _OptionsPageState extends State<OptionsPage> {
+class _OptionPageState extends State<OptionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,9 +25,9 @@ class _OptionsPageState extends State<OptionsPage> {
             tiles: <SettingsTile>[
               SettingsTile(
                 title: const Text('工作段时间长度'),
-                value: Text(durationToString(options.getWorkTime())),
+                value: Text(durationToString(db.getWorkTime())),
                 onPressed: (context) async {
-                  Duration newWorkTime = options.getWorkTime();
+                  Duration newWorkTime = db.getWorkTime();
                   await showDialog(
                       context: context,
                       builder: (BuildContext context) {
@@ -54,15 +54,15 @@ class _OptionsPageState extends State<OptionsPage> {
                           ),
                         );
                       });
-                  options.setWorkTime(newWorkTime);
+                  db.setWorkTime(newWorkTime);
                   setState(() {});
                 },
               ),
               SettingsTile(
                 title: const Text('休息段时间长度'),
-                value: Text(durationToString(options.getRestTime())),
+                value: Text(durationToString(db.getRestTime())),
                 onPressed: (context) async {
-                  Duration newRestTime = options.getRestTime();
+                  Duration newRestTime = db.getRestTime();
                   await showDialog(
                       context: context,
                       builder: (BuildContext context) {
@@ -89,7 +89,7 @@ class _OptionsPageState extends State<OptionsPage> {
                           ),
                         );
                       });
-                  options.setRestTime(newRestTime);
+                  db.setRestTime(newRestTime);
                   setState(() {});
                 },
               ),

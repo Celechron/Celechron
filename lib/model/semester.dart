@@ -1,6 +1,6 @@
-import '../../data/course.dart';
+import 'course.dart';
 import 'exam.dart';
-import '../../data/grade.dart';
+import 'grade.dart';
 import 'session.dart';
 
 class Semester {

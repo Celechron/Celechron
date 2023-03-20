@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/user.dart';
+import '../../model/user.dart';
 import 'login_page.dart';
 
 class ScholarPage extends StatefulWidget {

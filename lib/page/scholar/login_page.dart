@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../data/user.dart';
+import '../../model/user.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -67,8 +67,9 @@ class _LoginPageState extends State<LoginPage> {
                     _formKey.currentState!.save();
                     // Do something with the form data
                     var user = User();
-                    user.configUser(_username, _password);
-                    user.init().then((value) {
+                    user.username = _username;
+                    user.password = _password;
+                    user.login().then((value) {
                       if (value) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
