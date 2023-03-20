@@ -47,7 +47,7 @@ class User {
 
   // 初始化以获取Cookies，并刷新数据
   Future<bool> login() async {
-    Spider(username, _password);
+    _spider = Spider(username, _password);
     await _spider.login();
     isLogin = true;
     return await refresh();
@@ -109,6 +109,19 @@ class User {
   }
 
   User.fromJson(Map<String, dynamic> json) {
+
+  }
+
+  Future<bool> saveToDb() async {
+    return await db.setUser(this);
+  }
+
+  Future<bool> loadFromDb() async {
+    var user = db.getUser();
+    if (user == null) {
+      return false;
+    }
+    var json = jsonDecode(user) as Map<String, dynamic>;
     username = json['username'];
     _password = json['password'];
     _spider = Spider(username, _password);
@@ -123,20 +136,10 @@ class User {
     credit = json['credit'];
     majorGpaAndCredit = List<double>.from(json['majorGpaAndCredit']);
     isLogin = true;
-  }
-
-  Future<bool> saveToDb() async {
-    return await db.setUser(this);
-  }
-
-  Future<bool> loadFromDb() async {
     return true;
   }
 
   Future<bool> deleteFromDb() async {
-    var box = await Hive.openBox('user');
-    return box.delete('user').then((value) => true).catchError((e) {
-      return false;
-    });
+    return db.removeUser();
   }
 }
