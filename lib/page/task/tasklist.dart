@@ -1,7 +1,7 @@
 import 'package:celechron/utils/utils.dart';
 import 'package:flutter/material.dart';
-import '../data/deadline.dart';
-import 'deadlineeditpage.dart';
+import '../../model/deadline.dart';
+import '../flow/deadlineeditpage.dart';
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});

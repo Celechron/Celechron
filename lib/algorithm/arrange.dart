@@ -1,6 +1,6 @@
 import 'package:celechron/utils/utils.dart';
-import '../data/deadline.dart';
-import '../data/period.dart';
+import '../model/deadline.dart';
+import '../model/period.dart';
 import 'package:uuid/uuid.dart';
 
 class TimeAssignSet {
