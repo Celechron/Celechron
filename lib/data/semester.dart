@@ -6,17 +6,20 @@ import 'session.dart';
 class Semester {
   // 学期名称
   String name;
-  final Map<String, Course> _courses = {};
-  final List<Exam> _exams = [];
-  final List<Session> _sessions = [];
-  final List<Grade> _grades = [];
+  final Map<String, Course> _courses;
+  final List<Exam> _exams;
+  final List<Session> _sessions;
+  final List<Grade> _grades;
 
-  double fivePointGpa = 0.0;
-  double fourPointGpa = 0.0;
-  double hundredPointGpa = 0.0;
+  // GPA, 三个数据依次为五分制，四分制，百分制
+  List<double> gpa = [0.0, 0.0, 0.0];
   double credits = 0.0;
 
-  Semester(this.name);
+  Semester(this.name)
+      : _courses = {},
+        _exams = [],
+        _sessions = [],
+        _grades = [];
 
   // 科目列表
   get courses {
@@ -79,8 +82,8 @@ class Semester {
     }
   }
 
-  void addGrade(RegExpMatch match) {
-    var grade = Grade(match);
+  void addGrade(List<String> list) {
+    var grade = Grade(list);
     _grades.add(grade);
     var courseKey = grade.id;
     if (_courses.containsKey(courseKey)) {
@@ -91,24 +94,38 @@ class Semester {
   }
 
   void calculateGPA() {
-    var affectGpaList = _grades.where((e) => e.gpaIncluded);
-    if (affectGpaList.isNotEmpty) {
-      // 这个算的是计入GPA的总学分，包括挂科的
-      var credits = affectGpaList.fold<double>(0.0, (p, e) => p + e.credit);
-      fivePointGpa = affectGpaList.fold<double>(
-          0.0, (p, e) => p + e.credit * e.fivePoint) / credits;
-      fourPointGpa = affectGpaList.fold<double>(
-          0.0, (p, e) => p + e.credit * e.fourPoint) / credits;
-      hundredPointGpa = affectGpaList.fold<double>(
-          0.0, (p, e) => p + e.credit * e.hundredPoint) / credits;
-      // 这个算的是所获学分，不包括挂科的
-      this.credits = _grades.fold<double>(
-          0.0, (p, e) => p + e.effectiveCredit);
-    }
+    gpa = Grade.calculateGpa(_grades);
+    credits = _grades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
   }
 
   void sortExams() {
     // 考试按开始时间排序
     _exams.sort((a, b) => a.time.first.compareTo(b.time.first));
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'courses': _courses,
+      'exams': _exams,
+      'sessions': _sessions,
+      'grades': _grades,
+      'gpa': gpa,
+      'credits': credits,
+    };
+  }
+
+  Semester.fromJson(Map<String, dynamic> json)
+      : name = json['name'],
+        _courses = (json['courses'] as Map).map((k, v) =>
+            MapEntry(k as String, Course.fromJson(v as Map<String, dynamic>))),
+        _exams = (json['exams'] as List).map((e) => Exam.fromJson(e)).toList(),
+        _sessions = (json['sessions'] as List)
+            .map((e) => Session.fromJson(e))
+            .toList(),
+        _grades = (json['grades'] as List)
+            .map((e) => Grade.fromJson(e))
+            .toList(),
+        gpa = (json['gpa'] as List).map((e) => e as double).toList(),
+        credits = json['credits'];
 }

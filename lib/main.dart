@@ -1,3 +1,4 @@
+import 'package:celechron/pages/scholar_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'calendar/calendar.dart';
@@ -16,11 +17,8 @@ void main() async {
   await Hive.initFlutter();
   options = Options();
   await options.init();
-
-  // 初始化在这里，打断点看数据（断点打在./data/user第78行）（因为不想糊前端页面捏）
-  User user = User("学号", "密码");
-  await user.init();
-
+  User user = User();
+  await user.loadFromSp();
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
@@ -39,9 +37,22 @@ class _MyAppState extends State<MyApp> {
     print(locationName);
   }
 
+  Future<void> initUser() async {
+    // 初始化在这里，打断点看数据（因为不想糊前端页面捏）
+    User user = User();
+    if (user.isLogin) {
+      print("数据加载成功，GPA为${user.gpa[0]}");
+      await user.init();
+    } else {
+      print("数据加载失败");
+    }
+  }
+
   @override
   void initState() {
+    super.initState();
     initTimezone();
+    initUser();
   }
 
   @override
@@ -91,6 +102,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _getPagesWidget(1),
           _getPagesWidget(2),
           _getPagesWidget(3),
+          _getPagesWidget(4),
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
@@ -109,6 +121,11 @@ class _MyHomePageState extends State<MyHomePage> {
             icon: Icon(Icons.task_outlined),
             activeIcon: Icon(Icons.task_rounded),
             label: '任务',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.school_outlined),
+            activeIcon: Icon(Icons.school),
+            label: '学业',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.settings_applications_outlined),
@@ -135,6 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
       const CalendarPage(),
       const FlowPage(),
       const TaskListPage(),
+      const ScholarPage(),
       const OptionsPage(),
     ];
 

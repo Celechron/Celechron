@@ -4,9 +4,9 @@ import 'dart:io';
 import 'exceptions.dart';
 
 class AppService {
-  late Cookie _wisportalId;
+  Cookie? _wisportalId;
 
-  Future<bool> init(HttpClient httpClient, Cookie iPlanetDirectoryPro) async {
+  Future<bool> login(HttpClient httpClient, Cookie iPlanetDirectoryPro) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
 
@@ -33,13 +33,17 @@ class AppService {
     }
   }
 
+  void logout() {
+    _wisportalId = null;
+  }
+
   Future<String> getTranscriptJson(HttpClient httpClient) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
 
     request = await httpClient.postUrl(Uri.parse(
         "http://appservice.zju.edu.cn/zju-smartcampus/zdydjw/api/kkqk_cxXscjxx"));
-    request.cookies.add(_wisportalId);
+    request.cookies.add(_wisportalId!);
     response = await request.close();
 
     var cjcxJson = RegExp('list":(.*?)},"')
@@ -55,7 +59,7 @@ class AppService {
 
     request = await httpClient.postUrl(Uri.parse(
         "http://appservice.zju.edu.cn/zju-smartcampus/zdydjw/api/kbdy_cxXnxq"));
-    request.cookies.add(_wisportalId);
+    request.cookies.add(_wisportalId!);
     response = await request.close();
 
     var xnxqJson = RegExp('list":(.*?)}},"')
@@ -71,7 +75,7 @@ class AppService {
 
     request = await httpClient.postUrl(Uri.parse(
         "http://appservice.zju.edu.cn/zju-smartcampus/zdydjw/api/kkqk_cxXsksxx"));
-    request.cookies.add(_wisportalId);
+    request.cookies.add(_wisportalId!);
     request.headers.contentType =
         ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
     request.add(utf8.encode('xn=$xn&xq=$xq'));
@@ -90,7 +94,7 @@ class AppService {
 
     request = await httpClient.postUrl(Uri.parse(
         "http://appservice.zju.edu.cn/zju-smartcampus/zdydjw/api/kbdy_cxXsZKbxx"));
-    request.cookies.add(_wisportalId);
+    request.cookies.add(_wisportalId!);
     request.headers.contentType =
         ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
     request.add(utf8.encode('xn=2&xq='));

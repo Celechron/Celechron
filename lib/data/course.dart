@@ -83,10 +83,26 @@ class Course {
     return true;
   }
 
-/*static bool CompleteFromDingtalkTranscript(Course course, Map<String, dynamic> transcript) {
-    if (transcript['xf'] != null)
-      course.credit = double.parse(transcript['xf'] as String);
-    course.grade = Grade.fromDingtalkTranscript(transcript);
-    return true;
-  }*/
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'confirmed': confirmed,
+      'credit': credit,
+      'grade': grade?.toJson(),
+      'teacher': teacher,
+      'sessions': sessions.map((e) => e.toJson()).toList(),
+      'exams': exams.map((e) => e.toJson()).toList(),
+    };
+  }
+
+  Course.fromJson(Map<String, dynamic> json)
+      : id = json['id'] as String,
+        name = json['name'] as String,
+        confirmed = json['confirmed'] as bool,
+        credit = json['credit'] as double,
+        grade = json['grade'] == null ? null : Grade.fromJson(json['grade'] as Map<String, dynamic>),
+        teacher = json['teacher'] as String?,
+        sessions = (json['sessions'] as List<dynamic>).map((e) => Session.fromJson(e as Map<String, dynamic>)).toList(),
+        exams = (json['exams'] as List<dynamic>).map((e) => Exam.fromJson(e as Map<String, dynamic>)).toList();
 }

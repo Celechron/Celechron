@@ -32,6 +32,23 @@ class Exam {
     if (json.containsKey("qmkssj")) exams.add(Exam._fromExam(id, name, json, ExamType.finalExam));
     return exams;
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'type': type.index,
+    'time': time.map((e) => e.toIso8601String()).toList(),
+    'location': location,
+    'seat': seat,
+  };
+
+  Exam.fromJson(Map<String, dynamic> json)
+    : id = json['id'],
+      name = json['name'],
+      type = ExamType.values[json['type']],
+      time = (json['time'] as List).map((e) => DateTime.parse(e)).toList(),
+      location = json['location'],
+      seat = json['seat'];
 }
 
 enum ExamType { midterm, finalExam }
