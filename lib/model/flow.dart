@@ -1,14 +1,14 @@
 import '../utils/utils.dart';
-import '../data/period.dart';
-import '../data/deadline.dart';
-import '../options/options.dart';
+import 'period.dart';
+import 'deadline.dart';
+import '../database/database_helper.dart';
 import '../algorithm/arrange.dart';
 
 List<Period> flowList = [];
 
 bool updateFlowList(DateTime startsAt) {
-  Duration workTime = options.getWorkTime();
-  Duration restTime = options.getRestTime();
+  Duration workTime = db.getWorkTime();
+  Duration restTime = db.getRestTime();
 
   List<Deadline> deadlines = [];
   DateTime lastDeadlineEndsAt = startsAt;
@@ -22,7 +22,7 @@ bool updateFlowList(DateTime startsAt) {
 
   List<DateTime> mappedList = [];
 
-  Map allowTime = options.getAllowTime();
+  Map allowTime = db.getAllowTime();
   allowTime.forEach((allowStart, allowEnd) {
     for (int i = 0;; i++) {
       DateTime tmpl = allowStart;

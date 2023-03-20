@@ -2,8 +2,9 @@ import 'dart:convert';
 
 import 'grade.dart';
 import 'semester.dart';
-import '../spider/spider.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../http/spider.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+import 'package:celechron/database/database_helper.dart';
 
 class User {
   // 单例模式，保证每次获取到的都是同一个User对象，不会重复创建
@@ -11,9 +12,14 @@ class User {
 
   factory User() => _user ??= User._internal();
 
+  // 构造用户对象
+  User._internal();
+
+  // 登录状态
   bool isLogin = false;
+
   // 爬虫区
-  late String _username;
+  late String username;
   late String _password;
   late Spider _spider;
 
@@ -35,23 +41,30 @@ class User {
   // 主修数据，两个数据依次为主修GPA，主修学分
   List<double> majorGpaAndCredit = [0.0, 0.0];
 
-  // 通过用户名和密码构造用户对象
-  User._internal();
-
-  String get username => _username;
-
-  // 输入用户名与密码
-  configUser(String username, String password) {
-    _username = username;
+  set password(String password) {
     _password = password;
-    _spider = Spider(username, password);
   }
 
-  // 初始化以获取Cookies
-  Future<bool> init() async {
+  // 初始化以获取Cookies，并刷新数据
+  Future<bool> login() async {
+    Spider(username, _password);
     await _spider.login();
     isLogin = true;
     return await refresh();
+  }
+
+  Future<bool> logout() async {
+    username = "";
+    _password = "";
+    semesters = [];
+    grades = {};
+    gpa = [0.0, 0.0, 0.0];
+    aboardGpa = [0.0, 0.0, 0.0];
+    credit = 0.0;
+    majorGpaAndCredit = [0.0, 0.0];
+    isLogin = false;
+    _spider.logout();
+    return await deleteFromDb();
   }
 
   // 刷新数据
@@ -76,16 +89,15 @@ class User {
       // 这个算的是所获学分，不包括挂科的。因为出国成绩单取最高的一次成绩，所以就把挂科的学分算对了
       credit =
           aboardNetGrades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
-
       // 保存到本地
-      saveToSp();
+      saveToDb();
     });
     return true;
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'username': _username,
+      'username': username,
       'password': _password,
       'semesters': semesters,
       'grades': grades,
@@ -96,21 +108,10 @@ class User {
     };
   }
 
-  Future<bool> saveToSp() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    return await prefs.setString('user', jsonEncode(toJson()));
-  }
-
-  Future<bool> loadFromSp() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? jsonString = prefs.getString('user');
-    if (jsonString == null) {
-      return false;
-    }
-    Map<String, dynamic> json = jsonDecode(jsonString);
-    _username = json['username'];
+  User.fromJson(Map<String, dynamic> json) {
+    username = json['username'];
     _password = json['password'];
-    _spider = Spider(_username, _password);
+    _spider = Spider(username, _password);
     semesters =
         (json['semesters'] as List).map((e) => Semester.fromJson(e)).toList();
     grades = (json['grades'] as Map<String, dynamic>).map((key, value) {
@@ -122,26 +123,20 @@ class User {
     credit = json['credit'];
     majorGpaAndCredit = List<double>.from(json['majorGpaAndCredit']);
     isLogin = true;
+  }
+
+  Future<bool> saveToDb() async {
+    return await db.setUser(this);
+  }
+
+  Future<bool> loadFromDb() async {
     return true;
   }
 
-  Future<bool> deleteFromSp() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    await prefs.remove('user');
-    return true;
-  }
-
-  Future<bool> logout() async {
-    _username = "";
-    _password = "";
-    semesters = [];
-    grades = {};
-    gpa = [0.0, 0.0, 0.0];
-    aboardGpa = [0.0, 0.0, 0.0];
-    credit = 0.0;
-    majorGpaAndCredit = [0.0, 0.0];
-    isLogin = false;
-    _spider.logout();
-    return await deleteFromSp();
+  Future<bool> deleteFromDb() async {
+    var box = await Hive.openBox('user');
+    return box.delete('user').then((value) => true).catchError((e) {
+      return false;
+    });
   }
 }

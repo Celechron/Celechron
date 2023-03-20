@@ -1,7 +1,7 @@
 import 'package:celechron/utils/utils.dart';
 import 'package:flutter/material.dart';
-import '../data/period.dart';
-import 'flow.dart';
+import '../../model/period.dart';
+import '../../model/flow.dart';
 
 class FlowPage extends StatefulWidget {
   const FlowPage({super.key});
