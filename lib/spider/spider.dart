@@ -27,39 +27,43 @@ class Spider {
     _password = password;
   }
 
-  Future<bool> init() async {
+  Future<List<bool>> login() async {
     _iPlanetDirectoryPro =
         await ZjuAm.getSsoCookie(_httpClient, _username, _password);
-    await Future.wait([
-      _appService.init(_httpClient, _iPlanetDirectoryPro!),
-      _jwbInfoSys.init(_httpClient, _iPlanetDirectoryPro!),
+    return await Future.wait([
+      _appService.login(_httpClient, _iPlanetDirectoryPro!).catchError((e) => false),
+      _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!).catchError((e) => false),
     ]);
-    return true;
   }
 
-  Future<dynamic> getTranscript() async {
+  void logout() {
+    _username = "";
+    _password = "";
+    _iPlanetDirectoryPro = null;
+    _appService.logout();
+    _jwbInfoSys.logout();
+  }
+
+  Future<Iterable<List<String>>> getGrades() async {
     // Group 1: 课程代码
     // Group 2: 课程名称
     // Group 3: 成绩
     // Group 4: 学分
     // Group 5: 绩点
-    var transcript = await _jwbInfoSys
-        .getTranscriptHtml(_httpClient, _username)
-        .then((value) => RegExp(
+    return await _jwbInfoSys.getTranscriptHtml(_httpClient, _username).then(
+        (value) => RegExp(
                 r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>&nbsp;</td>')
             .allMatches(value)
-            .map((e) => {
-                  'code': e.group(1),
-                  'name': e.group(2),
-                  'grade': e.group(3),
-                  'credit': e.group(4),
-                  'gpa': e.group(5),
-                })
-            .toList());
-    return transcript;
+            .map((e) => [
+                  e.group(1)!,
+                  e.group(2)!,
+                  e.group(3)!,
+                  e.group(4)!,
+                  e.group(5)!
+                ]));
   }
 
-  Future<List<double>> getMajorGrade() async {
+  Future<List<double>> getMajorGpaAndCredit() async {
     var html = await _jwbInfoSys.getMajorGradeHtml(_httpClient, _username);
     var majorGpa =
         RegExp(r'平均绩点=([0-9.]+)').firstMatch(html)?.group(1) ?? "0.00";
@@ -68,57 +72,59 @@ class Spider {
     return [double.parse(majorGpa), double.parse(majorCredit)];
   }
 
-  Future<List<Semester>> getEverything(Map<String, List<Grade>> grades) async {
-    List<Semester> semesters = [];
-
+  Future<List<bool>> getSemesterDetails(List<Semester> outSemesters,
+      Map<String, List<Grade>> outGrades, List<double> outMajorGrade) async {
     // 从考试查询API获取课程信息
     List<Future> fetches = [];
     var yearNow = DateTime.now().year;
     var yearEnroll = int.parse(_username.substring(1, 3)) + 2000;
     var yearGraduate = yearEnroll + 7;
 
-    Map<String, int> semesterMap = {};
+    // 建立学期号与学期列表的映射，如"2022-2023-1"对应第22年入学同学的第0个学期，即"2022-2023秋冬"。
+    Map<String, int> semesterIndexMap = <String, int>{};
     for (var i = 0; i < 8; i++) {
-      semesterMap.addEntries(
+      semesterIndexMap.addEntries(
           [MapEntry('${yearEnroll + i}-${yearEnroll + i + 1}-1', i * 2)]);
-      semesterMap.addEntries(
+      semesterIndexMap.addEntries(
           [MapEntry('${yearEnroll + i}-${yearEnroll + i + 1}-2', i * 2 + 1)]);
-      semesters.add(Semester('${yearEnroll + i}-${yearEnroll + i + 1}秋冬'));
-      semesters.add(Semester('${yearEnroll + i}-${yearEnroll + i + 1}春夏'));
+      outSemesters.add(Semester('${yearEnroll + i}-${yearEnroll + i + 1}秋冬'));
+      outSemesters.add(Semester('${yearEnroll + i}-${yearEnroll + i + 1}春夏'));
     }
 
-    // 查课表
+    // 爬浙大钉API，查课表
     fetches.add(_appService.getTimetableJson(_httpClient).then((value) =>
         jsonDecode(value
                 .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
                 .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
             .forEach((e) {
           if (e['kcid'] != null) {
-            semesters[semesterMap[(e['kcid'] as String).substring(1, 12)]!]
+            outSemesters[
+                    semesterIndexMap[(e['kcid'] as String).substring(1, 12)]!]
                 .addSession(e);
           }
-        })));
+        })).catchError((e) => false));
 
-    // 查成绩
-    fetches.add(_jwbInfoSys
-        .getTranscriptHtml(_httpClient, _username)
-        .then((value) =>
-            RegExp(r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>&nbsp;</td>')
-                .allMatches(value)
-                .forEach((e) {
-              semesters[semesterMap[(e.group(1) as String).substring(1, 12)]!]
-                  .addGrade(e);
-              //体育课
-              var key = (e.group(1) as String).substring(14, 22);
-              if (key.startsWith('401')) {
-                key = (e.group(1) as String).substring(0, 22);
-              }
-              grades.putIfAbsent(key, () => <Grade>[]).add(Grade(e));
-            }))
-        .whenComplete(() {
-      for (var e in semesters) {
+    // 爬教务网，查成绩
+    fetches.add(getGrades().then((value) {
+      for (var e in value) {
+        outSemesters[semesterIndexMap[e[0].substring(1, 12)]!].addGrade(e);
+        //体育课
+        var key = e[0].substring(14, 22);
+        if (key.startsWith('401')) {
+          key = e[0].substring(0, 22);
+        }
+        outGrades.putIfAbsent(key, () => <Grade>[]).add(Grade(e));
+      }
+      for (var e in outSemesters) {
         e.calculateGPA();
       }
+      return true;
+    }).catchError((e) => false));
+
+    // 爬教务网，查主修成绩
+    fetches.add(getMajorGpaAndCredit().then((value) {
+      outMajorGrade.clear();
+      outMajorGrade.addAll(value);
     }));
 
     // 查考试
@@ -130,11 +136,12 @@ class Spider {
                 .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
                 .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
             .forEach((e) {
-          semesters[semesterMap[(e['xkkh'] as String).substring(1, 12)]!]
+          outSemesters[
+                  semesterIndexMap[(e['xkkh'] as String).substring(1, 12)]!]
               .addExam(e);
         });
       }).whenComplete(() {
-        for (var e in semesters) {
+        for (var e in outSemesters) {
           e.sortExams();
         }
       }));
@@ -144,22 +151,23 @@ class Spider {
                 .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
                 .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
             .forEach((e) {
-          semesters[semesterMap[(e['xkkh'] as String).substring(1, 12)]!]
+          outSemesters[
+                  semesterIndexMap[(e['xkkh'] as String).substring(1, 12)]!]
               .addExam(e);
         });
       }).whenComplete(() {
-        for (var e in semesters) {
+        for (var e in outSemesters) {
           e.sortExams();
         }
       }));
       yearEnroll++;
     }
-    await Future.wait(fetches);
 
-    return semesters
-        .where((e) => (e.exams.isNotEmpty ||
-            e.grades.isNotEmpty ||
-            e.sessions.isNotEmpty))
-        .toList();
+    // 等所有请求完成后，去除没有任何信息的学期。
+    await Future.wait(fetches);
+    outSemesters.removeWhere(
+        (e) => e.grades.isEmpty && e.sessions.isEmpty && e.exams.isEmpty);
+
+    return [true];
   }
 }

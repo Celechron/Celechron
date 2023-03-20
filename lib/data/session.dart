@@ -37,4 +37,31 @@ class Session {
       secondHalf = semester.contains("冬") || semester.contains("夏");
     }
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'teacher': teacher,
+    'confirmed': confirmed,
+    'firstHalf': firstHalf,
+    'secondHalf': secondHalf,
+    'oddWeek': oddWeek,
+    'evenWeek': evenWeek,
+    'day': day,
+    'time': time,
+    'location': location,
+  };
+
+  Session.fromJson(Map<String, dynamic> json)
+      : id = json['id'],
+        name = json['name'],
+        teacher = json['teacher'],
+        confirmed = json['confirmed'],
+        firstHalf = json['firstHalf'],
+        secondHalf = json['secondHalf'],
+        oddWeek = json['oddWeek'],
+        evenWeek = json['evenWeek'],
+        day = json['day'],
+        time = List<int>.from(json['time']),
+        location = json['location'];
 }
