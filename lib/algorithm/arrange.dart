@@ -1,7 +1,6 @@
 import 'package:celechron/utils/utils.dart';
 import '../model/deadline.dart';
 import '../model/period.dart';
-import 'package:uuid/uuid.dart';
 
 class TimeAssignSet {
   bool isValid;
@@ -82,9 +81,6 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
       if (cur.isBreakable) {
         thisCut = thisCut < workTime ? thisCut : workTime;
       }
-      print(cur.isBreakable);
-      print(thisCut);
-      print(workTime);
       if (now.startTime.add(thisCut).isAfter(now.endTime)) {
         ans.isValid = false;
         return ans;

@@ -115,12 +115,6 @@ bool updateFlowList(DateTime startsAt) {
     }
   }
 
-  print('???');
-  print(mappedList[0]);
-  print(mappedList[1]);
-  print(mappedList[2]);
-  print(useAble);
-
   List<Period> ableList = [];
 
   for (int i = 0, j = 0; i < mappedList.length; i++) {

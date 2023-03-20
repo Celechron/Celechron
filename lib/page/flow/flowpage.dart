@@ -69,7 +69,6 @@ class _FlowPageState extends State<FlowPage> {
     updateFlowList(DateTime.now()
         .copyWith(second: 0, millisecond: 0, microsecond: 0)
         .add(const Duration(minutes: 2)));
-    print(flowList);
     return Scaffold(
       appBar: AppBar(
         title: const Text(
