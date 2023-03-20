@@ -16,20 +16,29 @@ class TimeAssignSet {
 }
 
 TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
-    List<Deadline> deadlineList, List<Period> ableList) {
+    List<Deadline> _deadlineList, List<Period> _ableList) {
   print('findSolution: ');
   print('$workTime $targetRestTime');
-  for (var x in deadlineList) {
-    print(x.endTime);
+  print('deadlineList: ');
+  for (var x in _deadlineList) {
+    print(x.endTime.toString());
     print(x.endTime.timeZoneOffset);
   }
-  for (var x in ableList) {
+  print('ableList: ');
+  for (var x in _ableList) {
     print('${x.startTime} ${x.endTime}');
     print(x.startTime.timeZoneOffset);
   }
 
-  deadlineList = List.from(deadlineList);
-  ableList = List.from(ableList);
+  List<Deadline> deadlineList = [];
+  List<Period> ableList = [];
+
+  for (var x in _deadlineList) {
+    deadlineList.add(x.copyWith());
+  }
+  for (var x in _ableList) {
+    ableList.add(x.copyWith());
+  }
 
   deadlineList.sort(compareDeadline);
   ableList.sort(comparePeriod);
@@ -47,6 +56,8 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
   );
 
   for (Deadline cur in deadlineList) {
+    print(
+        'deadlineList ${cur.endTime.toString()}, ${cur.timeSpent} / ${cur.timeNeeded}, ${ans.assignSet.length}');
     if (targetRestTime <= Duration.zero) cur.isBreakable = false;
     bool isStarting = cur.isBreakable;
 
@@ -71,13 +82,15 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
       if (cur.isBreakable) {
         thisCut = thisCut < workTime ? thisCut : workTime;
       }
+      print(cur.isBreakable);
+      print(thisCut);
+      print(workTime);
       if (now.startTime.add(thisCut).isAfter(now.endTime)) {
         ans.isValid = false;
         return ans;
       }
 
-      ans.assignSet.add(Period(
-        uid: const Uuid().v4(),
+      Period period = Period(
         fromUid: cur.uid,
         periodType: PeriodType.flow,
         description: cur.description,
@@ -85,7 +98,9 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
         endTime: now.startTime.add(thisCut),
         location: cur.location,
         summary: cur.summary,
-      ));
+      );
+      period.genUid();
+      ans.assignSet.add(period);
       cur.timeSpent += thisCut;
       now.startTime = now.startTime.add(thisCut);
       if (cur.isBreakable) {
