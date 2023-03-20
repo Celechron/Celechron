@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:hive/hive.dart';
 import '../model/user.dart';
 import 'adapters/duration_adapter.dart';
@@ -57,12 +59,16 @@ class DatabaseHelper {
     optionsBox.put(kAllowTime, allowTime);
   }
 
-  User? getUser() {
+  String? getUser() {
     return userBox.get('user');
   }
 
   Future<bool> setUser(User user) async {
-    return await userBox.put('user', user).then((value) => true).catchError((e) => false);
+    return await userBox.put('user', jsonEncode(user)).then((value) => true).catchError((e) => false);
+  }
+
+  Future<bool> removeUser() async {
+    return await userBox.delete('user').then((value) => true).catchError((e) => false);
   }
 
 }
