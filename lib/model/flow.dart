@@ -7,20 +7,29 @@ import '../algorithm/arrange.dart';
 List<Period> flowList = [];
 
 bool updateFlowList(DateTime startsAt) {
+  flowList.clear();
+  print('updateFlowList');
   Duration workTime = db.getWorkTime();
   Duration restTime = db.getRestTime();
 
   List<Deadline> deadlines = [];
   DateTime lastDeadlineEndsAt = startsAt;
   for (var x in deadlineList) {
-    if (x.deadlineType == DeadlineType.running &&
-        x.endTime.isAfter(lastDeadlineEndsAt)) {
-      lastDeadlineEndsAt = x.endTime;
+    if (x.deadlineType == DeadlineType.running && x.endTime.isAfter(startsAt)) {
       deadlines.add(x.copyWith());
+      if (x.endTime.isAfter(lastDeadlineEndsAt)) {
+        lastDeadlineEndsAt = x.endTime;
+      }
     }
+  }
+  if (lastDeadlineEndsAt.difference(startsAt) < Duration(days: 1)) {
+    lastDeadlineEndsAt = startsAt.add(Duration(days: 1));
   }
 
   List<DateTime> mappedList = [];
+
+  mappedList.add(startsAt);
+  mappedList.add(lastDeadlineEndsAt);
 
   Map allowTime = db.getAllowTime();
   allowTime.forEach((allowStart, allowEnd) {
@@ -60,11 +69,12 @@ bool updateFlowList(DateTime startsAt) {
   }
 
   mappedList = mappedList.toSet().toList();
+  mappedList.sort();
   Map<DateTime, int> atListIndex = {};
   for (int i = 0; i < mappedList.length; i++) {
     atListIndex[mappedList[i]] = i;
   }
-  List<bool> useAble = List.generate(mappedList.length - 1, (index) => false);
+  List<bool> useAble = List.generate(mappedList.length, (index) => false);
 
   allowTime.forEach((allowStart, allowEnd) {
     for (int i = 0;; i++) {
@@ -95,8 +105,13 @@ bool updateFlowList(DateTime startsAt) {
   for (var x in basePeriodList) {
     DateTime tmpl = x.startTime.copyWith();
     DateTime tmpr = x.endTime.copyWith();
+
+    if (!tmpl.isBefore(lastDeadlineEndsAt)) continue;
+    if (!tmpr.isAfter(startsAt)) continue;
     if (tmpr.isAfter(lastDeadlineEndsAt)) tmpr = lastDeadlineEndsAt;
     if (tmpl.isBefore(startsAt)) tmpl = startsAt;
+
+    flowList.add(x.copyWith());
 
     int indexl = atListIndex[tmpl]!;
     int indexr = atListIndex[tmpr]!;
@@ -106,10 +121,35 @@ bool updateFlowList(DateTime startsAt) {
   }
 
   List<Period> ableList = [];
+
+  print('ableList:');
+  for (int i = 0, j = 0; i < mappedList.length; i++) {
+    if (!useAble[i]) continue;
+    j = i;
+    while (j < mappedList.length && useAble[j]) {
+      j++;
+    }
+    Period period = Period(
+      periodType: PeriodType.virtual,
+      startTime: mappedList[i],
+      endTime: mappedList[j],
+    );
+    print(period.startTime);
+    print(period.endTime);
+    period.genUid();
+    ableList.add(period);
+    i = j;
+  }
+
   TimeAssignSet ans = findSolution(workTime, restTime, deadlineList, ableList);
+  print('updateFlowList');
   print(ans.isValid);
   if (!ans.isValid) return false;
-  flowList = List.from(ans.assignSet);
+  print(ans.assignSet);
+  flowList.addAll(ans.assignSet);
+  flowList.sort((a, b) {
+    return a.startTime.compareTo(b.startTime);
+  });
 
   return true;
 }
