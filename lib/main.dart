@@ -1,12 +1,12 @@
-import 'package:celechron/pages/scholar_page.dart';
+import 'page/scholar/scholar_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'calendar/calendar.dart';
-import 'data/user.dart';
-import 'flow/flowpage.dart';
-import 'tasklist/tasklist.dart';
-import 'options/options.dart';
-import 'options/optionspage.dart';
+import 'page/calendar/calendar.dart';
+import 'model/user.dart';
+import 'page/flow/flowpage.dart';
+import 'page/task/tasklist.dart';
+import 'database/database_helper.dart';
+import 'page/option/option_page.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -15,10 +15,9 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 
 void main() async {
   await Hive.initFlutter();
-  options = Options();
-  await options.init();
+  await db.init();
   User user = User();
-  await user.loadFromSp();
+  await user.loadFromDb();
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
@@ -42,7 +41,7 @@ class _MyAppState extends State<MyApp> {
     User user = User();
     if (user.isLogin) {
       print("数据加载成功，GPA为${user.gpa[0]}");
-      await user.init();
+      await user.login();
     } else {
       print("数据加载失败");
     }
@@ -153,7 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
       const FlowPage(),
       const TaskListPage(),
       const ScholarPage(),
-      const OptionsPage(),
+      const OptionPage(),
     ];
 
     return Offstage(
