@@ -50,6 +50,12 @@ class _FlowPageState extends State<FlowPage> {
                     period.uid,
                     style: const TextStyle(),
                   ),
+                  if (period.fromUid != null) const SizedBox(height: 8.0),
+                  if (period.fromUid != null)
+                    Text(
+                      '来自 ${period.fromUid}',
+                      style: const TextStyle(),
+                    ),
                 ],
               ),
             )
