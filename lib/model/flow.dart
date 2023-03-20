@@ -7,6 +7,7 @@ import '../algorithm/arrange.dart';
 List<Period> flowList = [];
 
 bool updateFlowList(DateTime startsAt) {
+  flowList.clear();
   print('updateFlowList');
   Duration workTime = db.getWorkTime();
   Duration restTime = db.getRestTime();
@@ -14,14 +15,16 @@ bool updateFlowList(DateTime startsAt) {
   List<Deadline> deadlines = [];
   DateTime lastDeadlineEndsAt = startsAt;
   for (var x in deadlineList) {
-    if (x.deadlineType == DeadlineType.running &&
-        x.endTime.isAfter(lastDeadlineEndsAt)) {
-      lastDeadlineEndsAt = x.endTime;
+    if (x.deadlineType == DeadlineType.running && x.endTime.isAfter(startsAt)) {
       deadlines.add(x.copyWith());
+      if (x.endTime.isAfter(lastDeadlineEndsAt)) {
+        lastDeadlineEndsAt = x.endTime;
+      }
     }
   }
-  print(startsAt);
-  print(lastDeadlineEndsAt);
+  if (lastDeadlineEndsAt.difference(startsAt) < Duration(days: 1)) {
+    lastDeadlineEndsAt = startsAt.add(Duration(days: 1));
+  }
 
   List<DateTime> mappedList = [];
 
@@ -108,6 +111,8 @@ bool updateFlowList(DateTime startsAt) {
     if (tmpr.isAfter(lastDeadlineEndsAt)) tmpr = lastDeadlineEndsAt;
     if (tmpl.isBefore(startsAt)) tmpl = startsAt;
 
+    flowList.add(x.copyWith());
+
     int indexl = atListIndex[tmpl]!;
     int indexr = atListIndex[tmpr]!;
     for (int i = indexl; i < indexr; i++) {
@@ -117,6 +122,7 @@ bool updateFlowList(DateTime startsAt) {
 
   List<Period> ableList = [];
 
+  print('ableList:');
   for (int i = 0, j = 0; i < mappedList.length; i++) {
     if (!useAble[i]) continue;
     j = i;
@@ -128,7 +134,6 @@ bool updateFlowList(DateTime startsAt) {
       startTime: mappedList[i],
       endTime: mappedList[j],
     );
-    print('ableList:');
     print(period.startTime);
     print(period.endTime);
     period.genUid();
@@ -141,7 +146,10 @@ bool updateFlowList(DateTime startsAt) {
   print(ans.isValid);
   if (!ans.isValid) return false;
   print(ans.assignSet);
-  flowList = List.from(ans.assignSet);
+  flowList.addAll(ans.assignSet);
+  flowList.sort((a, b) {
+    return a.startTime.compareTo(b.startTime);
+  });
 
   return true;
 }
