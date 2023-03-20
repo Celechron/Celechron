@@ -7,6 +7,7 @@ import '../algorithm/arrange.dart';
 List<Period> flowList = [];
 
 bool updateFlowList(DateTime startsAt) {
+  print('updateFlowList');
   Duration workTime = db.getWorkTime();
   Duration restTime = db.getRestTime();
 
@@ -19,8 +20,13 @@ bool updateFlowList(DateTime startsAt) {
       deadlines.add(x.copyWith());
     }
   }
+  print(startsAt);
+  print(lastDeadlineEndsAt);
 
   List<DateTime> mappedList = [];
+
+  mappedList.add(startsAt);
+  mappedList.add(lastDeadlineEndsAt);
 
   Map allowTime = db.getAllowTime();
   allowTime.forEach((allowStart, allowEnd) {
@@ -60,11 +66,12 @@ bool updateFlowList(DateTime startsAt) {
   }
 
   mappedList = mappedList.toSet().toList();
+  mappedList.sort();
   Map<DateTime, int> atListIndex = {};
   for (int i = 0; i < mappedList.length; i++) {
     atListIndex[mappedList[i]] = i;
   }
-  List<bool> useAble = List.generate(mappedList.length - 1, (index) => false);
+  List<bool> useAble = List.generate(mappedList.length, (index) => false);
 
   allowTime.forEach((allowStart, allowEnd) {
     for (int i = 0;; i++) {
@@ -95,6 +102,9 @@ bool updateFlowList(DateTime startsAt) {
   for (var x in basePeriodList) {
     DateTime tmpl = x.startTime.copyWith();
     DateTime tmpr = x.endTime.copyWith();
+
+    if (!tmpl.isBefore(lastDeadlineEndsAt)) continue;
+    if (!tmpr.isAfter(startsAt)) continue;
     if (tmpr.isAfter(lastDeadlineEndsAt)) tmpr = lastDeadlineEndsAt;
     if (tmpl.isBefore(startsAt)) tmpl = startsAt;
 
@@ -105,10 +115,38 @@ bool updateFlowList(DateTime startsAt) {
     }
   }
 
+  print('???');
+  print(mappedList[0]);
+  print(mappedList[1]);
+  print(mappedList[2]);
+  print(useAble);
+
   List<Period> ableList = [];
+
+  for (int i = 0, j = 0; i < mappedList.length; i++) {
+    if (!useAble[i]) continue;
+    j = i;
+    while (j < mappedList.length && useAble[j]) {
+      j++;
+    }
+    Period period = Period(
+      periodType: PeriodType.virtual,
+      startTime: mappedList[i],
+      endTime: mappedList[j],
+    );
+    print('ableList:');
+    print(period.startTime);
+    print(period.endTime);
+    period.genUid();
+    ableList.add(period);
+    i = j;
+  }
+
   TimeAssignSet ans = findSolution(workTime, restTime, deadlineList, ableList);
+  print('updateFlowList');
   print(ans.isValid);
   if (!ans.isValid) return false;
+  print(ans.assignSet);
   flowList = List.from(ans.assignSet);
 
   return true;

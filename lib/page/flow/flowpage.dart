@@ -50,6 +50,11 @@ class _FlowPageState extends State<FlowPage> {
                     period.uid,
                     style: const TextStyle(),
                   ),
+                  const SizedBox(height: 8.0),
+                  Text(
+                    '来自 ${period.fromUid}',
+                    style: const TextStyle(),
+                  ),
                 ],
               ),
             )
@@ -64,6 +69,7 @@ class _FlowPageState extends State<FlowPage> {
     updateFlowList(DateTime.now()
         .copyWith(second: 0, millisecond: 0, microsecond: 0)
         .add(const Duration(minutes: 2)));
+    print(flowList);
     return Scaffold(
       appBar: AppBar(
         title: const Text(
