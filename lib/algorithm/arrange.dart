@@ -21,12 +21,10 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
   print('deadlineList: ');
   for (var x in _deadlineList) {
     print(x.endTime.toString());
-    print(x.endTime.timeZoneOffset);
   }
   print('ableList: ');
   for (var x in _ableList) {
     print('${x.startTime} ${x.endTime}');
-    print(x.startTime.timeZoneOffset);
   }
 
   List<Deadline> deadlineList = [];
