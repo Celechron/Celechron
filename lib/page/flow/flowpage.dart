@@ -3,6 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../model/period.dart';
 import '../../model/flow.dart';
+import '../../model/deadline.dart';
 import '../../database/database_helper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:async';
@@ -19,8 +20,37 @@ class _FlowPageState extends State<FlowPage> {
   void initState() {
     super.initState();
     setState(() {
-      Timer.periodic(const Duration(seconds: 1), (Timer t) => setState(() {}));
+      Timer.periodic(const Duration(seconds: 1), (Timer t) {
+        flowWorking(context);
+        setState(() {});
+      });
     });
+  }
+
+  void flowWorking(context) {
+    while (flowList.isNotEmpty) {
+      if (flowList[0].periodType == PeriodType.flow) {
+        DateTime now =
+            DateTime.now().copyWith(second: 0, millisecond: 0, microsecond: 0);
+        Duration distan = now.difference(flowList[0].startTime);
+        Duration length = flowList[0].endTime.difference(flowList[0].startTime);
+        print(distan);
+        if (distan <= Duration.zero) break;
+        if (distan > length) distan = length;
+
+        flowList[0].startTime = flowList[0].startTime.add(distan);
+        for (var deadline in deadlineList) {
+          if (deadline.uid != flowList[0].fromUid) continue;
+          deadline.addTimeSpent(distan);
+        }
+      }
+      if (!flowList[0].endTime.isAfter(DateTime.now())) {
+        flowList.removeAt(0);
+      } else {
+        break;
+      }
+    }
+    setState(() {});
   }
 
   Widget createCard(context, Period period) {

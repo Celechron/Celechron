@@ -75,6 +75,9 @@ class Deadline {
 
   void addTimeSpent(Duration length) {
     timeSpent += length;
+    if (timeSpent > timeNeeded) {
+      timeSpent = timeNeeded;
+    }
     refreshType();
   }
 

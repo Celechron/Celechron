@@ -49,7 +49,7 @@ class DatabaseHelper {
     if (true || optionsBox.get(kAllowTime) == null) {
       Map<DateTime, DateTime> base = {};
       base[DateTime(0, 0, 0, 8, 0)] = DateTime(0, 0, 0, 11, 35);
-      base[DateTime(0, 0, 0, 14, 15)] = DateTime(0, 0, 0, 22, 00);
+      base[DateTime(0, 0, 0, 14, 15)] = DateTime(0, 0, 0, 23, 00);
       optionsBox.put(kAllowTime, base);
     }
     return optionsBox.get(kAllowTime);
@@ -70,7 +70,6 @@ class DatabaseHelper {
   Future<void> removeUser() async {
     await userBox.delete('user');
   }
-
 }
 
 DatabaseHelper db = DatabaseHelper();

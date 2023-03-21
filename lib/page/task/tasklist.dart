@@ -2,6 +2,7 @@ import 'package:celechron/utils/utils.dart';
 import 'package:flutter/material.dart';
 import '../../model/deadline.dart';
 import './deadlineeditpage.dart';
+import 'dart:async';
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
@@ -11,6 +12,16 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPageState extends State<TaskListPage> {
+  @override
+  void initState() {
+    super.initState();
+    setState(() {
+      Timer.periodic(const Duration(seconds: 1), (Timer t) {
+        setState(() {});
+      });
+    });
+  }
+
   Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
     return showDialog<void>(
         context: context,
