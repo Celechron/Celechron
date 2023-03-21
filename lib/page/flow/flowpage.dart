@@ -5,6 +5,7 @@ import '../../model/period.dart';
 import '../../model/flow.dart';
 import '../../database/database_helper.dart';
 import 'package:fluttertoast/fluttertoast.dart';
+import 'dart:async';
 
 class FlowPage extends StatefulWidget {
   const FlowPage({super.key});
@@ -14,6 +15,14 @@ class FlowPage extends StatefulWidget {
 }
 
 class _FlowPageState extends State<FlowPage> {
+  @override
+  void initState() {
+    super.initState();
+    setState(() {
+      Timer.periodic(const Duration(seconds: 1), (Timer t) => setState(() {}));
+    });
+  }
+
   Widget createCard(context, Period period) {
     return GestureDetector(
       child: Card(
@@ -173,13 +182,38 @@ class _FlowPageState extends State<FlowPage> {
                 child: const Text('返回'),
               ),
               TextButton(
-                onPressed: () {
+                onPressed: () async {
                   if (newTime.isAfter(DateTime.now())) {
-                    updateFlowList(newTime);
+                    int ret = updateFlowList(newTime);
+                    if (ret < 0) {
+                      await showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return const AlertDialog(
+                            title: Text(
+                              '时间不够了！',
+                            ),
+                            content: SizedBox(
+                              child: Text('即使是完全不休息也有任务无法完成。请压缩任务的预期时间。'),
+                            ),
+                          );
+                        },
+                      );
+                    } else if (ret != db.getRestTime().inMinutes) {
+                      Fluttertoast.showToast(
+                        msg:
+                            '因为任务过多，你需要把休息时间压缩到 ${durationToString(Duration(minutes: ret))}才能完成任务',
+                        toastLength: Toast.LENGTH_SHORT,
+                        gravity: ToastGravity.BOTTOM,
+                        timeInSecForIosWeb: 1,
+                        textColor: Colors.white,
+                        fontSize: 16.0,
+                      );
+                    }
                     Navigator.of(context).pop();
                   } else {
                     Fluttertoast.showToast(
-                      msg: "开始时间必须晚于现在",
+                      msg: '开始时间必须晚于现在',
                       toastLength: Toast.LENGTH_SHORT,
                       gravity: ToastGravity.CENTER,
                       timeInSecForIosWeb: 1,
@@ -209,13 +243,28 @@ class _FlowPageState extends State<FlowPage> {
               await newFlowList(context);
               setState(() {});
             },
-            icon: Icon(Icons.refresh_outlined),
+            icon: const Icon(Icons.refresh_outlined),
           ),
         ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (isFlowListOutdated()) ...[
+            MaterialBanner(
+              content: Text('规划方案已过期'),
+              leading: Icon(Icons.warning),
+              actions: [
+                TextButton(
+                  onPressed: () async {
+                    await newFlowList(context);
+                    setState(() {});
+                  },
+                  child: Text('创建新的规划'),
+                ),
+              ],
+            ),
+          ],
           if (flowList.isEmpty) ...[
             const Expanded(
               child: Center(

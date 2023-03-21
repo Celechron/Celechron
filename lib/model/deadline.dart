@@ -103,7 +103,11 @@ int compareDeadline(Deadline a, Deadline b) {
 
 var deadlineList = <Deadline>[];
 // int __got = 0;
-DateTime lastUpdate = DateTime.fromMicrosecondsSinceEpoch(0);
+DateTime deadlineListLastUpdate = DateTime.fromMicrosecondsSinceEpoch(0);
+
+void updateDeadlineListTime() {
+  deadlineListLastUpdate = DateTime.now();
+}
 
 void updateDeadlineList() {
   deadlineList

@@ -76,6 +76,7 @@ class _TaskListPageState extends State<TaskListPage> {
                   } else {
                     deadline.forceRefreshType();
                   }
+                  updateDeadlineListTime();
                   Navigator.of(context).pop();
                 }),
                 child: Text(
@@ -90,6 +91,7 @@ class _TaskListPageState extends State<TaskListPage> {
                     } else {
                       deadline.deadlineType = DeadlineType.running;
                     }
+                    updateDeadlineListTime();
                     Navigator.of(context).pop();
                   }),
                   child: Text(deadline.deadlineType == DeadlineType.running
@@ -106,6 +108,9 @@ class _TaskListPageState extends State<TaskListPage> {
                               builder: (context) =>
                                   DeadlineEditPage(deadline))) ??
                       deadline;
+                  if (deadline != res) {
+                    updateDeadlineListTime();
+                  }
                   setState(() {
                     deadline.uid = res.uid;
                     deadline.summary = res.summary;
@@ -196,6 +201,7 @@ class _TaskListPageState extends State<TaskListPage> {
         MaterialPageRoute(builder: (context) => DeadlineEditPage(deadline)));
     if (res != null) {
       deadlineList.add(res);
+      updateDeadlineListTime();
     }
   }
 
@@ -211,6 +217,7 @@ class _TaskListPageState extends State<TaskListPage> {
 
   @override
   Widget build(BuildContext context) {
+    setState(() {});
     updateDeadlineList();
 
     return Scaffold(
