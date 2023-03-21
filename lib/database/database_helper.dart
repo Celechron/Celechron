@@ -63,12 +63,12 @@ class DatabaseHelper {
     return userBox.get('user');
   }
 
-  Future<bool> setUser(User user) async {
-    return await userBox.put('user', jsonEncode(user)).then((value) => true).catchError((e) => false);
+  Future<void> setUser(User user) async {
+    await userBox.put('user', jsonEncode(user));
   }
 
-  Future<bool> removeUser() async {
-    return await userBox.delete('user').then((value) => true).catchError((e) => false);
+  Future<void> removeUser() async {
+    await userBox.delete('user');
   }
 
 }

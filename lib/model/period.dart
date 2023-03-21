@@ -1,7 +1,7 @@
+import 'package:celechron/model/user.dart';
+
 import '../utils/utils.dart';
-import 'package:icalendar_parser/icalendar_parser.dart';
 import 'package:const_date_time/const_date_time.dart';
-import 'package:flutter/services.dart' show rootBundle;
 import 'package:uuid/uuid.dart';
 
 // TZID=Asia/Shanghai
@@ -77,30 +77,11 @@ DateTime formatToDateTime(String val) {
 
 var basePeriodList = <Period>[];
 
-Future<String> loadAsset() async {
-  return await rootBundle.loadString('assets/ugrsical.ics');
-}
-
 void updateBasePeriodList() async {
-  var baseCalendar = ICalendar.fromString(await loadAsset());
-  // ICalendar.fromLines(File('assets/ugrsical.ics').readAsLinesSync());
-  var baseData = baseCalendar.data;
 
   basePeriodList.clear();
-  for (var element in baseData) {
-    if (element['type'] == 'VEVENT') {
-      var newPeriod = Period();
-      newPeriod.genUid();
-      newPeriod.description =
-          element['description']?.trim().replaceAll('\\n', '\n') ?? "";
-      newPeriod.startTime = formatToDateTime(element['dtstart'].dt);
-      newPeriod.endTime = formatToDateTime(element['dtend'].dt);
-      newPeriod.location = element['location']?.trim() ?? "";
-      newPeriod.summary = element['summary']?.trim();
-      newPeriod.periodType = newPeriod.summary.contains('考试')
-          ? PeriodType.test
-          : PeriodType.classes;
-      basePeriodList.add(newPeriod);
-    }
+  for (var semester in User().semesters)
+  {
+    basePeriodList.addAll(semester.periods);
   }
 }
