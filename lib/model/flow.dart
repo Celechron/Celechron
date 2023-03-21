@@ -22,8 +22,8 @@ bool updateFlowList(DateTime startsAt) {
       }
     }
   }
-  if (lastDeadlineEndsAt.difference(startsAt) < Duration(days: 1)) {
-    lastDeadlineEndsAt = startsAt.add(Duration(days: 1));
+  if (lastDeadlineEndsAt.difference(startsAt) < const Duration(days: 1)) {
+    lastDeadlineEndsAt = startsAt.add(const Duration(days: 1));
   }
 
   List<DateTime> mappedList = [];
@@ -43,7 +43,7 @@ bool updateFlowList(DateTime startsAt) {
       tmpr = tmpr.copyWith(
           year: startsAt.year, month: startsAt.month, day: startsAt.day);
       tmpr = tmpr.add(Duration(days: i));
-      if (tmpr.isBefore(tmpl)) tmpr.add(Duration(days: 1));
+      if (tmpr.isBefore(tmpl)) tmpr.add(const Duration(days: 1));
 
       if (tmpr.isBefore(startsAt)) continue;
       if (!tmpl.isBefore(lastDeadlineEndsAt)) break;
@@ -87,7 +87,7 @@ bool updateFlowList(DateTime startsAt) {
       tmpr = tmpr.copyWith(
           year: startsAt.year, month: startsAt.month, day: startsAt.day);
       tmpr = tmpr.add(Duration(days: i));
-      if (tmpr.isBefore(tmpl)) tmpr.add(Duration(days: 1));
+      if (tmpr.isBefore(tmpl)) tmpr.add(const Duration(days: 1));
 
       if (tmpr.isBefore(startsAt)) continue;
       if (!tmpl.isBefore(lastDeadlineEndsAt)) break;
@@ -137,14 +137,15 @@ bool updateFlowList(DateTime startsAt) {
     print(period.startTime);
     print(period.endTime);
     period.genUid();
-    if (period.endTime.difference(period.startTime) >= Duration(minutes: 25)) {
+    if (period.endTime.difference(period.startTime) >=
+        const Duration(minutes: 25)) {
       ableList.add(period);
     }
     i = j;
   }
 
   TimeAssignSet ans = findSolution(workTime, restTime, deadlineList, ableList);
-  print('updateFlowList');
+  print('updateFlowList: calc');
   print(ans.isValid);
   if (!ans.isValid) return false;
   print(ans.assignSet);

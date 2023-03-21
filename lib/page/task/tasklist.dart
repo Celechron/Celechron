@@ -26,36 +26,42 @@ class _TaskListPageState extends State<TaskListPage> {
             ),
             content: SizedBox(
               width: double.maxFinite,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    deadlineTypeName[deadline.deadlineType]!,
-                    textAlign: TextAlign.right,
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    '截止于 ${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
-                    style: const TextStyle(),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    deadlineProgress(deadline),
-                    style: const TextStyle(),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    deadline.location,
-                    style: const TextStyle(),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    deadline.description,
-                  ),
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      deadlineTypeName[deadline.deadlineType]!,
+                      textAlign: TextAlign.right,
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 8.0),
+                    Text(
+                      '截止于 ${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
+                      style: const TextStyle(),
+                    ),
+                    const SizedBox(height: 8.0),
+                    Text(
+                      deadlineProgress(deadline),
+                      style: const TextStyle(),
+                    ),
+                    if (deadline.location.isNotEmpty) ...[
+                      const SizedBox(height: 8.0),
+                      Text(
+                        deadline.location,
+                        style: const TextStyle(),
+                      ),
+                    ],
+                    if (deadline.description.isNotEmpty) ...[
+                      const SizedBox(height: 8.0),
+                      Text(
+                        deadline.description,
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
             actions: [
@@ -162,11 +168,13 @@ class _TaskListPageState extends State<TaskListPage> {
                     deadlineProgress(deadline),
                     style: const TextStyle(),
                   ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    deadline.location,
-                    style: const TextStyle(),
-                  ),
+                  if (deadline.location.isNotEmpty) ...[
+                    const SizedBox(height: 8.0),
+                    Text(
+                      deadline.location,
+                      style: const TextStyle(),
+                    ),
+                  ],
                   const SizedBox(height: 8.0),
                   Text(
                     deadline.uid,
