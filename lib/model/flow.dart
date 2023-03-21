@@ -137,7 +137,9 @@ bool updateFlowList(DateTime startsAt) {
     print(period.startTime);
     print(period.endTime);
     period.genUid();
-    ableList.add(period);
+    if (period.endTime.difference(period.startTime) >= Duration(minutes: 25)) {
+      ableList.add(period);
+    }
     i = j;
   }
 
