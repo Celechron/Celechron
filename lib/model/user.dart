@@ -1,9 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'grade.dart';
 import 'semester.dart';
 import '../http/spider.dart';
-import 'package:hive_flutter/hive_flutter.dart';
 import 'package:celechron/database/database_helper.dart';
 
 class User {
@@ -48,9 +48,13 @@ class User {
   // 初始化以获取Cookies，并刷新数据
   Future<bool> login() async {
     _spider = Spider(username, _password);
-    await _spider.login();
-    isLogin = true;
-    return await refresh();
+    try {
+      await _spider.login();
+      await refresh();
+      return isLogin = true;
+    } on SocketException {
+      throw Exception('网络错误');
+    }
   }
 
   Future<bool> logout() async {
@@ -64,15 +68,20 @@ class User {
     majorGpaAndCredit = [0.0, 0.0];
     isLogin = false;
     _spider.logout();
-    return await deleteFromDb();
+    return deleteFromDb().then((value) => true).catchError((e) => false);
   }
 
   // 刷新数据
   Future<bool> refresh() async {
-    grades.clear();
-    await _spider
+    var semesters = <Semester>[]; // 临时变量，用于存储从爬虫获取到的数据
+    var grades = <String, List<Grade>>{}; // 临时变量，用于存储从爬虫获取到的数据
+    var majorGpaAndCredit = [0.0, 0.0]; // 临时变量，用于存储从爬虫获取到的数据
+    return await _spider
         .getSemesterDetails(semesters, grades, majorGpaAndCredit)
-        .then((value) {
+        .then((value) async {
+      this.semesters = semesters;
+      this.grades = grades;
+      this.majorGpaAndCredit = majorGpaAndCredit;
       // 保研成绩，只取第一次
       var netGrades = grades.values.map((e) => e.first);
       if (netGrades.isNotEmpty) {
@@ -89,10 +98,12 @@ class User {
       // 这个算的是所获学分，不包括挂科的。因为出国成绩单取最高的一次成绩，所以就把挂科的学分算对了
       credit =
           aboardNetGrades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
-      // 保存到本地
-      saveToDb();
+      await saveToDb();
+      return true;
+    }).catchError((e) {
+      print(e);
+      return false;
     });
-    return true;
   }
 
   Map<String, dynamic> toJson() {
@@ -108,12 +119,8 @@ class User {
     };
   }
 
-  User.fromJson(Map<String, dynamic> json) {
-
-  }
-
-  Future<bool> saveToDb() async {
-    return await db.setUser(this);
+  Future<void> saveToDb() async {
+    await db.setUser(this);
   }
 
   Future<bool> loadFromDb() async {
@@ -139,7 +146,7 @@ class User {
     return true;
   }
 
-  Future<bool> deleteFromDb() async {
-    return db.removeUser();
+  Future<void> deleteFromDb() async {
+    db.removeUser();
   }
 }

@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:celechron/http/time_config_service.dart';
+
 import '../model/grade.dart';
 import '../model/semester.dart';
 import 'zjuServices/appservice.dart';
@@ -18,7 +20,7 @@ class Spider {
   Spider(String username, String password) {
     _httpClient = HttpClient();
     _httpClient.userAgent =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     _appService = AppService();
     _jwbInfoSys = JwbInfoSys();
     _username = username;
@@ -27,7 +29,7 @@ class Spider {
 
   Future<bool> login() async {
     _iPlanetDirectoryPro =
-        await ZjuAm.getSsoCookie(_httpClient, _username, _password);
+    await ZjuAm.getSsoCookie(_httpClient, _username, _password);
     return await Future.wait([
       _appService.login(_httpClient, _iPlanetDirectoryPro!),
       _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!),
@@ -49,16 +51,18 @@ class Spider {
     // Group 4: 学分
     // Group 5: 绩点
     return await _jwbInfoSys.getTranscriptHtml(_httpClient, _username).then(
-        (value) => RegExp(
+            (value) =>
+            RegExp(
                 r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>&nbsp;</td>')
-            .allMatches(value)
-            .map((e) => [
-                  e.group(1)!,
-                  e.group(2)!,
-                  e.group(3)!,
-                  e.group(4)!,
-                  e.group(5)!
-                ]));
+                .allMatches(value)
+                .map((e) =>
+            [
+              e.group(1)!,
+              e.group(2)!,
+              e.group(3)!,
+              e.group(4)!,
+              e.group(5)!
+            ]));
   }
 
   Future<List<double>> getMajorGpaAndCredit() async {
@@ -74,7 +78,9 @@ class Spider {
       Map<String, List<Grade>> outGrades, List<double> outMajorGrade) async {
     // 从考试查询API获取课程信息
     List<Future> fetches = [];
-    var yearNow = DateTime.now().year;
+    var yearNow = DateTime
+        .now()
+        .year;
     var yearEnroll = int.parse(_username.substring(1, 3)) + 2000;
     var yearGraduate = yearEnroll + 7;
 
@@ -92,12 +98,12 @@ class Spider {
     // 爬浙大钉API，查课表
     fetches.add(_appService.getTimetableJson(_httpClient).then((value) =>
         jsonDecode(value
-                .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
-                .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
+            .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
+            .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
             .forEach((e) {
           if (e['kcid'] != null) {
             outSemesters[
-                    semesterIndexMap[(e['kcid'] as String).substring(1, 12)]!]
+            semesterIndexMap[(e['kcid'] as String).substring(1, 12)]!]
                 .addSession(e);
           }
         })).catchError((e) => false));
@@ -125,17 +131,29 @@ class Spider {
       outMajorGrade.addAll(value);
     }));
 
-    // 查考试
+    // 考试、时间配置要分学期查，所以放在循环里
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
       var yearStr = '$yearEnroll-${yearEnroll + 1}';
+      fetches.add(TimeConfigService.getConfig(_httpClient, '$yearStr-1').then(
+              (value) {
+            if (value != null) {
+              outSemesters[semesterIndexMap['$yearStr-1']!].addTimeInfo(jsonDecode(value));
+            }
+          }));
+      fetches.add(TimeConfigService.getConfig(_httpClient, '$yearStr-2').then(
+              (value) {
+            if (value != null) {
+              outSemesters[semesterIndexMap['$yearStr-2']!].addTimeInfo(jsonDecode(value));
+            }
+          }));
       fetches
           .add(_appService.getExamJson(_httpClient, yearStr, "1").then((value) {
         jsonDecode(value
-                .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
-                .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
+            .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
+            .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
             .forEach((e) {
           outSemesters[
-                  semesterIndexMap[(e['xkkh'] as String).substring(1, 12)]!]
+          semesterIndexMap[(e['xkkh'] as String).substring(1, 12)]!]
               .addExam(e);
         });
       }).whenComplete(() {
@@ -146,11 +164,11 @@ class Spider {
       fetches
           .add(_appService.getExamJson(_httpClient, yearStr, "2").then((value) {
         jsonDecode(value
-                .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
-                .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
+            .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
+            .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
             .forEach((e) {
           outSemesters[
-                  semesterIndexMap[(e['xkkh'] as String).substring(1, 12)]!]
+          semesterIndexMap[(e['xkkh'] as String).substring(1, 12)]!]
               .addExam(e);
         });
       }).whenComplete(() {
@@ -164,7 +182,7 @@ class Spider {
     // 等所有请求完成后，去除没有任何信息的学期。
     await Future.wait(fetches);
     outSemesters.removeWhere(
-        (e) => e.grades.isEmpty && e.sessions.isEmpty && e.exams.isEmpty);
+            (e) => e.grades.isEmpty && e.sessions.isEmpty && e.exams.isEmpty);
 
     return [true];
   }

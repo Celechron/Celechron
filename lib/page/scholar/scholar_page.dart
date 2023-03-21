@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 
 import '../../model/user.dart';
 import 'login_page.dart';
@@ -59,9 +60,23 @@ class _ScholarPageState extends State<ScholarPage> {
       appBar: AppBar(
         title: const Text('Scholar'),
       ),
-      body: Column(
-        children: [
-          _buildUserInfoCard(),
+      body: CustomScrollView(
+        slivers: <Widget>[
+          //下拉刷新组件
+          CupertinoSliverRefreshControl(
+            //下拉刷新回调
+            onRefresh: () async {
+              // 刷新用户数据
+              await User().refresh();
+              setState(() {});
+            },
+          ),
+          //列表
+          SliverList(
+            delegate: SliverChildBuilderDelegate((content, index) {
+              return _buildUserInfoCard();
+            }, childCount: 1),
+          )
         ],
       ),
     );

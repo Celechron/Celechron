@@ -78,10 +78,10 @@ class _LoginPageState extends State<LoginPage> {
                         );
                         Navigator.of(context).pop();
                       }
-                    }).catchError((e) {
+                    }).catchError((error) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('登录失败，$e'),
+                          content: Text('登录失败，${(error as Exception)}'),
                         ),
                       );
                     });
