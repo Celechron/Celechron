@@ -5,8 +5,17 @@ import '../database/database_helper.dart';
 import '../algorithm/arrange.dart';
 
 List<Period> flowList = [];
+DateTime flowListLastUpdate = DateTime.fromMicrosecondsSinceEpoch(0);
 
-bool updateFlowList(DateTime startsAt) {
+bool isFlowListOutdated() {
+  return flowListLastUpdate.isBefore(deadlineListLastUpdate);
+}
+
+void updateDeadlineListTime() {
+  flowListLastUpdate = deadlineListLastUpdate.copyWith();
+}
+
+int updateFlowList(DateTime startsAt) {
   flowList.clear();
   print('updateFlowList');
   Duration workTime = db.getWorkTime();
@@ -22,8 +31,8 @@ bool updateFlowList(DateTime startsAt) {
       }
     }
   }
-  if (lastDeadlineEndsAt.difference(startsAt) < Duration(days: 1)) {
-    lastDeadlineEndsAt = startsAt.add(Duration(days: 1));
+  if (lastDeadlineEndsAt.difference(startsAt) < const Duration(days: 1)) {
+    lastDeadlineEndsAt = startsAt.add(const Duration(days: 1));
   }
 
   List<DateTime> mappedList = [];
@@ -43,7 +52,7 @@ bool updateFlowList(DateTime startsAt) {
       tmpr = tmpr.copyWith(
           year: startsAt.year, month: startsAt.month, day: startsAt.day);
       tmpr = tmpr.add(Duration(days: i));
-      if (tmpr.isBefore(tmpl)) tmpr.add(Duration(days: 1));
+      if (tmpr.isBefore(tmpl)) tmpr.add(const Duration(days: 1));
 
       if (tmpr.isBefore(startsAt)) continue;
       if (!tmpl.isBefore(lastDeadlineEndsAt)) break;
@@ -62,10 +71,8 @@ bool updateFlowList(DateTime startsAt) {
       mappedList.add(x.endTime.copyWith());
     }
   }
-  for (var x in deadlineList) {
-    if (x.deadlineType == DeadlineType.running && x.endTime.isAfter(startsAt)) {
-      mappedList.add(x.endTime.copyWith());
-    }
+  for (var x in deadlines) {
+    mappedList.add(x.endTime.copyWith());
   }
 
   mappedList = mappedList.toSet().toList();
@@ -87,7 +94,7 @@ bool updateFlowList(DateTime startsAt) {
       tmpr = tmpr.copyWith(
           year: startsAt.year, month: startsAt.month, day: startsAt.day);
       tmpr = tmpr.add(Duration(days: i));
-      if (tmpr.isBefore(tmpl)) tmpr.add(Duration(days: 1));
+      if (tmpr.isBefore(tmpl)) tmpr.add(const Duration(days: 1));
 
       if (tmpr.isBefore(startsAt)) continue;
       if (!tmpl.isBefore(lastDeadlineEndsAt)) break;
@@ -137,21 +144,21 @@ bool updateFlowList(DateTime startsAt) {
     print(period.startTime);
     print(period.endTime);
     period.genUid();
-    if (period.endTime.difference(period.startTime) >= Duration(minutes: 25)) {
+    if (period.endTime.difference(period.startTime) >
+        const Duration(minutes: 25)) {
       ableList.add(period);
     }
     i = j;
   }
 
-  TimeAssignSet ans = findSolution(workTime, restTime, deadlineList, ableList);
-  print('updateFlowList');
+  print('updateFlowList: calc');
+  TimeAssignSet ans = getTimeAssignSet(workTime, restTime, deadlines, ableList);
   print(ans.isValid);
-  if (!ans.isValid) return false;
-  print(ans.assignSet);
+  if (!ans.isValid) return -1;
   flowList.addAll(ans.assignSet);
   flowList.sort((a, b) {
     return a.startTime.compareTo(b.startTime);
   });
-
-  return true;
+  updateDeadlineListTime();
+  return ans.restTime.inMinutes;
 }
