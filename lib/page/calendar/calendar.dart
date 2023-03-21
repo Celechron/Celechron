@@ -100,43 +100,19 @@ class _CalendarPageState extends State<CalendarPage> {
 
     Color color = Colors.red;
     if (event.periodType != PeriodType.test) {
-      if (event.startTime.hour == 8 && event.startTime.minute == 50) {
+      if (event.startTime.hour <= 8) {
         color = Colors.red;
-      }
-      if (event.startTime.hour == 10 && event.startTime.minute == 0) {
+      } else if (event.startTime.hour >= 9 && event.startTime.hour <= 12) {
         color = Colors.amber;
-      }
-      if (event.startTime.hour == 10 && event.startTime.minute == 50) {
-        color = Colors.amber;
-      }
-      if (event.startTime.hour == 11 && event.startTime.minute == 40) {
-        color = Colors.amber;
-      }
-      if (event.startTime.hour == 13 && event.startTime.minute == 25) {
+      } else if (event.startTime.hour == 13) {
         color = const Color.fromARGB(255, 163, 232, 0);
-      }
-      if (event.startTime.hour == 14 && event.startTime.minute == 15) {
+      } else if (event.startTime.hour >= 14 && event.startTime.hour <= 15) {
         color = Colors.green;
-      }
-      if (event.startTime.hour == 15 && event.startTime.minute == 05) {
-        color = Colors.green;
-      }
-      if (event.startTime.hour == 16 && event.startTime.minute == 15) {
+      } else if (event.startTime.hour >= 16 && event.startTime.hour <= 17) {
         color = Colors.lightBlue;
-      }
-      if (event.startTime.hour == 17 && event.startTime.minute == 05) {
-        color = Colors.lightBlue;
-      }
-      if (event.startTime.hour == 18 && event.startTime.minute == 50) {
+      } else if (event.startTime.hour >= 18 && event.startTime.hour <= 19) {
         color = const Color.fromARGB(255, 38, 0, 255);
-      }
-      if (event.startTime.hour == 19 && event.startTime.minute == 40) {
-        color = const Color.fromARGB(255, 38, 0, 255);
-      }
-      if (event.startTime.hour == 20 && event.startTime.minute == 30) {
-        color = const Color.fromARGB(255, 195, 0, 255);
-      }
-      if (event.startTime.hour == 21 && event.startTime.minute == 20) {
+      } else if (event.startTime.hour >= 20) {
         color = const Color.fromARGB(255, 195, 0, 255);
       }
     }
@@ -146,10 +122,10 @@ class _CalendarPageState extends State<CalendarPage> {
       shape = BoxShape.rectangle;
     }
 
-    double size = 6;
+    double size = 4.5;
 
     if (event.periodType == PeriodType.test) {
-      size = 8;
+      size = 6;
     }
 
     return Container(
@@ -189,6 +165,8 @@ class _CalendarPageState extends State<CalendarPage> {
             locale: 'zh_CN',
             firstDay: DateTime.utc(2023, 1, 1),
             lastDay: DateTime.utc(2030, 12, 31),
+            rowHeight: 48.0,
+            daysOfWeekHeight: 20.0,
             startingDayOfWeek: StartingDayOfWeek.monday,
             availableGestures: AvailableGestures.all,
             availableCalendarFormats: const {
@@ -221,6 +199,8 @@ class _CalendarPageState extends State<CalendarPage> {
               return getEventsForDay(day);
             },
             calendarStyle: CalendarStyle(
+              markersAnchor: -0.1,
+              markersMaxCount: 10,
               selectedDecoration: BoxDecoration(
                 color: Theme.of(context).primaryColorLight,
                 shape: BoxShape.circle,
@@ -236,6 +216,7 @@ class _CalendarPageState extends State<CalendarPage> {
               singleMarkerBuilder: singleMarkerBuilder,
             ),
           ),
+          const SizedBox(height: 8.0),
           Expanded(
             child: ListView(
               children: getEventsForDay(_selectedDay)
