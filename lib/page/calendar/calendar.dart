@@ -122,7 +122,7 @@ class _CalendarPageState extends State<CalendarPage> {
       shape = BoxShape.rectangle;
     }
 
-    double size = 4;
+    double size = 4.5;
 
     if (event.periodType == PeriodType.test) {
       size = 6;
@@ -199,6 +199,7 @@ class _CalendarPageState extends State<CalendarPage> {
               return getEventsForDay(day);
             },
             calendarStyle: CalendarStyle(
+              markersAnchor: -0.1,
               markersMaxCount: 10,
               selectedDecoration: BoxDecoration(
                 color: Theme.of(context).primaryColorLight,
@@ -215,6 +216,7 @@ class _CalendarPageState extends State<CalendarPage> {
               singleMarkerBuilder: singleMarkerBuilder,
             ),
           ),
+          const SizedBox(height: 8.0),
           Expanded(
             child: ListView(
               children: getEventsForDay(_selectedDay)
