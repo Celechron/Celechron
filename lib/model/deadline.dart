@@ -1,3 +1,5 @@
+import 'package:intl/intl.dart';
+
 import '../utils/utils.dart';
 import 'package:const_date_time/const_date_time.dart';
 import 'package:uuid/uuid.dart';
@@ -24,6 +26,20 @@ class Deadline {
     this.summary = "作业：不可思议迷宫导论",
     this.isBreakable = false,
   });
+
+  void reset() {
+    genUid();
+    deadlineType = DeadlineType.running;
+    description = "";
+    timeSpent = Duration(minutes: 0);
+    timeNeeded = Duration(hours: 1);
+    endTime = DateTime.now().add(Duration(days: 1));
+    endTime = DateTime(
+        endTime.year, endTime.month, endTime.day, endTime.hour, endTime.minute);
+    location = "";
+    summary = "";
+    isBreakable = true;
+  }
 
   Deadline copyWith({
     String? uid,
@@ -59,6 +75,9 @@ class Deadline {
 
   void addTimeSpent(Duration length) {
     timeSpent += length;
+    if (timeSpent > timeNeeded) {
+      timeSpent = timeNeeded;
+    }
     refreshType();
   }
 
@@ -86,11 +105,29 @@ int compareDeadline(Deadline a, Deadline b) {
 }
 
 var deadlineList = <Deadline>[];
-int __got = 0;
+// int __got = 0;
+DateTime deadlineListLastUpdate = DateTime.fromMicrosecondsSinceEpoch(0);
+
+void updateDeadlineListTime() {
+  deadlineListLastUpdate = DateTime.now();
+}
 
 void updateDeadlineList() {
-  print('sorted deadlineList');
+  deadlineList
+      .removeWhere((element) => element.deadlineType == DeadlineType.deleted);
   deadlineList.sort(compareDeadline);
+
+  for (var deadline in deadlineList) {
+    if (deadline.timeSpent >= deadline.timeNeeded) {
+      deadline.deadlineType = DeadlineType.completed;
+    } else if (deadline.endTime.isBefore(DateTime.now())) {
+      deadline.deadlineType = DeadlineType.failed;
+    }
+  }
+
+  print('sorted deadlineList');
+
+  /*
   if (__got == 1) return;
   __got = 1;
 
@@ -132,16 +169,9 @@ void updateDeadlineList() {
   tmp6.genUid();
   deadlineList.add(tmp6);
 
-  for (var deadline in deadlineList) {
-    if (deadline.timeSpent >= deadline.timeNeeded) {
-      deadline.deadlineType = DeadlineType.completed;
-    } else if (deadline.endTime.isBefore(DateTime.now())) {
-      deadline.deadlineType = DeadlineType.failed;
-    }
-  }
-
   deadlineList.sort(compareDeadline);
   print('rebulit deadlineList');
+  */
 }
 
 String deadlineProgress(Deadline deadline) {

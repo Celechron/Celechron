@@ -21,6 +21,13 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
     Navigator.of(context).pop(now);
   }
 
+  void removeAndExit() {
+    FormState().save();
+    now.forceRefreshType();
+    now.deadlineType = DeadlineType.deleted;
+    Navigator.of(context).pop(now);
+  }
+
   void exitWithoutSave() {
     now = widget.deadline.copyWith();
     Navigator.of(context).pop(now);
@@ -230,6 +237,16 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                   ElevatedButton(
                     onPressed: saveAndExit,
                     child: const Text('保存更改并退出'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16.0),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  ElevatedButton(
+                    onPressed: removeAndExit,
+                    child: const Text('移除任务'),
                   ),
                 ],
               ),

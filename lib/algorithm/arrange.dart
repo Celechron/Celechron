@@ -21,12 +21,10 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
   print('deadlineList: ');
   for (var x in _deadlineList) {
     print(x.endTime.toString());
-    print(x.endTime.timeZoneOffset);
   }
   print('ableList: ');
   for (var x in _ableList) {
     print('${x.startTime} ${x.endTime}');
-    print(x.startTime.timeZoneOffset);
   }
 
   List<Deadline> deadlineList = [];
@@ -84,7 +82,7 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
       if (cur.isBreakable) {
         thisCut = thisCut < workTime ? thisCut : workTime;
       }
-      if (now.startTime.add(thisCut).isAfter(now.endTime)) {
+      if (now.startTime.add(thisCut).isAfter(cur.endTime)) {
         ans.isValid = false;
         return ans;
       }
@@ -122,12 +120,12 @@ TimeAssignSet getTimeAssignSet(Duration workTime, Duration restTime,
   if (ans.isValid) return ans;
 
   int l = 0, r = restTime.inMinutes - 1;
-  while (r > l) {
-    int mid = (l + r + 1) ~/ 2;
+  while (r >= l) {
+    int mid = (l + r) ~/ 2;
     TimeAssignSet res =
         findSolution(workTime, Duration(minutes: mid), deadlineList, ableList);
     if (res.isValid) {
-      l = mid;
+      l = mid + 1;
       ans = res;
     } else {
       r = mid - 1;

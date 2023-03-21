@@ -16,7 +16,7 @@ class _OptionPageState extends State<OptionPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('工具与设置'),
+        title: const Text('设置'),
       ),
       body: SettingsList(
         sections: [
