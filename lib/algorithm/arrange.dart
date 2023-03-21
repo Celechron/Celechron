@@ -38,6 +38,9 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
   for (var x in _ableList) {
     ableList.add(x.copyWith());
   }
+  for (var x in ableList) {
+    x.genUid();
+  }
 
   deadlineList.sort(compareDeadline);
   ableList.sort(comparePeriod);
