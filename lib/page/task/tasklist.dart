@@ -1,7 +1,7 @@
 import 'package:celechron/utils/utils.dart';
 import 'package:flutter/material.dart';
 import '../../model/deadline.dart';
-import '../flow/deadlineeditpage.dart';
+import './deadlineeditpage.dart';
 
 class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
@@ -11,7 +11,6 @@ class TaskListPage extends StatefulWidget {
 }
 
 class _TaskListPageState extends State<TaskListPage> {
-
   Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
     return showDialog<void>(
         context: context,
@@ -182,6 +181,26 @@ class _TaskListPageState extends State<TaskListPage> {
     );
   }
 
+  Future<void> newDeadline(context) async {
+    Deadline? deadline = Deadline();
+    deadline.reset();
+    Deadline? res = await Navigator.push(context,
+        MaterialPageRoute(builder: (context) => DeadlineEditPage(deadline)));
+    if (res != null) {
+      deadlineList.add(res);
+    }
+  }
+
+  void removeCompletedDeadline(context) {
+    deadlineList.removeWhere(
+        (element) => element.deadlineType == DeadlineType.completed);
+  }
+
+  void removeFailedDeadline(context) {
+    deadlineList
+        .removeWhere((element) => element.deadlineType == DeadlineType.failed);
+  }
+
   @override
   Widget build(BuildContext context) {
     updateDeadlineList();
@@ -191,16 +210,57 @@ class _TaskListPageState extends State<TaskListPage> {
         title: const Text(
           '任务列表',
         ),
+        actions: [
+          PopupMenuButton(
+            tooltip: '保存',
+            itemBuilder: (context) => <PopupMenuEntry>[
+              const PopupMenuItem(
+                value: 0,
+                child: Text('新建任务'),
+              ),
+              const PopupMenuItem(
+                value: 1,
+                child: Text('移除已完成任务'),
+              ),
+              const PopupMenuItem(
+                value: 2,
+                child: Text('移除已过期任务'),
+              ),
+            ],
+            onSelected: (result) async {
+              if (result == 0) {
+                await newDeadline(context);
+              } else if (result == 1) {
+                removeCompletedDeadline(context);
+              } else if (result == 2) {
+                removeFailedDeadline(context);
+              }
+
+              setState(() {
+                updateDeadlineList();
+              });
+            },
+            icon: const Icon(Icons.menu),
+          ),
+        ],
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: ListView(
-              children:
-                  deadlineList.map((e) => createCard(context, e)).toList(),
+          if (deadlineList.isEmpty) ...[
+            const Expanded(
+              child: Center(
+                child: Text('没有任务'),
+              ),
             ),
-          ),
+          ] else ...[
+            Expanded(
+              child: ListView(
+                children:
+                    deadlineList.map((e) => createCard(context, e)).toList(),
+              ),
+            ),
+          ]
         ],
       ),
     );

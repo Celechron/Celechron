@@ -113,7 +113,7 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_view_day_outlined),
-            activeIcon: Icon(Icons.calendar_view_day_rounded),
+            activeIcon: Icon(Icons.calendar_view_day),
             label: '接下来',
           ),
           BottomNavigationBarItem(
@@ -127,9 +127,9 @@ class _MyHomePageState extends State<MyHomePage> {
             label: '学业',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_applications_outlined),
-            activeIcon: Icon(Icons.settings_applications),
-            label: '工具',
+            icon: Icon(Icons.settings_outlined),
+            activeIcon: Icon(Icons.settings),
+            label: '设置',
           ),
         ],
         iconSize: 24,
