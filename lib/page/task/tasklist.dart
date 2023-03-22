@@ -8,18 +8,26 @@ class TaskListPage extends StatefulWidget {
   const TaskListPage({super.key});
 
   @override
-  State<TaskListPage> createState() => _TaskListPageState();
+  _TaskListPageState createState() => _TaskListPageState();
 }
 
 class _TaskListPageState extends State<TaskListPage> {
   @override
   void initState() {
+    print('TaskListPage: initState');
     super.initState();
     setState(() {
       Timer.periodic(const Duration(seconds: 1), (Timer t) {
-        setState(() {});
+        fresh(context);
       });
     });
+  }
+
+  void fresh(context) {
+    print('TaskListPage: fresh');
+    saveDeadlineListToDb();
+    setState(() {});
+    print('TaskListPage: refreshed');
   }
 
   Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
