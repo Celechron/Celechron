@@ -3,17 +3,27 @@ import 'package:celechron/model/user.dart';
 import '../utils/utils.dart';
 import 'package:const_date_time/const_date_time.dart';
 import 'package:uuid/uuid.dart';
+import 'package:hive/hive.dart';
 
 // TZID=Asia/Shanghai
 
+@HiveType(typeId: 8)
 class Period {
+  @HiveField(0)
   String uid;
+  @HiveField(1)
   String? fromUid;
+  @HiveField(2)
   PeriodType periodType;
+  @HiveField(3)
   String description;
+  @HiveField(4)
   DateTime startTime;
+  @HiveField(5)
   DateTime endTime;
+  @HiveField(6)
   String location;
+  @HiveField(7)
   String summary;
 
   Period({
@@ -78,10 +88,8 @@ DateTime formatToDateTime(String val) {
 var basePeriodList = <Period>[];
 
 void updateBasePeriodList() async {
-
   basePeriodList.clear();
-  for (var semester in User().semesters)
-  {
+  for (var semester in User().semesters) {
     basePeriodList.addAll(semester.periods);
   }
 }

@@ -3,16 +3,28 @@ import 'package:intl/intl.dart';
 import '../utils/utils.dart';
 import 'package:const_date_time/const_date_time.dart';
 import 'package:uuid/uuid.dart';
+import 'package:hive/hive.dart';
+import 'package:celechron/database/database_helper.dart';
 
+@HiveType(typeId: 6)
 class Deadline {
+  @HiveField(0)
   String uid;
+  @HiveField(1)
   DeadlineType deadlineType;
+  @HiveField(2)
   String description;
+  @HiveField(3)
   Duration timeSpent;
+  @HiveField(4)
   Duration timeNeeded;
+  @HiveField(5)
   DateTime endTime;
+  @HiveField(6)
   String location;
+  @HiveField(7)
   String summary;
+  @HiveField(8)
   bool isBreakable;
 
   Deadline({
@@ -29,7 +41,7 @@ class Deadline {
 
   void reset() {
     genUid();
-    deadlineType = DeadlineType.running;
+    deadlineType = DeadlineType.deleted;
     description = "";
     timeSpent = Duration(minutes: 0);
     timeNeeded = Duration(hours: 1);
@@ -107,6 +119,16 @@ int compareDeadline(Deadline a, Deadline b) {
 var deadlineList = <Deadline>[];
 // int __got = 0;
 DateTime deadlineListLastUpdate = DateTime.fromMicrosecondsSinceEpoch(0);
+
+Future<void> saveDeadlineListToDb() async {
+  await db.setDeadlineList(deadlineList);
+  await db.setDeadlineListUpdateTime(deadlineListLastUpdate);
+}
+
+void loadDeadlineListFromDb() {
+  deadlineList = db.getDeadlineList();
+  deadlineListLastUpdate = db.getDeadlineListUpdateTime();
+}
 
 void updateDeadlineListTime() {
   deadlineListLastUpdate = DateTime.now();
