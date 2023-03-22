@@ -93,6 +93,11 @@ class _OptionPageState extends State<OptionPage> {
                   setState(() {});
                 },
               ),
+              SettingsTile(
+                title: Text('可用的工作时段'),
+                value: Text('${db.getAllowTime().length} 个时段'),
+                onPressed: (context) async {},
+              ),
             ],
           )
         ],
