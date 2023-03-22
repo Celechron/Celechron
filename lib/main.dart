@@ -1,8 +1,11 @@
+import 'package:celechron/model/deadline.dart';
+
 import 'page/scholar/scholar_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'page/calendar/calendar.dart';
 import 'model/user.dart';
+import 'model/flow.dart';
 import 'page/flow/flowpage.dart';
 import 'page/task/tasklist.dart';
 import 'database/database_helper.dart';
@@ -12,12 +15,15 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:flutter_native_timezone/flutter_native_timezone.dart';
+import 'dart:async';
 
 void main() async {
   await Hive.initFlutter();
   await db.init();
   User user = User();
   await user.loadFromDb();
+  loadDeadlineListFromDb();
+  loadFlowListFromDb();
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
