@@ -7,6 +7,16 @@ import '../algorithm/arrange.dart';
 List<Period> flowList = [];
 DateTime flowListLastUpdate = DateTime.fromMicrosecondsSinceEpoch(0);
 
+Future<void> saveFlowListToDb() async {
+  await db.setFlowList(flowList);
+  await db.setFlowListUpdateTime(flowListLastUpdate);
+}
+
+void loadFlowListFromDb() {
+  flowList = db.getFlowList();
+  flowListLastUpdate = db.getFlowListUpdateTime();
+}
+
 bool isFlowListOutdated() {
   return flowListLastUpdate.isBefore(deadlineListLastUpdate);
 }

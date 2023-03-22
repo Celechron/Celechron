@@ -12,7 +12,7 @@ class FlowPage extends StatefulWidget {
   const FlowPage({super.key});
 
   @override
-  State<FlowPage> createState() => _FlowPageState();
+  _FlowPageState createState() => _FlowPageState();
 }
 
 class _FlowPageState extends State<FlowPage> {
@@ -21,10 +21,17 @@ class _FlowPageState extends State<FlowPage> {
     super.initState();
     setState(() {
       Timer.periodic(const Duration(seconds: 1), (Timer t) {
-        flowWorking(context);
-        setState(() {});
+        fresh(context);
       });
     });
+  }
+
+  void fresh(context) {
+    print('FlowPage: fresh');
+    flowWorking(context);
+    saveFlowListToDb();
+    setState(() {});
+    print('FlowPage: refreshed');
   }
 
   void flowWorking(context) {
