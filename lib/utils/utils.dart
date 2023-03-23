@@ -7,6 +7,7 @@ Map<DeadlineType, String> deadlineTypeName = {
   DeadlineType.suspended: '已暂停',
   DeadlineType.completed: '完成',
   DeadlineType.failed: '失败',
+  DeadlineType.deleted: '已删除',
 };
 
 String durationToString(Duration duration) {

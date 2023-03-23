@@ -1,64 +1,18 @@
-import 'package:celechron/utils/utils.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import '../../model/period.dart';
-import '../../model/flow.dart';
-import '../../model/deadline.dart';
-import '../../database/database_helper.dart';
-import 'package:fluttertoast/fluttertoast.dart';
 import 'dart:async';
+import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import '../../database/database_helper.dart';
+import '../../model/period.dart';
+import '../../utils/utils.dart';
 
-class FlowPage extends StatefulWidget {
-  const FlowPage({super.key});
+import 'flow_controller.dart';
 
-  @override
-  _FlowPageState createState() => _FlowPageState();
-}
+class FlowPage extends StatelessWidget {
+  FlowPage({super.key});
 
-class _FlowPageState extends State<FlowPage> {
-  @override
-  void initState() {
-    super.initState();
-    setState(() {
-      Timer.periodic(const Duration(seconds: 1), (Timer t) {
-        fresh(context);
-      });
-    });
-  }
-
-  void fresh(context) {
-    print('FlowPage: fresh');
-    flowWorking(context);
-    saveFlowListToDb();
-    setState(() {});
-    print('FlowPage: refreshed');
-  }
-
-  void flowWorking(context) {
-    while (flowList.isNotEmpty) {
-      if (flowList[0].periodType == PeriodType.flow) {
-        DateTime now =
-            DateTime.now().copyWith(second: 0, millisecond: 0, microsecond: 0);
-        Duration distan = now.difference(flowList[0].startTime);
-        Duration length = flowList[0].endTime.difference(flowList[0].startTime);
-        print(distan);
-        if (distan <= Duration.zero) break;
-        if (distan > length) distan = length;
-
-        flowList[0].startTime = flowList[0].startTime.add(distan);
-        for (var deadline in deadlineList) {
-          if (deadline.uid != flowList[0].fromUid) continue;
-          deadline.addTimeSpent(distan);
-        }
-      }
-      if (!flowList[0].endTime.isAfter(DateTime.now())) {
-        flowList.removeAt(0);
-      } else {
-        break;
-      }
-    }
-    setState(() {});
-  }
+  final _flowController = Get.put(FlowController());
+  final db = Get.find<DatabaseHelper>(tag: 'db');
 
   Widget createCard(context, Period period) {
     return GestureDetector(
@@ -215,13 +169,13 @@ class _FlowPageState extends State<FlowPage> {
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => navigator!.pop(),
                 child: const Text('返回'),
               ),
               TextButton(
                 onPressed: () async {
                   if (newTime.isAfter(DateTime.now())) {
-                    int ret = updateFlowList(newTime);
+                    int ret = _flowController.updateFlowList(newTime);
                     if (ret < 0) {
                       await showDialog(
                         context: context,
@@ -247,7 +201,7 @@ class _FlowPageState extends State<FlowPage> {
                         fontSize: 16.0,
                       );
                     }
-                    Navigator.of(context).pop();
+                    navigator!.pop();
                   } else {
                     Fluttertoast.showToast(
                       msg: '开始时间必须晚于现在',
@@ -278,7 +232,7 @@ class _FlowPageState extends State<FlowPage> {
             tooltip: '创建新的规划',
             onPressed: () async {
               await newFlowList(context);
-              setState(() {});
+              _flowController.flowList.refresh();
             },
             icon: const Icon(Icons.refresh_outlined),
           ),
@@ -287,34 +241,41 @@ class _FlowPageState extends State<FlowPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (isFlowListOutdated()) ...[
-            MaterialBanner(
-              content: Text('规划方案已过期'),
-              leading: Icon(Icons.warning),
-              actions: [
-                TextButton(
-                  onPressed: () async {
-                    await newFlowList(context);
-                    setState(() {});
-                  },
-                  child: Text('创建新的规划'),
+          Obx(() {
+            if (_flowController.isFlowListOutdated()) {
+              return MaterialBanner(
+                content: const Text('规划方案已过期'),
+                leading: const Icon(Icons.warning),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      await newFlowList(context);
+                      _flowController.flowList.refresh();
+                    },
+                    child: const Text('创建新的规划'),
+                  ),
+                ],
+              );
+            }
+            return const SizedBox();
+          }),
+          Obx(() {
+            if (_flowController.flowList.isEmpty) {
+              return const Expanded(
+                child: Center(
+                  child: Text('今日无事可做'),
                 ),
-              ],
-            ),
-          ],
-          if (flowList.isEmpty) ...[
-            const Expanded(
-              child: Center(
-                child: Text('今日无事可做'),
-              ),
-            ),
-          ] else ...[
-            Expanded(
-              child: ListView(
-                children: flowList.map((e) => createCard(context, e)).toList(),
-              ),
-            ),
-          ],
+              );
+            } else {
+              return Expanded(
+                child: ListView(
+                  children: _flowController.flowList
+                      .map((e) => createCard(context, e))
+                      .toList(),
+                ),
+              );
+            }
+          }),
         ],
       ),
     );
