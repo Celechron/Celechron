@@ -12,5 +12,5 @@ class UserAdapter extends TypeAdapter<User> {
       writer.writeString(jsonEncode(obj));
 
   @override
-  User read(BinaryReader reader) => jsonDecode(reader.readString());
+  User read(BinaryReader reader) => User.fromJson(jsonDecode(reader.readString()));
 }

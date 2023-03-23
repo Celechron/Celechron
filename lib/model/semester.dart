@@ -73,7 +73,7 @@ class Semester {
     return _sessions.where((e) => e.secondHalf && e.confirmed);
   }
 
-  Iterable<Period> get periods {
+  List<Period> get periods {
     List<Period> periods = [];
     for (var session in _sessions) {
       if (session.firstHalf) {

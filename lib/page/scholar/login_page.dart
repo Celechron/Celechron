@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-
 import '../../model/user.dart';
+import 'package:get/get.dart';
+
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -65,25 +66,27 @@ class _LoginPageState extends State<LoginPage> {
                 onPressed: () {
                   if (_formKey.currentState!.validate()) {
                     _formKey.currentState!.save();
-                    // Do something with the form data
-                    var user = User();
-                    user.username = _username;
-                    user.password = _password;
-                    user.login().then((value) {
-                      if (value) {
+                    var user = Get.find<Rx<User>>(tag: 'user');
+                    user.update((val) {
+                      val!.username = _username;
+                      val.password = _password;
+                      val.login().then((value) {
+                        if (value) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('登录成功'),
+                            ),
+                          );
+                          user.refresh();
+                          Navigator.of(context).pop();
+                        }
+                      }).catchError((error) {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('登录成功'),
+                          SnackBar(
+                            content: Text('登录失败，${(error as Exception)}'),
                           ),
                         );
-                        Navigator.of(context).pop();
-                      }
-                    }).catchError((error) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('登录失败，${(error as Exception)}'),
-                        ),
-                      );
+                      });
                     });
                   }
                 },
