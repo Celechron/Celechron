@@ -1,13 +1,11 @@
-import 'package:celechron/model/deadline.dart';
-
-import 'page/scholar/scholar_page.dart';
+import 'package:celechron/page/scholar/scholar_view.dart';
+import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'page/calendar/calendar.dart';
+import 'page/calendar/calendar_view.dart';
 import 'model/user.dart';
-import 'model/flow.dart';
-import 'page/flow/flowpage.dart';
-import 'page/task/tasklist.dart';
+import 'page/flow/flow_view.dart';
+import 'page/task/task_view.dart';
 import 'database/database_helper.dart';
 import 'page/option/option_page.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -18,12 +16,22 @@ import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'dart:async';
 
 void main() async {
+  // 从数据库读取数据
   await Hive.initFlutter();
+
+  // 注入数据库
+  var db = Get.put(DatabaseHelper(), tag: 'db');
   await db.init();
-  User user = User();
-  await user.loadFromDb();
-  loadDeadlineListFromDb();
-  loadFlowListFromDb();
+
+  // 注入数据观察项（相当于事件总线，更新这些变量将导致Widget重绘
+  // （如果没有自动更新，就refresh一下，比如user.refresh()））
+  Get.put(db.getUser().obs, tag: 'user');
+  Get.put(db.getDeadlineList().obs, tag: 'deadlineList');
+  Get.put(db.getDeadlineListUpdateTime().obs, tag: 'deadlineListLastUpdate');
+  Get.put(db.getFlowList().obs, tag: 'flowList');
+  Get.put(db.getFlowListUpdateTime().obs, tag: 'flowListLastUpdate');
+
+  // Run
   initializeDateFormatting().then((_) => runApp(const MyApp()));
 }
 
@@ -44,10 +52,10 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> initUser() async {
     // 初始化在这里，打断点看数据（因为不想糊前端页面捏）
-    User user = User();
-    if (user.isLogin) {
-      print("数据加载成功，GPA为${user.gpa[0]}");
-      await user.login();
+    var user = Get.find<Rx<User>>(tag: 'user');
+    if (user.value.isLogin) {
+      print("数据加载成功，GPA为${user.value.gpa[0]}");
+      await user.value.login();
     } else {
       print("数据加载失败");
     }
@@ -62,7 +70,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -154,10 +162,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _getPagesWidget(int index) {
     List<Widget> widgetList = [
-      const CalendarPage(),
-      const FlowPage(),
-      const TaskListPage(),
-      const ScholarPage(),
+      CalendarPage(),
+      FlowPage(),
+      TaskPage(),
+      ScholarPage(),
       const OptionPage(),
     ];
 

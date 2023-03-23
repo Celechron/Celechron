@@ -1,33 +1,18 @@
+import 'package:celechron/page/task/task_controller.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:flutter/material.dart';
 import '../../model/deadline.dart';
 import './deadlineeditpage.dart';
 import 'dart:async';
+import 'package:get/get.dart';
 
-class TaskListPage extends StatefulWidget {
-  const TaskListPage({super.key});
+class TaskPage extends StatelessWidget {
+  TaskPage({super.key});
 
-  @override
-  _TaskListPageState createState() => _TaskListPageState();
-}
+  final _taskController = Get.put(TaskController());
 
-class _TaskListPageState extends State<TaskListPage> {
-  @override
-  void initState() {
-    print('TaskListPage: initState');
-    super.initState();
-    setState(() {
-      Timer.periodic(const Duration(seconds: 1), (Timer t) {
-        fresh(context);
-      });
-    });
-  }
-
-  void fresh(context) {
-    print('TaskListPage: fresh');
-    saveDeadlineListToDb();
-    setState(() {});
-    print('TaskListPage: refreshed');
+  String deadlineProgress(Deadline deadline) {
+    return '${(deadline.getProgress()).toInt()}%：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded <= deadline.timeSpent ? Duration.zero : (deadline.timeNeeded - deadline.timeSpent))}';
   }
 
   Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
@@ -89,30 +74,32 @@ class _TaskListPageState extends State<TaskListPage> {
                 child: const Text('返回'),
               ),
               TextButton(
-                onPressed: () => setState(() {
+                onPressed: () {
                   if (deadline.deadlineType != DeadlineType.completed) {
                     deadline.deadlineType = DeadlineType.completed;
                   } else {
                     deadline.forceRefreshType();
                   }
-                  updateDeadlineListTime();
+                  _taskController.updateDeadlineListTime();
+                  _taskController.deadlineList.refresh();
                   Navigator.of(context).pop();
-                }),
+                },
                 child: Text(
                     '标记为${deadline.deadlineType == DeadlineType.completed ? '未' : ''}完成'),
               ),
               if (deadline.deadlineType == DeadlineType.running ||
                   deadline.deadlineType == DeadlineType.suspended)
                 TextButton(
-                  onPressed: () => setState(() {
+                  onPressed: () {
                     if (deadline.deadlineType == DeadlineType.running) {
                       deadline.deadlineType = DeadlineType.suspended;
                     } else {
                       deadline.deadlineType = DeadlineType.running;
                     }
-                    updateDeadlineListTime();
+                    _taskController.updateDeadlineListTime();
+                    _taskController.deadlineList.refresh();
                     Navigator.of(context).pop();
-                  }),
+                  },
                   child: Text(deadline.deadlineType == DeadlineType.running
                       ? '暂停'
                       : '继续'),
@@ -120,7 +107,6 @@ class _TaskListPageState extends State<TaskListPage> {
               TextButton(
                 onPressed: () async {
                   Navigator.of(context).pop();
-
                   Deadline res = await Navigator.push(
                           context,
                           MaterialPageRoute(
@@ -128,25 +114,37 @@ class _TaskListPageState extends State<TaskListPage> {
                                   DeadlineEditPage(deadline))) ??
                       deadline;
                   if (deadline != res) {
-                    updateDeadlineListTime();
+                    _taskController.updateDeadlineListTime();
                   }
-                  setState(() {
-                    deadline.uid = res.uid;
-                    deadline.summary = res.summary;
-                    deadline.description = res.description;
-                    deadline.timeSpent = res.timeSpent;
-                    deadline.timeNeeded = res.timeNeeded;
-                    deadline.endTime = res.endTime;
-                    deadline.location = res.location;
-                    deadline.deadlineType = res.deadlineType;
-                    deadline.isBreakable = res.isBreakable;
-                  });
+                  deadline.uid = res.uid;
+                  deadline.summary = res.summary;
+                  deadline.description = res.description;
+                  deadline.timeSpent = res.timeSpent;
+                  deadline.timeNeeded = res.timeNeeded;
+                  deadline.endTime = res.endTime;
+                  deadline.location = res.location;
+                  deadline.deadlineType = res.deadlineType;
+                  deadline.isBreakable = res.isBreakable;
+                  _taskController.updateDeadlineList();
+                  _taskController.updateDeadlineListTime();
+                  _taskController.deadlineList.refresh();
                 },
                 child: const Text('编辑'),
               ),
             ],
           );
         });
+  }
+
+  Future<void> newDeadline(context) async {
+    Deadline? deadline = Deadline();
+    deadline.reset();
+    Deadline? res = await Navigator.push(context,
+        MaterialPageRoute(builder: (context) => DeadlineEditPage(deadline)));
+    if (res != null) {
+      _taskController.deadlineList.add(res);
+      _taskController.updateDeadlineListTime();
+    }
   }
 
   Widget createCard(context, Deadline deadline) {
@@ -213,32 +211,8 @@ class _TaskListPageState extends State<TaskListPage> {
     );
   }
 
-  Future<void> newDeadline(context) async {
-    Deadline? deadline = Deadline();
-    deadline.reset();
-    Deadline? res = await Navigator.push(context,
-        MaterialPageRoute(builder: (context) => DeadlineEditPage(deadline)));
-    if (res != null) {
-      deadlineList.add(res);
-      updateDeadlineListTime();
-    }
-  }
-
-  void removeCompletedDeadline(context) {
-    deadlineList.removeWhere(
-        (element) => element.deadlineType == DeadlineType.completed);
-  }
-
-  void removeFailedDeadline(context) {
-    deadlineList
-        .removeWhere((element) => element.deadlineType == DeadlineType.failed);
-  }
-
   @override
   Widget build(BuildContext context) {
-    setState(() {});
-    updateDeadlineList();
-
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -265,14 +239,12 @@ class _TaskListPageState extends State<TaskListPage> {
               if (result == 0) {
                 await newDeadline(context);
               } else if (result == 1) {
-                removeCompletedDeadline(context);
+                _taskController.removeCompletedDeadline(context);
               } else if (result == 2) {
-                removeFailedDeadline(context);
+                _taskController.removeFailedDeadline(context);
               }
-
-              setState(() {
-                updateDeadlineList();
-              });
+              _taskController.updateDeadlineList();
+              _taskController.deadlineList.refresh();
             },
             icon: const Icon(Icons.menu),
           ),
@@ -281,20 +253,23 @@ class _TaskListPageState extends State<TaskListPage> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (deadlineList.isEmpty) ...[
-            const Expanded(
-              child: Center(
-                child: Text('没有任务'),
-              ),
-            ),
-          ] else ...[
-            Expanded(
-              child: ListView(
-                children:
-                    deadlineList.map((e) => createCard(context, e)).toList(),
-              ),
-            ),
-          ]
+          Obx(() {
+            if (_taskController.deadlineList.isEmpty) {
+              return const Expanded(
+                child: Center(
+                  child: Text('没有任务'),
+                ),
+              );
+            } else {
+              return Expanded(
+                child: ListView(
+                  children: _taskController.deadlineList
+                      .map((e) => createCard(context, e))
+                      .toList(),
+                ),
+              );
+            }
+          })
         ],
       ),
     );

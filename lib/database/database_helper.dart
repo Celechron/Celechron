@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:celechron/model/deadline.dart';
 import 'package:hive/hive.dart';
 import '../model/user.dart';
@@ -15,21 +13,6 @@ class DatabaseHelper {
   late final Box deadlineBox;
   late final Box flowBox;
 
-  final String dbOptions = 'dbOptions';
-  final String kWorkTime = 'workTime';
-  final String kRestTime = 'restTime';
-  final String kAllowTime = 'allowTime';
-
-  final String dbDeadline = 'dbDeadline';
-  final String kDeadlineList = 'deadlineList';
-  final String kDeadlineListUpdateTime = 'deadlineListUpdateTime';
-
-  final String dbFlow = 'dbFlow';
-  final String kFlowList = 'flowList';
-  final String kFlowListUpdateTime = 'flowListUpdateTime';
-
-  final String dbUser = 'dbUser';
-
   Future<void> init() async {
     Hive.registerAdapter(DurationAdapter());
     Hive.registerAdapter(UserAdapter());
@@ -42,6 +25,12 @@ class DatabaseHelper {
     deadlineBox = await Hive.openBox(dbDeadline);
     flowBox = await Hive.openBox(dbFlow);
   }
+
+  // Options
+  final String dbOptions = 'dbOptions';
+  final String kWorkTime = 'workTime';
+  final String kRestTime = 'restTime';
+  final String kAllowTime = 'allowTime';
 
   Duration getWorkTime() {
     if (optionsBox.get(kWorkTime) == null) {
@@ -79,6 +68,11 @@ class DatabaseHelper {
     optionsBox.put(kAllowTime, allowTime);
   }
 
+  // Flow
+  final String dbFlow = 'dbFlow';
+  final String kFlowList = 'flowList';
+  final String kFlowListUpdateTime = 'flowListUpdateTime';
+
   List<Period> getFlowList() {
     return List<Period>.from(flowBox.get(kFlowList) ?? <Period>[]);
   }
@@ -95,6 +89,12 @@ class DatabaseHelper {
   Future<void> setFlowListUpdateTime(DateTime flowListUpdateTime) async {
     await flowBox.put(kFlowListUpdateTime, flowListUpdateTime);
   }
+
+
+  // Deadline
+  final String dbDeadline = 'dbDeadline';
+  final String kDeadlineList = 'deadlineList';
+  final String kDeadlineListUpdateTime = 'deadlineListUpdateTime';
 
   List<Deadline> getDeadlineList() {
     return List<Deadline>.from(deadlineBox.get(kDeadlineList) ?? <Deadline>[]);
@@ -114,17 +114,19 @@ class DatabaseHelper {
     await deadlineBox.put(kDeadlineListUpdateTime, deadlineListUpdateTime);
   }
 
-  String? getUser() {
-    return userBox.get('user');
+
+  // User
+  final String dbUser = 'dbUser';
+
+  User getUser() {
+    return userBox.get('user') ?? User();
   }
 
   Future<void> setUser(User user) async {
-    await userBox.put('user', jsonEncode(user));
+    await userBox.put('user', user);
   }
 
   Future<void> removeUser() async {
     await userBox.delete('user');
   }
 }
-
-DatabaseHelper db = DatabaseHelper();

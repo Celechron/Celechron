@@ -1,5 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
+
+import 'package:celechron/model/period.dart';
+import 'package:get/get.dart';
 
 import 'grade.dart';
 import 'semester.dart';
@@ -7,16 +9,13 @@ import '../http/spider.dart';
 import 'package:celechron/database/database_helper.dart';
 
 class User {
-  // 单例模式，保证每次获取到的都是同一个User对象，不会重复创建
-  static User? _user;
-
-  factory User() => _user ??= User._internal();
-
   // 构造用户对象
-  User._internal();
+  User();
 
+  final DatabaseHelper _db = Get.find<DatabaseHelper>(tag: 'db');
   // 登录状态
   bool isLogin = false;
+  DateTime lastUpdateTime = DateTime.parse("20010101");
 
   // 爬虫区
   late String username;
@@ -45,6 +44,10 @@ class User {
     _password = password;
   }
 
+  List<Period> get coursePeriods {
+    return semesters.fold(<Period>[], (p, e) => p + e.periods);
+  }
+
   // 初始化以获取Cookies，并刷新数据
   Future<bool> login() async {
     _spider = Spider(username, _password);
@@ -67,8 +70,9 @@ class User {
     credit = 0.0;
     majorGpaAndCredit = [0.0, 0.0];
     isLogin = false;
+    lastUpdateTime = DateTime.parse("20010101");
     _spider.logout();
-    return deleteFromDb().then((value) => true).catchError((e) => false);
+    return _db.removeUser().then((value) => true).catchError((e) => false);
   }
 
   // 刷新数据
@@ -79,6 +83,7 @@ class User {
     return await _spider
         .getSemesterDetails(semesters, grades, majorGpaAndCredit)
         .then((value) async {
+      lastUpdateTime = DateTime.now();
       this.semesters = semesters;
       this.grades = grades;
       this.majorGpaAndCredit = majorGpaAndCredit;
@@ -98,7 +103,7 @@ class User {
       // 这个算的是所获学分，不包括挂科的。因为出国成绩单取最高的一次成绩，所以就把挂科的学分算对了
       credit =
           aboardNetGrades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
-      await saveToDb();
+      await _db.setUser(this);
       return true;
     }).catchError((e) {
       print(e);
@@ -116,19 +121,11 @@ class User {
       'aboardGpa': aboardGpa,
       'credit': credit,
       'majorGpaAndCredit': majorGpaAndCredit,
+      'lastUpdateTime' : lastUpdateTime.toIso8601String(),
     };
   }
 
-  Future<void> saveToDb() async {
-    await db.setUser(this);
-  }
-
-  Future<bool> loadFromDb() async {
-    var user = db.getUser();
-    if (user == null) {
-      return false;
-    }
-    var json = jsonDecode(user) as Map<String, dynamic>;
+  User.fromJson(Map<String, dynamic> json) {
     username = json['username'];
     _password = json['password'];
     _spider = Spider(username, _password);
@@ -142,11 +139,7 @@ class User {
     aboardGpa = List<double>.from(json['aboardGpa']);
     credit = json['credit'];
     majorGpaAndCredit = List<double>.from(json['majorGpaAndCredit']);
+    lastUpdateTime = DateTime.parse(json['lastUpdateTime']);
     isLogin = true;
-    return true;
-  }
-
-  Future<void> deleteFromDb() async {
-    db.removeUser();
   }
 }

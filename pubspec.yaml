@@ -30,8 +30,8 @@ dependencies:
   timezone: ^0.9.1
   flutter_native_timezone: ^2.0.0
   fast_gbk: any
-  shared_preferences: any
   fluttertoast: ^8.2.1
+  get: any
 
 dependency_overrides:
   intl: ^0.18.0

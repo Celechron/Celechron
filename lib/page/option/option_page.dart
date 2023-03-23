@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:settings_ui/settings_ui.dart';
 import '../../database/database_helper.dart';
 import '../../utils/utils.dart';
+import 'package:get/get.dart';
 
 class OptionPage extends StatefulWidget {
   const OptionPage({super.key});
@@ -12,6 +13,7 @@ class OptionPage extends StatefulWidget {
 }
 
 class _OptionPageState extends State<OptionPage> {
+  final db = Get.find<DatabaseHelper>(tag: 'db');
   @override
   Widget build(BuildContext context) {
     return Scaffold(
