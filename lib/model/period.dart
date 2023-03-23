@@ -1,5 +1,3 @@
-import 'package:celechron/model/user.dart';
-
 import '../utils/utils.dart';
 import 'package:const_date_time/const_date_time.dart';
 import 'package:uuid/uuid.dart';
@@ -83,13 +81,4 @@ DateTime formatToDateTime(String val) {
       int.parse(val.substring(9, 11)),
       int.parse(val.substring(11, 13)),
       int.parse(val.substring(13, 15)));
-}
-
-var basePeriodList = <Period>[];
-
-void updateBasePeriodList() async {
-  basePeriodList.clear();
-  for (var semester in User().semesters) {
-    basePeriodList.addAll(semester.periods);
-  }
 }

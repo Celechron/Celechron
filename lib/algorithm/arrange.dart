@@ -40,7 +40,7 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
     x.genUid();
   }
 
-  deadlineList.sort(compareDeadline);
+  deadlineList.sort((a,b) => a.endTime.compareTo(b.endTime));
   ableList.sort(comparePeriod);
   ableList = List.from(ableList.reversed);
 
