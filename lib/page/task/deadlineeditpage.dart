@@ -228,7 +228,7 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
               ),
               const SizedBox(height: 16.0),
               CheckboxListTile(
-                title: Text('允许在中间插入休息时间'),
+                title: const Text('允许在中间插入休息时间'),
                 value: now.isBreakable,
                 onChanged: (value) {
                   setState(() {

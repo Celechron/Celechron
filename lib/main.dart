@@ -85,11 +85,11 @@ class _MyAppState extends State<MyApp> {
         data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
         child: child!,
       ),
-      title: 'Cele',
+      title: 'Celechron',
       theme: ThemeData(
         primarySwatch: Colors.pink,
       ),
-      home: const MyHomePage(title: 'Cele'),
+      home: const MyHomePage(title: 'Celechron'),
     );
   }
 }
