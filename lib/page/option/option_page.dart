@@ -4,6 +4,7 @@ import 'package:settings_ui/settings_ui.dart';
 import '../../database/database_helper.dart';
 import '../../utils/utils.dart';
 import './allowtimeeditpage.dart';
+import './creditspage.dart';
 import 'package:get/get.dart';
 
 class OptionPage extends StatefulWidget {
@@ -111,7 +112,16 @@ class _OptionPageState extends State<OptionPage> {
                 },
               ),
             ],
-          )
+          ),
+          SettingsSection(
+            title: const Text('其他'),
+            tiles: <SettingsTile>[
+              SettingsTile(
+                title: const Text('关于 Celechron'),
+                onPressed: (context) => Get.to(() => const CreditsPage()),
+              ),
+            ],
+          ),
         ],
       ),
     );
