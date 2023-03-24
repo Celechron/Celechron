@@ -1,0 +1,211 @@
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
+import '../../utils/utils.dart';
+import 'package:fluttertoast/fluttertoast.dart';
+import 'package:const_date_time/const_date_time.dart';
+
+class DateTimePair {
+  DateTime first, second;
+  bool isDeleted;
+  DateTimePair({
+    this.first = const ConstDateTime(0, 1, 1, 0, 0),
+    this.second = const ConstDateTime(0, 1, 1, 0, 0),
+    this.isDeleted = false,
+  });
+}
+
+class DateTimePairListTile extends StatefulWidget {
+  final DateTimePair val;
+  final Function(DateTimePair pair)? onChanged;
+
+  const DateTimePairListTile({required this.val, this.onChanged, super.key});
+
+  @override
+  State<DateTimePairListTile> createState() => _DateTimePairListTileState();
+}
+
+class _DateTimePairListTileState extends State<DateTimePairListTile> {
+  late DateTimePair val;
+
+  @override
+  void initState() {
+    super.initState();
+    val = widget.val;
+  }
+
+  String TimeToString(DateTime time) {
+    return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+  }
+
+  void saveChange() {
+    if (widget.onChanged != null) {
+      widget.onChanged!(val);
+    }
+  }
+
+  Future<void> edit() async {
+    var resFirst = await showTimePicker(
+      context: context,
+      helpText: '开始时间',
+      initialTime: TimeOfDay.fromDateTime(val.first),
+    );
+    if (!context.mounted) return;
+    if (resFirst == null) return;
+    var resSecond = await showTimePicker(
+      context: context,
+      helpText: '结束时间',
+      initialTime: TimeOfDay.fromDateTime(val.second),
+    );
+    if (resSecond == null) return;
+    val.first = DateTime(0, 0, 0, resFirst.hour, resFirst.minute);
+    val.second = DateTime(0, 0, 0, resSecond.hour, resSecond.minute);
+
+    saveChange();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text('${TimeToString(val.first)} - ${TimeToString(val.second)}'),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            onPressed: edit,
+            icon: const Icon(Icons.edit),
+          ),
+          IconButton(
+            onPressed: () {
+              val.isDeleted = true;
+              saveChange();
+            },
+            icon: const Icon(Icons.delete),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class AllowTimeEditPage extends StatefulWidget {
+  final Map<DateTime, DateTime> allowTime;
+  const AllowTimeEditPage(this.allowTime, {super.key});
+
+  @override
+  State<AllowTimeEditPage> createState() => _AllowTimeEditPageState();
+}
+
+class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
+  List<DateTimePair> now = [];
+  int __got = 0;
+
+  void saveAndExit() {
+    for (int i = 0; i < now.length; i++) {
+      var x = now[i];
+
+      if (!x.first.isBefore(x.second)) {
+        Fluttertoast.showToast(
+          msg: '开始时间必须早于结束时间',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.CENTER,
+          timeInSecForIosWeb: 1,
+          textColor: Colors.white,
+          fontSize: 16.0,
+        );
+        return;
+      }
+
+      for (int j = 0; j < now.length; j++) {
+        if (i == j) continue;
+        var y = now[j];
+        if ((!x.first.isBefore(y.first) && !x.first.isAfter(y.second)) ||
+            (!x.second.isBefore(y.first) && !x.second.isAfter(y.second))) {
+          Fluttertoast.showToast(
+            msg: '时间段之间有重合或直接相邻',
+            toastLength: Toast.LENGTH_SHORT,
+            gravity: ToastGravity.CENTER,
+            timeInSecForIosWeb: 1,
+            textColor: Colors.white,
+            fontSize: 16.0,
+          );
+          return;
+        }
+      }
+    }
+
+    FormState().save();
+    Map<DateTime, DateTime> res = {};
+    for (var x in now) {
+      res[x.first] = x.second;
+    }
+    Navigator.of(context).pop(res);
+  }
+
+  void exitWithoutSave() {
+    Navigator.of(context).pop(widget.allowTime);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (__got == 0) {
+      for (var x in widget.allowTime.keys) {
+        now.add(DateTimePair(
+          first: x,
+          second: widget.allowTime[x]!,
+        ));
+      }
+      __got = 1;
+    }
+
+    now.removeWhere((element) => element.isDeleted);
+
+    now.sort((DateTimePair a, DateTimePair b) {
+      if (a.first.compareTo(b.first) != 0) {
+        return a.first.compareTo(b.first);
+      }
+      return a.second.compareTo(b.second);
+    });
+
+    return Scaffold(
+      resizeToAvoidBottomInset: true,
+      appBar: AppBar(
+        title: const Text('编辑可用工作时段'),
+        leading: IconButton(
+          tooltip: '放弃更改',
+          icon: const Icon(Icons.close),
+          onPressed: exitWithoutSave,
+        ),
+        actions: [
+          IconButton(
+            tooltip: '保存',
+            onPressed: saveAndExit,
+            icon: const Icon(Icons.check),
+          ),
+        ],
+      ),
+      body: Form(
+        child: ListView.builder(
+            itemCount: now.length + 1,
+            itemBuilder: (context, index) {
+              if (index < now.length) {
+                return DateTimePairListTile(
+                  val: now[index],
+                  onChanged: (DateTimePair updated) {
+                    print(updated.isDeleted);
+                    now[index] = updated;
+                    setState(() {});
+                  },
+                );
+              }
+              return ElevatedButton(
+                onPressed: () {
+                  now.add(DateTimePair());
+                  setState(() {});
+                },
+                child: const Text('添加一个时段'),
+              );
+            }),
+      ),
+    );
+  }
+}
