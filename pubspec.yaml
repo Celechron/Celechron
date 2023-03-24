@@ -1,5 +1,5 @@
 name: celechron
-description: Cele, a calendar and task manager for ZJU only.
+description: Celechron, a calendar and task manager for ZJU only.
 
 publish_to: 'none'
 
@@ -32,6 +32,8 @@ dependencies:
   fast_gbk: any
   fluttertoast: ^8.2.1
   get: any
+  vector_graphics: ^1.1.4
+  flutter_svg: ^2.0.4
 
 dependency_overrides:
   intl: ^0.18.0
@@ -49,4 +51,4 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/ugrsical.ics
+    - assets/logo.svg
