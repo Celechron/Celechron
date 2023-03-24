@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:settings_ui/settings_ui.dart';
 import '../../database/database_helper.dart';
 import '../../utils/utils.dart';
+import './allowtimeeditpage.dart';
+import './creditspage.dart';
 import 'package:get/get.dart';
 
 class OptionPage extends StatefulWidget {
@@ -98,10 +100,28 @@ class _OptionPageState extends State<OptionPage> {
               SettingsTile(
                 title: Text('可用的工作时段'),
                 value: Text('${db.getAllowTime().length} 个时段'),
-                onPressed: (context) async {},
+                onPressed: (context) async {
+                  Map<DateTime, DateTime> now = db.getAllowTime();
+                  Map<DateTime, DateTime> res = await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (context) => AllowTimeEditPage(now))) ??
+                      now;
+                  db.setAllowTime(res);
+                  setState(() {});
+                },
               ),
             ],
-          )
+          ),
+          SettingsSection(
+            title: const Text('其他'),
+            tiles: <SettingsTile>[
+              SettingsTile(
+                title: const Text('关于 Celechron'),
+                onPressed: (context) => Get.to(() => const CreditsPage()),
+              ),
+            ],
+          ),
         ],
       ),
     );

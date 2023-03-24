@@ -90,7 +90,6 @@ class DatabaseHelper {
     await flowBox.put(kFlowListUpdateTime, flowListUpdateTime);
   }
 
-
   // Deadline
   final String dbDeadline = 'dbDeadline';
   final String kDeadlineList = 'deadlineList';
@@ -113,7 +112,6 @@ class DatabaseHelper {
       DateTime deadlineListUpdateTime) async {
     await deadlineBox.put(kDeadlineListUpdateTime, deadlineListUpdateTime);
   }
-
 
   // User
   final String dbUser = 'dbUser';

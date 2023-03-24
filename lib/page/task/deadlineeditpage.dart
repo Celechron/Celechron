@@ -227,6 +227,16 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                 },
               ),
               const SizedBox(height: 16.0),
+              CheckboxListTile(
+                title: const Text('允许在中间插入休息时间'),
+                value: now.isBreakable,
+                onChanged: (value) {
+                  setState(() {
+                    now.isBreakable = !now.isBreakable;
+                  });
+                },
+              ),
+              const SizedBox(height: 16.0),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
