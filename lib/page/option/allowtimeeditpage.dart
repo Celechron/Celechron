@@ -8,8 +8,8 @@ class DateTimePair {
   DateTime first, second;
   bool isDeleted;
   DateTimePair({
-    this.first = const ConstDateTime(0, 1, 1, 0, 0),
-    this.second = const ConstDateTime(0, 1, 1, 0, 0),
+    required this.first,
+    required this.second,
     this.isDeleted = false,
   });
 }
@@ -18,7 +18,11 @@ class DateTimePairListTile extends StatefulWidget {
   final DateTimePair val;
   final Function(DateTimePair pair)? onChanged;
 
-  const DateTimePairListTile({required this.val, this.onChanged, super.key});
+  const DateTimePairListTile({
+    super.key,
+    required this.val,
+    this.onChanged,
+  });
 
   @override
   State<DateTimePairListTile> createState() => _DateTimePairListTileState();
@@ -30,7 +34,8 @@ class _DateTimePairListTileState extends State<DateTimePairListTile> {
   @override
   void initState() {
     super.initState();
-    val = widget.val;
+    print(':: ${widget.val.first}');
+    val = DateTimePair(first: widget.val.first, second: widget.val.second);
   }
 
   String TimeToString(DateTime time) {
@@ -65,6 +70,7 @@ class _DateTimePairListTileState extends State<DateTimePairListTile> {
 
   @override
   Widget build(BuildContext context) {
+    print('${TimeToString(val.first)} - ${TimeToString(val.second)}');
     return ListTile(
       title: Text('${TimeToString(val.first)} - ${TimeToString(val.second)}'),
       trailing: Row(
@@ -150,21 +156,20 @@ class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
     if (__got == 0) {
       for (var x in widget.allowTime.keys) {
         now.add(DateTimePair(
-          first: x,
-          second: widget.allowTime[x]!,
+          first: x.copyWith(),
+          second: widget.allowTime[x]!.copyWith(),
         ));
       }
+      now.sort((DateTimePair a, DateTimePair b) {
+        if (a.first.compareTo(b.first) != 0) {
+          return a.first.compareTo(b.first);
+        }
+        return a.second.compareTo(b.second);
+      });
       __got = 1;
     }
 
     now.removeWhere((element) => element.isDeleted);
-
-    now.sort((DateTimePair a, DateTimePair b) {
-      if (a.first.compareTo(b.first) != 0) {
-        return a.first.compareTo(b.first);
-      }
-      return a.second.compareTo(b.second);
-    });
 
     return Scaffold(
       resizeToAvoidBottomInset: true,
@@ -184,27 +189,52 @@ class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
         ],
       ),
       body: Form(
-        child: ListView.builder(
-            itemCount: now.length + 1,
-            itemBuilder: (context, index) {
-              if (index < now.length) {
-                return DateTimePairListTile(
-                  val: now[index],
-                  onChanged: (DateTimePair updated) {
-                    print(updated.isDeleted);
-                    now[index] = updated;
-                    setState(() {});
-                  },
-                );
-              }
-              return ElevatedButton(
-                onPressed: () {
-                  now.add(DateTimePair());
-                  setState(() {});
-                },
-                child: const Text('添加一个时段'),
-              );
-            }),
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView.builder(
+                  itemCount: now.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index < now.length) {
+                      return Dismissible(
+                        key: Key(now.toString()),
+                        onDismissed: (direction) {
+                          setState(() {
+                            now.removeAt(index);
+                          });
+                        },
+                        child: DateTimePairListTile(
+                          val: DateTimePair(
+                            first: now[index].first,
+                            second: now[index].second,
+                            isDeleted: now[index].isDeleted,
+                          ),
+                          onChanged: (DateTimePair updated) {
+                            now[index] = DateTimePair(
+                              first: updated.first,
+                              second: updated.second,
+                              isDeleted: updated.isDeleted,
+                            );
+                            setState(() {});
+                          },
+                        ),
+                      );
+                    }
+                    return ElevatedButton(
+                      onPressed: () {
+                        now.add(DateTimePair(
+                          first: DateTime(0, 0, 0, 8, 0),
+                          second: DateTime(0, 0, 0, 12, 0),
+                          isDeleted: false,
+                        ));
+                        setState(() {});
+                      },
+                      child: const Text('添加一个时段'),
+                    );
+                  }),
+            ),
+          ],
+        ),
       ),
     );
   }
