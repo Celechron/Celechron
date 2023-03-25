@@ -1,21 +1,17 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:settings_ui/settings_ui.dart';
-import '../../database/database_helper.dart';
 import '../../utils/utils.dart';
 import './allowtimeeditpage.dart';
 import './creditspage.dart';
 import 'package:get/get.dart';
 
-class OptionPage extends StatefulWidget {
-  const OptionPage({super.key});
+import 'login_page.dart';
+import 'option_controller.dart';
 
-  @override
-  State<OptionPage> createState() => _OptionPageState();
-}
+class OptionPage extends StatelessWidget {
+  final _optionController = Get.put(OptionController());
 
-class _OptionPageState extends State<OptionPage> {
-  final db = Get.find<DatabaseHelper>(tag: 'db');
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -25,13 +21,44 @@ class _OptionPageState extends State<OptionPage> {
       body: SettingsList(
         sections: [
           SettingsSection(
+            title: const Text('教务'),
+            tiles: <SettingsTile>[
+              SettingsTile(
+                title: Obx(() {
+                  if (_optionController.user.value.isLogin) {
+                    return Text(
+                        '已登录: ${_optionController.user.value.username}');
+                  } else {
+                    return const Text('点击登录',
+                        style: TextStyle(color: Colors.blue));
+                  }
+                }),
+                value: Obx(() {
+                  if (_optionController.user.value.isLogin) {
+                    return const Text('退出');
+                  } else {
+                    return const Text('');
+                  }
+                }),
+                onPressed: (context) {
+                  if (_optionController.user.value.isLogin) {
+                    _optionController.logout();
+                  } else {
+                    Get.to(() => const LoginPage());
+                  }
+                },
+              ),
+            ],
+          ),
+          SettingsSection(
             title: const Text('时间规划'),
             tiles: <SettingsTile>[
               SettingsTile(
                 title: const Text('工作段时间长度'),
-                value: Text(durationToString(db.getWorkTime())),
+                value: Obx(
+                    () => Text(durationToString(_optionController.workTime))),
                 onPressed: (context) async {
-                  Duration newWorkTime = db.getWorkTime();
+                  Duration newWorkTime = _optionController.workTime;
                   await showDialog(
                       context: context,
                       builder: (BuildContext context) {
@@ -58,15 +85,15 @@ class _OptionPageState extends State<OptionPage> {
                           ),
                         );
                       });
-                  db.setWorkTime(newWorkTime);
-                  setState(() {});
+                  _optionController.workTime = newWorkTime;
                 },
               ),
               SettingsTile(
                 title: const Text('休息段时间长度'),
-                value: Text(durationToString(db.getRestTime())),
+                value: Obx(
+                    () => Text(durationToString(_optionController.restTime))),
                 onPressed: (context) async {
-                  Duration newRestTime = db.getRestTime();
+                  Duration newRestTime = _optionController.restTime;
                   await showDialog(
                       context: context,
                       builder: (BuildContext context) {
@@ -93,22 +120,21 @@ class _OptionPageState extends State<OptionPage> {
                           ),
                         );
                       });
-                  db.setRestTime(newRestTime);
-                  setState(() {});
+                  _optionController.restTime = newRestTime;
                 },
               ),
               SettingsTile(
-                title: Text('可用的工作时段'),
-                value: Text('${db.getAllowTime().length} 个时段'),
+                title: const Text('可用的工作时段'),
+                value: Obx(
+                        () => Text('${_optionController.allowTimeLength} 个时段')),
                 onPressed: (context) async {
-                  Map<DateTime, DateTime> now = db.getAllowTime();
+                  Map<DateTime, DateTime> now = _optionController.allowTime;
                   Map<DateTime, DateTime> res = await Navigator.push(
                           context,
                           MaterialPageRoute(
                               builder: (context) => AllowTimeEditPage(now))) ??
                       now;
-                  db.setAllowTime(res);
-                  setState(() {});
+                  _optionController.allowTime = res;
                 },
               ),
             ],
