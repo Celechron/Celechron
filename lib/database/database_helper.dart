@@ -64,8 +64,8 @@ class DatabaseHelper {
     return Map<DateTime, DateTime>.from(optionsBox.get(kAllowTime));
   }
 
-  void setAllowTime(Map<DateTime, DateTime> allowTime) {
-    optionsBox.put(kAllowTime, allowTime);
+  Future<void> setAllowTime(Map<DateTime, DateTime> allowTime) async {
+    await optionsBox.put(kAllowTime, allowTime);
   }
 
   // Flow

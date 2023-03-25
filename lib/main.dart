@@ -7,7 +7,7 @@ import 'model/user.dart';
 import 'page/flow/flow_view.dart';
 import 'page/task/task_view.dart';
 import 'database/database_helper.dart';
-import 'page/option/option_page.dart';
+import 'page/option/option_view.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:timezone/timezone.dart' as tz;
@@ -166,7 +166,7 @@ class _MyHomePageState extends State<MyHomePage> {
       FlowPage(),
       TaskPage(),
       ScholarPage(),
-      const OptionPage(),
+      OptionPage(),
     ];
 
     return Offstage(
