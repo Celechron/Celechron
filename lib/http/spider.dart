@@ -16,6 +16,7 @@ class Spider {
   late AppService _appService;
   late JwbInfoSys _jwbInfoSys;
   Cookie? _iPlanetDirectoryPro;
+  DateTime _lastUpdateTime = DateTime(0);
 
   Spider(String username, String password) {
     _httpClient = HttpClient();
@@ -33,7 +34,10 @@ class Spider {
     return await Future.wait([
       _appService.login(_httpClient, _iPlanetDirectoryPro!),
       _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!),
-    ]).then((value) => value[0] && value[1]).catchError((e) => false);
+    ]).then((value){
+      _lastUpdateTime = DateTime.now();
+      return value[0] && value[1];
+    }).catchError((e) => false);
   }
 
   void logout() {
@@ -44,7 +48,7 @@ class Spider {
     _jwbInfoSys.logout();
   }
 
-  Future<Iterable<List<String>>> getGrades() async {
+  Future<Iterable<List<String>>> _getGrades() async {
     // Group 1: 课程代码
     // Group 2: 课程名称
     // Group 3: 成绩
@@ -65,7 +69,7 @@ class Spider {
             ]));
   }
 
-  Future<List<double>> getMajorGpaAndCredit() async {
+  Future<List<double>> _getMajorGpaAndCredit() async {
     var html = await _jwbInfoSys.getMajorGradeHtml(_httpClient, _username);
     var majorGpa =
         RegExp(r'平均绩点=([0-9.]+)').firstMatch(html)?.group(1) ?? "0.00";
@@ -76,11 +80,18 @@ class Spider {
 
   Future<List<bool>> getSemesterDetails(List<Semester> outSemesters,
       Map<String, List<Grade>> outGrades, List<double> outMajorGrade) async {
+    if (DateTime.now().difference(_lastUpdateTime).inMinutes > 15) {
+      _iPlanetDirectoryPro =
+      await ZjuAm.getSsoCookie(_httpClient, _username, _password);
+      await Future.wait([
+        _appService.login(_httpClient, _iPlanetDirectoryPro!),
+        _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!),
+      ]);
+    }
+
     // 从考试查询API获取课程信息
     List<Future> fetches = [];
-    var yearNow = DateTime
-        .now()
-        .year;
+    var yearNow = DateTime.now().year;
     var yearEnroll = int.parse(_username.substring(1, 3)) + 2000;
     var yearGraduate = yearEnroll + 7;
 
@@ -106,27 +117,28 @@ class Spider {
             semesterIndexMap[(e['kcid'] as String).substring(1, 12)]!]
                 .addSession(e);
           }
-        })).catchError((e) => false));
+        })));
 
     // 爬教务网，查成绩
-    fetches.add(getGrades().then((value) {
+    fetches.add(_getGrades().then((value) {
       for (var e in value) {
-        outSemesters[semesterIndexMap[e[0].substring(1, 12)]!].addGrade(e);
+        var grade = Grade(e);
+        outSemesters[semesterIndexMap[e[0].substring(1, 12)]!].addGrade(grade);
         //体育课
         var key = e[0].substring(14, 22);
         if (key.startsWith('401')) {
           key = e[0].substring(0, 22);
         }
-        outGrades.putIfAbsent(key, () => <Grade>[]).add(Grade(e));
+        outGrades.putIfAbsent(key, () => <Grade>[]).add(grade);
       }
       for (var e in outSemesters) {
         e.calculateGPA();
       }
       return true;
-    }).catchError((e) => false));
+    }));
 
     // 爬教务网，查主修成绩
-    fetches.add(getMajorGpaAndCredit().then((value) {
+    fetches.add(_getMajorGpaAndCredit().then((value) {
       outMajorGrade.clear();
       outMajorGrade.addAll(value);
     }));
@@ -184,6 +196,7 @@ class Spider {
     outSemesters.removeWhere(
             (e) => e.grades.isEmpty && e.sessions.isEmpty && e.exams.isEmpty);
 
+    _lastUpdateTime = DateTime.now();
     return [true];
   }
 }

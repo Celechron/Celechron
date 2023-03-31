@@ -1,8 +1,8 @@
 import 'dart:async';
 
 import 'package:celechron/model/semester.dart';
+import 'package:celechron/model/user.dart';
 import 'package:get/get.dart';
-import '../../model/user.dart';
 
 class ScholarController extends GetxController {
 

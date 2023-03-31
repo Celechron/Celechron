@@ -3,14 +3,16 @@ import 'package:flutter/cupertino.dart';
 class TwoLineCard extends StatefulWidget {
   final String title;
   final String content;
+  final bool withColoredFont;
   final VoidCallback? onTap;
-  final Color backgroundColor;
+  final CupertinoDynamicColor backgroundColor;
 
   const TwoLineCard({
     required this.title,
     required this.content,
+    this.withColoredFont = false,
     this.onTap,
-    this.backgroundColor = CupertinoColors.white,
+    this.backgroundColor = CupertinoColors.systemBackground,
   });
 
   @override
@@ -47,10 +49,13 @@ class _TwoLineCardState extends State<TwoLineCard>
 
   @override
   Widget build(BuildContext context) {
+
+    var brightness = MediaQuery.of(context).platformBrightness;
+
     return GestureDetector(
-      onTapDown: (_) => _animationController.forward(),
-      onTapUp: (_) => _animationController.reverse(),
-      onTapCancel: () => _animationController.reverse(),
+      //onTapDown: (_) => _animationController.forward(),
+      //onTapUp: (_) => _animationController.reverse(),
+      //onTapCancel: () => _animationController.reverse(),
       onTap: widget.onTap,
       child: ScaleTransition(
         scale: _scaleAnimation,
@@ -58,25 +63,44 @@ class _TwoLineCardState extends State<TwoLineCard>
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: widget.backgroundColor,
+            color: brightness == Brightness.dark ? CupertinoColors.secondarySystemFill : CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+            // boxShadow
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.05),
+                offset: Offset(0, 2),
+                blurRadius: 4,
+              ),
+            ],
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            // add a colored edge
             children: [
               Text(
                 widget.title,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                  color: Color.fromRGBO(0, 0, 0, 0.6)
+                style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                        color: CupertinoTheme.of(context).textTheme.textStyle.color!.withOpacity(0.5),
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                      )),
+              const SizedBox(height: 2),
+              widget.withColoredFont ? const SizedBox(height: 4) : SizedBox(
+                height: 4,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 2),
               Text(
                 widget.content,
-                style: const TextStyle(
+                style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  color: (widget.withColoredFont && brightness == Brightness.dark) ? CupertinoDynamicColor.resolve(widget.backgroundColor, context) : CupertinoTheme.of(context).textTheme.textStyle.color,
                 ),
               ),
             ],

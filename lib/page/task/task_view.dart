@@ -1,5 +1,6 @@
 import 'package:celechron/page/task/task_controller.dart';
 import 'package:celechron/utils/utils.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../model/deadline.dart';
 import './deadlineeditpage.dart';
@@ -213,8 +214,8 @@ class TaskPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
+    return CupertinoPageScaffold(
+      /*appBar: AppBar(
         title: const Text(
           '任务列表',
         ),
@@ -249,8 +250,8 @@ class TaskPage extends StatelessWidget {
             icon: const Icon(Icons.menu),
           ),
         ],
-      ),
-      body: Column(
+      ),*/
+      /*body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Obx(() {
@@ -270,6 +271,80 @@ class TaskPage extends StatelessWidget {
               );
             }
           })
+        ],
+      ),*/
+      child: CustomScrollView(
+        slivers: [
+          CupertinoSliverNavigationBar(
+            largeTitle: const Text('任务'),
+            trailing: // Two buttons in the nav bar.
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: <Widget>[
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: const Icon(
+                    CupertinoIcons.add_circled,
+                    semanticLabel: 'Add',
+                  ),
+                  onPressed: () async {
+                    await newDeadline(context);
+                    _taskController.updateDeadlineList();
+                    _taskController.deadlineList.refresh();
+                  },
+                ),
+                CupertinoButton(
+                  padding: EdgeInsets.zero,
+                  child: const Icon(
+                    CupertinoIcons.ellipsis_circle,
+                    semanticLabel: 'More',
+                  ),
+                  onPressed: () async {
+                    await showCupertinoModalPopup(
+                      context: context,
+                      builder: (BuildContext context) => CupertinoActionSheet(
+                        actions: <Widget>[
+                          CupertinoActionSheetAction(
+                            child: const Text('移除已完成任务'),
+                            onPressed: () async {
+                              _taskController.removeCompletedDeadline(context);
+                              _taskController.updateDeadlineList();
+                              _taskController.deadlineList.refresh();
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          CupertinoActionSheetAction(
+                            child: const Text('移除已过期任务'),
+                            onPressed: () async {
+                              _taskController.removeFailedDeadline(context);
+                              _taskController.updateDeadlineList();
+                              _taskController.deadlineList.refresh();
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                        ],
+                        cancelButton: CupertinoActionSheetAction(
+                          isDefaultAction: true,
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text('取消'),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+          SliverList(
+            delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                return createCard(context, _taskController.deadlineList[index]);
+              },
+              childCount: _taskController.deadlineList.length,
+            ),
+          ),
         ],
       ),
     );

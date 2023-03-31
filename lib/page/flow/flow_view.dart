@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:fluttertoast/fluttertoast.dart';
@@ -222,12 +223,17 @@ class FlowPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          '接下来',
-        ),
-        actions: [
+    return CupertinoPageScaffold(
+      child: CustomScrollView(
+        slivers: const [
+          CupertinoSliverNavigationBar(
+            largeTitle: Text('接下来'),
+            border: Border(
+              bottom: BorderSide.none,
+            ),
+          ),
+        ],
+        /*actions: [
           IconButton(
             tooltip: '创建新的规划',
             onPressed: () async {
@@ -237,8 +243,8 @@ class FlowPage extends StatelessWidget {
             icon: const Icon(Icons.refresh_outlined),
           ),
         ],
-      ),
-      body: Column(
+      ),*/
+      /*body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Obx(() {
@@ -277,7 +283,7 @@ class FlowPage extends StatelessWidget {
             }
           }),
         ],
-      ),
-    );
+      ),*/
+    ));
   }
 }
