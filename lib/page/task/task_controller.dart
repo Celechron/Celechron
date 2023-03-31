@@ -33,7 +33,7 @@ class TaskController extends GetxController {
 
   void refreshDeadlineList() {
     saveDeadlineListToDb();
-    print('TaskListPage: refreshed');
+    //print('TaskListPage: refreshed');
   }
 
   Future<void> saveDeadlineListToDb() async {

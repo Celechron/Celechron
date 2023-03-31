@@ -1,6 +1,8 @@
 import 'package:celechron/page/scholar/scholar_view.dart';
-import 'package:get/get.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
+import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'page/calendar/calendar_view.dart';
 import 'model/user.dart';
@@ -32,17 +34,17 @@ void main() async {
   Get.put(db.getFlowListUpdateTime().obs, tag: 'flowListLastUpdate');
 
   // Run
-  initializeDateFormatting().then((_) => runApp(const MyApp()));
+  initializeDateFormatting().then((_) => runApp(const CelechronApp()));
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class CelechronApp extends StatefulWidget {
+  const CelechronApp({super.key});
 
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<CelechronApp> createState() => _CelechronAppState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _CelechronAppState extends State<CelechronApp> {
   Future<void> initTimezone() async {
     tz.initializeTimeZones();
     final String locationName = await FlutterNativeTimezone.getLocalTimezone();
@@ -70,7 +72,11 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
-    return GetMaterialApp(
+    return GetCupertinoApp(
+      theme: const CupertinoThemeData(
+        scaffoldBackgroundColor: CupertinoColors.systemBackground,
+        barBackgroundColor: CupertinoColors.systemBackground,
+      ),
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
@@ -86,9 +92,6 @@ class _MyAppState extends State<MyApp> {
         child: child!,
       ),
       title: 'Celechron',
-      theme: ThemeData(
-        primarySwatch: Colors.pink,
-      ),
       home: const MyHomePage(title: 'Celechron'),
     );
   }
@@ -108,47 +111,37 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Stack(
-        children: <Widget>[
-          _getPagesWidget(0),
-          _getPagesWidget(1),
-          _getPagesWidget(2),
-          _getPagesWidget(3),
-          _getPagesWidget(4),
-        ],
+    return CupertinoTabScaffold(
+      tabBuilder: (context, index) => CupertinoTabView(
+        builder: (context) => _getPagesWidget(index),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
+      tabBar: CupertinoTabBar(
+        iconSize: 26,
+        backgroundColor: CupertinoDynamicColor.resolve(CupertinoColors.secondarySystemBackground, context).withOpacity(0.5),
+        items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_month_outlined),
-            activeIcon: Icon(Icons.calendar_month),
+            icon: Icon(CupertinoIcons.calendar),
             label: '日程',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.calendar_view_day_outlined),
-            activeIcon: Icon(Icons.calendar_view_day),
+            icon: Icon(CupertinoIcons.time),
             label: '接下来',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.task_outlined),
-            activeIcon: Icon(Icons.task_rounded),
+            icon: Icon(CupertinoIcons.check_mark),
             label: '任务',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.school_outlined),
-            activeIcon: Icon(Icons.school),
+
             label: '学业',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.settings_outlined),
-            activeIcon: Icon(Icons.settings),
+            icon: Icon(CupertinoIcons.settings),
             label: '设置',
           ),
         ],
-        iconSize: 24,
         currentIndex: _indexNum,
-        type: BottomNavigationBarType.fixed,
         onTap: (int index) {
           if (index != _indexNum) {
             setState(() {

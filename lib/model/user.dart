@@ -48,6 +48,14 @@ class User {
     return semesters.fold(<Period>[], (p, e) => p + e.periods);
   }
 
+  Semester get thisSemester {
+    if (semesters.isNotEmpty) {
+      return semesters.last;
+    } else {
+      return Semester('未登录');
+    }
+  }
+
   // 初始化以获取Cookies，并刷新数据
   Future<bool> login() async {
     _spider = Spider(username, _password);

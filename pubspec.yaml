@@ -34,7 +34,7 @@ dependencies:
   get: any
   vector_graphics: ^1.1.4
   flutter_svg: ^2.0.4
-  pull_to_refresh: any
+  fl_chart: any
 
 dependency_overrides:
   intl: ^0.18.0

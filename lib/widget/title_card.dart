@@ -1,0 +1,130 @@
+import 'dart:async';
+
+import 'package:flutter/cupertino.dart';
+import 'package:flutter/scheduler.dart';
+
+class TitleCard extends StatefulWidget {
+  final String? title;
+  final Widget child;
+  final Widget? right;
+  final Function()? onTap;
+
+  const TitleCard({
+    Key? key,
+    this.title,
+    required this.child,
+    this.onTap,
+    this.right,
+  }) : super(key: key);
+
+  @override
+  _TitleCardState createState() => _TitleCardState();
+}
+
+class _TitleCardState extends State<TitleCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      reverseDuration: const Duration(milliseconds: 400),
+    );
+    _scaleAnimation = Tween<double>(begin: 1, end: 0.95).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    var isDown = false;
+    var isCancel = false;
+    return Column(
+      children: [
+        Row(children: [
+          widget.title == null
+              ? const SizedBox(height: 0)
+              : Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(top: 12, bottom: 12),
+            child: Text(
+              widget.title!,
+              style: CupertinoTheme.of(context)
+                  .textTheme.navLargeTitleTextStyle.copyWith(fontSize: 20),
+          )),
+          const Spacer(),
+          widget.right == null? const SizedBox(height: 0) : widget.right!,
+        ]),
+        GestureDetector(
+          onTapDown: (_) async {
+            isDown = true;
+            isCancel = false;
+            _animationController.forward();
+            await Future.delayed(const Duration(milliseconds: 125));
+            isDown = false;
+            if (isCancel) {
+              if(widget.onTap != null) {
+                widget.onTap?.call();
+              }
+              _animationController.reverse();
+              isCancel = false;
+            }
+          },
+          onTapUp: (_) async {
+            isCancel = true;
+            if (!isDown) _animationController.reverse();
+          },
+          onTapCancel: () => _animationController.reverse(),
+          child: ScaleTransition(
+            scale: _scaleAnimation,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                // In light mode, color is white; in dark mode, color is black
+                color: SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark
+                    ? CupertinoColors.systemFill
+                    : CupertinoColors.white,
+                boxShadow: [
+                  BoxShadow(
+                    // Only show shadow in light mode
+                    color: CupertinoColors.black.withOpacity(0.1),
+                    spreadRadius: 0,
+                    blurRadius: 12,
+                    offset: const Offset(0, 6), // changes position of shadow
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Expanded(child: widget.child),
+                      const SizedBox(width: 12),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
+        )
+      ],
+    );
+  }
+}

@@ -16,18 +16,34 @@ class Semester {
   // 第几节课 => 时间
   // 例如，对于第六节课，_sessionToTime[6].first = 13:25, _sessionToTime[6].last = 14:10
   // 注意，此处不想让index从0开始，因为不喜欢
-  List<List<Duration>> _sessionToTime = [[],[],[],[],[],[],[],[],[],[],[],[],[]];
+  List<List<Duration>> _sessionToTime = [
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    [],
+    []
+  ];
 
   // 星期几 => 日期，_dayOfWeekToDays.first为上半学期，_dayOfWeekToDays.last为下半学期
   // _dayOfWeekToDays.first.first为单周，_dayOfWeekToDays.first.last为双周
   // _dayOfWeekToDays.first.first[1]为单周周一的所有日期
   // 注意，此处不想让index从0开始，因为不喜欢
   List<List<List<List<DateTime>>>> _dayOfWeekToDays = [
-    [ /*上半学期*/
+    [
+      /*上半学期*/
       /*单周日期*/ [[], [], [], [], [], [], [], []],
       /*双周日期*/ [[], [], [], [], [], [], [], []]
     ],
-    [ /*下半学期*/
+    [
+      /*下半学期*/
       /*单周日期*/ [[], [], [], [], [], [], [], []],
       /*双周日期*/ [[], [], [], [], [], [], [], []]
     ]
@@ -43,9 +59,29 @@ class Semester {
         _sessions = [],
         _grades = [];
 
+  String get firstHalfName {
+    return name.substring(9, 10);
+  }
+
+  String get secondHalfName {
+    return name.substring(10, 11);
+  }
+
   // 科目列表
-  get courses {
+  Map<String, Course> get courses {
     return _courses;
+  }
+
+  int get courseCount {
+    return _courses.length;
+  }
+
+  int get examCount {
+    return _exams.length;
+  }
+
+  double get courseCredit {
+    return _courses.values.fold(0.0, (p, e) => p + e.credit);
   }
 
   // 考试列表
@@ -71,6 +107,22 @@ class Semester {
   // 下半学期课表
   Iterable<Session> get secondHalfTimetable {
     return _sessions.where((e) => e.secondHalf && e.confirmed);
+  }
+
+  double get firstHalfSessionCount {
+    return _sessions.where((e) => e.firstHalf && e.confirmed).fold(
+        0.0,
+        (p, e) =>
+            p +
+            (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
+  }
+
+  double get secondHalfSessionCount {
+    return _sessions.where((e) => e.secondHalf && e.confirmed).fold(
+        0.0,
+            (p, e) =>
+        p +
+            (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
   }
 
   List<Period> get periods {
@@ -167,8 +219,7 @@ class Semester {
     }
   }
 
-  void addGrade(List<String> list) {
-    var grade = Grade(list);
+  void addGrade(Grade grade) {
     _grades.add(grade);
     var courseKey = grade.id;
     if (_courses.containsKey(courseKey)) {
@@ -184,16 +235,19 @@ class Semester {
         .toList();
     _sessionToTime = (json['sessionTime'] as List)
         .map((e) => (e as List)
-            .map((e) =>
-                Duration(hours: int.parse((e as String).substring(0, 2)), minutes: int.parse((e).substring(3, 5))))
+            .map((e) => Duration(
+                hours: int.parse((e as String).substring(0, 2)),
+                minutes: int.parse((e).substring(3, 5))))
             .toList())
         .toList();
     _dayOfWeekToDays = [
-      [ /*上半学期*/
+      [
+        /*上半学期*/
         /*单周日期*/ [[], [], [], [], [], [], [], []],
         /*双周日期*/ [[], [], [], [], [], [], [], []]
       ],
-      [ /*下半学期*/
+      [
+        /*下半学期*/
         /*单周日期*/ [[], [], [], [], [], [], [], []],
         /*双周日期*/ [[], [], [], [], [], [], [], []]
       ]
@@ -201,7 +255,9 @@ class Semester {
     // 上半学期
     var weekday = startEnd[0].weekday;
     var oddEvenWeek = 0;
-    for (DateTime day = startEnd[0]; day.isBefore(startEnd[1]); day = day.add(const Duration(days: 1))) {
+    for (DateTime day = startEnd[0];
+        day.isBefore(startEnd[1]);
+        day = day.add(const Duration(days: 1))) {
       _dayOfWeekToDays[0][oddEvenWeek][weekday++].add(day);
       if (weekday == 8) {
         weekday = 1;
@@ -210,7 +266,9 @@ class Semester {
     }
     weekday = startEnd[2].weekday;
     oddEvenWeek = 0;
-    for (DateTime day = startEnd[2]; day.isBefore(startEnd[3]); day = day.add(const Duration(days: 1))) {
+    for (DateTime day = startEnd[2];
+        day.isBefore(startEnd[3]);
+        day = day.add(const Duration(days: 1))) {
       _dayOfWeekToDays[1][oddEvenWeek][weekday++].add(day);
       if (weekday == 8) {
         weekday = 1;
@@ -221,6 +279,7 @@ class Semester {
 
   void calculateGPA() {
     gpa = Grade.calculateGpa(_grades);
+    _grades.sort((a, b) => b.hundredPoint.compareTo(a.hundredPoint));
     credits = _grades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
   }
 
@@ -238,8 +297,16 @@ class Semester {
       'grades': _grades,
       'gpa': gpa,
       'credits': credits,
-      'sessionToTime': _sessionToTime.map((e) => e.map((e) => e.inMinutes).toList()).toList(),
-      'dayOfWeekToDays': _dayOfWeekToDays.map((e) => e.map((e) => e.map((e) => e.map((e) => e.toIso8601String()).toList()).toList()).toList()).toList(),
+      'sessionToTime': _sessionToTime
+          .map((e) => e.map((e) => e.inMinutes).toList())
+          .toList(),
+      'dayOfWeekToDays': _dayOfWeekToDays
+          .map((e) => e
+              .map((e) => e
+                  .map((e) => e.map((e) => e.toIso8601String()).toList())
+                  .toList())
+              .toList())
+          .toList(),
     };
   }
 
@@ -255,9 +322,16 @@ class Semester {
         gpa = (json['gpa'] as List).map((e) => e as double).toList(),
         credits = json['credits'],
         _sessionToTime = (json['sessionToTime'] as List)
-            .map((e) => (e as List)
-                .map((e) => Duration(minutes: e as int))
-                .toList())
+            .map((e) =>
+                (e as List).map((e) => Duration(minutes: e as int)).toList())
             .toList(),
-        _dayOfWeekToDays = (json['dayOfWeekToDays'] as List).map((e) => (e as List).map((e) => (e as List).map((e) => (e as List).map((e) => DateTime.parse(e as String)).toList()).toList()).toList()).toList();
+        _dayOfWeekToDays = (json['dayOfWeekToDays'] as List)
+            .map((e) => (e as List)
+                .map((e) => (e as List)
+                    .map((e) => (e as List)
+                        .map((e) => DateTime.parse(e as String))
+                        .toList())
+                    .toList())
+                .toList())
+            .toList();
 }

@@ -100,8 +100,9 @@ class AppService {
     request.add(utf8.encode('xn=2&xq='));
     response = await request.close();
 
+    var a = await response.transform(utf8.decoder).join();
     var courseJson = RegExp('"kblist":(.*?),"jxk')
-        .firstMatch(await response.transform(utf8.decoder).join())
+        .firstMatch(a)
         ?.group(1);
     if (courseJson == null) throw CookieInvalidException("wisportalId无效");
     return courseJson;
