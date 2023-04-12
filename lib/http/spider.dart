@@ -106,9 +106,6 @@ class Spider {
             .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
             .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
             .forEach((e) {
-              if(e['mc'] == "边缘计算开发实践" ){
-                print(e);
-              }
           if (e['kcid'] != null) {
             outSemesters[
             semesterIndexMap[(e['kcid'] as String).substring(1, 12)]!]
