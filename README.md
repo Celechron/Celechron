@@ -1,6 +1,6 @@
 # celechron
 
-A new Flutter project.
+Time scheduler for zjuers.
 
 ## Getting Started
 

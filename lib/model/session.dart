@@ -17,7 +17,9 @@ class Session {
 
   int day;
   List<int> time;
-  String location;
+  String? location;
+
+  static const String dayMap = '零一二三四五六日';
 
   Session(Map<String, dynamic> json)
       : id = RegExp(r'(.*?-){5}\d+(?=.*\d{10})')
@@ -64,4 +66,17 @@ class Session {
         day = json['day'],
         time = List<int>.from(json['time']),
         location = json['location'];
+
+  String get chineseTime {
+    var timeString = '${(oddWeek & evenWeek) ? '' : oddWeek ? '单 - ' : '双 - '}周${dayMap[day]}第';
+    for (var i = 0; i < time.length; i++) {
+      timeString += time[i].toString();
+      if (i != time.length - 1) {
+        timeString += ', ';
+      }
+    }
+    timeString.trimRight();
+    timeString += '节';
+    return timeString;
+  }
 }

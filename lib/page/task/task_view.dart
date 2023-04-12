@@ -1,5 +1,9 @@
+import 'dart:math';
+
 import 'package:celechron/page/task/task_controller.dart';
 import 'package:celechron/utils/utils.dart';
+import 'package:celechron/widget/sub_title.dart';
+import 'package:celechron/widget/title_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../model/deadline.dart';
@@ -13,7 +17,7 @@ class TaskPage extends StatelessWidget {
   final _taskController = Get.put(TaskController());
 
   String deadlineProgress(Deadline deadline) {
-    return '${(deadline.getProgress()).toInt()}%：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded <= deadline.timeSpent ? Duration.zero : (deadline.timeNeeded - deadline.timeSpent))}';
+    return ' ${(deadline.getProgress()).toInt()}%已完成：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded <= deadline.timeSpent ? Duration.zero : (deadline.timeNeeded - deadline.timeSpent))}';
   }
 
   Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
@@ -138,147 +142,186 @@ class TaskPage extends StatelessWidget {
   }
 
   Future<void> newDeadline(context) async {
-    Deadline? deadline = Deadline();
+    Deadline? deadline = Deadline(endTime: DateTime.now().add(const Duration(hours: 1)));
     deadline.reset();
     Deadline? res = await Navigator.push(context,
         MaterialPageRoute(builder: (context) => DeadlineEditPage(deadline)));
     if (res != null) {
       _taskController.deadlineList.add(res);
       _taskController.updateDeadlineListTime();
+      _taskController.deadlineList.refresh();
     }
   }
 
-  Widget createCard(context, Deadline deadline) {
+  Widget createCard(context, Deadline deadline, Color color, String? title) {
     String deadlineEnds =
         deadline.endTime.toIso8601String().replaceFirst(RegExp(r'T'), ' ');
     deadlineEnds = deadlineEnds.substring(0, deadlineEnds.length - 7);
     if (deadline.endTime.isBefore(DateTime.now())) {
       deadlineEnds = '$deadlineEnds - 已过期';
     }
-    return GestureDetector(
-      onTap: () => showCardDialog(context, deadline),
-      child: Card(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.all(12.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        deadline.summary,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
+    return Column(children: [
+      title == null ? const SizedBox(height: 0) : SubtitleRow(subtitle: title),
+      TitleCard(
+        onTap: () => showCardDialog(context, deadline),
+        child: Padding(
+            padding: const EdgeInsets.only(left: 8, right: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      width: 12.0,
+                      height: 12.0,
+                      decoration: BoxDecoration(
+                        color: color,
+                        shape: BoxShape.circle,
                       ),
-                      Expanded(
-                        child: Text(
-                          deadlineTypeName[deadline.deadlineType]!,
-                          textAlign: TextAlign.right,
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    '截止于 ${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
-                    style: const TextStyle(),
-                  ),
-                  const SizedBox(height: 8.0),
-                  Text(
-                    deadlineProgress(deadline),
-                    style: const TextStyle(),
-                  ),
-                  if (deadline.location.isNotEmpty) ...[
-                    const SizedBox(height: 8.0),
-                    Text(
-                      deadline.location,
-                      style: const TextStyle(),
                     ),
+                    const SizedBox(width: 8.0),
+                    Expanded(flex:4, child: Text(deadline.summary,
+                        style: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .copyWith(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          overflow: TextOverflow.ellipsis,
+                        ))),
+                    const Spacer(),
+                    Text(deadlineTypeName[deadline.deadlineType]!,
+                        style: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .copyWith(
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                          overflow: TextOverflow.ellipsis,
+                        )),
                   ],
+                ),
+                const SizedBox(height: 8.0),
+                Row(children: [
+                  Icon(
+                    CupertinoIcons.time_solid,
+                    size: 14,
+                    color: CupertinoTheme.of(context)
+                        .textTheme
+                        .textStyle
+                        .color!
+                        .withOpacity(0.5),
+                  ),
+                  Expanded(child: Text(
+                      ' 截止于：${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                        color: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .color!
+                            .withOpacity(0.75),
+                        overflow: TextOverflow.ellipsis,
+                      )))
+                ]),
+                if (deadline.location.isNotEmpty) ...[
+                  Row(children: [
+                    Icon(
+                      CupertinoIcons.location_solid,
+                      size: 14,
+                      color: CupertinoTheme.of(context)
+                          .textTheme
+                          .textStyle
+                          .color!
+                          .withOpacity(0.5),
+                    ),
+                    Expanded(child: Text(' 地点：${deadline.location}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                          color: CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .color!
+                              .withOpacity(0.75),
+                          overflow: TextOverflow.ellipsis,
+                        )))
+                  ]),
+                ],
+                Row(children: [
+                  Icon(
+                    CupertinoIcons.play_fill,
+                    size: 14,
+                    color: CupertinoTheme.of(context)
+                        .textTheme
+                        .textStyle
+                        .color!
+                        .withOpacity(0.5),
+                  ),
+                  Expanded(child: Text(deadlineProgress(deadline),
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.normal,
+                        color: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .color!
+                            .withOpacity(0.75),
+                        overflow: TextOverflow.ellipsis,
+                      ))),
+                ]),
+                if (deadline.deadlineType == DeadlineType.running) ...[
                   const SizedBox(height: 8.0),
-                  Text(
-                    deadline.uid,
-                    style: const TextStyle(),
+                  LinearProgressIndicator(
+                    value: deadline.timeSpent.inSeconds /
+                        deadline.timeNeeded.inSeconds,
+                    backgroundColor: CupertinoColors.systemGrey5,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
-              ),
-            )
-          ],
-        ),
-      ),
-    );
+                if (deadline.deadlineType == DeadlineType.suspended) ...[
+                  const SizedBox(height: 8.0),
+                  LinearProgressIndicator(
+                    value: deadline.timeSpent.inSeconds /
+                        deadline.timeNeeded.inSeconds,
+                    backgroundColor: CupertinoColors.systemGrey5,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ],
+                if (deadline.deadlineType == DeadlineType.completed) ...[
+                  const SizedBox(height: 8.0),
+                  LinearProgressIndicator(
+                    value: 1,
+                    backgroundColor: CupertinoColors.systemGrey5,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ],
+                if (deadline.deadlineType == DeadlineType.failed) ...[
+                  const SizedBox(height: 8.0),
+                  LinearProgressIndicator(
+                    value: 0,
+                    backgroundColor: CupertinoColors.systemGrey5,
+                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                  ),
+                ],
+              ],
+            )),
+      )
+    ]);
   }
 
   @override
   Widget build(BuildContext context) {
-    return CupertinoPageScaffold(
-      /*appBar: AppBar(
-        title: const Text(
-          '任务列表',
-        ),
-        actions: [
-          PopupMenuButton(
-            tooltip: '保存',
-            itemBuilder: (context) => <PopupMenuEntry>[
-              const PopupMenuItem(
-                value: 0,
-                child: Text('新建任务'),
-              ),
-              const PopupMenuItem(
-                value: 1,
-                child: Text('移除已完成任务'),
-              ),
-              const PopupMenuItem(
-                value: 2,
-                child: Text('移除已过期任务'),
-              ),
-            ],
-            onSelected: (result) async {
-              if (result == 0) {
-                await newDeadline(context);
-              } else if (result == 1) {
-                _taskController.removeCompletedDeadline(context);
-              } else if (result == 2) {
-                _taskController.removeFailedDeadline(context);
-              }
-              _taskController.updateDeadlineList();
-              _taskController.deadlineList.refresh();
-            },
-            icon: const Icon(Icons.menu),
-          ),
-        ],
-      ),*/
-      /*body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Obx(() {
-            if (_taskController.deadlineList.isEmpty) {
-              return const Expanded(
-                child: Center(
-                  child: Text('没有任务'),
-                ),
-              );
-            } else {
-              return Expanded(
-                child: ListView(
-                  children: _taskController.deadlineList
-                      .map((e) => createCard(context, e))
-                      .toList(),
-                ),
-              );
-            }
-          })
-        ],
-      ),*/
+    return CupertinoPageScaffold(child: SafeArea(
       child: CustomScrollView(
         slivers: [
           CupertinoSliverNavigationBar(
             largeTitle: const Text('任务'),
+            border: null,
+            stretch: true,
             trailing: // Two buttons in the nav bar.
-            Row(
+                Row(
               mainAxisSize: MainAxisSize.min,
               children: <Widget>[
                 CupertinoButton(
@@ -337,16 +380,128 @@ class TaskPage extends StatelessWidget {
               ],
             ),
           ),
-          SliverList(
+          Obx(() => (SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    return Container(
+                        padding: EdgeInsets.only(
+                            top: index == 0 ? 0 : 5, bottom: 5, left: 16, right: 16),
+                        child: createCard(
+                            context,
+                            _taskController.todoDeadlineList[index],
+                            TaskPageColors
+                                .taskMarkColors[Random(_taskController
+                                        .todoDeadlineList[index].hashCode)
+                                    .nextInt(9)]
+                                .darkColor, index == 0 ? '待办' : null));
+                  },
+                  childCount: _taskController.todoDeadlineList.length,
+                ),
+              ))),
+          Obx(() => SliverList(
             delegate: SliverChildBuilderDelegate(
                   (context, index) {
-                return createCard(context, _taskController.deadlineList[index]);
+                return Container(
+                    padding: EdgeInsets.only(
+                        top: index == 0 ? 0 : 5, bottom: 5, left: 16, right: 16),
+                    child: createCard(
+                        context,
+                        _taskController.doneDeadlineList[index],
+                        TaskPageColors
+                            .taskMarkColors[Random(_taskController
+                            .doneDeadlineList[index].hashCode)
+                            .nextInt(9)]
+                            .darkColor, index == 0 ? '已完成' : null));
               },
-              childCount: _taskController.deadlineList.length,
+              childCount: _taskController.doneDeadlineList.length,
             ),
-          ),
+          )),
+          SliverToBoxAdapter(
+              child: Container(
+            height: 100,
+          ))
         ],
       ),
-    );
+    ));
   }
+}
+
+class TaskPageColors {
+  static const List<CupertinoDynamicColor> taskMarkColors = [
+    spring,
+    summer,
+    winter,
+    violet,
+    sakura,
+    cyan,
+    magenta,
+    peach,
+    okGreen,
+  ];
+
+  static const CupertinoDynamicColor spring =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(230, 255, 226, 1.0),
+    darkColor: Color.fromRGBO(147, 251, 56, 1.0),
+  );
+
+  static const CupertinoDynamicColor summer =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(255, 226, 226, 1.0),
+    darkColor: Color.fromRGBO(255, 25, 69, 1.0),
+  );
+
+  static const CupertinoDynamicColor autumn =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(255, 234, 230, 1.0),
+    darkColor: Color.fromRGBO(255, 101, 56, 1.0),
+  );
+
+  static const CupertinoDynamicColor winter =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(226, 239, 255, 1.0),
+    darkColor: Color.fromRGBO(0, 183, 251, 1.0),
+  );
+
+  static const CupertinoDynamicColor violet =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(230, 229, 255, 1.0),
+    darkColor: Color.fromRGBO(151, 131, 216, 1.0),
+  );
+
+  static const CupertinoDynamicColor sakura =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(255, 226, 255, 1.0),
+    darkColor: Color.fromRGBO(218, 130, 217, 1.0),
+  );
+
+  static const CupertinoDynamicColor sand =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(255, 246, 211, 1.0),
+    darkColor: Color.fromRGBO(252, 222, 59, 1.0),
+  );
+
+  static const CupertinoDynamicColor cyan =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(218, 234, 255, 1.0),
+    darkColor: Color.fromRGBO(0, 140, 255, 1.0),
+  );
+
+  static const CupertinoDynamicColor magenta =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(230, 229, 255, 1.0),
+    darkColor: Color.fromRGBO(238, 55, 161, 1.0),
+  );
+
+  static const CupertinoDynamicColor peach =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(255, 235, 226, 1.0),
+    darkColor: Color.fromRGBO(233, 114, 70, 1.0),
+  );
+
+  static const CupertinoDynamicColor okGreen =
+      CupertinoDynamicColor.withBrightness(
+    color: Color.fromRGBO(230, 255, 226, 1.0),
+    darkColor: Color.fromRGBO(63, 222, 23, 1.0),
+  );
 }

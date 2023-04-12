@@ -1,87 +1,118 @@
+import 'package:celechron/widget/sub_title.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../model/period.dart';
 import '../../utils/utils.dart';
 
+import '../../widget/title_card.dart';
+import '../scholar/scholar_view.dart';
 import 'calendar_controller.dart';
 
 class CalendarPage extends StatelessWidget {
 
   CalendarPage({Key? key}) : super(key: key);
-  final calendarController = Get.put(CalendarController());
+  final _calendarController = Get.put(CalendarController());
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Obx(() => Text(
-          '${calendarController.focusedDay.value.year} 年 ${calendarController.focusedDay.value.month} 月',
-        )),
-      ),
-      body: Column(
+    return CupertinoPageScaffold(
+      child: SafeArea(
+        child:
+      Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Obx (() => TableCalendar(
-            locale: 'zh_CN',
-            firstDay: DateTime.utc(2023, 1, 1),
-            lastDay: DateTime.utc(2030, 12, 31),
-            rowHeight: 48.0,
-            daysOfWeekHeight: 20.0,
-            startingDayOfWeek: StartingDayOfWeek.monday,
-            availableGestures: AvailableGestures.all,
-            availableCalendarFormats: const {
-              CalendarFormat.month: '显示整月',
-              CalendarFormat.week: '显示一周',
-            },
-            headerVisible: false,
-            focusedDay: calendarController.focusedDay.value,
-            selectedDayPredicate: (day) {
-              return isSameDay(calendarController.selectedDay.value, day);
-            },
-            calendarFormat: calendarController.calendarFormat.value,
-            onPageChanged: (focusedDay) {
-              calendarController.focusedDay.value = focusedDay;
-            },
-            onDaySelected: (selectedDay, focusedDay) {
-              calendarController.selectedDay.value = selectedDay;
-              calendarController.focusedDay.value = focusedDay;
-            },
-            onFormatChanged: (format) {
-              calendarController.calendarFormat.value = format;
-            },
-            eventLoader: (day) {
-              return calendarController.getEventsForDay(day);
-            },
-            calendarStyle: CalendarStyle(
-              markersAnchor: -0.1,
-              markersMaxCount: 10,
-              selectedDecoration: BoxDecoration(
-                color: Theme.of(context).primaryColorLight,
-                shape: BoxShape.circle,
-              ),
-              selectedTextStyle: const TextStyle(fontWeight: FontWeight.bold),
-              todayDecoration: BoxDecoration(
-                color: Theme.of(context).focusColor,
-                shape: BoxShape.circle,
-              ),
-              todayTextStyle: const TextStyle(fontWeight: FontWeight.bold),
+          Obx(() =>SubtitleRow(subtitle: '${_calendarController.focusedDay.value.year} 年 ${_calendarController.focusedDay.value.month} 月',
+            right: CupertinoButton(
+              padding: EdgeInsets.zero,
+              child: Text('今天', style: TextStyle(fontSize: 18, color: CupertinoDynamicColor.resolve(CupertinoColors.systemBlue, context))),
+              onPressed: () {
+                _calendarController.focusedDay.value = DateTime.now();
+                _calendarController.selectedDay.value = DateTime.now();
+              },
             ),
-            calendarBuilders: const CalendarBuilders(
-              singleMarkerBuilder: singleMarkerBuilder,
-            ),
-          )),
-          const SizedBox(height: 8.0),
+            padHorizontal: 18,)),
+          Padding(padding:
+              const EdgeInsets.only(bottom: 5, left: 12, right: 12),
+          child:
+            Obx (() => TableCalendar(
+              locale: 'zh_CN',
+              firstDay: DateTime.utc(2023, 1, 1),
+              lastDay: DateTime.utc(2030, 12, 31),
+              rowHeight: 48.0,
+              daysOfWeekHeight: 20.0,
+              startingDayOfWeek: StartingDayOfWeek.monday,
+              daysOfWeekStyle: DaysOfWeekStyle(
+                dowTextFormatter: (date, locale) => <String>['','一','二','三','四','五','六','日'][date.weekday],
+              ),
+              availableGestures: AvailableGestures.all,
+              availableCalendarFormats: const {
+                CalendarFormat.month: '显示整月',
+                CalendarFormat.week: '显示一周',
+              },
+              headerVisible: false,
+              focusedDay: _calendarController.focusedDay.value,
+              selectedDayPredicate: (day) {
+                return isSameDay(_calendarController.selectedDay.value, day);
+              },
+              calendarFormat: _calendarController.calendarFormat.value,
+              onPageChanged: (focusedDay) {
+                _calendarController.focusedDay.value = focusedDay;
+              },
+              onDaySelected: (selectedDay, focusedDay) {
+                _calendarController.focusedDay.value = focusedDay;
+                _calendarController.selectedDay.value = selectedDay;
+                _calendarController.focusedDay.refresh();
+              },
+              onFormatChanged: (format) {
+                _calendarController.calendarFormat.value = format;
+              },
+              eventLoader: (day) {
+                return _calendarController.getEventsForDay(day);
+              },
+              calendarStyle: CalendarStyle(
+                markersAnchor: -0.1,
+                markersMaxCount: 10,
+                selectedDecoration: BoxDecoration(
+                  color: CupertinoDynamicColor.resolve(CupertinoColors.activeBlue.withOpacity(0.5), context),
+                  shape: BoxShape.circle,
+                ),
+                selectedTextStyle: CupertinoTheme.of(context).textTheme.textStyle,
+                todayDecoration: BoxDecoration(
+                  color: CupertinoDynamicColor.resolve(CupertinoColors.inactiveGray.withOpacity(0.5), context),
+                  shape: BoxShape.circle,
+                ),
+                todayTextStyle: CupertinoTheme.of(context).textTheme.textStyle,
+                defaultTextStyle: CupertinoTheme.of(context).textTheme.textStyle,
+              ),
+              calendarBuilders: const CalendarBuilders(
+                singleMarkerBuilder: singleMarkerBuilder,
+              ),
+            ))),
+          const SizedBox(height: 16),
+          SubSubtitleRow(padHorizontal: 24, subtitle: '春九周', right: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                  border: Border.all(
+                      color: ScholarPageColors.okGreen.darkColor,
+                      width: 1),
+                  borderRadius: BorderRadius.circular(10)),
+              child: Text(
+                  '端午节调休',
+                  style: TextStyle(
+                      color: ScholarPageColors.okGreen.darkColor,
+                      fontSize: 12)))),
           Expanded(
             child: Obx(() => ListView(
-              children: calendarController.getEventsForDay(calendarController.selectedDay.value)
-                  .map((e) => createCard(context, e))
+              children: _calendarController.getEventsForDay(_calendarController.selectedDay.value)
+                  .map((e) => Padding(padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 16), child: createCard(context, e)))
                   .toList(),
             )),
           ),
         ],
       ),
-    );
+    ));
   }
 
   static Future<void> showCardDialog(BuildContext context, Period period) async {
@@ -117,11 +148,10 @@ class CalendarPage extends StatelessWidget {
         });
   }
 
-  static Widget createCard(context, Period period) {
-    return GestureDetector(
+  /*static Widget createCard(context, Period period) {
+    return TitleCard(
       onTap: () => showCardDialog(context, period),
-      child: Card(
-        child: Column(
+      child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Padding(
@@ -148,8 +178,89 @@ class CalendarPage extends StatelessWidget {
             )
           ],
         ),
-      ),
-    );
+      );
+  }*/
+
+  Widget createCard(context, Period period) {
+    return TitleCard(
+          child: Padding(
+            padding: const EdgeInsets.only(left: 8, right: 8),
+            child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 12.0,
+                          height: 12.0,
+                          decoration: const BoxDecoration(
+                            color: CupertinoColors.systemTeal,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 8.0),
+                        Expanded(child: Text(period.summary,
+                            style: CupertinoTheme.of(context)
+                                .textTheme
+                                .textStyle
+                                .copyWith(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              overflow: TextOverflow.ellipsis,
+                            ))),
+                      ],
+                    ),
+                    const SizedBox(height: 8.0),
+                    Row(children: [
+                      Icon(
+                        CupertinoIcons.time_solid,
+                        size: 14,
+                        color: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .color!
+                            .withOpacity(0.5),
+                      ),
+                      Expanded(child: Text(
+                        ' 时间：${period.startTime.hour}:${period.startTime.minute.toString().padLeft(2, '0')} - ${period.endTime.hour}:${period.endTime.minute.toString().padLeft(2, '0')}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                          color: CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .color!
+                              .withOpacity(0.75),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      )),
+                    ]),
+                    if (period.location.isNotEmpty) ...[
+                      Row(children: [
+                        Icon(
+                          CupertinoIcons.location_solid,
+                          size: 14,
+                          color: CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .color!
+                              .withOpacity(0.5),
+                        ),
+                        Expanded(child: Text(' 地点：${period.location}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.normal,
+                              color: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .color!
+                                  .withOpacity(0.75),
+                              overflow: TextOverflow.ellipsis,
+                            )))
+                      ]),
+                    ],
+                  ],
+                )));
   }
 
   static Widget singleMarkerBuilder(context, day, Period event) {

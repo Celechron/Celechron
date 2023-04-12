@@ -3,16 +3,15 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import '../model/grade.dart';
+import '../../../model/grade.dart';
+import '../course_detail/course_detail_view.dart';
 
 class GradeCard extends StatefulWidget {
   final Grade grade;
-  final VoidCallback? onTap;
   final CupertinoDynamicColor backgroundColor;
 
   const GradeCard({
     required this.grade,
-    this.onTap,
     this.backgroundColor = CupertinoColors.systemBackground,
   });
 
@@ -30,14 +29,13 @@ class _GradeCardState extends State<GradeCard>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 150),
-      reverseDuration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 200),
+      reverseDuration: const Duration(milliseconds: 400),
     );
     _scaleAnimation = Tween<double>(begin: 1, end: 0.95).animate(
       CurvedAnimation(
         parent: _animationController,
-        curve: Curves.easeOutQuint,
-        reverseCurve: Curves.easeInQuint,
+        curve: Curves.easeInOut,
       ),
     );
   }
@@ -52,25 +50,42 @@ class _GradeCardState extends State<GradeCard>
   Widget build(BuildContext context) {
 
     var brightness = MediaQuery.of(context).platformBrightness;
+    var isDown = false;
+    var isCancel = false;
 
     return GestureDetector(
-      //onTapDown: (_) => _animationController.forward(),
-      //onTapUp: (_) => _animationController.reverse(),
-      //onTapCancel: () => _animationController.reverse(),
-      onTap: widget.onTap,
+      onTapDown: (_) async {
+        isDown = true;
+        isCancel = false;
+        _animationController.forward();
+        await Future.delayed(const Duration(milliseconds: 125));
+        isDown = false;
+        if (isCancel) {
+          Navigator.of(context).push(CupertinoPageRoute(builder: (context) => CourseDetailPage(courseId: widget.grade.id)));
+          _animationController.reverse();
+          isCancel = false;
+        }
+      },
+      onTapUp: (_) async {
+        isCancel = true;
+        if (!isDown) _animationController.reverse();
+      },
+      onTapCancel: () async => _animationController.reverse(),
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
           padding: const EdgeInsets.only(left: 12, right: 12, bottom: 8, top: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: brightness == Brightness.dark ? CupertinoColors.secondarySystemFill : CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+            color: brightness == Brightness.dark ? CupertinoColors.systemFill : CupertinoDynamicColor.resolve(widget.backgroundColor, context),
             // boxShadow
-            boxShadow: const [
+            boxShadow: [
               BoxShadow(
-                color: Color.fromRGBO(0, 0, 0, 0.05),
-                offset: Offset(0, 2),
-                blurRadius: 4,
+                // Only show shadow in light mode
+                color: CupertinoColors.black.withOpacity(0.1),
+                spreadRadius: 0,
+                blurRadius: 12,
+                offset: const Offset(0, 6), // changes position of shadow
               ),
             ],
           ),
@@ -80,7 +95,7 @@ class _GradeCardState extends State<GradeCard>
                 children: [
                   Row(
                     children: [
-                      Column(
+                      Expanded(child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
@@ -89,6 +104,7 @@ class _GradeCardState extends State<GradeCard>
                               fontSize: 16,
                               fontWeight: FontWeight.normal,
                               color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           Text(
@@ -97,15 +113,15 @@ class _GradeCardState extends State<GradeCard>
                                 color: CupertinoTheme.of(context).textTheme.textStyle.color!.withOpacity(0.5),
                                 fontSize: 12,
                                 fontWeight: FontWeight.normal,
+                                overflow: TextOverflow.ellipsis,
                               )),
                         ],
-                      ),
-                      const Spacer(),
+                      )),
                       Text(
                         '${widget.grade.original} / ${widget.grade.fivePoint.toStringAsFixed(1)}',
                         style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
                           fontSize: 20,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.normal,
                           color: CupertinoTheme.of(context).textTheme.textStyle.color,
                         ),
                       ),
@@ -114,11 +130,11 @@ class _GradeCardState extends State<GradeCard>
                   const SizedBox(height: 4),
                   SizedBox(
                     height: 8,
-                    width: max((context.width - 60) * (widget.grade.fivePoint - 1.2) / 3.8, 0),
+                    width: max((context.width - 60) * (widget.grade.fivePoint - 1.4) / 3.6, 0),
                     child: Container(
                       decoration: BoxDecoration(
                         color: CupertinoDynamicColor.resolve(CupertinoColors.systemTeal, context),
-                        borderRadius: BorderRadius.circular(2),
+                        borderRadius: BorderRadius.circular(4),
                       ),
                     ),
                   ),

@@ -1,100 +1,109 @@
-import 'package:flutter/material.dart';
-import '../../model/user.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:celechron/model/user.dart';
 
+class LoginForm extends StatelessWidget {
+  final TextEditingController usernameController = TextEditingController();
+  final TextEditingController passwordController = TextEditingController();
+  final buttonPressed = false.obs;
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
-
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
-
-class _LoginPageState extends State<LoginPage> {
-  final _formKey = GlobalKey<FormState>();
-  String _username = "";
-  String _password = "";
+  LoginForm({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('统一身份认证登录'),
+
+    var brightness = MediaQuery.of(context).platformBrightness;
+
+    return Container(
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: CupertinoDynamicColor.resolve(CupertinoColors.systemGroupedBackground, context)
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: <Widget>[
-              TextFormField(
-                decoration: const InputDecoration(
-                  labelText: '学号',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入学号';
-                  }
-                  return null;
-                },
-                onSaved: (value) {
-                  _username = value!;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              TextFormField(
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: '密码',
-                  border: OutlineInputBorder(),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return '请输入密码';
-                  }
-                  return null;
-                },
-                onSaved: (value) {
-                  _password = value!;
-                },
-              ),
-              const SizedBox(height: 16.0),
-              ElevatedButton(
-                child: const Text('登录'),
-                onPressed: () {
-                  if (_formKey.currentState!.validate()) {
-                    _formKey.currentState!.save();
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.of(context).viewInsets.bottom,
+        left: 6,
+        right: 6,
+      ),
+      child: SafeArea(
+        top: false,
+        child:Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Container(
+            padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8, top: 16),
+            child: Text(
+              '统一身份认证登录',
+              style: CupertinoTheme.of(context).textTheme.navTitleTextStyle,
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            child: Column(
+              children: [
+                SizedBox(height: 48, child: CupertinoTextField(
+                  controller: usernameController,
+                  keyboardType: TextInputType.number,
+                  prefix: Container(padding: const EdgeInsets.only(left: 12), child: Text('学号', style: CupertinoTheme.of(context).textTheme.textStyle)),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: brightness == Brightness.light ? CupertinoColors.systemBackground : CupertinoColors.secondarySystemBackground,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                )),
+                const SizedBox(height: 16),
+                SizedBox(height: 48, child: CupertinoTextField(
+                  controller: passwordController,
+                  obscureText: true,
+                  prefix: Container(padding: const EdgeInsets.only(left: 12), child: Text('密码', style: CupertinoTheme.of(context).textTheme.textStyle),),
+                  padding: const EdgeInsets.symmetric(horizontal: 12),
+                  decoration: BoxDecoration(
+                    color: brightness == Brightness.light ? CupertinoColors.systemBackground : CupertinoColors.secondarySystemBackground,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                )),
+                const SizedBox(height: 16),
+                Obx(() => CupertinoButton(
+
+                  onPressed: () async {
+                    buttonPressed.value = true;
                     var user = Get.find<Rx<User>>(tag: 'user');
                     user.update((val) {
-                      val!.username = _username;
-                      val.password = _password;
+                      val!.username = usernameController.value.text;
+                      val.password = passwordController.value.text;
                       val.login().then((value) {
                         if (value) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('登录成功'),
-                            ),
-                          );
                           user.refresh();
+                          buttonPressed.value = false;
                           Navigator.of(context).pop();
                         }
-                      }).catchError((error) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text('登录失败，${(error as Exception)}'),
-                          ),
-                        );
+                      }).timeout(const Duration(seconds: 10)).catchError((error) {
+                        buttonPressed.value = false;
+                        showCupertinoDialog(context: context, builder: (context) {
+                          return CupertinoAlertDialog(
+                            title: const Text('登录失败'),
+                            content: Text(error.toString()),
+                            actions: [
+                              CupertinoDialogAction(
+                                child: const Text('确定'),
+                                onPressed: () {
+                                  Navigator.of(context).pop();
+                                },
+                              )
+                            ],
+                          );
+                        });
                       });
                     });
-                  }
-                },
-              ),
-            ],
+                  },
+                  color: buttonPressed.value ? CupertinoColors.inactiveGray : CupertinoColors.activeBlue,
+                  child: SizedBox(height: 24, child: buttonPressed.value ? const CupertinoActivityIndicator() : const Text('登录', style: TextStyle(color: CupertinoColors.white)),
+                  ))),
+              ],
+            ),
           ),
-        ),
+        ],
       ),
-    );
+    ));
   }
 }

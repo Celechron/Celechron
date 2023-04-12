@@ -3,12 +3,14 @@ import 'package:flutter/cupertino.dart';
 class MultipleColumns extends StatelessWidget {
   final List<Widget> contents;
   final List<String> titles;
+  final List<VoidCallback?> onTaps;
   final Color color;
 
   const MultipleColumns({
     Key? key,
     required this.contents,
     required this.titles,
+    required this.onTaps,
     this.color = CupertinoColors.white,
   }) : super(key: key);
 
@@ -18,13 +20,13 @@ class MultipleColumns extends StatelessWidget {
 
     var children = <Widget>[];
     for (var i = 0; i < columnCount; i++) {
-      children.add(Expanded(
-        child: _ColumnWidget(
+      children.add(_ColumnWidget(
           content: contents[i],
           title: titles[i],
+          onTap: onTaps[i],
           color: color,
         ),
-      ));
+      );
       children.add(const _VerticalLine(color: CupertinoColors.systemFill));
     }
     children.removeLast();
@@ -40,25 +42,29 @@ class _ColumnWidget extends StatelessWidget {
   final Widget content;
   final String title;
   final Color color;
+  final VoidCallback? onTap;
 
   const _ColumnWidget({
     Key? key,
     required this.content,
     required this.title,
     required this.color,
+    required this.onTap,
   }) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Center(child: content),
-        Center(
-            child: Text(title,
+    return Expanded(child: GestureDetector(
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Column(
+          children: [
+            content,
+            Text(title,
                 style: const TextStyle(
-                    color: CupertinoColors.systemGrey, fontSize: 14))),
-      ],
-    );
+                    color: CupertinoColors.systemGrey, fontSize: 14)),
+          ],
+        )));
   }
 }
 

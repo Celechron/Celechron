@@ -1,5 +1,4 @@
 import '../utils/utils.dart';
-import 'package:const_date_time/const_date_time.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
 
@@ -30,7 +29,7 @@ class Deadline {
     this.description = "1. 到变隐龙商店购买一个苹果\n2. 把苹果存到袋兽阿姨仓库里",
     this.timeSpent = const Duration(minutes: 0),
     this.timeNeeded = const Duration(days: 0, hours: 2, minutes: 30),
-    this.endTime = const ConstDateTime(2023, 3, 22, 20, 00, 00, 00),
+    required this.endTime,
     this.location = "宝藏镇",
     this.summary = "作业：不可思议迷宫导论",
     this.isBreakable = false,
@@ -82,8 +81,8 @@ class Deadline {
     return 100.00 * timeSpent.inMicroseconds / timeNeeded.inMicroseconds;
   }
 
-  void addTimeSpent(Duration length) {
-    timeSpent += length;
+  void updateTimeSpent(Duration length) {
+    timeSpent = length;
     if (timeSpent > timeNeeded) {
       timeSpent = timeNeeded;
     }

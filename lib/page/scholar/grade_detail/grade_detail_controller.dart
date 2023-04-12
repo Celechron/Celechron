@@ -1,40 +1,34 @@
-import 'dart:async';
-
-import 'package:celechron/model/semester.dart';
-import 'package:celechron/model/user.dart';
 import 'package:get/get.dart';
 
-class ScholarController extends GetxController {
+import '../../../model/semester.dart';
+import '../../../model/user.dart';
 
-  final _user = Get.find<Rx<User>>(tag: 'user');
-  final Rx<Duration> _durationToLastUpdate = const Duration().obs;
+class GradeDetailController extends GetxController {
 
-  User get user => _user.value;
-  Semester get thisSemester => _user.value.thisSemester;
-  List<Semester> get semesters => _user.value.semesters;
-  Duration get durationToLastUpdate => _durationToLastUpdate.value;
+  final user = Get.find<Rx<User>>(tag: 'user');
+  final semesterIndex = 0.obs;
+  late RxList<Semester> semestersWithGrades;
 
-  Future<bool> fetchData() async {
-    await _user.value.refresh().then((value) {
-      _user.refresh();
-      _durationToLastUpdate.value = DateTime.now().difference(_user.value.lastUpdateTime);
-      return true;
-    }).timeout(const Duration(seconds: 15));
-    return false;
+
+  @override
+  void onInit() {
+    semestersWithGrades = user.value.semesters.where((element) => element.grades.isNotEmpty).toList().obs;
+    ever(user, (callback) => refreshSemesters());
+    super.onInit();
   }
 
   @override
   void onReady() {
-    Timer.periodic(const Duration(seconds: 1), (timer) {
-      _durationToLastUpdate.value = DateTime.now().difference(_user.value.lastUpdateTime);
-    });
     super.onReady();
   }
 
   @override
   void onClose() {
-    // TODO: implement onClose
     super.onClose();
   }
 
+  void refreshSemesters(){
+    semestersWithGrades.value = user.value.semesters.where((element) => element.grades.isNotEmpty).toList();
+    semestersWithGrades.refresh();
+  }
 }

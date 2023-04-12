@@ -32,8 +32,8 @@ class Spider {
     _iPlanetDirectoryPro =
     await ZjuAm.getSsoCookie(_httpClient, _username, _password);
     return await Future.wait([
-      _appService.login(_httpClient, _iPlanetDirectoryPro!),
-      _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!),
+      _appService.login(_httpClient, _iPlanetDirectoryPro!).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception("无法登录钉工作台")),
+      _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception("无法登录教务网")),
     ]).then((value){
       _lastUpdateTime = DateTime.now();
       return value[0] && value[1];
@@ -81,14 +81,8 @@ class Spider {
   Future<List<bool>> getSemesterDetails(List<Semester> outSemesters,
       Map<String, List<Grade>> outGrades, List<double> outMajorGrade) async {
     if (DateTime.now().difference(_lastUpdateTime).inMinutes > 15) {
-      _iPlanetDirectoryPro =
-      await ZjuAm.getSsoCookie(_httpClient, _username, _password);
-      await Future.wait([
-        _appService.login(_httpClient, _iPlanetDirectoryPro!),
-        _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!),
-      ]);
+      login();
     }
-
     // 从考试查询API获取课程信息
     List<Future> fetches = [];
     var yearNow = DateTime.now().year;
@@ -97,13 +91,13 @@ class Spider {
 
     // 建立学期号与学期列表的映射，如"2022-2023-1"对应第22年入学同学的第0个学期，即"2022-2023秋冬"。
     Map<String, int> semesterIndexMap = <String, int>{};
-    for (var i = 0; i < 8; i++) {
+    for (var i = 7, j=0; i >= 0; i--, j++) {
       semesterIndexMap.addEntries(
-          [MapEntry('${yearEnroll + i}-${yearEnroll + i + 1}-1', i * 2)]);
+          [MapEntry('${yearEnroll + i}-${yearEnroll + i + 1}-2', j * 2)]);
       semesterIndexMap.addEntries(
-          [MapEntry('${yearEnroll + i}-${yearEnroll + i + 1}-2', i * 2 + 1)]);
-      outSemesters.add(Semester('${yearEnroll + i}-${yearEnroll + i + 1}秋冬'));
+          [MapEntry('${yearEnroll + i}-${yearEnroll + i + 1}-1', j * 2 + 1)]);
       outSemesters.add(Semester('${yearEnroll + i}-${yearEnroll + i + 1}春夏'));
+      outSemesters.add(Semester('${yearEnroll + i}-${yearEnroll + i + 1}秋冬'));
     }
 
     // 爬浙大钉API，查课表
@@ -112,12 +106,15 @@ class Spider {
             .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
             .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
             .forEach((e) {
+              if(e['mc'] == "边缘计算开发实践" ){
+                print(e);
+              }
           if (e['kcid'] != null) {
             outSemesters[
             semesterIndexMap[(e['kcid'] as String).substring(1, 12)]!]
                 .addSession(e);
           }
-        })));
+        })).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询课表失败，这个API经常坏')));
 
     // 爬教务网，查成绩
     fetches.add(_getGrades().then((value) {
@@ -135,13 +132,13 @@ class Spider {
         e.calculateGPA();
       }
       return true;
-    }));
+    }).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询成绩失败，常见于挂了梯子')));
 
     // 爬教务网，查主修成绩
     fetches.add(_getMajorGpaAndCredit().then((value) {
       outMajorGrade.clear();
       outMajorGrade.addAll(value);
-    }));
+    }).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询主修成绩失败，常见于挂了梯子')));
 
     // 考试、时间配置要分学期查，所以放在循环里
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
@@ -151,13 +148,13 @@ class Spider {
             if (value != null) {
               outSemesters[semesterIndexMap['$yearStr-1']!].addTimeInfo(jsonDecode(value));
             }
-          }));
+          }).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询学期配置失败')));
       fetches.add(TimeConfigService.getConfig(_httpClient, '$yearStr-2').then(
               (value) {
             if (value != null) {
               outSemesters[semesterIndexMap['$yearStr-2']!].addTimeInfo(jsonDecode(value));
             }
-          }));
+          }).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询学期配置失败')));
       fetches
           .add(_appService.getExamJson(_httpClient, yearStr, "1").then((value) {
         jsonDecode(value
@@ -172,7 +169,7 @@ class Spider {
         for (var e in outSemesters) {
           e.sortExams();
         }
-      }));
+      }).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询考试失败')));
       fetches
           .add(_appService.getExamJson(_httpClient, yearStr, "2").then((value) {
         jsonDecode(value
@@ -187,7 +184,7 @@ class Spider {
         for (var e in outSemesters) {
           e.sortExams();
         }
-      }));
+      }).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询考试失败')));
       yearEnroll++;
     }
 

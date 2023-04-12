@@ -100,13 +100,19 @@ class Semester {
   }
 
   // 上半学期课表
-  Iterable<Session> get firstHalfTimetable {
-    return _sessions.where((e) => e.firstHalf && e.confirmed);
+  List<List<Session>> get firstHalfTimetable {
+    return _sessions.where((e) => e.firstHalf && e.confirmed).fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
+      p[e.day].add(e);
+      return p;
+    });
   }
 
   // 下半学期课表
-  Iterable<Session> get secondHalfTimetable {
-    return _sessions.where((e) => e.secondHalf && e.confirmed);
+  List<List<Session>> get secondHalfTimetable {
+    return _sessions.where((e) => e.secondHalf && e.confirmed).fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
+      p[e.day].add(e);
+      return p;
+    });
   }
 
   double get firstHalfSessionCount {
@@ -134,11 +140,11 @@ class Semester {
             var period = Period(
                 periodType: PeriodType.classes,
                 description: "教师: ${session.teacher}",
-                location: session.location,
-                summary: session.name);
-            period.startTime =
-                day.add(_sessionToTime[session.time.first].first);
-            period.endTime = day.add(_sessionToTime[session.time.last].last);
+                location: session.location ?? "未知",
+                summary: session.name,
+                startTime: day.add(_sessionToTime[session.time.first].first),
+                endTime: day.add(_sessionToTime[session.time.last].last)
+            );
             periods.add(period);
           }
         }
@@ -147,11 +153,11 @@ class Semester {
             var period = Period(
                 periodType: PeriodType.classes,
                 description: "教师: ${session.teacher}",
-                location: session.location,
-                summary: session.name);
-            period.startTime =
-                day.add(_sessionToTime[session.time.first].first);
-            period.endTime = day.add(_sessionToTime[session.time.last].last);
+                location: session.location ?? "未知"
+                summary: session.name,
+                startTime: day.add(_sessionToTime[session.time.first].first),
+                endTime: day.add(_sessionToTime[session.time.last].last)
+            );
             periods.add(period);
           }
         }
@@ -162,11 +168,11 @@ class Semester {
             var period = Period(
                 periodType: PeriodType.classes,
                 description: "教师: ${session.teacher}",
-                location: session.location,
-                summary: session.name);
-            period.startTime =
-                day.add(_sessionToTime[session.time.first].first);
-            period.endTime = day.add(_sessionToTime[session.time.last].last);
+                location: session.location ?? "未知",
+                summary: session.name,
+                startTime: day.add(_sessionToTime[session.time.first].first),
+                endTime: day.add(_sessionToTime[session.time.last].last),
+            );
             periods.add(period);
           }
         }
@@ -175,11 +181,11 @@ class Semester {
             var period = Period(
                 periodType: PeriodType.classes,
                 description: "教师: ${session.teacher}",
-                location: session.location,
-                summary: session.name);
-            period.startTime =
-                day.add(_sessionToTime[session.time.first].first);
-            period.endTime = day.add(_sessionToTime[session.time.last].last);
+                location: session.location ?? "未知",
+                summary: session.name,
+                startTime: day.add(_sessionToTime[session.time.first].first),
+                endTime: day.add(_sessionToTime[session.time.last].last),
+            );
             periods.add(period);
           }
         }

@@ -50,7 +50,7 @@ class User {
 
   Semester get thisSemester {
     if (semesters.isNotEmpty) {
-      return semesters.last;
+      return semesters.first;
     } else {
       return Semester('未登录');
     }
@@ -58,8 +58,8 @@ class User {
 
   // 初始化以获取Cookies，并刷新数据
   Future<bool> login() async {
-    _spider = Spider(username, _password);
     try {
+      _spider = Spider(username, _password);
       await _spider.login();
       await refresh();
       return isLogin = true;
@@ -113,9 +113,6 @@ class User {
           aboardNetGrades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
       await _db.setUser(this);
       return true;
-    }).catchError((e) {
-      print(e);
-      return false;
     });
   }
 

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:celechron/utils/utils.dart';
 import 'package:hive/hive.dart';
 import 'package:celechron/model/deadline.dart';
@@ -51,7 +49,7 @@ class DeadlineAdapter extends TypeAdapter<Deadline> {
     var fields = <int, dynamic>{
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Deadline()
+    return Deadline(endTime: DateTime.now())
       ..uid = fields[0] as String
       ..deadlineType = fields[1] as DeadlineType
       ..description = fields[2] as String

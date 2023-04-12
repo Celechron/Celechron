@@ -9,11 +9,13 @@ class OptionController extends GetxController {
   late final Rx<Duration> _workTime;
   late final Rx<Duration> _restTime;
   late final RxInt allowTimeLength;
+  late final RxInt gpaStrategy;
 
   OptionController() {
     _workTime = _db.getWorkTime().obs;
     _restTime = _db.getRestTime().obs;
     allowTimeLength = _db.getAllowTime().length.obs;
+    gpaStrategy = 1.obs;
   }
 
   Duration get workTime => _workTime.value;

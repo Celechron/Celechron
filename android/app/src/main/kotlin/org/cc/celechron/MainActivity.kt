@@ -1,4 +1,4 @@
-package com.example.celechron
+package org.cc.celechron
 
 import io.flutter.embedding.android.FlutterActivity
 

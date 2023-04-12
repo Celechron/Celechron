@@ -1,7 +1,6 @@
 import 'package:celechron/page/scholar/scholar_view.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
+import 'package:flutter/material.dart' show Icons;
 import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'page/calendar/calendar_view.dart';
@@ -11,10 +10,6 @@ import 'page/task/task_view.dart';
 import 'database/database_helper.dart';
 import 'page/option/option_view.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:intl/date_symbol_data_local.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'dart:async';
 
 void main() async {
@@ -33,8 +28,9 @@ void main() async {
   Get.put(db.getFlowList().obs, tag: 'flowList');
   Get.put(db.getFlowListUpdateTime().obs, tag: 'flowListLastUpdate');
 
+  runApp(const CelechronApp());
   // Run
-  initializeDateFormatting().then((_) => runApp(const CelechronApp()));
+  //initializeDateFormatting().then((_) => runApp(const CelechronApp()));
 }
 
 class CelechronApp extends StatefulWidget {
@@ -46,10 +42,6 @@ class CelechronApp extends StatefulWidget {
 
 class _CelechronAppState extends State<CelechronApp> {
   Future<void> initTimezone() async {
-    tz.initializeTimeZones();
-    final String locationName = await FlutterNativeTimezone.getLocalTimezone();
-    tz.setLocalLocation(tz.getLocation(locationName));
-    print(locationName);
   }
 
   Future<void> initUser() async {
@@ -120,12 +112,12 @@ class _MyHomePageState extends State<MyHomePage> {
         backgroundColor: CupertinoDynamicColor.resolve(CupertinoColors.secondarySystemBackground, context).withOpacity(0.5),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.calendar),
-            label: '日程',
-          ),
-          BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.time),
             label: '接下来',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.calendar),
+            label: '日程',
           ),
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.check_mark),
@@ -133,7 +125,6 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.school_outlined),
-
             label: '学业',
           ),
           BottomNavigationBarItem(
@@ -155,8 +146,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   Widget _getPagesWidget(int index) {
     List<Widget> widgetList = [
-      CalendarPage(),
       FlowPage(),
+      CalendarPage(),
       TaskPage(),
       ScholarPage(),
       OptionPage(),
