@@ -1,29 +1,22 @@
-import 'package:flutter/material.dart';
-import '../../model/user.dart';
-import 'package:get/get.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:vector_graphics/vector_graphics.dart';
 
-class CreditsPage extends StatefulWidget {
+class CreditsPage extends StatelessWidget {
   const CreditsPage({super.key});
 
   @override
-  State<CreditsPage> createState() => _CreditsPageState();
-}
-
-class _CreditsPageState extends State<CreditsPage> {
-  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('关于我们'),
+    return CupertinoPageScaffold(
+      navigationBar: const CupertinoNavigationBar(
+        middle: Text('关于'),
+        border: null,
       ),
-      body: Column(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         mainAxisSize: MainAxisSize.max,
         children: [
           const SizedBox(
-            height: 8,
+            height: 72,
           ),
           Align(
             alignment: Alignment.center,

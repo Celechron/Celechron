@@ -4,17 +4,15 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/scheduler.dart';
 
 class TitleCard extends StatefulWidget {
-  final String? title;
   final Widget child;
-  final Widget? right;
   final Function()? onTap;
+  final bool animate;
 
   const TitleCard({
     Key? key,
-    this.title,
     required this.child,
     this.onTap,
-    this.right,
+    this.animate = true,
   }) : super(key: key);
 
   @override
@@ -29,22 +27,26 @@ class _TitleCardState extends State<TitleCard>
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 200),
-      reverseDuration: const Duration(milliseconds: 400),
-    );
-    _scaleAnimation = Tween<double>(begin: 1, end: 0.95).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeInOut,
-      ),
-    );
+    if (widget.animate) {
+      _animationController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 200),
+        reverseDuration: const Duration(milliseconds: 400),
+      );
+      _scaleAnimation = Tween<double>(begin: 1, end: 0.95).animate(
+        CurvedAnimation(
+          parent: _animationController,
+          curve: Curves.easeInOut,
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    if (widget.animate) {
+      _animationController.dispose();
+    }
     super.dispose();
   }
 
@@ -54,21 +56,7 @@ class _TitleCardState extends State<TitleCard>
     var isCancel = false;
     return Column(
       children: [
-        Row(children: [
-          widget.title == null
-              ? const SizedBox(height: 0)
-              : Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(top: 12, bottom: 12),
-            child: Text(
-              widget.title!,
-              style: CupertinoTheme.of(context)
-                  .textTheme.navLargeTitleTextStyle.copyWith(fontSize: 20),
-          )),
-          const Spacer(),
-          widget.right == null? const SizedBox(height: 0) : widget.right!,
-        ]),
-        GestureDetector(
+        widget.animate ? GestureDetector(
           onTapDown: (_) async {
             isDown = true;
             isCancel = false;
@@ -87,7 +75,7 @@ class _TitleCardState extends State<TitleCard>
             isCancel = true;
             if (!isDown) _animationController.reverse();
           },
-          onTapCancel: () => _animationController.reverse(),
+          onTapCancel: () async => _animationController.reverse(),
           child: ScaleTransition(
             scale: _scaleAnimation,
             child: Container(
@@ -95,8 +83,8 @@ class _TitleCardState extends State<TitleCard>
                 borderRadius: BorderRadius.circular(12),
                 // In light mode, color is white; in dark mode, color is black
                 color: SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark
-                    ? CupertinoColors.systemFill
-                    : CupertinoColors.white,
+                    ? CupertinoDynamicColor.resolve(CupertinoColors.secondarySystemBackground, context)
+                    : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
                 boxShadow: [
                   BoxShadow(
                     // Only show shadow in light mode
@@ -123,7 +111,41 @@ class _TitleCardState extends State<TitleCard>
               ),
             ),
           ),
-        )
+        ) : GestureDetector(
+          onTap: widget.onTap,
+          child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                // In light mode, color is white; in dark mode, color is black
+                color: SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark
+                    ? CupertinoDynamicColor.resolve(CupertinoColors.secondarySystemBackground, context)
+                    : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
+                boxShadow: [
+                  BoxShadow(
+                    // Only show shadow in light mode
+                    color: CupertinoColors.black.withOpacity(0.1),
+                    spreadRadius: 0,
+                    blurRadius: 12,
+                    offset: const Offset(0, 6), // changes position of shadow
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const SizedBox(width: 12),
+                      Expanded(child: widget.child),
+                      const SizedBox(width: 12),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }

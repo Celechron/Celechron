@@ -19,7 +19,7 @@ class ScholarController extends GetxController {
       _user.refresh();
       _durationToLastUpdate.value = DateTime.now().difference(_user.value.lastUpdateTime);
       return true;
-    }).timeout(const Duration(seconds: 15));
+    }).timeout(const Duration(seconds: 10));
     return false;
   }
 

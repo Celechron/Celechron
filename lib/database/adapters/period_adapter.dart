@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:celechron/utils/utils.dart';
 import 'package:hive/hive.dart';
 import 'package:celechron/model/period.dart';
@@ -47,7 +45,7 @@ class PeriodAdapter extends TypeAdapter<Period> {
     var fields = <int, dynamic>{
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Period()
+    return Period(startTime: DateTime.now(), endTime: DateTime.now())
       ..uid = fields[0] as String
       ..fromUid = fields[1] as String?
       ..periodType = fields[2] as PeriodType

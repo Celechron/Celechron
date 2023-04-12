@@ -1,5 +1,4 @@
 import '../utils/utils.dart';
-import 'package:const_date_time/const_date_time.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
 
@@ -29,8 +28,8 @@ class Period {
     this.fromUid,
     this.periodType = PeriodType.classes,
     this.description = "教师: 空之探险队的 Kate\n课程代码: PMD00001\n教学时间安排: 春夏 第1-2节",
-    this.startTime = const ConstDateTime(2023, 3, 1, 8, 00),
-    this.endTime = const ConstDateTime(2023, 3, 1, 9, 35),
+    required this.startTime,
+    required this.endTime,
     this.location = "胖可丁公会",
     this.summary = "不可思议迷宫导论",
   });

@@ -2,46 +2,29 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:celechron/widget/title_card.dart';
 import 'package:celechron/widget/two_line_card.dart';
-import '../../../widget/grade_card.dart';
+import '../../../widget/sub_title.dart';
+import 'grade_card.dart';
 import '../scholar_controller.dart';
 import '../scholar_view.dart';
+import 'grade_detail_controller.dart';
 
 class GradeDetailPage extends StatelessWidget {
-  final _scholarController = Get.find<ScholarController>();
 
-  GradeDetailPage({super.key});
+  final _scholarController = Get.find<ScholarController>();
+  late final GradeDetailController _gradeDetailController;
+
+  GradeDetailPage({super.key}){
+    Get.delete<GradeDetailController>();
+    _gradeDetailController = Get.put(GradeDetailController());
+  }
 
   Widget _buildGradeBrief(BuildContext context) {
     return Column(
       children: [
-        // 成绩概览
         Row(
           children: [
             Expanded(
-                child: TitleCard(
-                    title: '成绩',
-                    right: // a text box with rounded rectangle shape and green background
-                        Obx(() => Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 8, vertical: 4),
-                            decoration: BoxDecoration(
-                                border: Border.all(
-                                    color: _scholarController.durationToLastUpdate > const Duration(minutes: 5)
-                                        ? const Color.fromRGBO(255, 0, 0, 1.0)
-                                        : ScholarPageColors.okGreen.darkColor,
-                                    width: 1),
-                                color: _scholarController.durationToLastUpdate >
-                                        const Duration(minutes: 5)
-                                    ? const Color.fromRGBO(255, 0, 0, 1.0)
-                                    : const Color.fromRGBO(0, 0, 0, 0),
-                                borderRadius: BorderRadius.circular(10)),
-                            child: Text('更新于${_scholarController.durationToLastUpdate.inMinutes}分钟前',
-                                style: TextStyle(
-                                    color: _scholarController.durationToLastUpdate >
-                                            const Duration(minutes: 5)
-                                        ? const Color.fromRGBO(255, 255, 255, 1.0)
-                                        : ScholarPageColors.okGreen.darkColor,
-                                    fontSize: 12)))),
+                child: Hero(tag: 'gradeBrief', child: TitleCard(
                     child: Column(
                       children: [
                         Row(
@@ -102,7 +85,7 @@ class GradeDetailPage extends StatelessWidget {
                           ],
                         ),
                       ],
-                    ))),
+                    )))),
           ],
         ),
         const SizedBox(height: 20),
@@ -117,28 +100,35 @@ class GradeDetailPage extends StatelessWidget {
           children: [
             Expanded(
                 child: TitleCard(
+                  animate: false,
                   child: Column(children: [
                     // Horizontal scrollable list to list all semesters
                     SizedBox(
                       height: 81,
-                      child: Obx(() => ListView.builder(
+                      child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: _scholarController.user.semesters.length - 1,
+                          itemCount: _gradeDetailController.semestersWithGrades.length,
                           itemBuilder: (context, index) {
-                            final semester = _scholarController.user.semesters[
-                            _scholarController.user.semesters.length -
-                                2 -
-                                index];
-                            return Stack(children: [
+                            final semester = _gradeDetailController.semestersWithGrades[index];
+                            return Obx(() => Stack(children: [
                               TwoLineCard(
+                                animate: true,
+                                withColoredFont: true,
                                 title:
                                 '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
                                 content:
                                 '${semester.gpa[0].toStringAsFixed(2)}/${semester.credits.toStringAsFixed(1)}',
+                                onTap: () {
+                                  _gradeDetailController.semesterIndex.value = index;
+                                  _gradeDetailController.semesterIndex.refresh();
+                                },
+                                backgroundColor: _gradeDetailController.semesterIndex.value == index
+                                    ? ScholarPageColors.cyan
+                                    : CupertinoColors.systemFill,
                               ),
                               const SizedBox(width: 125),
-                            ]);
-                          })),
+                            ]));
+                          }),
                     ),
                   ]),
                 )),
@@ -153,48 +143,43 @@ class GradeDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
         child: CustomScrollView(
-      slivers: [
-        CupertinoSliverRefreshControl(
-          onRefresh: () async {
-            await _scholarController.fetchData();
-          },
-        ),
-        SliverToBoxAdapter(
-            child: Column(children: [
-              const SizedBox(height: 40),
-          Row(
-            children: [
-              const SizedBox(width: 18),
-              Expanded(
-                child: Column(
-                  children: [
-                    Hero(tag: 'gradeBrief', child: _buildGradeBrief(context)),
-                    _buildHistory(context),
-                  ],
-                ),
-              ),
-              const SizedBox(width: 18),
-            ],
-          )
-        ])),
-        SliverList(
-          delegate: SliverChildBuilderDelegate((context, index) {
-            return Column(children: [
-              Row(
-                children: [
-                  const SizedBox(width: 18),
-                  Expanded(
-                      child: GradeCard(
-                        grade: _scholarController.semesters[0].grades[index],
-                      )),
-                  const SizedBox(width: 18),
-                ],
-              ),
-              const SizedBox(height: 8),
-            ]);
-          }, childCount: _scholarController.semesters[0].grades.length),
-        ),
-      ],
-    ));
+          slivers: [
+            SubtitlePersistentHeader(subtitle: '成绩'),
+            SliverToBoxAdapter(
+                child: Column(children: [
+                  Row(
+                    children: [
+                      const SizedBox(width: 18),
+                      Expanded(
+                        child: Column(
+                          children: [
+                            _buildGradeBrief(context),
+                            _buildHistory(context),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 18),
+                    ],
+                  )
+                ])),
+            Obx(() => SliverList(
+              delegate: SliverChildBuilderDelegate((context, index) {
+                return Column(children: [
+                  Row(
+                    children: [
+                      const SizedBox(width: 18),
+                      Expanded(
+                          child: GradeCard(
+                            grade: _gradeDetailController.semestersWithGrades[_gradeDetailController.semesterIndex.value].grades[index],
+                          )),
+                      const SizedBox(width: 18),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                ]);
+              }, childCount: _gradeDetailController.semestersWithGrades[_gradeDetailController.semesterIndex.value].grades.length),
+            )),
+          ],
+        ));
   }
 }

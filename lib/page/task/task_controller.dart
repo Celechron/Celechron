@@ -10,6 +10,16 @@ class TaskController extends GetxController {
   final deadlineListLastUpdate = Get.find<Rx<DateTime>>(tag: 'deadlineListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
 
+  List<Deadline> get todoDeadlineList => deadlineList
+      .where((element) =>
+          element.deadlineType == DeadlineType.running ||
+          element.deadlineType == DeadlineType.suspended)
+      .toList();
+
+  List<Deadline> get doneDeadlineList => deadlineList
+      .where((element) => element.deadlineType == DeadlineType.completed || element.deadlineType == DeadlineType.failed)
+      .toList();
+
   @override
   void onInit() {
     updateDeadlineList();

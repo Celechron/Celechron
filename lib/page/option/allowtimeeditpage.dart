@@ -1,8 +1,5 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../../utils/utils.dart';
-import 'package:fluttertoast/fluttertoast.dart';
-import 'package:const_date_time/const_date_time.dart';
 
 class DateTimePair {
   DateTime first, second;
@@ -110,14 +107,14 @@ class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
       var x = now[i];
 
       if (!x.first.isBefore(x.second)) {
-        Fluttertoast.showToast(
+        /*Fluttertoast.showToast(
           msg: '开始时间必须早于结束时间',
           toastLength: Toast.LENGTH_SHORT,
           gravity: ToastGravity.CENTER,
           timeInSecForIosWeb: 1,
           textColor: Colors.white,
           fontSize: 16.0,
-        );
+        );*/
         return;
       }
 
@@ -126,14 +123,14 @@ class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
         var y = now[j];
         if ((!x.first.isBefore(y.first) && !x.first.isAfter(y.second)) ||
             (!x.second.isBefore(y.first) && !x.second.isAfter(y.second))) {
-          Fluttertoast.showToast(
+          /*Fluttertoast.showToast(
             msg: '时间段之间有重合或直接相邻',
             toastLength: Toast.LENGTH_SHORT,
             gravity: ToastGravity.CENTER,
             timeInSecForIosWeb: 1,
             textColor: Colors.white,
             fontSize: 16.0,
-          );
+          );*/
           return;
         }
       }

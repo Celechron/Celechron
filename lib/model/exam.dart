@@ -49,6 +49,10 @@ class Exam {
       time = (json['time'] as List).map((e) => DateTime.parse(e)).toList(),
       location = json['location'],
       seat = json['seat'];
+
+  get chineseTime => TimeHelper.chineseTime(time[0], time[1]);
+
+  get chineseDate => TimeHelper.chineseDay(time[0]);
 }
 
 enum ExamType { midterm, finalExam }

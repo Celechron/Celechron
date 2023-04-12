@@ -14,6 +14,8 @@ class FlowController extends GetxController {
   final deadlineListLastUpdate = Get.find<Rx<DateTime>>(tag: 'deadlineListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
 
+  bool get isDuringFlow => flowList.first.startTime.isBefore(DateTime.now());
+
   @override
   void onInit() {
     Timer.periodic(const Duration(seconds: 1), (Timer t) {
@@ -204,24 +206,24 @@ class FlowController extends GetxController {
   void refreshFlowList() {
     while (flowList.isNotEmpty) {
       if (flowList[0].periodType == PeriodType.flow) {
-        DateTime now =
-        DateTime.now().copyWith(second: 0, millisecond: 0, microsecond: 0);
-        Duration distan = now.difference(flowList[0].startTime);
+        Duration distan = DateTime.now().difference(flowList[0].startTime);
         Duration length = flowList[0].endTime.difference(flowList[0].startTime);
-        print(distan);
+
         if (distan <= Duration.zero) break;
         if (distan > length) distan = length;
 
-        flowList[0].startTime = flowList[0].startTime.add(distan);
+        //flowList[0].startTime = flowList[0].startTime.add(distan);
         for (var deadline in deadlineList) {
           if (deadline.uid != flowList[0].fromUid) continue;
-          deadline.addTimeSpent(distan);
+          deadline.updateTimeSpent(distan);
         }
+        deadlineList.refresh();
         flowList.refresh();
       }
-      if (!flowList[0].endTime.isAfter(DateTime.now())) {
+      if (flowList[0].endTime.isBefore(DateTime.now())) {
         flowList.removeAt(0);
         flowList.refresh();
+        deadlineList.refresh();
       } else {
         break;
       }

@@ -4,12 +4,14 @@ class TwoLineCard extends StatefulWidget {
   final String title;
   final String content;
   final bool withColoredFont;
+  final bool animate;
   final VoidCallback? onTap;
   final CupertinoDynamicColor backgroundColor;
 
   const TwoLineCard({
     required this.title,
     required this.content,
+    this.animate = false,
     this.withColoredFont = false,
     this.onTap,
     this.backgroundColor = CupertinoColors.systemBackground,
@@ -27,35 +29,53 @@ class _TwoLineCardState extends State<TwoLineCard>
   @override
   void initState() {
     super.initState();
-    _animationController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 150),
-      reverseDuration: const Duration(milliseconds: 100),
-    );
-    _scaleAnimation = Tween<double>(begin: 1, end: 0.95).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeOutQuint,
-        reverseCurve: Curves.easeInQuint,
-      ),
-    );
+    if (widget.animate) {
+      _animationController = AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 200),
+        reverseDuration: const Duration(milliseconds: 400),
+      );
+      _scaleAnimation = Tween<double>(begin: 1, end: 0.95).animate(
+        CurvedAnimation(
+          parent: _animationController,
+          curve: Curves.easeInOut,
+        ),
+      );
+    }
   }
 
   @override
   void dispose() {
-    _animationController.dispose();
+    if (widget.animate) {
+      _animationController.dispose();
+    }
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
 
+    var isDown = false;
+    var isCancel = false;
     var brightness = MediaQuery.of(context).platformBrightness;
 
-    return GestureDetector(
-      //onTapDown: (_) => _animationController.forward(),
-      //onTapUp: (_) => _animationController.reverse(),
-      //onTapCancel: () => _animationController.reverse(),
+    return widget.animate ? GestureDetector(
+      onTapDown: (_) async {
+        isDown = true;
+        isCancel = false;
+        _animationController.forward();
+        await Future.delayed(const Duration(milliseconds: 125));
+        isDown = false;
+        if (isCancel) {
+          _animationController.reverse();
+          isCancel = false;
+        }
+      },
+      onTapUp: (_) async {
+        isCancel = true;
+        if (!isDown) _animationController.reverse();
+      },
+      onTapCancel: () => _animationController.reverse(),
       onTap: widget.onTap,
       child: ScaleTransition(
         scale: _scaleAnimation,
@@ -107,6 +127,101 @@ class _TwoLineCardState extends State<TwoLineCard>
           ),
         ),
       ),
+    ) : widget.onTap == null ? Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(10),
+        color: brightness == Brightness.dark ? CupertinoColors.secondarySystemFill : CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+        // boxShadow
+        boxShadow: const [
+          BoxShadow(
+            color: Color.fromRGBO(0, 0, 0, 0.05),
+            offset: Offset(0, 2),
+            blurRadius: 4,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        // add a colored edge
+        children: [
+          Text(
+              widget.title,
+              style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                color: CupertinoTheme.of(context).textTheme.textStyle.color!.withOpacity(0.5),
+                fontSize: 14,
+                fontWeight: FontWeight.normal,
+              )),
+          const SizedBox(height: 2),
+          widget.withColoredFont ? const SizedBox(height: 4) : SizedBox(
+            height: 4,
+            child: Container(
+              decoration: BoxDecoration(
+                color: CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            widget.content,
+            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: (widget.withColoredFont && brightness == Brightness.dark) ? CupertinoDynamicColor.resolve(widget.backgroundColor, context) : CupertinoTheme.of(context).textTheme.textStyle.color,
+            ),
+          ),
+        ],
+      ),
+    ) : GestureDetector(
+      onTap: () => widget.onTap!.call(),
+      child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10),
+            color: brightness == Brightness.dark ? CupertinoColors.secondarySystemFill : CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+            // boxShadow
+            boxShadow: const [
+              BoxShadow(
+                color: Color.fromRGBO(0, 0, 0, 0.05),
+                offset: Offset(0, 2),
+                blurRadius: 4,
+              ),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            // add a colored edge
+            children: [
+              Text(
+                  widget.title,
+                  style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                    color: CupertinoTheme.of(context).textTheme.textStyle.color!.withOpacity(0.5),
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                  )),
+              const SizedBox(height: 2),
+              widget.withColoredFont ? const SizedBox(height: 4) : SizedBox(
+                height: 4,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                widget.content,
+                style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: (widget.withColoredFont && brightness == Brightness.dark) ? CupertinoDynamicColor.resolve(widget.backgroundColor, context) : CupertinoTheme.of(context).textTheme.textStyle.color,
+                ),
+              ),
+            ],
+          ),
+        ),
     );
   }
 }
