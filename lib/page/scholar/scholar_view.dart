@@ -291,6 +291,7 @@ class ScholarPage extends StatelessWidget {
     return CupertinoPageScaffold(
         child: SafeArea(child: CustomScrollView(
           slivers: [
+            if (_scholarController.user.isLogin)
                 CupertinoSliverRefreshControl(
                   onRefresh: () async {
                     await _scholarController.fetchData();
@@ -301,6 +302,7 @@ class ScholarPage extends StatelessWidget {
               border: null,
               stretch: true,
             ),
+            if (_scholarController.user.isLogin)
             SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -314,6 +316,11 @@ class ScholarPage extends StatelessWidget {
                         ),
                       ),
                   )
+            else
+                  SliverToBoxAdapter(child: SizedBox(
+                  height: 500,
+    child: Column(children: [const Spacer(),Text('未登录', style: CupertinoTheme.of(context).textTheme.textStyle),const Spacer()])
+    ))
           ],
         )));
   }

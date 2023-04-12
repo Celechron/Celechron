@@ -153,7 +153,7 @@ class Semester {
             var period = Period(
                 periodType: PeriodType.classes,
                 description: "教师: ${session.teacher}",
-                location: session.location ?? "未知"
+                location: session.location ?? "未知",
                 summary: session.name,
                 startTime: day.add(_sessionToTime[session.time.first].first),
                 endTime: day.add(_sessionToTime[session.time.last].last)
