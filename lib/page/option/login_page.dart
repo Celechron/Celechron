@@ -77,7 +77,7 @@ class LoginForm extends StatelessWidget {
                           buttonPressed.value = false;
                           Navigator.of(context).pop();
                         }
-                      }).timeout(const Duration(seconds: 10)).catchError((error) {
+                      }).timeout(const Duration(seconds: 60)).catchError((error) {
                         buttonPressed.value = false;
                         showCupertinoDialog(context: context, builder: (context) {
                           return CupertinoAlertDialog(

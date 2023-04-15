@@ -19,7 +19,7 @@ class AppService {
 
     request = await httpClient.getUrl(Uri.parse(
         response.headers.value('location') ??
-            (throw CookieInvalidException("iPlanetDirectoryPro无效"))));
+            (throw ExceptionWithMessage("iPlanetDirectoryPro无效"))));
     request.followRedirects = false;
     response = await request.close();
     response.drain();
@@ -29,7 +29,7 @@ class AppService {
           .firstWhere((element) => element.name == 'wisportalId');
       return true;
     } catch (e) {
-      throw CookieInvalidException("无法获取wisportalId");
+      throw ExceptionWithMessage("无法获取wisportalId");
     }
   }
 
@@ -49,7 +49,7 @@ class AppService {
     var cjcxJson = RegExp('list":(.*?)},"')
         .firstMatch(await response.transform(utf8.decoder).join())
         ?.group(1);
-    if (cjcxJson == null) throw CookieInvalidException("wisportalId无效");
+    if (cjcxJson == null) throw ExceptionWithMessage("wisportalId无效");
     return cjcxJson;
   }
 
@@ -65,7 +65,7 @@ class AppService {
     var xnxqJson = RegExp('list":(.*?)}},"')
         .firstMatch(await response.transform(utf8.decoder).join())
         ?.group(1);
-    if (xnxqJson == null) throw CookieInvalidException("wisportalId无效");
+    if (xnxqJson == null) throw ExceptionWithMessage("wisportalId无效");
     return xnxqJson;
   }
 
@@ -84,7 +84,7 @@ class AppService {
     var examJson = RegExp('list":(.*?)},"')
         .firstMatch(await response.transform(utf8.decoder).join())
         ?.group(1);
-    if (examJson == null) throw CookieInvalidException("wisportalId无效");
+    if (examJson == null) throw ExceptionWithMessage("wisportalId无效");
     return examJson;
   }
 
@@ -97,14 +97,14 @@ class AppService {
     request.cookies.add(_wisportalId!);
     request.headers.contentType =
         ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-    request.add(utf8.encode('xn=2&xq='));
+    request.add(utf8.encode('xn=0&xq=0'));
     response = await request.close();
 
     var a = await response.transform(utf8.decoder).join();
     var courseJson = RegExp('"kblist":(.*?),"jxk')
         .firstMatch(a)
         ?.group(1);
-    if (courseJson == null) throw CookieInvalidException("wisportalId无效");
+    if (courseJson == null) throw ExceptionWithMessage("wisportalId无效");
     return courseJson;
   }
 }
