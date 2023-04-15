@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/http/time_config_service.dart';
+import 'package:celechron/http/zjuServices/exceptions.dart';
 
 import '../model/grade.dart';
 import '../model/semester.dart';
@@ -30,14 +31,14 @@ class Spider {
 
   Future<bool> login() async {
     _iPlanetDirectoryPro =
-    await ZjuAm.getSsoCookie(_httpClient, _username, _password);
+    await ZjuAm.getSsoCookie(_httpClient, _username, _password).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception("无法登录统一身份认证，${e.toString()}"));
     return await Future.wait([
-      _appService.login(_httpClient, _iPlanetDirectoryPro!).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception("无法登录钉工作台")),
-      _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception("无法登录教务网")),
+      _appService.login(_httpClient, _iPlanetDirectoryPro!).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception("无法登录钉工作台，${e.toString()}")),
+      _jwbInfoSys.login(_httpClient, _iPlanetDirectoryPro!).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception("无法登录教务网，${e.toString()}")),
     ]).then((value){
       _lastUpdateTime = DateTime.now();
       return value[0] && value[1];
-    }).catchError((e) => false);
+    });
   }
 
   void logout() {
@@ -54,19 +55,23 @@ class Spider {
     // Group 3: 成绩
     // Group 4: 学分
     // Group 5: 绩点
-    return await _jwbInfoSys.getTranscriptHtml(_httpClient, _username).then(
-            (value) =>
-            RegExp(
-                r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>&nbsp;</td>')
-                .allMatches(value)
-                .map((e) =>
-            [
-              e.group(1)!,
-              e.group(2)!,
-              e.group(3)!,
-              e.group(4)!,
-              e.group(5)!
-            ]));
+    try {
+      return await _jwbInfoSys.getTranscriptHtml(_httpClient, _username).then(
+              (value) =>
+              RegExp(
+                  r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>&nbsp;</td>')
+                  .allMatches(value)
+                  .map((e) =>
+              [
+                e.group(1)!,
+                e.group(2)!,
+                e.group(3)!,
+                e.group(4)!,
+                e.group(5)!
+              ]));
+    } on SocketException {
+      throw ExceptionWithMessage("网络错误");
+    }
   }
 
   Future<List<double>> _getMajorGpaAndCredit() async {
@@ -111,7 +116,7 @@ class Spider {
             semesterIndexMap[(e['kcid'] as String).substring(1, 12)]!]
                 .addSession(e);
           }
-        })).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询课表失败，这个API经常坏')));
+        })).timeout(const Duration(seconds: 5)).catchError((e) => throw ExceptionWithMessage('查询课表失败，这个API经常坏，${e.toString()}')));
 
     // 爬教务网，查成绩
     fetches.add(_getGrades().then((value) {
@@ -129,13 +134,13 @@ class Spider {
         e.calculateGPA();
       }
       return true;
-    }).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询成绩失败，常见于挂了梯子')));
+    }).catchError((e) => throw ExceptionWithMessage('查询主修成绩失败，${(e as ExceptionWithMessage).message}')));
 
     // 爬教务网，查主修成绩
     fetches.add(_getMajorGpaAndCredit().then((value) {
       outMajorGrade.clear();
       outMajorGrade.addAll(value);
-    }).timeout(const Duration(seconds: 5)).catchError((e) => throw Exception('查询主修成绩失败，常见于挂了梯子')));
+    }).catchError((e) => throw ExceptionWithMessage('查询主修成绩失败，${(e as ExceptionWithMessage).message}')));
 
     // 考试、时间配置要分学期查，所以放在循环里
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {

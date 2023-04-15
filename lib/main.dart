@@ -1,6 +1,7 @@
 import 'package:celechron/page/scholar/scholar_view.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart' show Icons;
+import 'package:flutter/material.dart' show Colors, Icons;
+import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'page/calendar/calendar_view.dart';
@@ -11,6 +12,8 @@ import 'database/database_helper.dart';
 import 'page/option/option_view.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'dart:async';
+import 'dart:io';
+import 'package:flutter/services.dart';
 
 void main() async {
   // 从数据库读取数据
@@ -29,8 +32,13 @@ void main() async {
   Get.put(db.getFlowListUpdateTime().obs, tag: 'flowListLastUpdate');
 
   runApp(const CelechronApp());
-  // Run
-  //initializeDateFormatting().then((_) => runApp(const CelechronApp()));
+  if (Platform.isAndroid) {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+      statusBarIconBrightness: SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark ? Brightness.light : Brightness.dark,
+      systemNavigationBarColor: Colors.transparent,
+    ));
+  }
 }
 
 class CelechronApp extends StatefulWidget {
@@ -152,6 +160,14 @@ class _MyHomePageState extends State<MyHomePage> {
       ScholarPage(),
       OptionPage(),
     ];
+
+    if (Platform.isAndroid) {
+      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+        statusBarIconBrightness: SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+      ));
+    }
 
     return Offstage(
       offstage: _indexNum != index,

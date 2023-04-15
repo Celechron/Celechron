@@ -58,14 +58,10 @@ class User {
 
   // 初始化以获取Cookies，并刷新数据
   Future<bool> login() async {
-    try {
-      _spider = Spider(username, _password);
-      await _spider.login();
-      await refresh();
-      return isLogin = true;
-    } on SocketException {
-      throw Exception('网络错误');
-    }
+    _spider = Spider(username, _password);
+    await _spider.login();
+    await refresh();
+    return isLogin = true;
   }
 
   Future<bool> logout() async {

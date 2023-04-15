@@ -11,10 +11,10 @@ class LoginException implements Exception {
   }
 }
 
-class CookieInvalidException implements Exception {
+class ExceptionWithMessage implements Exception {
   final dynamic message;
 
-  CookieInvalidException([this.message]);
+  ExceptionWithMessage([this.message]);
 
   @override
   String toString() {

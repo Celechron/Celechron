@@ -21,7 +21,7 @@ class OptionPage extends StatelessWidget {
 
     return CupertinoPageScaffold(
         backgroundColor: CupertinoColors.systemGroupedBackground,
-        child: CustomScrollView(
+        child: SafeArea(child: CustomScrollView(
           slivers: [
             const CupertinoSliverNavigationBar(
               largeTitle: Text('设置'),
@@ -218,7 +218,7 @@ class OptionPage extends StatelessWidget {
                   ]),
             )
           ],
-        ));
+        )));
   }
 
   static const _defaultMargin = EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 10.0);
