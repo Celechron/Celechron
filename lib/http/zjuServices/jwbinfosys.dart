@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../model/grade.dart';
 import 'exceptions.dart';
 import 'package:fast_gbk/fast_gbk.dart';
 
@@ -38,7 +39,7 @@ class JwbInfoSys {
     _aspNetSessionId = null;
   }
 
-  Future<String> getMajorGradeHtml(
+  Future<List<double>> getMajorGrade(
       HttpClient httpClient, String username) async {
 
     late HttpClientRequest request;
@@ -54,10 +55,15 @@ class JwbInfoSys {
     if (response.statusCode != HttpStatus.ok) {
       throw ExceptionWithMessage("无法获取主修成绩");
     }
-    return await response.transform(gbk.decoder).join();
+    var html = await response.transform(gbk.decoder).join();
+
+    return [double.parse(
+        RegExp(r'平均绩点=([0-9.]+)').firstMatch(html)?.group(1) ?? "0.00"),
+    double.parse(
+        RegExp(r'总学分=([0-9.]+)').firstMatch(html)?.group(1) ?? "0.00")];
   }
 
-  Future<String> getTranscriptHtml(HttpClient httpClient, String username) async {
+  Future<Iterable<Grade>> getTranscript(HttpClient httpClient, String username) async {
 
     late HttpClientRequest request;
     late HttpClientResponse response;
@@ -85,7 +91,10 @@ class JwbInfoSys {
     if (response.statusCode != HttpStatus.ok) {
       throw ExceptionWithMessage("教务网炸了，无法获取成绩单");
     }
-    return await response.transform(gbk.decoder).join();
+
+    return RegExp(r'<td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>(.*?)</td><td>&nbsp;</td>')
+        .allMatches(await response.transform(gbk.decoder).join())
+        .map((e) => Grade([e.group(1)!, e.group(2)!, e.group(3)!, e.group(4)!, e.group(5)!]));
   }
 
 }

@@ -26,8 +26,10 @@ class Exam {
     }
   }
 
-  static List<Exam> parseExams(String id, String name, Map<String, dynamic> json) {
+  static List<Exam> parseExams(Map<String, dynamic> json) {
     var exams = <Exam>[];
+    var id = (json['xkkh'] as String);
+    var name = json['kcmc'] as String;
     if (json.containsKey("qzkssj")) exams.add(Exam._fromExam(id, name, json, ExamType.midterm));
     if (json.containsKey("qmkssj")) exams.add(Exam._fromExam(id, name, json, ExamType.finalExam));
     return exams;
