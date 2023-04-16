@@ -1,3 +1,5 @@
+import 'package:celechron/model/exams_dto.dart';
+
 import 'exam.dart';
 import 'grade.dart';
 import 'session.dart';
@@ -14,9 +16,12 @@ class Course {
   List<Session> sessions = [];
   List<Exam> exams = [];
 
-  Course.fromExam(this.id, this.name, this.credit, List<Exam> examList) {
+  Course.fromExam(ExamDto examDto) {
+    id = examDto.id;
+    name = examDto.name;
+    credit = examDto.credit;
     confirmed = true;
-    exams.addAll(examList);
+    exams.addAll(examDto.exams);
   }
 
   Course.fromSession(Session session) {
@@ -49,9 +54,9 @@ class Course {
     }
   }*/
 
-  static bool completeExam(Course course, List<Exam> exam, double credit) {
-    course.credit = credit;
-    course.exams.addAll(exam);
+  static bool completeExam(Course course, ExamDto examDto) {
+    course.credit = examDto.credit;
+    course.exams.addAll(examDto.exams);
     return true;
   }
 

@@ -19,6 +19,8 @@ class Session {
   List<int> time;
   String? location;
 
+  String get semesterId => id.substring(1, 12);
+
   static const String dayMap = '零一二三四五六日';
 
   Session(Map<String, dynamic> json)

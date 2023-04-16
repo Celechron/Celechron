@@ -12,14 +12,13 @@ class LoginException implements Exception {
 }
 
 class ExceptionWithMessage implements Exception {
-  final dynamic message;
+  final Object message;
 
-  ExceptionWithMessage([this.message]);
+  ExceptionWithMessage(this.message);
 
   @override
   String toString() {
     Object? message = this.message;
-    if (message == null) return "Exception";
-    return "Exception: $message";
+    return "$message";
   }
 }

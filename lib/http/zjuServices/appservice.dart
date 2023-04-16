@@ -1,6 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:celechron/model/exams_dto.dart';
+
+import '../../model/session.dart';
 import 'exceptions.dart';
 
 class AppService {
@@ -69,42 +72,67 @@ class AppService {
     return xnxqJson;
   }
 
-  Future<String> getExamJson(HttpClient httpClient, String xn, String xq) async {
+  Future<Iterable<ExamDto>> getExamsDto(
+      HttpClient httpClient, String xn, String xq) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
 
-    request = await httpClient.postUrl(Uri.parse(
-        "http://appservice.zju.edu.cn/zju-smartcampus/zdydjw/api/kkqk_cxXsksxx"));
-    request.cookies.add(_wisportalId!);
-    request.headers.contentType =
-        ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-    request.add(utf8.encode('xn=$xn&xq=$xq'));
-    response = await request.close();
+    try {
+      request = await httpClient
+          .postUrl(Uri.parse(
+              "http://appservice.zju.edu.cn/zju-smartcampus/zdydjw/api/kkqk_cxXsksxx"))
+          .timeout(const Duration(seconds: 5),
+              onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      request.cookies.add(_wisportalId!);
+      request.headers.contentType =
+          ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
+      request.add(utf8.encode('xn=$xn&xq=$xq'));
+      response = await request.close().timeout(const Duration(seconds: 5),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    } on SocketException {
+      throw ExceptionWithMessage("网络错误");
+    }
 
     var examJson = RegExp('list":(.*?)},"')
         .firstMatch(await response.transform(utf8.decoder).join())
         ?.group(1);
-    if (examJson == null) throw ExceptionWithMessage("wisportalId无效");
-    return examJson;
+    if (examJson == null) throw ExceptionWithMessage("Cookie无效或参数错误");
+
+    return (jsonDecode(examJson
+                .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
+                .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
+            as List<dynamic>)
+        .map((e) => ExamDto(e));
   }
 
-  Future<String> getTimetableJson(HttpClient httpClient) async {
+  // 这个API用了些Trick————只要输入的学年和学期不合法，就会返回一个包含所有课程的课表
+  // 如果哪天不行了，就还是按照传统的学年+学期传参老老实实爬吧
+  // 修复API返回的课表中的括号不是中文字符的问题
+  Future<Iterable<Session>> getTimetable(HttpClient httpClient) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
 
-    request = await httpClient.postUrl(Uri.parse(
-        "http://appservice.zju.edu.cn/zju-smartcampus/zdydjw/api/kbdy_cxXsZKbxx"));
+    request = await httpClient
+        .postUrl(Uri.parse(
+            "http://appservice.zju.edu.cn/zju-smartcampus/zdydjw/api/kbdy_cxXsZKbxx"))
+        .timeout(const Duration(seconds: 5),
+            onTimeout: () => throw ExceptionWithMessage("请求超时"));
     request.cookies.add(_wisportalId!);
     request.headers.contentType =
         ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
     request.add(utf8.encode('xn=0&xq=0'));
-    response = await request.close();
+    response = await request.close().timeout(const Duration(seconds: 5),
+        onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
     var a = await response.transform(utf8.decoder).join();
-    var courseJson = RegExp('"kblist":(.*?),"jxk')
-        .firstMatch(a)
-        ?.group(1);
-    if (courseJson == null) throw ExceptionWithMessage("wisportalId无效");
-    return courseJson;
+    var courseJson = RegExp('"kblist":(.*?),"jxk').firstMatch(a)?.group(1);
+    if (courseJson == null) throw ExceptionWithMessage("无法解析");
+
+    return (jsonDecode(courseJson
+                .replaceAll(RegExp(r'\((?=[\u4e00-\u9fa5])'), '（')
+                .replaceAll(RegExp(r'(?<=[\u4e00-\u9fa5])\)'), '）'))
+            as List<dynamic>)
+        .where((e) => e['kcid'] != null)
+        .map((e) => Session(e));
   }
 }

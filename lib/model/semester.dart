@@ -1,3 +1,4 @@
+import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/model/period.dart';
 import '../utils/utils.dart';
 import 'course.dart';
@@ -194,34 +195,27 @@ class Semester {
     return periods;
   }
 
-  void addSession(Map<String, dynamic> json) {
-    if (json['kcid'] != null) {
-      var session = Session(json);
-      var courseKey = session.id;
-      if (_courses.containsKey(courseKey)) {
-        if (!Course.completeSession(_courses[courseKey]!, session)) {
-          _sessions.add(session);
-        }
-      } else {
+  void addSession(Session session) {
+    var courseKey = session.id;
+    if (_courses.containsKey(courseKey)) {
+      if (!Course.completeSession(_courses[courseKey]!, session)) {
         _sessions.add(session);
-        _courses.addEntries([MapEntry(courseKey, Course.fromSession(session))]);
       }
+    } else {
+      _sessions.add(session);
+      _courses.addEntries([MapEntry(courseKey, Course.fromSession(session))]);
     }
   }
 
-  void addExam(Map<String, dynamic> json) {
+  void addExam(ExamDto examDto) {
     // 有的课没有考试但是能查到考试项
-    var id = (json['xkkh'] as String);
-    var name = json['kcmc'] as String;
-    var credit = double.parse(json['xkxf'] as String);
-
-    var examList = Exam.parseExams(id, name, json);
-    _exams.addAll(examList);
-    if (_courses.containsKey(id)) {
-      Course.completeExam(_courses[id]!, examList, credit);
+    _exams.addAll(examDto.exams);
+    var courseId = examDto.id;
+    if (_courses.containsKey(courseId)) {
+      Course.completeExam(_courses[courseId]!, examDto);
     } else {
       _courses.addEntries(
-          [MapEntry(id, Course.fromExam(id, name, credit, examList))]);
+          [MapEntry(courseId, Course.fromExam(examDto))]);
     }
   }
 

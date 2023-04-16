@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:celechron/model/period.dart';
 import 'package:get/get.dart';
 
@@ -21,6 +19,7 @@ class User {
   late String username;
   late String _password;
   late Spider _spider;
+  List<List<String>> originalData = [[],[],[],[],[]];
 
   // 按学期整理好的详细数据，包括该学期的所有科目、考试、课表、均绩等
   List<Semester> semesters = <Semester>[];
@@ -85,8 +84,11 @@ class User {
     var grades = <String, List<Grade>>{}; // 临时变量，用于存储从爬虫获取到的数据
     var majorGpaAndCredit = [0.0, 0.0]; // 临时变量，用于存储从爬虫获取到的数据
     return await _spider
-        .getSemesterDetails(semesters, grades, majorGpaAndCredit)
+        .getEverything(semesters, grades, majorGpaAndCredit, originalData)
         .then((value) async {
+          for (var e in value) {
+            if(e != null) print(e);
+          }
       lastUpdateTime = DateTime.now();
       this.semesters = semesters;
       this.grades = grades;
