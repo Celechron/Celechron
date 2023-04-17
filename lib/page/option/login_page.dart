@@ -76,7 +76,7 @@ class LoginForm extends StatelessWidget {
                           await val.refresh();
                           user.refresh();
                           buttonPressed.value = false;
-                          Navigator.of(context).pop();
+                          if(context.mounted) Navigator.of(context).pop();
                         } else {
                           buttonPressed.value = false;
                           showCupertinoDialog(context: context, builder: (context) {
@@ -86,7 +86,7 @@ class LoginForm extends StatelessWidget {
                               actions: [
                                 CupertinoDialogAction(
                                   child: const Text('确定'),
-                                  onPressed: () {
+                                  onPressed: () async {
                                     Navigator.of(context).pop();
                                   },
                                 )

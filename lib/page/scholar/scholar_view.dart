@@ -294,7 +294,25 @@ class ScholarPage extends StatelessWidget {
             if (_scholarController.user.isLogin)
                 CupertinoSliverRefreshControl(
                   onRefresh: () async {
-                    await _scholarController.fetchData();
+                    var error = await _scholarController.fetchData();
+                    if(error.any((e) => e != null)) {
+                      if(context.mounted) {
+                        showCupertinoDialog(context: context, builder: (context) {
+                        return CupertinoAlertDialog(
+                          title: const Text('登录失败'),
+                          content: Text(error.where((e) => e != null).fold('', (p, v) => '$p\n$v').trim()),
+                          actions: [
+                            CupertinoDialogAction(
+                              child: const Text('确定'),
+                              onPressed: () async {
+                                Navigator.of(context).pop();
+                              },
+                            )
+                          ],
+                        );
+                      });
+                      }
+                    }
                   },
                 ),
             const CupertinoSliverNavigationBar(
