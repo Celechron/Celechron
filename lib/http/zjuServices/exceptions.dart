@@ -7,7 +7,7 @@ class LoginException implements Exception {
   String toString() {
     Object? message = this.message;
     if (message == null) return "Exception";
-    return "Exception: $message";
+    return this.message.toString();
   }
 }
 

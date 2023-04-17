@@ -12,6 +12,7 @@ class DatabaseHelper {
   late final Box userBox;
   late final Box deadlineBox;
   late final Box flowBox;
+  late final Box originalWebPageBox;
 
   Future<void> init() async {
     Hive.registerAdapter(DurationAdapter());
@@ -24,6 +25,7 @@ class DatabaseHelper {
     userBox = await Hive.openBox(dbUser);
     deadlineBox = await Hive.openBox(dbDeadline);
     flowBox = await Hive.openBox(dbFlow);
+    originalWebPageBox = await Hive.openBox(dbOriginalWebPage);
   }
 
   // Options
@@ -126,5 +128,24 @@ class DatabaseHelper {
 
   Future<void> removeUser() async {
     await userBox.delete('user');
+  }
+
+  // Original Web Page
+  final String dbOriginalWebPage = 'dbOriginalWebPage';
+
+  String? getCachedWebPage(String key) {
+    return originalWebPageBox.get(key);
+  }
+
+  Future<void> setCachedWebPage(String key, String value) async {
+    await originalWebPageBox.put(key, value);
+  }
+
+  Future<void> removeCachedWebPage(String key) async {
+    await originalWebPageBox.delete(key);
+  }
+
+  Future<void> removeAllCachedWebPage() async {
+    await originalWebPageBox.clear();
   }
 }

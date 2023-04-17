@@ -19,7 +19,6 @@ class User {
   late String username;
   late String _password;
   late Spider _spider;
-  List<List<String>> originalData = [[],[],[],[],[]];
 
   // 按学期整理好的详细数据，包括该学期的所有科目、考试、课表、均绩等
   List<Semester> semesters = <Semester>[];
@@ -51,16 +50,19 @@ class User {
     if (semesters.isNotEmpty) {
       return semesters.first;
     } else {
-      return Semester('未登录');
+      return Semester('未刷新');
     }
   }
 
   // 初始化以获取Cookies，并刷新数据
-  Future<bool> login() async {
+  Future<List<String?>> login() async {
     _spider = Spider(username, _password);
-    await _spider.login();
-    await refresh();
-    return isLogin = true;
+    var loginErrorMessage = await _spider.login();
+    if (loginErrorMessage.every((e) => e == null)) {
+      isLogin = true;
+      _db.setUser(this);
+    }
+    return loginErrorMessage;
   }
 
   Future<bool> logout() async {
@@ -79,20 +81,22 @@ class User {
   }
 
   // 刷新数据
-  Future<bool> refresh() async {
-    var semesters = <Semester>[]; // 临时变量，用于存储从爬虫获取到的数据
-    var grades = <String, List<Grade>>{}; // 临时变量，用于存储从爬虫获取到的数据
-    var majorGpaAndCredit = [0.0, 0.0]; // 临时变量，用于存储从爬虫获取到的数据
+  Future<List<String?>> refresh() async {
     return await _spider
-        .getEverything(semesters, grades, majorGpaAndCredit, originalData)
+        .getEverything()
         .then((value) async {
-          for (var e in value) {
+          for (var e in value.item1) {
             if(e != null) print(e);
           }
-      lastUpdateTime = DateTime.now();
-      this.semesters = semesters;
-      this.grades = grades;
-      this.majorGpaAndCredit = majorGpaAndCredit;
+          for (var e in value.item2) {
+            if(e != null) print(e);
+          }
+      if (value.item1.every((e) => e == null) && value.item2.every((e) => e == null)) {
+        lastUpdateTime = DateTime.now();
+      }
+      semesters = value.item3;
+      grades = value.item4;
+      majorGpaAndCredit = value.item5;
       // 保研成绩，只取第一次
       var netGrades = grades.values.map((e) => e.first);
       if (netGrades.isNotEmpty) {
@@ -110,7 +114,7 @@ class User {
       credit =
           aboardNetGrades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
       await _db.setUser(this);
-      return true;
+      return value.item1.every((e) => e == null) ? value.item2 : value.item1;
     });
   }
 
