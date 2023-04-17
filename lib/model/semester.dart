@@ -49,6 +49,8 @@ class Semester {
       /*双周日期*/ [[], [], [], [], [], [], [], []]
     ]
   ];
+  Map<DateTime, String> _holidays = {};
+  Map<DateTime, DateTime> _exchanges = {};
 
   // GPA, 三个数据依次为五分制，四分制，百分制
   List<double> gpa = [0.0, 0.0, 0.0];
@@ -192,7 +194,35 @@ class Semester {
         }
       }
     }
+    periods = periods.where((e) => !_holidays.containsKey(DateTime(e.startTime.year, e.startTime.month, e.startTime.day))).toList();
+    for (var exam in _exams) {
+      var period = Period(
+          periodType: PeriodType.test,
+          description: "${exam.name} - ${exam.type == ExamType.finalExam ? "期末考试" : "期中考试"}",
+          location: exam.location ?? "未知",
+          summary: exam.name,
+          startTime: exam.time[0],
+          endTime: exam.time[1]
+      );
+      periods.add(period);
+    }
     return periods;
+  }
+
+  DateTime get firstDay {
+    try {
+      return _dayOfWeekToDays.first.first[1].first;
+    } catch (e) {
+      return DateTime.now();
+    }
+  }
+
+  DateTime get lastDay {
+    try {
+      return _dayOfWeekToDays.last.last.last.last;
+    } catch (e) {
+      return DateTime.now();
+    }
   }
 
   void addSession(Session session) {
@@ -240,6 +270,10 @@ class Semester {
                 minutes: int.parse((e).substring(3, 5))))
             .toList())
         .toList();
+    _holidays = (json['holiday'] as Map).map((k, v) =>
+        MapEntry(DateTime.parse(k as String), v as String));
+    _exchanges = (json['exchange'] as Map).map((k, v) =>
+        MapEntry(DateTime.parse((k as String).substring(0,8)), DateTime.parse((k).substring(8,16))));
     _dayOfWeekToDays = [
       [
         /*上半学期*/
@@ -256,9 +290,9 @@ class Semester {
     var weekday = startEnd[0].weekday;
     var oddEvenWeek = 0;
     for (DateTime day = startEnd[0];
-        day.isBefore(startEnd[1]);
+        !day.isAfter(startEnd[1]);
         day = day.add(const Duration(days: 1))) {
-      _dayOfWeekToDays[0][oddEvenWeek][weekday++].add(day);
+      _dayOfWeekToDays[0][oddEvenWeek][weekday++].add(_exchanges[day] ?? day);
       if (weekday == 8) {
         weekday = 1;
         oddEvenWeek = 1 - oddEvenWeek;
@@ -267,9 +301,9 @@ class Semester {
     weekday = startEnd[2].weekday;
     oddEvenWeek = 0;
     for (DateTime day = startEnd[2];
-        day.isBefore(startEnd[3]);
+        !day.isAfter(startEnd[3]);
         day = day.add(const Duration(days: 1))) {
-      _dayOfWeekToDays[1][oddEvenWeek][weekday++].add(day);
+      _dayOfWeekToDays[1][oddEvenWeek][weekday++].add(_exchanges[day] ?? day);
       if (weekday == 8) {
         weekday = 1;
         oddEvenWeek = 1 - oddEvenWeek;
@@ -307,6 +341,10 @@ class Semester {
                   .toList())
               .toList())
           .toList(),
+      'holidays': _holidays
+          .map((k, v) => MapEntry(k.toIso8601String(), v)),
+      'exchanges': _exchanges
+          .map((k, v) => MapEntry(k.toIso8601String(), v.toIso8601String())),
     };
   }
 
@@ -333,5 +371,7 @@ class Semester {
                         .toList())
                     .toList())
                 .toList())
-            .toList();
+            .toList(),
+        _holidays = ((json['holidays'] ?? {}) as Map).map((k, v) => MapEntry(DateTime.parse(k as String), v as String)),
+        _exchanges = ((json['exchanges'] ?? {}) as Map).map((k, v) => MapEntry(DateTime.parse(k as String), DateTime.parse(v as String)));
 }

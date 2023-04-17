@@ -70,12 +70,13 @@ class Spider {
   }
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道有没有成功了。
-  Future<Tuple5<List<String?>, List<String?>, List<Semester>,Map<String, List<Grade>>, List<double>>> getEverything() async {
+  Future<Tuple6<List<String?>, List<String?>, List<Semester>,Map<String, List<Grade>>, List<double>, Map<DateTime,String>>> getEverything() async {
 
     // 用于返回的List
     var outSemesters = <Semester>[];
     var outGrades = <String, List<Grade>>{};
     var outMajorGrade = <double>[];
+    var outSpecialDates = <DateTime,String>{};
 
     var loginErrorMessages = <String?>[null, null, null];
     // Cookie过期，是有有效期的
@@ -108,6 +109,10 @@ class Spider {
         if (value.item2 != null) {
           outSemesters[semesterIndexMap['$yearStr-1']!]
               .addTimeInfo(jsonDecode(value.item2!));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(0,8)), '${v as String}放假·调${DateTime.parse(k.substring(8,16)).month}月${DateTime.parse(k.substring(8,16)).day}日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(8,16)), '${v as String}调休·调${DateTime.parse(k.substring(0,8)).month}月${DateTime.parse(k.substring(0,8)).day}日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
@@ -116,6 +121,10 @@ class Spider {
         if (value.item2 != null) {
           outSemesters[semesterIndexMap['$yearStr-2']!]
               .addTimeInfo(jsonDecode(value.item2!));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(0,8)), '${v as String}放假·调${DateTime.parse(k.substring(8,16)).month}月${DateTime.parse(k.substring(8,16)).day}日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(8,16)), '${v as String}调休·调${DateTime.parse(k.substring(0,8)).month}月${DateTime.parse(k.substring(0,8)).day}日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
@@ -195,6 +204,6 @@ class Spider {
       }
     }
     // 等所有请求完成后，去除没有任何信息的学期。
-    return Tuple5(loginErrorMessages, fetchErrorMessages, outSemesters, outGrades, outMajorGrade);
+    return Tuple6(loginErrorMessages, fetchErrorMessages, outSemesters, outGrades, outMajorGrade, outSpecialDates);
   }
 }

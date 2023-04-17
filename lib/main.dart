@@ -53,12 +53,12 @@ class _CelechronAppState extends State<CelechronApp> {
   }
 
   Future<void> initUser() async {
-    // 初始化在这里，打断点看数据（因为不想糊前端页面捏）
     var user = Get.find<Rx<User>>(tag: 'user');
     if (user.value.isLogin) {
       print("数据加载成功");
       await user.value.login();
       await user.value.refresh();
+      user.refresh();
     } else {
       print("数据加载失败");
     }
