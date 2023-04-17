@@ -63,13 +63,13 @@ class Course {
   static bool completeSession(Course course, Session session) {
     course.teacher = session.teacher;
     if (course.sessions.any((e) =>
-        e.day == session.day &&
+        e.dayOfWeek == session.dayOfWeek &&
         e.oddWeek == session.oddWeek &&
         e.evenWeek == session.evenWeek &&
         e.location == session.location &&
         (e.time.last + 1 == session.time.first))) {
       var incompleteSession = course.sessions.firstWhere((e) =>
-          e.day == session.day &&
+          e.dayOfWeek == session.dayOfWeek &&
           e.oddWeek == session.oddWeek &&
           e.evenWeek == session.evenWeek &&
           e.location == session.location &&

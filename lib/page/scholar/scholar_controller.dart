@@ -14,13 +14,12 @@ class ScholarController extends GetxController {
   List<Semester> get semesters => _user.value.semesters;
   Duration get durationToLastUpdate => _durationToLastUpdate.value;
 
-  Future<bool> fetchData() async {
-    await _user.value.refresh().then((value) {
+  Future<List<String?>> fetchData() async {
+    return await _user.value.refresh().then((value) {
       _user.refresh();
       _durationToLastUpdate.value = DateTime.now().difference(_user.value.lastUpdateTime);
-      return true;
-    }).timeout(const Duration(seconds: 10));
-    return false;
+      return value;
+    });
   }
 
   @override

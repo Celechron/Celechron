@@ -105,7 +105,7 @@ class Semester {
   // 上半学期课表
   List<List<Session>> get firstHalfTimetable {
     return _sessions.where((e) => e.firstHalf && e.confirmed).fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
-      p[e.day].add(e);
+      p[e.dayOfWeek].add(e);
       return p;
     });
   }
@@ -113,7 +113,7 @@ class Semester {
   // 下半学期课表
   List<List<Session>> get secondHalfTimetable {
     return _sessions.where((e) => e.secondHalf && e.confirmed).fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
-      p[e.day].add(e);
+      p[e.dayOfWeek].add(e);
       return p;
     });
   }
@@ -139,8 +139,9 @@ class Semester {
     for (var session in _sessions) {
       if (session.firstHalf) {
         if (session.evenWeek) {
-          for (var day in _dayOfWeekToDays[0][0][session.day]) {
+          for (var day in _dayOfWeekToDays[0][0][session.dayOfWeek]) {
             var period = Period(
+                uid: '${session.id}${session.dayOfWeek}${session.time.first}',
                 periodType: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
@@ -152,8 +153,9 @@ class Semester {
           }
         }
         if (session.oddWeek) {
-          for (var day in _dayOfWeekToDays[0][1][session.day]) {
+          for (var day in _dayOfWeekToDays[0][1][session.dayOfWeek]) {
             var period = Period(
+                uid: '${session.id}${session.dayOfWeek}${session.time.first}',
                 periodType: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
@@ -167,8 +169,9 @@ class Semester {
       }
       if (session.secondHalf) {
         if (session.evenWeek) {
-          for (var day in _dayOfWeekToDays[1][0][session.day]) {
+          for (var day in _dayOfWeekToDays[1][0][session.dayOfWeek]) {
             var period = Period(
+                uid: '${session.id}${session.dayOfWeek}${session.time.first}',
                 periodType: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
@@ -180,8 +183,9 @@ class Semester {
           }
         }
         if (session.oddWeek) {
-          for (var day in _dayOfWeekToDays[1][1][session.day]) {
+          for (var day in _dayOfWeekToDays[1][1][session.dayOfWeek]) {
             var period = Period(
+                uid: '${session.id}${session.dayOfWeek}${session.time.first}',
                 periodType: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",

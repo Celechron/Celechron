@@ -15,7 +15,7 @@ class Session {
   bool oddWeek;
   bool evenWeek;
 
-  int day;
+  int dayOfWeek;
   List<int> time;
   String? location;
 
@@ -30,7 +30,7 @@ class Session {
         name = json['mc'],
         teacher = json['jsxm'],
         confirmed = (json['sfqd'] as int) == 1,
-        day = json['xqj'],
+        dayOfWeek = json['xqj'],
         oddWeek = !json['zcxx'].contains("双"),
         evenWeek = !json['zcxx'].contains("单"),
         time = (json['jc'] as List<dynamic>).map((e) => int.parse(e)).toList(),
@@ -51,7 +51,7 @@ class Session {
     'secondHalf': secondHalf,
     'oddWeek': oddWeek,
     'evenWeek': evenWeek,
-    'day': day,
+    'day': dayOfWeek,
     'time': time,
     'location': location,
   };
@@ -65,12 +65,12 @@ class Session {
         secondHalf = json['secondHalf'],
         oddWeek = json['oddWeek'],
         evenWeek = json['evenWeek'],
-        day = json['day'],
+        dayOfWeek = json['day'],
         time = List<int>.from(json['time']),
         location = json['location'];
 
   String get chineseTime {
-    var timeString = '${(oddWeek & evenWeek) ? '' : oddWeek ? '单 - ' : '双 - '}周${dayMap[day]}第';
+    var timeString = '${(oddWeek & evenWeek) ? '' : oddWeek ? '单 - ' : '双 - '}周${dayMap[dayOfWeek]}第';
     for (var i = 0; i < time.length; i++) {
       timeString += time[i].toString();
       if (i != time.length - 1) {
