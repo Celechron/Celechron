@@ -54,7 +54,7 @@ class FlowController extends GetxController {
   }
 
   int updateFlowList(DateTime startsAt) {
-    var basePeriodList = Get.find<Rx<User>>(tag: 'user').value.coursePeriods;
+    var basePeriodList = Get.find<Rx<User>>(tag: 'user').value.periods;
     flowList.clear();
     print('updateFlowList');
     Duration workTime = _db.getWorkTime();

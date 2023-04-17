@@ -38,7 +38,7 @@ class CalendarPage extends StatelessWidget {
           child:
             Obx (() => TableCalendar(
               locale: 'zh_CN',
-              firstDay: DateTime.utc(2023, 1, 1),
+              firstDay: DateTime.utc(2022, 9, 1),
               lastDay: DateTime.utc(2030, 12, 31),
               rowHeight: 48.0,
               daysOfWeekHeight: 20.0,
@@ -91,7 +91,7 @@ class CalendarPage extends StatelessWidget {
               ),
             ))),
           const SizedBox(height: 16),
-          SubSubtitleRow(padHorizontal: 24, subtitle: '春九周', right: Container(
+          Obx(() => SubSubtitleRow(padHorizontal: 24, subtitle: _calendarController.dayDescription(_calendarController.selectedDay.value.copyWith(isUtc: false)), right: _calendarController.user.value.specialDates.containsKey(_calendarController.selectedDay.value.copyWith(isUtc: false)) ? Container(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                   border: Border.all(
@@ -99,10 +99,10 @@ class CalendarPage extends StatelessWidget {
                       width: 1),
                   borderRadius: BorderRadius.circular(10)),
               child: Text(
-                  '端午节调休',
+                  _calendarController.user.value.specialDates[_calendarController.selectedDay.value.copyWith(isUtc: false)]!,
                   style: TextStyle(
                       color: ScholarPageColors.okGreen.darkColor,
-                      fontSize: 12)))),
+                      fontSize: 12))) : null)),
           Expanded(
             child: Obx(() => ListView(
               children: _calendarController.getEventsForDay(_calendarController.selectedDay.value)

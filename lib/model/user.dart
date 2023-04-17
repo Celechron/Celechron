@@ -38,11 +38,14 @@ class User {
   // 主修数据，两个数据依次为主修GPA，主修学分
   List<double> majorGpaAndCredit = [0.0, 0.0];
 
+  // 特殊日期
+  Map<DateTime, String> specialDates = {};
+
   set password(String password) {
     _password = password;
   }
 
-  List<Period> get coursePeriods {
+  List<Period> get periods {
     return semesters.fold(<Period>[], (p, e) => p + e.periods);
   }
 
@@ -97,6 +100,7 @@ class User {
       semesters = value.item3;
       grades = value.item4;
       majorGpaAndCredit = value.item5;
+      specialDates = value.item6;
       // 保研成绩，只取第一次
       var netGrades = grades.values.map((e) => e.first);
       if (netGrades.isNotEmpty) {
@@ -128,6 +132,7 @@ class User {
       'aboardGpa': aboardGpa,
       'credit': credit,
       'majorGpaAndCredit': majorGpaAndCredit,
+      'specialDates': specialDates.map((k, v) => MapEntry(k.toIso8601String(), v)),
       'lastUpdateTime' : lastUpdateTime.toIso8601String(),
     };
   }
@@ -146,6 +151,7 @@ class User {
     aboardGpa = List<double>.from(json['aboardGpa']);
     credit = json['credit'];
     majorGpaAndCredit = List<double>.from(json['majorGpaAndCredit']);
+    specialDates = ((json['specialDates'] ?? {}) as Map).map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
     lastUpdateTime = DateTime.parse(json['lastUpdateTime']);
     isLogin = true;
   }
