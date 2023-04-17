@@ -71,28 +71,29 @@ class LoginForm extends StatelessWidget {
                     user.update((val) {
                       val!.username = usernameController.value.text;
                       val.password = passwordController.value.text;
-                      val.login().then((value) {
-                        if (value) {
+                      val.login().then((value) async {
+                        if (value.every((e) => e == null)) {
+                          await val.refresh();
                           user.refresh();
                           buttonPressed.value = false;
                           Navigator.of(context).pop();
+                        } else {
+                          buttonPressed.value = false;
+                          showCupertinoDialog(context: context, builder: (context) {
+                            return CupertinoAlertDialog(
+                              title: const Text('登录失败'),
+                              content: Text(value.where((e) => e != null).fold('', (p, v) => '$p\n$v').trim()),
+                              actions: [
+                                CupertinoDialogAction(
+                                  child: const Text('确定'),
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                )
+                              ],
+                            );
+                          });
                         }
-                      }).timeout(const Duration(seconds: 60)).catchError((error) {
-                        buttonPressed.value = false;
-                        showCupertinoDialog(context: context, builder: (context) {
-                          return CupertinoAlertDialog(
-                            title: const Text('登录失败'),
-                            content: Text(error.toString()),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('确定'),
-                                onPressed: () {
-                                  Navigator.of(context).pop();
-                                },
-                              )
-                            ],
-                          );
-                        });
                       });
                     });
                   },

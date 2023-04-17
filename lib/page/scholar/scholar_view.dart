@@ -302,8 +302,8 @@ class ScholarPage extends StatelessWidget {
               border: null,
               stretch: true,
             ),
-            if (_scholarController.user.isLogin)
-            SliverToBoxAdapter(
+            Obx(() {if (_scholarController.user.semesters.isNotEmpty)
+            return SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child:
@@ -315,12 +315,12 @@ class ScholarPage extends StatelessWidget {
                           ],
                         ),
                       ),
-                  )
+                  );
             else
-                  SliverToBoxAdapter(child: SizedBox(
+                  return SliverToBoxAdapter(child: SizedBox(
                   height: 500,
-    child: Column(children: [const Spacer(),Text('未登录', style: CupertinoTheme.of(context).textTheme.textStyle),const Spacer()])
-    ))
+    child: Column(children: [const Spacer(),Text(_scholarController.user.isLogin ? '下拉刷新' : '未登录', style: CupertinoTheme.of(context).textTheme.textStyle),const Spacer()])
+    ));})
           ],
         )));
   }
