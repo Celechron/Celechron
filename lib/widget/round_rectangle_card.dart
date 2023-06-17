@@ -3,12 +3,12 @@ import 'dart:async';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/scheduler.dart';
 
-class TitleCard extends StatefulWidget {
+class RoundRectangleCard extends StatefulWidget {
   final Widget child;
   final Function()? onTap;
   final bool animate;
 
-  const TitleCard({
+  const RoundRectangleCard({
     Key? key,
     required this.child,
     this.onTap,
@@ -16,10 +16,10 @@ class TitleCard extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _TitleCardState createState() => _TitleCardState();
+  _RoundRectangleCardState createState() => _RoundRectangleCardState();
 }
 
-class _TitleCardState extends State<TitleCard>
+class _RoundRectangleCardState extends State<RoundRectangleCard>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;

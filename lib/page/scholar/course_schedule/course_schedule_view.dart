@@ -3,7 +3,7 @@ import '../../../widget/sub_title.dart';
 import 'course_schedule_controller.dart';
 import 'package:get/get.dart';
 import 'package:celechron/widget/animate_button.dart';
-import 'package:celechron/widget/title_card.dart';
+import 'package:celechron/widget/round_rectangle_card.dart';
 import 'package:celechron/widget/two_line_card.dart';
 import 'course_card.dart';
 import 'package:flutter/cupertino.dart';
@@ -44,7 +44,7 @@ class CourseSchedulePage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Column(
                   children: [
-                    TitleCard(
+                    RoundRectangleCard(
                       animate: false,
                       child: Column(children: [
                         Row(children: [
@@ -138,7 +138,7 @@ class CourseSchedulePage extends StatelessWidget {
                       ]),
                     ),
                     const SizedBox(height: 20),
-                    TitleCard(
+                    RoundRectangleCard(
                         child: Column(children: [
                       Row(
                         children: [

@@ -16,12 +16,14 @@ class FlowController extends GetxController {
   final _db = Get.find<DatabaseHelper>(tag: 'db');
   late var _basePeriodList = user.value.periods;
   var _currentBasePeriodCursor = -1;
+  var timeNow = DateTime.now().obs;
 
   bool get isDuringFlow => flowList.first.startTime.isBefore(DateTime.now());
 
   @override
   void onInit() {
     Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      timeNow.value = DateTime.now();
       refreshFlowList();
     });
     _basePeriodList.sort((a, b) => a.startTime.compareTo(b.startTime));
@@ -107,14 +109,14 @@ class FlowController extends GetxController {
         mappedList.add(tmpr);
       }
     });
-    for (var x in _basePeriodList) {
+    /*for (var x in _basePeriodList) {
       if (!x.startTime.isAfter(lastDeadlineEndsAt)) {
         mappedList.add(x.startTime.copyWith());
       }
       if (!x.endTime.isBefore(startsAt)) {
         mappedList.add(x.endTime.copyWith());
       }
-    }
+    }*/
     for (var x in deadlines) {
       mappedList.add(x.endTime.copyWith());
     }
@@ -153,7 +155,7 @@ class FlowController extends GetxController {
       }
     });
 
-    for (var x in _basePeriodList) {
+    /*for (var x in _basePeriodList) {
       DateTime tmpl = x.startTime.copyWith();
       DateTime tmpr = x.endTime.copyWith();
 
@@ -169,7 +171,7 @@ class FlowController extends GetxController {
       for (int i = indexl; i < indexr; i++) {
         useAble[i] = false;
       }
-    }
+    }*/
 
     List<Period> ableList = [];
 
@@ -181,7 +183,7 @@ class FlowController extends GetxController {
         j++;
       }
       Period period = Period(
-        periodType: PeriodType.virtual,
+        type: PeriodType.virtual,
         startTime: mappedList[i],
         endTime: mappedList[j],
       );
@@ -211,8 +213,15 @@ class FlowController extends GetxController {
   }
 
   void refreshFlowList() {
+    if (flowList.length <= 5 && _currentBasePeriodCursor != -1) {
+      for (var i = 0; i < 5 && i+_currentBasePeriodCursor < _basePeriodList.length; i++) {
+        if(!flowList.any((e) => e.uid == _basePeriodList[i+_currentBasePeriodCursor].uid) && _basePeriodList[i+_currentBasePeriodCursor].endTime.difference(DateTime.now()).inMinutes < 2880){
+          flowList.add(_basePeriodList[i+_currentBasePeriodCursor].copyWith());
+        }
+      }
+    }
     while (flowList.isNotEmpty) {
-      if (flowList[0].periodType == PeriodType.flow) {
+      if (flowList[0].type == PeriodType.flow) {
         Duration distan = DateTime.now().difference(flowList[0].startTime);
         Duration length = flowList[0].endTime.difference(flowList[0].startTime);
 
@@ -225,13 +234,6 @@ class FlowController extends GetxController {
         }
         deadlineList.refresh();
         flowList.refresh();
-      }
-      if (flowList.length <= 5 && _currentBasePeriodCursor != -1) {
-        for (var i = 0; i < 5 && i+_currentBasePeriodCursor < _basePeriodList.length; i++) {
-          if(!flowList.any((e) => e.uid == _basePeriodList[i+_currentBasePeriodCursor].uid)) {
-            flowList.add(_basePeriodList[i+_currentBasePeriodCursor].copyWith());
-          }
-        }
       }
       if (flowList[0].endTime.isBefore(DateTime.now())) {
         flowList.removeAt(0);

@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../model/course.dart';
-import '../../../widget/title_card.dart';
+import '../../../widget/round_rectangle_card.dart';
 import '../course_detail/course_detail_view.dart';
 
 class CourseBriefCard extends StatelessWidget {
@@ -14,7 +14,7 @@ class CourseBriefCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return TitleCard(
+    return RoundRectangleCard(
         onTap: allowDirect ? () async =>
           Navigator.of(context).push(CupertinoPageRoute(builder: (context) => CourseDetailPage(courseId: course.id)))
          : null,

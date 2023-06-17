@@ -1,6 +1,6 @@
 import 'package:celechron/page/scholar/course_list/course_brief_card.dart';
 import 'package:celechron/widget/sub_title.dart';
-import 'package:celechron/widget/title_card.dart';
+import 'package:celechron/widget/round_rectangle_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -24,7 +24,7 @@ class CourseDetailPage extends StatelessWidget {
     return Column(
       children: [
         SubSubtitleRow(subtitle: '课时'),
-        TitleCard(
+        RoundRectangleCard(
             child: Padding(
           padding: const EdgeInsets.only(left: 8, right: 8),
           child: Column(children: [
@@ -159,7 +159,7 @@ class CourseDetailPage extends StatelessWidget {
     return Column(
       children: [
         SubSubtitleRow(subtitle: '考试'),
-        TitleCard(
+        RoundRectangleCard(
             child: Padding(
           padding: const EdgeInsets.only(left: 8, right: 8),
           child: Column(children: [

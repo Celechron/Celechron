@@ -142,7 +142,8 @@ class Semester {
           for (var day in _dayOfWeekToDays[0][0][session.dayOfWeek]) {
             var period = Period(
                 uid: '${session.id}${session.dayOfWeek}${session.time.first}',
-                periodType: PeriodType.classes,
+                fromUid: session.id,
+                type: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
                 summary: session.name,
@@ -156,7 +157,8 @@ class Semester {
           for (var day in _dayOfWeekToDays[0][1][session.dayOfWeek]) {
             var period = Period(
                 uid: '${session.id}${session.dayOfWeek}${session.time.first}',
-                periodType: PeriodType.classes,
+                fromUid: session.id,
+                type: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
                 summary: session.name,
@@ -172,7 +174,8 @@ class Semester {
           for (var day in _dayOfWeekToDays[1][0][session.dayOfWeek]) {
             var period = Period(
                 uid: '${session.id}${session.dayOfWeek}${session.time.first}',
-                periodType: PeriodType.classes,
+                fromUid: session.id,
+                type: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
                 summary: session.name,
@@ -186,7 +189,8 @@ class Semester {
           for (var day in _dayOfWeekToDays[1][1][session.dayOfWeek]) {
             var period = Period(
                 uid: '${session.id}${session.dayOfWeek}${session.time.first}',
-                periodType: PeriodType.classes,
+                fromUid: session.id,
+                type: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
                 summary: session.name,
@@ -201,7 +205,7 @@ class Semester {
     periods = periods.where((e) => !_holidays.containsKey(DateTime(e.startTime.year, e.startTime.month, e.startTime.day))).toList();
     for (var exam in _exams) {
       var period = Period(
-          periodType: PeriodType.test,
+          type: PeriodType.test,
           description: "${exam.name} - ${exam.type == ExamType.finalExam ? "期末考试" : "期中考试"}",
           location: exam.location ?? "未知",
           summary: exam.name,

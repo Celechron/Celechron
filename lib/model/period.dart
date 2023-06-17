@@ -11,7 +11,7 @@ class Period {
   @HiveField(1)
   String? fromUid;
   @HiveField(2)
-  PeriodType periodType;
+  PeriodType type;
   @HiveField(3)
   String description;
   @HiveField(4)
@@ -26,7 +26,7 @@ class Period {
   Period({
     this.uid = '1919810',
     this.fromUid,
-    this.periodType = PeriodType.classes,
+    this.type = PeriodType.classes,
     this.description = "教师: 空之探险队的 Kate\n课程代码: PMD00001\n教学时间安排: 春夏 第1-2节",
     required this.startTime,
     required this.endTime,
@@ -47,7 +47,7 @@ class Period {
     return Period(
       uid: uid ?? this.uid,
       fromUid: fromUid ?? this.fromUid,
-      periodType: periodType ?? this.periodType,
+      type: periodType ?? this.type,
       description: description ?? this.description,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,

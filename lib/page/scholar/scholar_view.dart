@@ -4,7 +4,7 @@ import 'package:celechron/widget/two_line_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import '../../model/semester.dart';
-import '../../widget/title_card.dart';
+import '../../widget/round_rectangle_card.dart';
 import 'course_list/course_list_view.dart';
 import 'course_schedule/course_schedule_view.dart';
 import 'exam_list/exam_list_view.dart';
@@ -48,7 +48,7 @@ class ScholarPage extends StatelessWidget {
             Expanded(
                 child: Hero(
                     tag: 'gradeBrief',
-                    child: TitleCard(
+                    child: RoundRectangleCard(
                         onTap: () async =>
                             Navigator.of(context, rootNavigator: true).push(
                                 CupertinoPageRoute(
@@ -147,7 +147,7 @@ class ScholarPage extends StatelessWidget {
         Row(
           children: [
             Expanded(
-                child: TitleCard(
+                child: RoundRectangleCard(
                     animate: false,
                     child: Column(
                       children: [
@@ -253,7 +253,7 @@ class ScholarPage extends StatelessWidget {
         Row(
           children: [
             Expanded(
-                child: TitleCard(
+                child: RoundRectangleCard(
               child: Column(children: [
                 // Horizontal scrollable list to list all semesters
                 SizedBox(
