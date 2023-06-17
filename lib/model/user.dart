@@ -50,10 +50,14 @@ class User {
   }
 
   Semester get thisSemester {
-    if (semesters.isNotEmpty) {
-      return semesters.first;
+    if (semesters.length > 1) {
+      if (semesters[1].periods.last.endTime.isAfter(DateTime.now().subtract(const Duration(days: 14)))) {
+        return semesters[1];
+      } else {
+        return semesters[0];
+      }
     } else {
-      return Semester('未刷新');
+      return semesters.isEmpty ? Semester('未刷新') : semesters.first;
     }
   }
 

@@ -3,7 +3,7 @@ import 'dart:math';
 import 'package:celechron/page/task/task_controller.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:celechron/widget/sub_title.dart';
-import 'package:celechron/widget/title_card.dart';
+import 'package:celechron/widget/round_rectangle_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../model/deadline.dart';
@@ -162,7 +162,7 @@ class TaskPage extends StatelessWidget {
     }
     return Column(children: [
       title == null ? const SizedBox(height: 0) : SubtitleRow(subtitle: title),
-      TitleCard(
+      RoundRectangleCard(
         onTap: () => showCardDialog(context, deadline),
         child: Padding(
             padding: const EdgeInsets.only(left: 8, right: 8),

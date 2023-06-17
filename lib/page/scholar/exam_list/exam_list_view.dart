@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../model/exam.dart';
 import '../../../model/semester.dart';
 import '../../../widget/sub_title.dart';
-import '../../../widget/title_card.dart';
+import '../../../widget/round_rectangle_card.dart';
 
 class ExamListPage extends StatelessWidget {
 
@@ -31,7 +31,7 @@ class ExamListPage extends StatelessWidget {
     return Column(
       children: [
         SubSubtitleRow(subtitle: exams[0].chineseDate),
-        TitleCard(
+        RoundRectangleCard(
             child: Padding(
               padding: const EdgeInsets.only(left: 8, right: 8),
               child: Column(children: [

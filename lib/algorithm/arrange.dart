@@ -89,7 +89,7 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
 
       Period period = Period(
         fromUid: cur.uid,
-        periodType: PeriodType.flow,
+        type: PeriodType.flow,
         description: cur.description,
         startTime: now.startTime,
         endTime: now.startTime.add(thisCut),

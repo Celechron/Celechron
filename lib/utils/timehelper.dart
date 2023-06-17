@@ -17,4 +17,36 @@ class TimeHelper {
     var dayStr = '${date.month}月${date.day}日';
     return dayStr;
   }
+
+  static String toHM(Duration duration) {
+    var hours = duration.inHours;
+    var minutes = duration.inMinutes - hours * 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}';
+  }
+
+  static String toHMS(Duration duration) {
+    var hours = duration.inHours;
+    var minutes = duration.inMinutes - hours * 60;
+    var seconds = duration.inSeconds - hours * 3600 - minutes * 60;
+    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  static String chineseDayRelation(DateTime date) {
+    var day = date.copyWith(hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+    var today = DateTime.now().copyWith(hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+    var diff = day.difference(today).inDays;
+    if (diff == 0) {
+      return '';
+    } else if (diff == 1) {
+      return '明天 ';
+    } else if (diff == 2) {
+      return '后天 ';
+    } else if (diff == -1) {
+      return '昨天 ';
+    } else if (diff == -2) {
+      return '前天 ';
+    } else {
+      return chineseDay(date);
+    }
+  }
 }

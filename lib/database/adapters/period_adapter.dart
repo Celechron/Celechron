@@ -26,7 +26,7 @@ class PeriodAdapter extends TypeAdapter<Period> {
       ..writeByte(1)
       ..write(obj.fromUid)
       ..writeByte(2)
-      ..write(obj.periodType)
+      ..write(obj.type)
       ..writeByte(3)
       ..write(obj.description)
       ..writeByte(4)
@@ -48,7 +48,7 @@ class PeriodAdapter extends TypeAdapter<Period> {
     return Period(startTime: DateTime.now(), endTime: DateTime.now())
       ..uid = fields[0] as String
       ..fromUid = fields[1] as String?
-      ..periodType = fields[2] as PeriodType
+      ..type = fields[2] as PeriodType
       ..description = fields[3] as String
       ..startTime = fields[4] as DateTime
       ..endTime = fields[5] as DateTime

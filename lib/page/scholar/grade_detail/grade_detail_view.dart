@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:celechron/widget/title_card.dart';
+import 'package:celechron/widget/round_rectangle_card.dart';
 import 'package:celechron/widget/two_line_card.dart';
 import '../../../widget/sub_title.dart';
 import 'grade_card.dart';
@@ -24,7 +24,7 @@ class GradeDetailPage extends StatelessWidget {
         Row(
           children: [
             Expanded(
-                child: Hero(tag: 'gradeBrief', child: TitleCard(
+                child: Hero(tag: 'gradeBrief', child: RoundRectangleCard(
                     child: Column(
                       children: [
                         Row(
@@ -99,7 +99,7 @@ class GradeDetailPage extends StatelessWidget {
         Row(
           children: [
             Expanded(
-                child: TitleCard(
+                child: RoundRectangleCard(
                   animate: false,
                   child: Column(children: [
                     // Horizontal scrollable list to list all semesters
