@@ -105,15 +105,16 @@ class GradeDetailPage extends StatelessWidget {
                     // Horizontal scrollable list to list all semesters
                     SizedBox(
                       height: 81,
-                      child: ListView.builder(
+                      child: Obx(() => ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: _gradeDetailController.semestersWithGrades.length,
                           itemBuilder: (context, index) {
                             final semester = _gradeDetailController.semestersWithGrades[index];
-                            return Obx(() => Stack(children: [
+                            return Obx(() => Row(children: [
                               TwoLineCard(
                                 animate: true,
                                 withColoredFont: true,
+                                width: 120,
                                 title:
                                 '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
                                 content:
@@ -126,9 +127,9 @@ class GradeDetailPage extends StatelessWidget {
                                     ? ScholarPageColors.cyan
                                     : CupertinoColors.systemFill,
                               ),
-                              const SizedBox(width: 125),
+                              if(index != _gradeDetailController.semestersWithGrades.length - 1) const SizedBox(width: 6),
                             ]));
-                          }),
+                          })),
                     ),
                   ]),
                 )),
