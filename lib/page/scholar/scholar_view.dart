@@ -260,20 +260,24 @@ class ScholarPage extends StatelessWidget {
                   height: 81,
                   child: Obx(() => ListView.builder(
                       scrollDirection: Axis.horizontal,
-                      itemCount: _scholarController.user.semesters.length - 1,
+                      itemCount: _scholarController.user.semesters.length,
                       itemBuilder: (context, index) {
                         final semester = _scholarController.user.semesters[
                             _scholarController.user.semesters.length -
-                                2 -
+                                1 -
                                 index];
-                        return Stack(children: [
+                        return Row(children: [
                           TwoLineCard(
+                            animate: true,
+                            withColoredFont: true,
+                            width: 120,
                             title:
-                                '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
+                            '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
                             content:
-                                '${semester.gpa[0].toStringAsFixed(2)}/${semester.credits.toStringAsFixed(1)}',
+                            '${semester.gpa[0].toStringAsFixed(2)}/${semester.credits.toStringAsFixed(1)}',
+                            backgroundColor: CupertinoColors.systemFill,
                           ),
-                          const SizedBox(width: 125),
+                          const SizedBox(width: 6),
                         ]);
                       })),
                 ),
