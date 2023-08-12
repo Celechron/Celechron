@@ -1,11 +1,11 @@
+import 'package:celechron/design/custom_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:celechron/widget/round_rectangle_card.dart';
-import 'package:celechron/widget/two_line_card.dart';
-import '../../../widget/sub_title.dart';
+import 'package:celechron/design/round_rectangle_card.dart';
+import 'package:celechron/design/two_line_card.dart';
+import 'package:celechron/design/sub_title.dart';
 import 'grade_card.dart';
 import '../scholar_controller.dart';
-import '../scholar_view.dart';
 import 'grade_detail_controller.dart';
 
 class GradeDetailPage extends StatelessWidget {
@@ -34,7 +34,7 @@ class GradeDetailPage extends StatelessWidget {
                                   title: '五分制',
                                   content: _scholarController.user.gpa[0]
                                       .toStringAsFixed(2),
-                                  backgroundColor: ScholarPageColors.cyan)),
+                                  backgroundColor: CustomCupertinoDynamicColors.cyan)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -42,7 +42,7 @@ class GradeDetailPage extends StatelessWidget {
                                   title: '获得学分',
                                   content: _scholarController.user.credit
                                       .toStringAsFixed(1),
-                                  backgroundColor: ScholarPageColors.peach)),
+                                  backgroundColor: CustomCupertinoDynamicColors.peach)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -50,7 +50,7 @@ class GradeDetailPage extends StatelessWidget {
                                   title: '四分制',
                                   content: _scholarController.user.gpa[1]
                                       .toStringAsFixed(2),
-                                  backgroundColor: ScholarPageColors.spring)),
+                                  backgroundColor: CustomCupertinoDynamicColors.spring)),
                             ),
                           ],
                         ),
@@ -63,7 +63,7 @@ class GradeDetailPage extends StatelessWidget {
                                   content: _scholarController
                                       .user.majorGpaAndCredit[0]
                                       .toStringAsFixed(2),
-                                  backgroundColor: ScholarPageColors.sakura)),
+                                  backgroundColor: CustomCupertinoDynamicColors.sakura)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -72,7 +72,7 @@ class GradeDetailPage extends StatelessWidget {
                                   content: _scholarController
                                       .user.majorGpaAndCredit[1]
                                       .toStringAsFixed(1),
-                                  backgroundColor: ScholarPageColors.sand)),
+                                  backgroundColor: CustomCupertinoDynamicColors.sand)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -80,7 +80,7 @@ class GradeDetailPage extends StatelessWidget {
                                   title: '百分制',
                                   content: _scholarController.user.gpa[2]
                                       .toStringAsFixed(2),
-                                  backgroundColor: ScholarPageColors.magenta)),
+                                  backgroundColor: CustomCupertinoDynamicColors.magenta)),
                             ),
                           ],
                         ),
@@ -124,7 +124,7 @@ class GradeDetailPage extends StatelessWidget {
                                   _gradeDetailController.semesterIndex.refresh();
                                 },
                                 backgroundColor: _gradeDetailController.semesterIndex.value == index
-                                    ? ScholarPageColors.cyan
+                                    ? CustomCupertinoDynamicColors.cyan
                                     : CupertinoColors.systemFill,
                               ),
                               if(index != _gradeDetailController.semestersWithGrades.length - 1) const SizedBox(width: 6),

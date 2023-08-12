@@ -3,14 +3,14 @@ import 'package:flutter/material.dart';
 
 import '../../../model/exam.dart';
 import '../../../model/semester.dart';
-import '../../../widget/sub_title.dart';
-import '../../../widget/round_rectangle_card.dart';
+import '../../../design/sub_title.dart';
+import '../../../design/round_rectangle_card.dart';
 
 class ExamListPage extends StatelessWidget {
 
   final Semester semester;
 
-  // classify exams by date
+  // Classify exams by date
   late final List<List<Exam>> exams = semester.exams
       .fold(<List<Exam>>[], (previousValue, element) {
     if (previousValue.isEmpty) {
