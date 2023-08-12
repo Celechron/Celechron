@@ -1,10 +1,16 @@
-import 'package:celechron/widget/multiple_columns.dart';
-import 'package:celechron/widget/sub_title.dart';
-import 'package:celechron/widget/two_line_card.dart';
+// Official packages
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import '../../model/semester.dart';
-import '../../widget/round_rectangle_card.dart';
+
+// Custom widgets and colors
+import 'package:celechron/design/multiple_columns.dart';
+import 'package:celechron/design/sub_title.dart';
+import 'package:celechron/design/two_line_card.dart';
+import 'package:celechron/design/round_rectangle_card.dart';
+import 'package:celechron/design/custom_colors.dart';
+
+import 'package:celechron/model/semester.dart';
+
 import 'course_list/course_list_view.dart';
 import 'course_schedule/course_schedule_view.dart';
 import 'exam_list/exam_list_view.dart';
@@ -28,7 +34,7 @@ class ScholarPage extends StatelessWidget {
                         color: _scholarController.durationToLastUpdate >
                                 const Duration(minutes: 5)
                             ? const Color.fromRGBO(255, 0, 0, 1.0)
-                            : ScholarPageColors.okGreen.darkColor,
+                            : CustomCupertinoDynamicColors.okGreen.darkColor,
                         width: 1),
                     color: _scholarController.durationToLastUpdate >
                             const Duration(minutes: 5)
@@ -41,7 +47,7 @@ class ScholarPage extends StatelessWidget {
                         color: _scholarController.durationToLastUpdate >
                                 const Duration(minutes: 5)
                             ? const Color.fromRGBO(255, 255, 255, 1.0)
-                            : ScholarPageColors.okGreen.darkColor,
+                            : CustomCupertinoDynamicColors.okGreen.darkColor,
                         fontSize: 12))))),
         Row(
           children: [
@@ -63,7 +69,7 @@ class ScholarPage extends StatelessWidget {
                                       title: '五分制',
                                       content: _scholarController.user.gpa[0]
                                           .toStringAsFixed(2),
-                                      backgroundColor: ScholarPageColors.cyan)),
+                                      backgroundColor: CustomCupertinoDynamicColors.cyan)),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -72,7 +78,7 @@ class ScholarPage extends StatelessWidget {
                                       content: _scholarController.user.credit
                                           .toStringAsFixed(1),
                                       backgroundColor:
-                                          ScholarPageColors.peach)),
+                                          CustomCupertinoDynamicColors.peach)),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -81,7 +87,7 @@ class ScholarPage extends StatelessWidget {
                                       content: _scholarController.user.gpa[1]
                                           .toStringAsFixed(2),
                                       backgroundColor:
-                                          ScholarPageColors.spring)),
+                                          CustomCupertinoDynamicColors.spring)),
                                 ),
                               ],
                             ),
@@ -95,7 +101,7 @@ class ScholarPage extends StatelessWidget {
                                           .user.majorGpaAndCredit[0]
                                           .toStringAsFixed(2),
                                       backgroundColor:
-                                          ScholarPageColors.sakura)),
+                                          CustomCupertinoDynamicColors.sakura)),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -104,7 +110,7 @@ class ScholarPage extends StatelessWidget {
                                       content: _scholarController
                                           .user.majorGpaAndCredit[1]
                                           .toStringAsFixed(1),
-                                      backgroundColor: ScholarPageColors.sand)),
+                                      backgroundColor: CustomCupertinoDynamicColors.sand)),
                                 ),
                                 const SizedBox(width: 8),
                                 Expanded(
@@ -113,7 +119,7 @@ class ScholarPage extends StatelessWidget {
                                       content: _scholarController.user.gpa[2]
                                           .toStringAsFixed(2),
                                       backgroundColor:
-                                          ScholarPageColors.magenta)),
+                                          CustomCupertinoDynamicColors.magenta)),
                                 ),
                               ],
                             ),
@@ -136,11 +142,11 @@ class ScholarPage extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                     border: Border.all(
-                        color: ScholarPageColors.winter.darkColor, width: 1),
+                        color: CustomCupertinoDynamicColors.winter.darkColor, width: 1),
                     borderRadius: BorderRadius.circular(10)),
                 child: Text(semester.name,
                     style: TextStyle(
-                      color: ScholarPageColors.winter.darkColor,
+                      color: CustomCupertinoDynamicColors.winter.darkColor,
                       fontSize: 12,
                       // italics
                     )))),
@@ -209,8 +215,8 @@ class ScholarPage extends StatelessWidget {
                                     content:
                                         '${semester.firstHalfSessionCount}节/两周',
                                     backgroundColor: semester.name[9] == '春'
-                                        ? ScholarPageColors.spring
-                                        : ScholarPageColors.autumn,
+                                        ? CustomCupertinoDynamicColors.spring
+                                        : CustomCupertinoDynamicColors.autumn,
                                     withColoredFont: true),
                               ),
                               const SizedBox(width: 8),
@@ -231,8 +237,8 @@ class ScholarPage extends StatelessWidget {
                                     content:
                                         '${semester.secondHalfSessionCount}节/两周',
                                     backgroundColor: semester.name[9] == '春'
-                                        ? ScholarPageColors.summer
-                                        : ScholarPageColors.winter,
+                                        ? CustomCupertinoDynamicColors.summer
+                                        : CustomCupertinoDynamicColors.winter,
                                     withColoredFont: true),
                               ),
                             ],
@@ -347,72 +353,4 @@ class ScholarPage extends StatelessWidget {
           ],
         )));
   }
-}
-
-class ScholarPageColors {
-  static const CupertinoDynamicColor spring =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(230, 255, 226, 1.0),
-    darkColor: Color.fromRGBO(147, 251, 56, 1.0),
-  );
-
-  static const CupertinoDynamicColor summer =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(255, 226, 226, 1.0),
-    darkColor: Color.fromRGBO(255, 25, 69, 1.0),
-  );
-
-  static const CupertinoDynamicColor autumn =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(255, 234, 230, 1.0),
-    darkColor: Color.fromRGBO(255, 101, 56, 1.0),
-  );
-
-  static const CupertinoDynamicColor winter =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(226, 239, 255, 1.0),
-    darkColor: Color.fromRGBO(0, 183, 251, 1.0),
-  );
-
-  static const CupertinoDynamicColor violet =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(230, 229, 255, 1.0),
-    darkColor: Color.fromRGBO(151, 131, 216, 1.0),
-  );
-
-  static const CupertinoDynamicColor sakura =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(255, 226, 255, 1.0),
-    darkColor: Color.fromRGBO(218, 130, 217, 1.0),
-  );
-
-  static const CupertinoDynamicColor sand =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(255, 246, 211, 1.0),
-    darkColor: Color.fromRGBO(252, 222, 59, 1.0),
-  );
-
-  static const CupertinoDynamicColor cyan =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(218, 234, 255, 1.0),
-    darkColor: Color.fromRGBO(0, 140, 255, 1.0),
-  );
-
-  static const CupertinoDynamicColor magenta =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(230, 229, 255, 1.0),
-    darkColor: Color.fromRGBO(238, 55, 161, 1.0),
-  );
-
-  static const CupertinoDynamicColor peach =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(255, 235, 226, 1.0),
-    darkColor: Color.fromRGBO(233, 114, 70, 1.0),
-  );
-
-  static const CupertinoDynamicColor okGreen =
-      CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(230, 255, 226, 1.0),
-    darkColor: Color.fromRGBO(63, 222, 23, 1.0),
-  );
 }

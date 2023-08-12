@@ -1,13 +1,13 @@
+import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/model/session.dart';
-import 'package:celechron/widget/sub_title.dart';
+import 'package:celechron/design/sub_title.dart';
 import 'course_schedule_controller.dart';
 import 'package:get/get.dart';
-import 'package:celechron/widget/animate_button.dart';
-import 'package:celechron/widget/round_rectangle_card.dart';
-import 'package:celechron/widget/two_line_card.dart';
+import 'package:celechron/design/animate_button.dart';
+import 'package:celechron/design/round_rectangle_card.dart';
+import 'package:celechron/design/two_line_card.dart';
 import 'course_card.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:celechron/page/scholar/scholar_view.dart';
 
 class CourseSchedulePage extends StatelessWidget {
   late final CourseScheduleController _courseScheduleController;
@@ -43,7 +43,7 @@ class CourseSchedulePage extends StatelessWidget {
                             backgroundColor:
                                 _courseScheduleController.semesterIndex.value ==
                                         index
-                                    ? ScholarPageColors.cyan
+                                    ? CustomCupertinoDynamicColors.cyan
                                     : CupertinoColors.systemFill,
                           ),
                           const SizedBox(width: 90),
@@ -71,8 +71,8 @@ class CourseSchedulePage extends StatelessWidget {
                       backgroundColor: _courseScheduleController
                               .firstOrSecondSemester.value
                           ? _courseScheduleController.semester.name[9] == '春'
-                              ? ScholarPageColors.spring
-                              : ScholarPageColors.autumn
+                              ? CustomCupertinoDynamicColors.spring
+                              : CustomCupertinoDynamicColors.autumn
                           : CupertinoColors.systemFill,
                       withColoredFont: true),
                 ),
@@ -92,8 +92,8 @@ class CourseSchedulePage extends StatelessWidget {
                               .firstOrSecondSemester.value
                           ? CupertinoColors.systemFill
                           : _courseScheduleController.semester.name[9] == '春'
-                              ? ScholarPageColors.summer
-                              : ScholarPageColors.winter,
+                              ? CustomCupertinoDynamicColors.summer
+                              : CustomCupertinoDynamicColors.winter,
                       withColoredFont: true),
                 ),
               ],

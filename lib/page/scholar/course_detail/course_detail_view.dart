@@ -1,6 +1,6 @@
 import 'package:celechron/page/scholar/course_list/course_brief_card.dart';
-import 'package:celechron/widget/sub_title.dart';
-import 'package:celechron/widget/round_rectangle_card.dart';
+import 'package:celechron/design/sub_title.dart';
+import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';

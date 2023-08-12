@@ -8,8 +8,8 @@ import '../../database/database_helper.dart';
 import '../../model/period.dart';
 import '../../utils/utils.dart';
 
-import '../../widget/sub_title.dart';
-import '../../widget/round_rectangle_card.dart';
+import 'package:celechron/design/sub_title.dart';
+import 'package:celechron/design/round_rectangle_card.dart';
 import '../scholar/course_detail/course_detail_view.dart';
 import 'flow_controller.dart';
 

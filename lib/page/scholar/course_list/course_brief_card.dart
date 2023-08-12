@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../model/course.dart';
-import '../../../widget/round_rectangle_card.dart';
+import '../../../design/round_rectangle_card.dart';
 import '../course_detail/course_detail_view.dart';
 
 class CourseBriefCard extends StatelessWidget {

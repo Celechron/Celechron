@@ -1,4 +1,4 @@
-import 'package:celechron/widget/sub_title.dart';
+import 'package:celechron/design/sub_title.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -6,9 +6,9 @@ import 'package:table_calendar/table_calendar.dart';
 import '../../model/period.dart';
 import '../../utils/utils.dart';
 
-import '../../widget/round_rectangle_card.dart';
+import 'package:celechron/design/round_rectangle_card.dart';
+import 'package:celechron/design/custom_colors.dart';
 import '../scholar/course_detail/course_detail_view.dart';
-import '../scholar/scholar_view.dart';
 import 'calendar_controller.dart';
 
 class CalendarPage extends StatelessWidget {
@@ -123,12 +123,12 @@ class CalendarPage extends StatelessWidget {
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                           border: Border.all(
-                              color: ScholarPageColors.okGreen.darkColor,
+                              color: CustomCupertinoDynamicColors.okGreen.darkColor,
                               width: 1),
                           borderRadius: BorderRadius.circular(10)),
                       child: Text(
                           _calendarController.user.value.specialDates[_calendarController.selectedDay.value.copyWith(isUtc: false)]!,
-                          style: TextStyle(color: ScholarPageColors.okGreen.darkColor, fontSize: 12)))
+                          style: TextStyle(color: CustomCupertinoDynamicColors.okGreen.darkColor, fontSize: 12)))
                   : null)),
           Expanded(
             child: Obx(() => ListView(
