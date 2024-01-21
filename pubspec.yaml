@@ -19,6 +19,7 @@ dependencies:
   fast_gbk: any
   flutter_svg: any
   intl: any
+  extended_sliver: any
 
 
 dev_dependencies:

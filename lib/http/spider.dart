@@ -9,15 +9,15 @@ import '../database/database_helper.dart';
 import '../model/grade.dart';
 import '../model/semester.dart';
 import 'zjuServices/appservice.dart';
-import 'zjuServices/jwbinfosys.dart';
 import 'zjuServices/zjuam.dart';
+import 'zjuServices/zdbk.dart';
 
 class Spider {
   late HttpClient _httpClient;
   late String _username;
   late String _password;
   late AppService _appService;
-  late JwbInfoSys _jwbInfoSys;
+  late Zdbk _zdbk;
   late TimeConfigService _timeConfigService;
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
@@ -28,7 +28,7 @@ class Spider {
     _httpClient.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     _appService = AppService();
-    _jwbInfoSys = JwbInfoSys();
+    _zdbk = Zdbk();
     _timeConfigService = TimeConfigService();
     _username = username;
     _password = password;
@@ -49,7 +49,7 @@ class Spider {
           .login(_httpClient, _iPlanetDirectoryPro).then((value)=>null as String?)
           .timeout(const Duration(seconds: 8))
           .catchError((e) => "无法登录钉工作台，$e"),
-      _jwbInfoSys
+      _zdbk
           .login(_httpClient, _iPlanetDirectoryPro).then((value)=>null as String?)
           .timeout(const Duration(seconds: 8))
           .catchError((e) => "无法登录教务网，$e"),
@@ -65,7 +65,7 @@ class Spider {
     _password = "";
     _iPlanetDirectoryPro = null;
     _appService.logout();
-    _jwbInfoSys.logout();
+    _zdbk.logout();
     Get.find<DatabaseHelper>(tag: 'db').removeAllCachedWebPage();
   }
 
@@ -108,7 +108,7 @@ class Spider {
           _timeConfigService.getConfig(_httpClient, '$yearStr-1').then((value) {
         if (value.item2 != null) {
           outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addTimeInfo(jsonDecode(value.item2!));
+              .addZjuCalendar(jsonDecode(value.item2!));
           outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
           outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(0,8)), '${v as String}放假·调${DateTime.parse(k.substring(8,16)).month}月${DateTime.parse(k.substring(8,16)).day}日')));
           outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(8,16)), '${v as String}调休·调${DateTime.parse(k.substring(0,8)).month}月${DateTime.parse(k.substring(0,8)).day}日')));
@@ -120,7 +120,7 @@ class Spider {
           _timeConfigService.getConfig(_httpClient, '$yearStr-2').then((value) {
         if (value.item2 != null) {
           outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addTimeInfo(jsonDecode(value.item2!));
+              .addZjuCalendar(jsonDecode(value.item2!));
           outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
           outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(0,8)), '${v as String}放假·调${DateTime.parse(k.substring(8,16)).month}月${DateTime.parse(k.substring(8,16)).day}日')));
           outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(8,16)), '${v as String}调休·调${DateTime.parse(k.substring(0,8)).month}月${DateTime.parse(k.substring(0,8)).day}日')));
@@ -166,7 +166,7 @@ class Spider {
 
     // 爬教务网，查成绩
     fetches.add(
-        _jwbInfoSys.getTranscript(_httpClient, _username).then((value) {
+        _zdbk.getTranscript(_httpClient).then((value) {
           for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addGrade(e);
         //体育课
@@ -183,7 +183,7 @@ class Spider {
     }).catchError((e) => e.toString()));
 
     // 爬教务网，查主修成绩
-    fetches.add(_jwbInfoSys.getMajorGrade(_httpClient, _username).then((value) {
+    fetches.add(_zdbk.getMajorGrade(_httpClient).then((value) {
       outMajorGrade.clear();
       outMajorGrade.addAll(value.item2);
       return value.item1?.toString();

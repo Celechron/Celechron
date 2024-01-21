@@ -7,12 +7,21 @@ class RoundRectangleCard extends StatefulWidget {
   final Widget child;
   final Function()? onTap;
   final bool animate;
+  final List<BoxShadow> boxShadow;
 
   const RoundRectangleCard({
     Key? key,
     required this.child,
     this.onTap,
     this.animate = true,
+    this.boxShadow = const [
+      BoxShadow(
+        color: CupertinoColors.systemGrey5,
+        spreadRadius: 0,
+        blurRadius: 12,
+        offset: Offset(0, 6),
+      ),
+    ],
   }) : super(key: key);
 
   @override
@@ -54,98 +63,105 @@ class _RoundRectangleCardState extends State<RoundRectangleCard>
   Widget build(BuildContext context) {
     var isDown = false;
     var isCancel = false;
-    return Column(
-      children: [
-        widget.animate ? GestureDetector(
-          onTapDown: (_) async {
-            isDown = true;
-            isCancel = false;
-            _animationController.forward();
-            await Future.delayed(const Duration(milliseconds: 125));
-            isDown = false;
-            if (isCancel) {
-              if(widget.onTap != null) {
-                widget.onTap?.call();
-              }
-              _animationController.reverse();
+    var core = Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        // In light mode, color is white; in dark mode, color is black
+        color:
+            SchedulerBinding.instance.platformDispatcher.platformBrightness ==
+                    Brightness.dark
+                ? CupertinoDynamicColor.resolve(
+                    CupertinoColors.secondarySystemBackground, context)
+                : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
+        boxShadow: SchedulerBinding.instance.platformDispatcher.platformBrightness ==
+            Brightness.dark
+            ? null : widget.boxShadow
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              const SizedBox(width: 12),
+              Expanded(child: widget.child),
+              const SizedBox(width: 12),
+            ],
+          ),
+          const SizedBox(height: 12),
+        ],
+      ),
+    );
+    return widget.animate
+        ? GestureDetector(
+            onTapDown: (_) async {
+              isDown = true;
               isCancel = false;
-            }
-          },
-          onTapUp: (_) async {
-            isCancel = true;
-            if (!isDown) _animationController.reverse();
-          },
-          onTapCancel: () async => _animationController.reverse(),
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                // In light mode, color is white; in dark mode, color is black
-                color: SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark
-                    ? CupertinoDynamicColor.resolve(CupertinoColors.secondarySystemBackground, context)
-                    : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
-                boxShadow: [
-                  BoxShadow(
-                    // Only show shadow in light mode
-                    color: CupertinoColors.black.withOpacity(0.1),
-                    spreadRadius: 0,
-                    blurRadius: 12,
-                    offset: const Offset(0, 6), // changes position of shadow
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const SizedBox(width: 12),
-                      Expanded(child: widget.child),
-                      const SizedBox(width: 12),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
-            ),
+              _animationController.forward();
+              await Future.delayed(const Duration(milliseconds: 125));
+              isDown = false;
+              if (isCancel) {
+                if (widget.onTap != null) {
+                  widget.onTap?.call();
+                }
+                _animationController.reverse();
+                isCancel = false;
+              }
+            },
+            onTapUp: (_) async {
+              isCancel = true;
+              if (!isDown) _animationController.reverse();
+            },
+            onTapCancel: () async => _animationController.reverse(),
+            child: ScaleTransition(scale: _scaleAnimation, child: core),
+          )
+        : GestureDetector(onTap: widget.onTap, child: core);
+  }
+}
+
+class RoundRectangleCardWithForehead extends StatelessWidget {
+  final Widget child;
+  final Widget forehead;
+  final Color foreheadColor;
+  final Function()? onTap;
+  final bool animate;
+
+  const RoundRectangleCardWithForehead({
+    Key? key,
+    required this.child,
+    required this.forehead,
+    this.foreheadColor = CupertinoColors.systemFill,
+    this.onTap,
+    this.animate = true,
+  }) : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        Positioned.fill(
+            child: SizedBox(
+                child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            color: CupertinoDynamicColor.resolve(foreheadColor, context),
+            boxShadow: const [
+            ],
           ),
-        ) : GestureDetector(
-          onTap: widget.onTap,
-          child: Container(
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
-                // In light mode, color is white; in dark mode, color is black
-                color: SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark
-                    ? CupertinoDynamicColor.resolve(CupertinoColors.secondarySystemBackground, context)
-                    : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
-                boxShadow: [
-                  BoxShadow(
-                    // Only show shadow in light mode
-                    color: CupertinoColors.black.withOpacity(0.1),
-                    spreadRadius: 0,
-                    blurRadius: 12,
-                    offset: const Offset(0, 6), // changes position of shadow
-                  ),
-                ],
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      const SizedBox(width: 12),
-                      Expanded(child: widget.child),
-                      const SizedBox(width: 12),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                ],
-              ),
+        ))),
+        Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            forehead,
+            RoundRectangleCard(
+              onTap: onTap,
+              animate: animate,
+              boxShadow: const [],
+              child: child,
             ),
-          ),
+          ],
+        )
       ],
     );
   }
