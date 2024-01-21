@@ -7,9 +7,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:celechron/model/course.dart';
 
-import '../../../model/exam.dart';
-import '../../../model/session.dart';
-import '../../../model/user.dart';
+import 'package:celechron/model/exam.dart';
+import 'package:celechron/model/session.dart';
+import 'package:celechron/model/user.dart';
 
 class CourseDetailPage extends StatelessWidget {
   final _user = Get.find<Rx<User>>(tag: 'user');
