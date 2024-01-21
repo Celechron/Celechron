@@ -1,4 +1,5 @@
 import 'package:celechron/model/period.dart';
+import 'package:celechron/utils/gpahelper.dart';
 import 'package:get/get.dart';
 
 import 'grade.dart';
@@ -108,7 +109,7 @@ class User {
       // 保研成绩，只取第一次
       var netGrades = grades.values.map((e) => e.first);
       if (netGrades.isNotEmpty) {
-        gpa = Grade.calculateGpa(netGrades);
+        gpa = GpaHelper.calculateGpa(netGrades).item1;
       }
       // 出国成绩，取最高的一次
       var aboardNetGrades = grades.values.map((e) {
@@ -116,11 +117,15 @@ class User {
         return e.last;
       });
       if (aboardNetGrades.isNotEmpty) {
-        aboardGpa = Grade.calculateGpa(aboardNetGrades);
+        var result = GpaHelper.calculateGpa(aboardNetGrades);
+        aboardGpa = result.item1;
+        // 所获学分，不包括挂科的。
+        credit = result.item2;
       }
-      // 这个算的是所获学分，不包括挂科的。因为出国成绩单取最高的一次成绩，所以就把挂科的学分算对了
-      credit =
-          aboardNetGrades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
+      else {
+        credit = 0.0;
+      }
+
       await _db.setUser(this);
       return value.item1.every((e) => e == null) ? value.item2 : value.item1;
     });

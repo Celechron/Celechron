@@ -7,11 +7,12 @@ import '../../model/user.dart';
 class ScholarController extends GetxController {
 
   final _user = Get.find<Rx<User>>(tag: 'user');
+  late final RxInt semesterIndex;
   final Rx<Duration> _durationToLastUpdate = const Duration().obs;
 
   User get user => _user.value;
-  Semester get thisSemester => _user.value.thisSemester;
   List<Semester> get semesters => _user.value.semesters;
+  Semester get selectedSemester => semesters[semesterIndex.value];
   Duration get durationToLastUpdate => _durationToLastUpdate.value;
 
   Future<List<String?>> fetchData() async {
@@ -24,10 +25,11 @@ class ScholarController extends GetxController {
 
   @override
   void onReady() {
+    super.onReady();
+    semesterIndex = semesters.indexWhere((e) => e.name == _user.value.thisSemester.name).obs;
     Timer.periodic(const Duration(seconds: 1), (timer) {
       _durationToLastUpdate.value = DateTime.now().difference(_user.value.lastUpdateTime);
     });
-    super.onReady();
   }
 
   @override

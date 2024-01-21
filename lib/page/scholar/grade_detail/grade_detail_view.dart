@@ -3,7 +3,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:celechron/design/two_line_card.dart';
-import 'package:celechron/design/sub_title.dart';
+import 'package:celechron/design/persistent_headers.dart';
 import 'grade_card.dart';
 import '../scholar_controller.dart';
 import 'grade_detail_controller.dart';
@@ -145,7 +145,7 @@ class GradeDetailPage extends StatelessWidget {
     return CupertinoPageScaffold(
         child: CustomScrollView(
           slivers: [
-            SubtitlePersistentHeader(subtitle: '成绩'),
+            CelechronSliverTextHeader(subtitle: '成绩'),
             SliverToBoxAdapter(
                 child: Column(children: [
                   Row(

@@ -1,6 +1,6 @@
 import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/model/session.dart';
-import 'package:celechron/design/sub_title.dart';
+import 'package:celechron/design/persistent_headers.dart';
 import 'course_schedule_controller.dart';
 import 'package:get/get.dart';
 import 'package:celechron/design/animate_button.dart';
@@ -294,7 +294,7 @@ class CourseSchedulePage extends StatelessWidget {
     return CupertinoPageScaffold(
         child: CustomScrollView(
       slivers: [
-        SubtitlePersistentHeader(subtitle: '课表'),
+        CelechronSliverTextHeader(subtitle: '课表'),
         SliverToBoxAdapter(
             child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),

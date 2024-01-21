@@ -1,5 +1,6 @@
 import 'package:celechron/page/scholar/course_list/course_brief_card.dart';
 import 'package:celechron/design/sub_title.dart';
+import 'package:celechron/design/persistent_headers.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -266,7 +267,7 @@ class CourseDetailPage extends StatelessWidget {
                               ),
                               const SizedBox(width: 8.0),
                               Expanded(
-                                  child: Text(exams[0].chineseTime,
+                                  child: Text(exams[i].chineseTime,
                                       style: CupertinoTheme.of(context)
                                           .textTheme
                                           .textStyle
@@ -289,7 +290,7 @@ class CourseDetailPage extends StatelessWidget {
                                   .withOpacity(0.5),
                             ),
                             Expanded(
-                                child: Text(' 地点：${exams[0].location ?? '未知'}',
+                                child: Text(' 地点：${exams[i].location ?? '未知'}',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.normal,
@@ -312,7 +313,7 @@ class CourseDetailPage extends StatelessWidget {
                                   .withOpacity(0.5),
                             ),
                             Expanded(
-                                child: Text(' 座位：${exams[0].seat ?? '未知'}',
+                                child: Text(' 座位：${exams[i].seat ?? '未知'}',
                                     style: TextStyle(
                                       fontSize: 14,
                                       fontWeight: FontWeight.normal,
@@ -341,7 +342,7 @@ class CourseDetailPage extends StatelessWidget {
     return CupertinoPageScaffold(
         child: CustomScrollView(
           slivers: [
-            SubtitlePersistentHeader(subtitle: '课程详情'),
+            CelechronSliverTextHeader(subtitle: '课程详情'),
             SliverToBoxAdapter(
                 child: Container(
                     padding: const EdgeInsets.only(bottom: 5, left: 16, right: 16),

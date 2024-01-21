@@ -1,6 +1,7 @@
 import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/model/period.dart';
-import '../utils/utils.dart';
+import 'package:celechron/utils/gpahelper.dart';
+import 'package:celechron/utils/utils.dart';
 import 'course.dart';
 import 'exam.dart';
 import 'grade.dart';
@@ -267,7 +268,7 @@ class Semester {
     }
   }
 
-  void addTimeInfo(Map<String, dynamic> json) {
+  void addZjuCalendar(Map<String, dynamic> json) {
     List<DateTime> startEnd = (json['startEnd'] as List)
         .map((e) => DateTime.parse(e as String))
         .toList();
@@ -320,9 +321,10 @@ class Semester {
   }
 
   void calculateGPA() {
-    gpa = Grade.calculateGpa(_grades);
+    var result = GpaHelper.calculateGpa(_grades);
+    gpa = result.item1;
+    credits = result.item2;
     _grades.sort((a, b) => b.hundredPoint.compareTo(a.hundredPoint));
-    credits = _grades.fold<double>(0.0, (p, e) => p + e.effectiveCredit);
   }
 
   void sortExams() {

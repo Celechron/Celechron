@@ -4,14 +4,15 @@ class Session {
   String teacher;
   bool confirmed;
 
-  // firstHalf: 秋/春
-  // secondHalf: 春/秋
+  // firstHalf : 秋/春 需要上课
+  // secondHalf: 夏/冬 需要上课
   // 举例：秋冬学期的课程，firstHalf为true，secondHalf也为true
   bool firstHalf = false;
   bool secondHalf = false;
 
-  // oddWeek: 单周
-  // evenWeek: 双周
+  // oddWeek:  单周 需要上课
+  // evenWeek: 双周 需要上课
+  // 举例：单双周的课程，oddWeek为true，evenWeek也为true
   bool oddWeek;
   bool evenWeek;
 
