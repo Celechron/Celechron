@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -20,8 +22,8 @@ class CreditsPage extends StatelessWidget {
           ),
           Align(
             alignment: Alignment.center,
-            child: SvgPicture.asset(
-              "assets/logo.svg",
+            child: Image.asset(
+              "assets/logo.png",
               height: 160,
             ),
           ),
