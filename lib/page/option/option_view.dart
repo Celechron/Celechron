@@ -13,7 +13,6 @@ class OptionPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     var _trailingTextStyle = TextStyle(
         color: CupertinoDynamicColor.resolve(
             CupertinoColors.secondaryLabel, context),
@@ -21,7 +20,8 @@ class OptionPage extends StatelessWidget {
 
     return CupertinoPageScaffold(
         backgroundColor: CupertinoColors.systemGroupedBackground,
-        child: SafeArea(child: CustomScrollView(
+        child: SafeArea(
+            child: CustomScrollView(
           slivers: [
             const CupertinoSliverNavigationBar(
               largeTitle: Text('设置'),
@@ -77,15 +77,23 @@ class OptionPage extends StatelessWidget {
                   CupertinoListTile(
                     title: const Text('重修绩点计算'),
                     trailing: Obx(() => CupertinoSlidingSegmentedControl(
-                      children: {
-                        0: Text('取首次', style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(fontSize: 16)),
-                        1: Text('取最高', style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(fontSize: 16)),
-                      },
-                      groupValue: _optionController.gpaStrategy.value,
-                      onValueChanged: (value) {
-                        _optionController.gpaStrategy.value = value!;
-                      },
-                    )),
+                          children: {
+                            0: Text('取首次',
+                                style: CupertinoTheme.of(context)
+                                    .textTheme
+                                    .textStyle
+                                    .copyWith(fontSize: 16)),
+                            1: Text('取最高',
+                                style: CupertinoTheme.of(context)
+                                    .textTheme
+                                    .textStyle
+                                    .copyWith(fontSize: 16)),
+                          },
+                          groupValue: _optionController.gpaStrategy.value,
+                          onValueChanged: (value) {
+                            _optionController.gpaStrategy.value = value!;
+                          },
+                        )),
                   ),
                 ],
               ),
@@ -104,18 +112,19 @@ class OptionPage extends StatelessWidget {
                     children: <CupertinoListTile>[
                   CupertinoListTile(
                     title: const Text('工作段时间长度'),
-                    trailing: BackChervonRow(child: Obx(() => Text(
-                        durationToString(_optionController.workTime),
-                        style: TextStyle(
-                            color: CupertinoDynamicColor.resolve(
-                                CupertinoColors.secondaryLabel, context),
-                            fontSize: 16)))),
+                    trailing: BackChervonRow(
+                        child: Obx(() => Text(
+                            durationToString(_optionController.workTime),
+                            style: TextStyle(
+                                color: CupertinoDynamicColor.resolve(
+                                    CupertinoColors.secondaryLabel, context),
+                                fontSize: 16)))),
                     onTap: () async {
                       Duration newWorkTime = _optionController.workTime;
-                      await showDialog(
+                      await showCupertinoDialog(
                           context: context,
                           builder: (BuildContext context) {
-                            return AlertDialog(
+                            return CupertinoAlertDialog(
                               title: const Text(
                                 '工作段时间长度',
                               ),
@@ -136,6 +145,14 @@ class OptionPage extends StatelessWidget {
                                   ],
                                 ),
                               ),
+                              actions: [
+                                CupertinoDialogAction(
+                                  child: const Text('确定'),
+                                  onPressed: () async {
+                                    Navigator.of(context).pop();
+                                  },
+                                )
+                              ],
                             );
                           });
                       _optionController.workTime = newWorkTime;
@@ -143,15 +160,16 @@ class OptionPage extends StatelessWidget {
                   ),
                   CupertinoListTile(
                     title: const Text('休息段时间长度'),
-                    trailing: BackChervonRow(child: Obx(() => Text(
-                        durationToString(_optionController.restTime),
-                        style: _trailingTextStyle))),
+                    trailing: BackChervonRow(
+                        child: Obx(() => Text(
+                            durationToString(_optionController.restTime),
+                            style: _trailingTextStyle))),
                     onTap: () async {
                       Duration newRestTime = _optionController.restTime;
-                      await showDialog(
+                      await showCupertinoDialog(
                           context: context,
                           builder: (BuildContext context) {
-                            return AlertDialog(
+                            return CupertinoAlertDialog(
                               title: const Text(
                                 '休息段时间长度',
                               ),
@@ -172,6 +190,14 @@ class OptionPage extends StatelessWidget {
                                   ],
                                 ),
                               ),
+                              actions: [
+                                CupertinoDialogAction(
+                                  child: const Text('确定'),
+                                  onPressed: () async {
+                                    Navigator.of(context).pop();
+                                  },
+                                )
+                              ],
                             );
                           });
                       _optionController.restTime = newRestTime;
@@ -179,14 +205,15 @@ class OptionPage extends StatelessWidget {
                   ),
                   CupertinoListTile(
                     title: const Text('可用的工作时段'),
-                    trailing: BackChervonRow(child: Obx(() => Text(
-                        '${_optionController.allowTimeLength} 个时段',
-                        style: _trailingTextStyle))),
+                    trailing: BackChervonRow(
+                        child: Obx(() => Text(
+                            '${_optionController.allowTimeLength} 个时段',
+                            style: _trailingTextStyle))),
                     onTap: () async {
                       Map<DateTime, DateTime> now = _optionController.allowTime;
                       Map<DateTime, DateTime> res = await Navigator.push(
                               context,
-                              MaterialPageRoute(
+                              CupertinoPageRoute(
                                   builder: (context) =>
                                       AllowTimeEditPage(now))) ??
                           now;
@@ -209,10 +236,13 @@ class OptionPage extends StatelessWidget {
                   children: <CupertinoListTile>[
                     CupertinoListTile(
                       title: const Text('关于 Celechron'),
-                      trailing: BackChervonRow(child: Text('1.0.0', style: _trailingTextStyle),),
+                      trailing: BackChervonRow(
+                        child: Text('1.0.0', style: _trailingTextStyle),
+                      ),
                       onTap: () async {
-                        Navigator.of(context, rootNavigator: true).push(CupertinoPageRoute(
-                            builder: (context) => const CreditsPage()));
+                        Navigator.of(context, rootNavigator: true).push(
+                            CupertinoPageRoute(
+                                builder: (context) => const CreditsPage()));
                       },
                     ),
                   ]),
@@ -221,17 +251,24 @@ class OptionPage extends StatelessWidget {
         )));
   }
 
-  static const _defaultMargin = EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 10.0);
+  static const _defaultMargin =
+      EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 10.0);
 }
 
 class BackChervonRow extends StatelessWidget {
-
   final Widget? child;
 
   const BackChervonRow({Key? key, this.child}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Row(children: [if(child != null) child!, const SizedBox(width: 4), Icon(Icons.arrow_forward_ios, color: CupertinoDynamicColor.resolve(CupertinoColors.tertiaryLabel, context), size: 16)]);
+    return Row(children: [
+      if (child != null) child!,
+      const SizedBox(width: 4),
+      Icon(Icons.arrow_forward_ios,
+          color: CupertinoDynamicColor.resolve(
+              CupertinoColors.tertiaryLabel, context),
+          size: 16)
+    ]);
   }
 }

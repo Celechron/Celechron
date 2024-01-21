@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import '../../model/deadline.dart';
 import '../../utils/utils.dart';
 
-class DeadlineEditPage extends StatefulWidget {
+class TaskEditPage extends StatefulWidget {
   final Deadline deadline;
-  const DeadlineEditPage(this.deadline, {super.key});
+  const TaskEditPage(this.deadline, {super.key});
 
   @override
-  State<DeadlineEditPage> createState() => _DeadlineEditPageState();
+  State<TaskEditPage> createState() => _TaskEditPageState();
 }
 
-class _DeadlineEditPageState extends State<DeadlineEditPage> {
+class _TaskEditPageState extends State<TaskEditPage> {
   late Deadline now;
   int __got = 0;
 
@@ -77,7 +77,7 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                   Text(
                     '${now.endTime.year} 年 ${now.endTime.month} 月 ${now.endTime.day} 日',
                   ),
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () async {
                       var res = await showDatePicker(
                         context: context,
@@ -95,7 +95,7 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                         });
                       }
                     },
-                    child: const Text('更改日期'),
+                    child: const Text('更改截止日期'),
                   ),
                 ],
               ),
@@ -105,7 +105,7 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                   Text(
                     now.endTime.toIso8601String().substring(11, 16),
                   ),
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () async {
                       var res = await showTimePicker(
                         context: context,
@@ -120,7 +120,7 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                         });
                       }
                     },
-                    child: const Text('更改时间'),
+                    child: const Text('更改截止时间'),
                   ),
                 ],
               ),
@@ -128,12 +128,12 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('预期要做 ${durationToString(now.timeNeeded)}'),
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () {
-                      showDialog(
+                      showCupertinoDialog(
                           context: context,
                           builder: (BuildContext context) {
-                            return AlertDialog(
+                            return CupertinoAlertDialog(
                               title: const Text(
                                 '预期用时',
                               ),
@@ -157,6 +157,14 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                                   ],
                                 ),
                               ),
+                              actions: [
+                                CupertinoDialogAction(
+                                  child: const Text('确定'),
+                                  onPressed: () async {
+                                    Navigator.of(context).pop();
+                                  },
+                                )
+                              ],
                             );
                           });
                     },
@@ -168,12 +176,12 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text('已经做了 ${durationToString(now.timeSpent)}'),
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () {
-                      showDialog(
+                      showCupertinoDialog(
                           context: context,
                           builder: (BuildContext context) {
-                            return AlertDialog(
+                            return CupertinoAlertDialog(
                               title: const Text(
                                 '已经用时',
                               ),
@@ -196,6 +204,14 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
                                   ],
                                 ),
                               ),
+                              actions: [
+                                CupertinoDialogAction(
+                                  child: const Text('确定'),
+                                  onPressed: () async {
+                                    Navigator.of(context).pop();
+                                  },
+                                )
+                              ],
                             );
                           });
                     },
@@ -206,7 +222,7 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
               TextFormField(
                 decoration: const InputDecoration(
                   border: UnderlineInputBorder(),
-                  labelText: '地址',
+                  labelText: '地点',
                 ),
                 initialValue: now.location,
                 onChanged: (value) {
@@ -240,11 +256,11 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ElevatedButton(
+                  TextButton(
                     onPressed: exitWithoutSave,
                     child: const Text('放弃更改并退出'),
                   ),
-                  ElevatedButton(
+                  TextButton(
                     onPressed: saveAndExit,
                     child: const Text('保存更改并退出'),
                   ),
@@ -254,7 +270,7 @@ class _DeadlineEditPageState extends State<DeadlineEditPage> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ElevatedButton(
+                  TextButton(
                     onPressed: removeAndExit,
                     child: const Text('移除任务'),
                   ),

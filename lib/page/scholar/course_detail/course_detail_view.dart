@@ -132,17 +132,18 @@ class CourseDetailPage extends StatelessWidget {
                                   .withOpacity(0.5),
                             ),
                             Expanded(
-                                child: Text(' 地点：${sessions[i].location ?? '未知'}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.normal,
-                                      color: CupertinoTheme.of(context)
-                                          .textTheme
-                                          .textStyle
-                                          .color!
-                                          .withOpacity(0.75),
-                                      overflow: TextOverflow.ellipsis,
-                                    )))
+                                child:
+                                    Text(' 地点：${sessions[i].location ?? '未知'}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.normal,
+                                          color: CupertinoTheme.of(context)
+                                              .textTheme
+                                              .textStyle
+                                              .color!
+                                              .withOpacity(0.75),
+                                          overflow: TextOverflow.ellipsis,
+                                        )))
                           ]),
                         ],
                       )
@@ -340,33 +341,38 @@ class CourseDetailPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-        child: CustomScrollView(
-          slivers: [
-            CelechronSliverTextHeader(subtitle: '课程详情'),
+      child: CustomScrollView(
+        slivers: [
+          CelechronSliverTextHeader(subtitle: '课程详情'),
+          SliverToBoxAdapter(
+            child: Container(
+              padding: const EdgeInsets.only(bottom: 5, left: 16, right: 16),
+              child: Column(
+                children: [
+                  SubSubtitleRow(subtitle: '基本'),
+                  CourseBriefCard(course: course),
+                ],
+              ),
+            ),
+          ),
+          if (course.sessions.isNotEmpty)
             SliverToBoxAdapter(
-                child: Container(
-                    padding: const EdgeInsets.only(bottom: 5, left: 16, right: 16),
-                    child: Column(
-                      children: [
-                        SubSubtitleRow(subtitle: '基本'),
-                        CourseBriefCard(course: course),
-                      ],
-                    ))),
-            if (course.sessions.isNotEmpty)
-              SliverToBoxAdapter(
-                  child: Container(
+              child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
                 child: createSessionCard(context, course.sessions),
-              )),
-            if (course.exams.isNotEmpty)
-              SliverToBoxAdapter(
-                  child: Container(
+              ),
+            ),
+          if (course.exams.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Container(
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
                 child: createExamCard(context, course.exams),
-              )),
-          ],
-        ));
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
