@@ -35,7 +35,7 @@ class _DateTimePairListTileState extends State<DateTimePairListTile> {
     val = DateTimePair(first: widget.val.first, second: widget.val.second);
   }
 
-  String TimeToString(DateTime time) {
+  String timeToString(DateTime time) {
     return '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
   }
 
@@ -67,9 +67,9 @@ class _DateTimePairListTileState extends State<DateTimePairListTile> {
 
   @override
   Widget build(BuildContext context) {
-    print('${TimeToString(val.first)} - ${TimeToString(val.second)}');
+    print('${timeToString(val.first)} - ${timeToString(val.second)}');
     return ListTile(
-      title: Text('${TimeToString(val.first)} - ${TimeToString(val.second)}'),
+      title: Text('${timeToString(val.first)} - ${timeToString(val.second)}'),
       trailing: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -217,7 +217,7 @@ class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
                         ),
                       );
                     }
-                    return ElevatedButton(
+                    return TextButton(
                       onPressed: () {
                         now.add(DateTimePair(
                           first: DateTime(0, 0, 0, 8, 0),

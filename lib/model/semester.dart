@@ -105,7 +105,9 @@ class Semester {
 
   // 上半学期课表
   List<List<Session>> get firstHalfTimetable {
-    return _sessions.where((e) => e.firstHalf && e.confirmed).fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
+    return _sessions
+        .where((e) => e.firstHalf && e.confirmed)
+        .fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
       p[e.dayOfWeek].add(e);
       return p;
     });
@@ -113,7 +115,9 @@ class Semester {
 
   // 下半学期课表
   List<List<Session>> get secondHalfTimetable {
-    return _sessions.where((e) => e.secondHalf && e.confirmed).fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
+    return _sessions
+        .where((e) => e.secondHalf && e.confirmed)
+        .fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
       p[e.dayOfWeek].add(e);
       return p;
     });
@@ -123,16 +127,14 @@ class Semester {
     return _sessions.where((e) => e.firstHalf && e.confirmed).fold(
         0.0,
         (p, e) =>
-            p +
-            (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
+            p + (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
   }
 
   double get secondHalfSessionCount {
     return _sessions.where((e) => e.secondHalf && e.confirmed).fold(
         0.0,
-            (p, e) =>
-        p +
-            (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
+        (p, e) =>
+            p + (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
   }
 
   List<Period> get periods {
@@ -149,8 +151,7 @@ class Semester {
                 location: session.location ?? "未知",
                 summary: session.name,
                 startTime: day.add(_sessionToTime[session.time.first].first),
-                endTime: day.add(_sessionToTime[session.time.last].last)
-            );
+                endTime: day.add(_sessionToTime[session.time.last].last));
             periods.add(period);
           }
         }
@@ -164,8 +165,7 @@ class Semester {
                 location: session.location ?? "未知",
                 summary: session.name,
                 startTime: day.add(_sessionToTime[session.time.first].first),
-                endTime: day.add(_sessionToTime[session.time.last].last)
-            );
+                endTime: day.add(_sessionToTime[session.time.last].last));
             periods.add(period);
           }
         }
@@ -174,14 +174,14 @@ class Semester {
         if (session.evenWeek) {
           for (var day in _dayOfWeekToDays[1][0][session.dayOfWeek]) {
             var period = Period(
-                uid: '${session.id}${session.dayOfWeek}${session.time.first}',
-                fromUid: session.id,
-                type: PeriodType.classes,
-                description: "教师: ${session.teacher}",
-                location: session.location ?? "未知",
-                summary: session.name,
-                startTime: day.add(_sessionToTime[session.time.first].first),
-                endTime: day.add(_sessionToTime[session.time.last].last),
+              uid: '${session.id}${session.dayOfWeek}${session.time.first}',
+              fromUid: session.id,
+              type: PeriodType.classes,
+              description: "教师: ${session.teacher}",
+              location: session.location ?? "未知",
+              summary: session.name,
+              startTime: day.add(_sessionToTime[session.time.first].first),
+              endTime: day.add(_sessionToTime[session.time.last].last),
             );
             periods.add(period);
           }
@@ -189,30 +189,34 @@ class Semester {
         if (session.oddWeek) {
           for (var day in _dayOfWeekToDays[1][1][session.dayOfWeek]) {
             var period = Period(
-                uid: '${session.id}${session.dayOfWeek}${session.time.first}',
-                fromUid: session.id,
-                type: PeriodType.classes,
-                description: "教师: ${session.teacher}",
-                location: session.location ?? "未知",
-                summary: session.name,
-                startTime: day.add(_sessionToTime[session.time.first].first),
-                endTime: day.add(_sessionToTime[session.time.last].last),
+              uid: '${session.id}${session.dayOfWeek}${session.time.first}',
+              fromUid: session.id,
+              type: PeriodType.classes,
+              description: "教师: ${session.teacher}",
+              location: session.location ?? "未知",
+              summary: session.name,
+              startTime: day.add(_sessionToTime[session.time.first].first),
+              endTime: day.add(_sessionToTime[session.time.last].last),
             );
             periods.add(period);
           }
         }
       }
     }
-    periods = periods.where((e) => !_holidays.containsKey(DateTime(e.startTime.year, e.startTime.month, e.startTime.day))).toList();
+    periods = periods
+        .where((e) => !_holidays.containsKey(
+            DateTime(e.startTime.year, e.startTime.month, e.startTime.day)))
+        .toList();
     for (var exam in _exams) {
       var period = Period(
           type: PeriodType.test,
-          description: "${exam.name} - ${exam.type == ExamType.finalExam ? "期末考试" : "期中考试"}",
+          fromUid: exam.id,
+          description:
+              "${exam.name} - ${exam.type == ExamType.finalExam ? "期末考试" : "期中考试"}\n座位号：${exam.seat}",
           location: exam.location ?? "未知",
           summary: exam.name,
           startTime: exam.time[0],
-          endTime: exam.time[1]
-      );
+          endTime: exam.time[1]);
       periods.add(period);
     }
     return periods;
@@ -253,8 +257,7 @@ class Semester {
     if (_courses.containsKey(courseId)) {
       Course.completeExam(_courses[courseId]!, examDto);
     } else {
-      _courses.addEntries(
-          [MapEntry(courseId, Course.fromExam(examDto))]);
+      _courses.addEntries([MapEntry(courseId, Course.fromExam(examDto))]);
     }
   }
 
@@ -279,10 +282,11 @@ class Semester {
                 minutes: int.parse((e).substring(3, 5))))
             .toList())
         .toList();
-    _holidays = (json['holiday'] as Map).map((k, v) =>
-        MapEntry(DateTime.parse(k as String), v as String));
-    _exchanges = (json['exchange'] as Map).map((k, v) =>
-        MapEntry(DateTime.parse((k as String).substring(0,8)), DateTime.parse((k).substring(8,16))));
+    _holidays = (json['holiday'] as Map)
+        .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
+    _exchanges = (json['exchange'] as Map).map((k, v) => MapEntry(
+        DateTime.parse((k as String).substring(0, 8)),
+        DateTime.parse((k).substring(8, 16))));
     _dayOfWeekToDays = [
       [
         /*上半学期*/
@@ -351,8 +355,7 @@ class Semester {
                   .toList())
               .toList())
           .toList(),
-      'holidays': _holidays
-          .map((k, v) => MapEntry(k.toIso8601String(), v)),
+      'holidays': _holidays.map((k, v) => MapEntry(k.toIso8601String(), v)),
       'exchanges': _exchanges
           .map((k, v) => MapEntry(k.toIso8601String(), v.toIso8601String())),
     };
@@ -382,6 +385,8 @@ class Semester {
                     .toList())
                 .toList())
             .toList(),
-        _holidays = ((json['holidays'] ?? {}) as Map).map((k, v) => MapEntry(DateTime.parse(k as String), v as String)),
-        _exchanges = ((json['exchanges'] ?? {}) as Map).map((k, v) => MapEntry(DateTime.parse(k as String), DateTime.parse(v as String)));
+        _holidays = ((json['holidays'] ?? {}) as Map)
+            .map((k, v) => MapEntry(DateTime.parse(k as String), v as String)),
+        _exchanges = ((json['exchanges'] ?? {}) as Map).map((k, v) =>
+            MapEntry(DateTime.parse(k as String), DateTime.parse(v as String)));
 }

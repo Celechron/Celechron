@@ -34,10 +34,12 @@ class FlowPage extends StatelessWidget {
               : null,
           child: Padding(
             padding: const EdgeInsets.only(left: 8, right: 8),
-            child: Column(children: [Row(
+            child: Column(
               children: [
-                Expanded(
-                    child: Column(children: [
+                Row(
+                  children: [
+                    Expanded(
+                        child: Column(children: [
                       Row(children: [
                         Container(
                           width: 12.0,
@@ -54,10 +56,10 @@ class FlowPage extends StatelessWidget {
                                     .textTheme
                                     .textStyle
                                     .copyWith(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                  overflow: TextOverflow.ellipsis,
-                                ))),
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      overflow: TextOverflow.ellipsis,
+                                    ))),
                       ]),
                       Divider(
                         color: CupertinoDynamicColor.resolve(
@@ -70,149 +72,178 @@ class FlowPage extends StatelessWidget {
                               child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(children: [
-                                      const Icon(
-                                        CupertinoIcons.location_solid,
-                                        size: 14,
-                                        color: CupertinoColors.systemTeal,
-                                      ),
-                                      const SizedBox(width: 6),
-                                      Text(period.location,
-                                          style: TextStyle(
-                                            fontSize: 16,
-                                            fontWeight: FontWeight.bold,
-                                            fontFeatures: const [
-                                              FontFeature.tabularFigures()
-                                            ],
-                                            color: CupertinoTheme.of(context)
-                                                .textTheme
-                                                .textStyle
-                                                .color!,
-                                            overflow: TextOverflow.ellipsis,
-                                          ))
-                                    ]),
-                                  ])),
+                                Row(children: [
+                                  const Icon(
+                                    CupertinoIcons.location_solid,
+                                    size: 14,
+                                    color: CupertinoColors.systemTeal,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(period.location,
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        fontFeatures: const [
+                                          FontFeature.tabularFigures()
+                                        ],
+                                        color: CupertinoTheme.of(context)
+                                            .textTheme
+                                            .textStyle
+                                            .color!,
+                                        overflow: TextOverflow.ellipsis,
+                                      ))
+                                ]),
+                              ])),
                         ],
                       ),
                     ])),
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        CupertinoIcons.time_solid,
-                        size: 14,
-                        color: CupertinoColors.systemTeal,
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${period.startTime.hour}:${period.startTime.minute.toString().padLeft(2, '0')} - ${period.endTime.hour}:${period.endTime.minute.toString().padLeft(2, '0')}',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.normal,
-                          color: CupertinoTheme.of(context)
-                              .textTheme
-                              .textStyle
-                              .color!
-                              .withOpacity(0.75),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.only(left: 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Obx(()=>period.startTime.isBefore(_flowController.timeNow.value)
-                            ? Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                    Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
                             children: [
-                              Text('结束还有',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.normal,
-                                    color: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .textStyle
-                                        .color!
-                                        .withOpacity(0.75),
-                                    overflow: TextOverflow.ellipsis,
-                                  )),
+                              const Icon(
+                                CupertinoIcons.time_solid,
+                                size: 14,
+                                color: CupertinoColors.systemTeal,
+                              ),
+                              const SizedBox(width: 6),
                               Text(
-                                  TimeHelper.toHMS(period.endTime
-                                      .difference(
-                                      _flowController.timeNow.value)),
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    color: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .textStyle
-                                        .color!,
-                                    overflow: TextOverflow.ellipsis,
-                                  ))
-                            ])
-                            : Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('开始还有',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.normal,
-                                    color: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .textStyle
-                                        .color!
-                                        .withOpacity(0.75),
-                                    overflow: TextOverflow.ellipsis,
-                                  )),
-                              Text(
-                                  TimeHelper.toHMS(period.startTime
-                                      .difference(
-                                      _flowController.timeNow.value)),
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                    fontFeatures: const [
-                                      FontFeature.tabularFigures()
-                                    ],
-                                    color: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .textStyle
-                                        .color!,
-                                    overflow: TextOverflow.ellipsis,
-                                  ))
-                            ]))
-                      ],
-                    ),
-                  )
-                ]),
+                                '${period.startTime.hour}:${period.startTime.minute.toString().padLeft(2, '0')} - ${period.endTime.hour}:${period.endTime.minute.toString().padLeft(2, '0')}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.normal,
+                                  color: CupertinoTheme.of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .color!
+                                      .withOpacity(0.75),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Obx(() => period.startTime
+                                        .isBefore(_flowController.timeNow.value)
+                                    ? Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                            Text('离结束还有',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.normal,
+                                                  color:
+                                                      CupertinoTheme.of(context)
+                                                          .textTheme
+                                                          .textStyle
+                                                          .color!
+                                                          .withOpacity(0.75),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                )),
+                                            Text(
+                                                TimeHelper.toHMS(period.endTime
+                                                    .difference(_flowController
+                                                        .timeNow.value)),
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  color:
+                                                      CupertinoTheme.of(context)
+                                                          .textTheme
+                                                          .textStyle
+                                                          .color!,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ))
+                                          ])
+                                    : Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                            Text('开始还有',
+                                                style: TextStyle(
+                                                  fontSize: 14,
+                                                  fontWeight: FontWeight.normal,
+                                                  color:
+                                                      CupertinoTheme.of(context)
+                                                          .textTheme
+                                                          .textStyle
+                                                          .color!
+                                                          .withOpacity(0.75),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                )),
+                                            Text(
+                                                TimeHelper.toHMS(period
+                                                    .startTime
+                                                    .difference(_flowController
+                                                        .timeNow.value)),
+                                                style: TextStyle(
+                                                  fontSize: 18,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontFeatures: const [
+                                                    FontFeature.tabularFigures()
+                                                  ],
+                                                  color:
+                                                      CupertinoTheme.of(context)
+                                                          .textTheme
+                                                          .textStyle
+                                                          .color!,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                ))
+                                          ]))
+                              ],
+                            ),
+                          )
+                        ]),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                LayoutBuilder(
+                    builder: (context, constraints) => Stack(
+                          children: [
+                            SizedBox(
+                              height: 8,
+                              width: (constraints.maxWidth),
+                              child: Container(
+                                decoration: BoxDecoration(
+                                  color: CupertinoDynamicColor.resolve(
+                                      CupertinoColors.separator, context),
+                                  borderRadius: BorderRadius.circular(4),
+                                ),
+                              ),
+                            ),
+                            Obx(() => SizedBox(
+                                  height: 8,
+                                  width: _flowController.isDuringFlow
+                                      ? (constraints.maxWidth) *
+                                          _flowController.timeNow.value
+                                              .difference(period.startTime)
+                                              .inMilliseconds /
+                                          period.endTime
+                                              .difference(period.startTime)
+                                              .inMilliseconds
+                                      : (constraints.maxWidth),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      color: CupertinoDynamicColor.resolve(
+                                          CupertinoColors.systemTeal, context),
+                                      borderRadius: BorderRadius.circular(4),
+                                    ),
+                                  ),
+                                ))
+                          ],
+                        )),
               ],
             ),
-              const SizedBox(height: 8),
-              LayoutBuilder(builder: (context, constraints) => Stack(children: [
-                SizedBox(
-                  height: 8,
-                  width: (constraints.maxWidth),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: CupertinoDynamicColor.resolve(CupertinoColors.separator, context),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ),
-                Obx(() => SizedBox(
-                  height: 8,
-                  width: _flowController.isDuringFlow ? (constraints.maxWidth) * _flowController.timeNow.value.difference(period.startTime).inMilliseconds / period.endTime.difference(period.startTime).inMilliseconds : (constraints.maxWidth),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: CupertinoDynamicColor.resolve(CupertinoColors.systemTeal, context),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                  ),
-                ))],)),
-            ],),
           ),
         )
       ],
@@ -366,15 +397,15 @@ class FlowPage extends StatelessWidget {
   Future<void> newFlowList(context) async {
     DateTime newTime = DateTime.now();
 
-    await showDialog(
+    await showCupertinoDialog(
         context: context,
         builder: (BuildContext context) {
           DateTime time = DateTime.now()
               .copyWith(second: 0, millisecond: 0, microsecond: 0)
-              .add(const Duration(minutes: 2));
+              .add(const Duration(seconds: 90));
           newTime = time;
 
-          return AlertDialog(
+          return CupertinoAlertDialog(
             title: const Text(
               '选择规划开始时间',
             ),
@@ -382,7 +413,6 @@ class FlowPage extends StatelessWidget {
               builder: (BuildContext context, StateSetter setState) {
                 return SizedBox(
                   width: double.maxFinite,
-                  height: 170,
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,54 +421,36 @@ class FlowPage extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            '${time.year} 年 ${time.month} 月 ${time.day} 日',
+                            '${time.year} 年 ${time.month} 月 ${time.day} 日 ${time.toIso8601String().substring(11, 16)}',
                           ),
-                          ElevatedButton(
+                          CupertinoButton(
                             onPressed: () async {
-                              var res = await showDatePicker(
-                                context: context,
-                                initialDate: time,
-                                firstDate: DateTime(2023, 1, 1),
-                                lastDate: DateTime(2099, 1, 1),
-                              );
-                              if (res != null) {
-                                setState(() {
-                                  time = time.copyWith(
-                                    year: res.year,
-                                    month: res.month,
-                                    day: res.day,
-                                  );
-                                  newTime = time.copyWith();
-                                });
-                              }
+                              await showCupertinoModalPopup(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return Container(
+                                      height: MediaQuery.of(context)
+                                              .copyWith()
+                                              .size
+                                              .height /
+                                          3,
+                                      color: Colors.white,
+                                      child: CupertinoDatePicker(
+                                        initialDateTime: time,
+                                        use24hFormat: true,
+                                        minuteInterval: 1,
+                                        mode:
+                                            CupertinoDatePickerMode.dateAndTime,
+                                        onDateTimeChanged: (DateTime newTime) {
+                                          setState(() {
+                                            time = newTime;
+                                          });
+                                        },
+                                      ),
+                                    );
+                                  });
                             },
-                            child: const Text('更改日期'),
-                          ),
-                        ],
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            time.toIso8601String().substring(11, 16),
-                          ),
-                          ElevatedButton(
-                            onPressed: () async {
-                              var res = await showTimePicker(
-                                context: context,
-                                initialTime: TimeOfDay.fromDateTime(time),
-                              );
-                              if (res != null) {
-                                setState(() {
-                                  time = time.copyWith(
-                                    hour: res.hour,
-                                    minute: res.minute,
-                                  );
-                                  newTime = time.copyWith();
-                                });
-                              }
-                            },
-                            child: const Text('更改时间'),
+                            child: const Text('更改'),
                           ),
                         ],
                       ),
@@ -460,49 +472,77 @@ class FlowPage extends StatelessWidget {
               },
             ),
             actions: [
-              TextButton(
+              CupertinoDialogAction(
                 onPressed: () => navigator!.pop(),
                 child: const Text('返回'),
               ),
-              TextButton(
+              CupertinoDialogAction(
                 onPressed: () async {
                   if (newTime.isAfter(DateTime.now())) {
                     int ret = _flowController.updateFlowList(newTime);
                     if (ret < 0) {
-                      await showDialog(
+                      await showCupertinoDialog(
                         context: context,
                         builder: (BuildContext context) {
-                          return const AlertDialog(
-                            title: Text(
+                          return CupertinoAlertDialog(
+                            title: const Text(
                               '时间不够了！',
                             ),
-                            content: SizedBox(
-                              child: Text('即使是完全不休息也有任务无法完成。请压缩任务的预期时间。'),
-                            ),
+                            content: const Text('即使是完全不休息也有任务无法完成。请压缩任务的预期时间。'),
+                            actions: [
+                              CupertinoDialogAction(
+                                child: const Text('确定'),
+                                onPressed: () async {
+                                  Navigator.of(context).pop();
+                                },
+                              )
+                            ],
                           );
                         },
                       );
                     } else if (ret != db.getRestTime().inMinutes) {
-                      /*Fluttertoast.showToast(
-                        msg:
-                            '因为任务过多，你需要把休息时间压缩到 ${durationToString(Duration(minutes: ret))}才能完成任务',
-                        toastLength: Toast.LENGTH_SHORT,
-                        gravity: ToastGravity.BOTTOM,
-                        timeInSecForIosWeb: 1,
-                        textColor: Colors.white,
-                        fontSize: 16.0,
-                      );*/
+                      await showCupertinoDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return CupertinoAlertDialog(
+                            title: const Text(
+                              '休息时间已压缩',
+                            ),
+                            content: Text(
+                                '因为任务过多，你需要把休息时间压缩到 ${durationToString(Duration(minutes: ret))}才能完成任务。'),
+                            actions: [
+                              CupertinoDialogAction(
+                                child: const Text('确定'),
+                                onPressed: () async {
+                                  Navigator.of(context).pop();
+                                },
+                              )
+                            ],
+                          );
+                        },
+                      );
                     }
                     navigator!.pop();
                   } else {
-                    /*Fluttertoast.showToast(
-                      msg: '开始时间必须晚于现在',
-                      toastLength: Toast.LENGTH_SHORT,
-                      gravity: ToastGravity.CENTER,
-                      timeInSecForIosWeb: 1,
-                      textColor: Colors.white,
-                      fontSize: 16.0,
-                    );*/
+                    await showCupertinoDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return CupertinoAlertDialog(
+                          title: const Text(
+                            '开始时间必须晚于现在',
+                          ),
+                          content: const Text('请调整开始时间。'),
+                          actions: [
+                            CupertinoDialogAction(
+                              child: const Text('确定'),
+                              onPressed: () async {
+                                Navigator.of(context).pop();
+                              },
+                            )
+                          ],
+                        );
+                      },
+                    );
                   }
                 },
                 child: const Text('创建'),
@@ -587,7 +627,7 @@ class FlowPage extends StatelessWidget {
                         child: createFirst(
                             context,
                             _flowController.flowList[index],
-                            _flowController.isDuringFlow ? '正在' : '即将'))
+                            _flowController.isDuringFlow ? '正在进行' : '即将开始'))
                     : Container(
                         padding: EdgeInsets.only(
                             top: index == 0 ? 0 : 5,
@@ -597,7 +637,7 @@ class FlowPage extends StatelessWidget {
                         child: createCard(
                             context,
                             _flowController.flowList[index],
-                            index == 1 ? '然后' : null));
+                            index == 1 ? '之后的安排' : null));
               },
               childCount: _flowController.flowList.length,
             ),

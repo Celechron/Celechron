@@ -123,11 +123,11 @@ class CalendarPage extends StatelessWidget {
                           horizontal: 8, vertical: 4),
                       decoration: BoxDecoration(
                           border: Border.all(
-                              color: CustomCupertinoDynamicColors.okGreen.darkColor,
+                              color: CustomCupertinoDynamicColors
+                                  .okGreen.darkColor,
                               width: 1),
                           borderRadius: BorderRadius.circular(10)),
-                      child: Text(
-                          _calendarController.user.value.specialDates[_calendarController.selectedDay.value.copyWith(isUtc: false)]!,
+                      child: Text(_calendarController.user.value.specialDates[_calendarController.selectedDay.value.copyWith(isUtc: false)]!,
                           style: TextStyle(color: CustomCupertinoDynamicColors.okGreen.darkColor, fontSize: 12)))
                   : null)),
           Expanded(
@@ -182,7 +182,8 @@ class CalendarPage extends StatelessWidget {
 
   Widget createCard(context, Period period) {
     return RoundRectangleCard(
-        onTap: period.type == PeriodType.classes
+        onTap: (period.type == PeriodType.classes ||
+                period.type == PeriodType.test)
             ? () async => Navigator.of(context, rootNavigator: true).push(
                 CupertinoPageRoute(
                     builder: (context) =>
@@ -200,8 +201,12 @@ class CalendarPage extends StatelessWidget {
                     Container(
                       width: 12.0,
                       height: 12.0,
-                      decoration: const BoxDecoration(
-                        color: CupertinoColors.systemTeal,
+                      decoration: BoxDecoration(
+                        color: period.type == PeriodType.classes
+                            ? CupertinoColors.systemTeal
+                            : (period.type == PeriodType.test
+                                ? CupertinoColors.systemPink
+                                : CupertinoColors.inactiveGray),
                         shape: BoxShape.circle,
                       ),
                     ),

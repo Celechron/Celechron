@@ -12,7 +12,8 @@ class FlowController extends GetxController {
   final flowList = Get.find<RxList<Period>>(tag: 'flowList');
   final flowListLastUpdate = Get.find<Rx<DateTime>>(tag: 'flowListLastUpdate');
   final deadlineList = Get.find<RxList<Deadline>>(tag: 'deadlineList');
-  final deadlineListLastUpdate = Get.find<Rx<DateTime>>(tag: 'deadlineListLastUpdate');
+  final deadlineListLastUpdate =
+      Get.find<Rx<DateTime>>(tag: 'deadlineListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
   late var _basePeriodList = user.value.periods;
   var _currentBasePeriodCursor = -1;
@@ -27,7 +28,8 @@ class FlowController extends GetxController {
       refreshFlowList();
     });
     _basePeriodList.sort((a, b) => a.startTime.compareTo(b.startTime));
-    _currentBasePeriodCursor = _basePeriodList.indexWhere((element) => element.startTime.isAfter(DateTime.now()));
+    _currentBasePeriodCursor = _basePeriodList
+        .indexWhere((element) => element.startTime.isAfter(DateTime.now()));
     ever(user, (callback) => refreshBasePeriodList());
     super.onInit();
   }
@@ -70,7 +72,8 @@ class FlowController extends GetxController {
     List<Deadline> deadlines = [];
     DateTime lastDeadlineEndsAt = startsAt;
     for (var x in deadlineList) {
-      if (x.deadlineType == DeadlineType.running && x.endTime.isAfter(startsAt)) {
+      if (x.deadlineType == DeadlineType.running &&
+          x.endTime.isAfter(startsAt)) {
         deadlines.add(x.copyWith());
         if (x.endTime.isAfter(lastDeadlineEndsAt)) {
           lastDeadlineEndsAt = x.endTime;
@@ -198,7 +201,8 @@ class FlowController extends GetxController {
     }
 
     print('updateFlowList: calc');
-    TimeAssignSet ans = getTimeAssignSet(workTime, restTime, deadlines, ableList);
+    TimeAssignSet ans =
+        getTimeAssignSet(workTime, restTime, deadlines, ableList);
     print(ans.isValid);
     if (!ans.isValid) return -1;
     flowList.addAll(ans.assignSet);
@@ -207,16 +211,26 @@ class FlowController extends GetxController {
     });
     updateDeadlineListTime();
     flowList.refresh();
-    _currentBasePeriodCursor = _basePeriodList.indexWhere((e) => e.startTime.isAfter(DateTime.now()));
+    _currentBasePeriodCursor =
+        _basePeriodList.indexWhere((e) => e.startTime.isAfter(DateTime.now()));
     refreshFlowList();
     return ans.restTime.inMinutes;
   }
 
   void refreshFlowList() {
     if (flowList.length <= 5 && _currentBasePeriodCursor != -1) {
-      for (var i = 0; i < 5 && i+_currentBasePeriodCursor < _basePeriodList.length; i++) {
-        if(!flowList.any((e) => e.uid == _basePeriodList[i+_currentBasePeriodCursor].uid) && _basePeriodList[i+_currentBasePeriodCursor].endTime.difference(DateTime.now()).inMinutes < 2880){
-          flowList.add(_basePeriodList[i+_currentBasePeriodCursor].copyWith());
+      for (var i = 0;
+          i < 5 && i + _currentBasePeriodCursor < _basePeriodList.length;
+          i++) {
+        if (!flowList.any((e) =>
+                e.uid == _basePeriodList[i + _currentBasePeriodCursor].uid) &&
+            _basePeriodList[i + _currentBasePeriodCursor]
+                    .endTime
+                    .difference(DateTime.now())
+                    .inMinutes <
+                2880) {
+          flowList
+              .add(_basePeriodList[i + _currentBasePeriodCursor].copyWith());
         }
       }
     }
@@ -251,7 +265,7 @@ class FlowController extends GetxController {
     _basePeriodList.sort((a, b) {
       return a.startTime.compareTo(b.startTime);
     });
-    _currentBasePeriodCursor = _basePeriodList.indexWhere((e) => e.startTime.isAfter(DateTime.now()));
+    _currentBasePeriodCursor =
+        _basePeriodList.indexWhere((e) => e.startTime.isAfter(DateTime.now()));
   }
-
 }
