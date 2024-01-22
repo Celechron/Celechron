@@ -54,7 +54,7 @@ class Session {
         // ZDBK上，课程名称中的括号有时会变成英文括号，此处统一改成中文括号
         name = nameTeacherPosition.group(1)!.replaceAll('(', '（').replaceAll(')', '）');
         teacher = nameTeacherPosition.group(3)!;
-        location = nameTeacherPosition.group(4);
+        location = nameTeacherPosition.group(4) == '' ? null : nameTeacherPosition.group(4);
       }
     }
     // 短学期 or 长学期

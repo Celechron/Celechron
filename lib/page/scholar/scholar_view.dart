@@ -6,13 +6,12 @@ import 'package:get/get.dart';
 
 // Custom widgets and colors
 import 'package:celechron/design/multiple_columns.dart';
-import 'package:celechron/design/sub_title.dart';
 import 'package:celechron/design/two_line_card.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/design/animate_button.dart';
 
-import 'package:celechron/model/semester.dart';
+import '../search/search_view.dart';
 import 'course_list/course_list_view.dart';
 import 'course_schedule/course_schedule_view.dart';
 import 'exam_list/exam_list_view.dart';
@@ -39,7 +38,7 @@ class ScholarPage extends StatelessWidget {
                         forehead: Obx(() => Row(children: [
                               // University Icon
                               Padding(
-                                padding: EdgeInsets.only(
+                                padding: const EdgeInsets.only(
                                     left: 12, top: 6, bottom: 6),
                                 child: Icon(
                                   Icons.school,
@@ -356,56 +355,13 @@ class ScholarPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHistory(BuildContext context) {
-    return Column(
-      children: [
-        SubtitleRow(subtitle: '历史学期'),
-        Row(
-          children: [
-            Expanded(
-                child: RoundRectangleCard(
-              child: Column(children: [
-                // Horizontal scrollable list to list all semesters
-                SizedBox(
-                  height: 81,
-                  child: Obx(() => ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _scholarController.user.semesters.length,
-                      itemBuilder: (context, index) {
-                        final semester = _scholarController.user.semesters[
-                            _scholarController.user.semesters.length -
-                                1 -
-                                index];
-                        return Row(children: [
-                          TwoLineCard(
-                            animate: true,
-                            withColoredFont: true,
-                            width: 120,
-                            title:
-                                '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
-                            content:
-                                '${semester.gpa[0].toStringAsFixed(2)}/${semester.credits.toStringAsFixed(1)}',
-                            backgroundColor: CupertinoColors.systemFill,
-                          ),
-                          const SizedBox(width: 6),
-                        ]);
-                      })),
-                ),
-              ]),
-            )),
-          ],
-        ),
-        const SizedBox(height: 20),
-      ],
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
         backgroundColor: CupertinoDynamicColor.resolve(
             CupertinoColors.systemGroupedBackground, context),
         child: SafeArea(
+          bottom: false,
             child: CustomScrollView(
           slivers: [
             SliverPinnedToBoxAdapter(
@@ -415,6 +371,13 @@ class ScholarPage extends StatelessWidget {
                   child: Column(children: [
                     Row(
                       children: [
+                        const SizedBox(width: 2),
+                        Text('学业', style: CupertinoTheme.of(context)
+                            .textTheme
+                            .navLargeTitleTextStyle
+                            .copyWith(fontSize: 24),
+                        ),
+                        const SizedBox(width: 12),
                         Expanded(
                           child: CupertinoSearchTextField(
                             placeholder: '搜索课程，事项...',
@@ -424,61 +387,33 @@ class ScholarPage extends StatelessWidget {
                                 .copyWith(
                                     color: CupertinoColors.systemGrey,
                                     height: 1.25,
-                                    fontSize: 14),
+                                    fontSize: 18),
                             style: CupertinoTheme.of(context)
                                 .textTheme
                                 .textStyle
-                                .copyWith(height: 1.25, fontSize: 14),
+                                .copyWith(height: 1.25, fontSize: 18),
                             borderRadius: BorderRadius.circular(12),
                             itemColor: CupertinoColors.systemGrey,
-                            itemSize: 18,
+                            itemSize: 20,
                             suffixInsets: const EdgeInsetsDirectional.fromSTEB(
                                 0, 0, 5, 0),
                             prefixInsets: const EdgeInsetsDirectional.fromSTEB(
                                 10, 0, 0, 0),
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 6, vertical: 6),
+                                horizontal: 6, vertical: 8),
+                            onTap: () async {
+                              FocusManager.instance.primaryFocus?.unfocus();
+                              Navigator.of(context, rootNavigator: true).push(
+                                    CupertinoPageRoute(
+                                        builder: (context) => SearchPage()));
+                            },
+                            focusNode: AlwaysDisabledFocusNode(),
+                            // Do not popup the keyboard
                           ),
                         ),
-                        // Refresh Icon on the right
-                        CupertinoButton(
-                          padding: EdgeInsets.zero,
-                          child: const Icon(
-                              CupertinoIcons.refresh_circled_solid,
-                              size: 24,
-                              color: CupertinoColors.systemGrey),
-                          onPressed: () async {
-                            var error = await _scholarController.fetchData();
-                            if (error.any((e) => e != null)) {
-                              if (context.mounted) {
-                                showCupertinoDialog(
-                                  context: context,
-                                  builder: (context) {
-                                    return CupertinoAlertDialog(
-                                      title: const Text('刷新失败'),
-                                      content: Text(error
-                                          .where((e) => e != null)
-                                          .fold('', (p, v) => '$p\n$v')
-                                          .trim()),
-                                      actions: [
-                                        CupertinoDialogAction(
-                                          child: const Text('确定'),
-                                          onPressed: () async {
-                                            Navigator.of(context).pop();
-                                          },
-                                        )
-                                      ],
-                                    );
-                                  },
-                                );
-                              }
-                            }
-                          },
-                        ),
-                        // Setting Icon on the right
                       ],
                     ),
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Row(children: [
                       Expanded(
                         child: SizedBox(
@@ -576,4 +511,9 @@ class ScholarPage extends StatelessWidget {
           ],
         )));
   }
+}
+
+class AlwaysDisabledFocusNode extends FocusNode {
+  @override
+  bool get hasFocus => false;
 }

@@ -57,6 +57,8 @@ class CalendarController extends GetxController {
 
   List<Period> getEventsForDay(DateTime day) {
     DateTime chop = chopDate(day);
-    return events[chop] ?? [];
+    var eventsOfDay = events[chop] ?? [];
+    eventsOfDay.sort((a,b) => a.startTime.compareTo(b.startTime));
+    return eventsOfDay;
   }
 }
