@@ -1,9 +1,9 @@
 name: celechron
 description: Time scheduler for zjuers.
-publish_to: 'none'
+publish_to: "none"
 version: 1.0.0+1
 environment:
-  sdk: '>=2.19.6'
+  sdk: ">=2.19.6"
 
 dependencies:
   flutter:
@@ -20,7 +20,8 @@ dependencies:
   flutter_svg: any
   intl: any
   extended_sliver: any
-
+  flutter_launcher_icons: any
+  rename_app: any
 
 dev_dependencies:
   flutter_test:
@@ -38,7 +39,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.
@@ -77,3 +77,9 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
+
+flutter_launcher_icons:
+  image_path: assets/logo.png
+  android: true
+  ios: true
+  remove_alpha_ios: true
