@@ -195,7 +195,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                       textAlign: TextAlign.left,
                       controller: TextEditingController(text: now.location),
                       onChanged: (String value) {
-                        now.summary = value;
+                        now.location = value;
                       },
                     ),
                     CupertinoTextFormFieldRow(
@@ -207,6 +207,15 @@ class _TaskEditPageState extends State<TaskEditPage> {
                       },
                     ),
                   ],
+                ),
+                CupertinoButton(
+                  onPressed: removeAndExit,
+                  child: const Text(
+                    '删除任务',
+                    style: TextStyle(
+                      color: CupertinoColors.systemPink,
+                    ),
+                  ),
                 ),
               ]),
             ),
