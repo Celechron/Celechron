@@ -6,7 +6,6 @@ import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:get/get.dart';
 
 import '../database/database_helper.dart';
-import '../model/course.dart';
 import '../model/grade.dart';
 import '../model/semester.dart';
 import 'zjuServices/appservice.dart';
@@ -48,11 +47,13 @@ class Spider {
     loginErrorMessages.addAll(await Future.wait([
       _appService
           .login(_httpClient, _iPlanetDirectoryPro)
+          // ignore: unnecessary_cast
           .then((value) => null as String?)
           .timeout(const Duration(seconds: 8))
-          .catchError((e) => "无法登录钉工作台，$e"),
+          .catchError((e) => "无法登录钉钉工作台，$e"),
       _zdbk
           .login(_httpClient, _iPlanetDirectoryPro)
+          // ignore: unnecessary_cast
           .then((value) => null as String?)
           .timeout(const Duration(seconds: 8))
           .catchError((e) => "无法登录教务网，$e"),

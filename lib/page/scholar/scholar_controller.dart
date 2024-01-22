@@ -5,7 +5,6 @@ import 'package:get/get.dart';
 import '../../model/user.dart';
 
 class ScholarController extends GetxController {
-
   final _user = Get.find<Rx<User>>(tag: 'user');
   late final RxInt semesterIndex;
   final Rx<Duration> _durationToLastUpdate = const Duration().obs;
@@ -18,7 +17,8 @@ class ScholarController extends GetxController {
   Future<List<String?>> fetchData() async {
     return await _user.value.refresh().then((value) {
       _user.refresh();
-      _durationToLastUpdate.value = DateTime.now().difference(_user.value.lastUpdateTime);
+      _durationToLastUpdate.value =
+          DateTime.now().difference(_user.value.lastUpdateTime);
       return value;
     });
   }
@@ -26,16 +26,12 @@ class ScholarController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    semesterIndex = semesters.indexWhere((e) => e.name == _user.value.thisSemester.name).obs;
+    semesterIndex = semesters
+        .indexWhere((e) => e.name == _user.value.thisSemester.name)
+        .obs;
     Timer.periodic(const Duration(seconds: 1), (timer) {
-      _durationToLastUpdate.value = DateTime.now().difference(_user.value.lastUpdateTime);
+      _durationToLastUpdate.value =
+          DateTime.now().difference(_user.value.lastUpdateTime);
     });
   }
-
-  @override
-  void onClose() {
-    // TODO: implement onClose
-    super.onClose();
-  }
-
 }

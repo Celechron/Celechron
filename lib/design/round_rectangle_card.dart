@@ -25,7 +25,7 @@ class RoundRectangleCard extends StatefulWidget {
   }) : super(key: key);
 
   @override
-  _RoundRectangleCardState createState() => _RoundRectangleCardState();
+  State<RoundRectangleCard> createState() => _RoundRectangleCardState();
 }
 
 class _RoundRectangleCardState extends State<RoundRectangleCard>
@@ -65,18 +65,19 @@ class _RoundRectangleCardState extends State<RoundRectangleCard>
     var isCancel = false;
     var core = Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        // In light mode, color is white; in dark mode, color is black
-        color:
-            SchedulerBinding.instance.platformDispatcher.platformBrightness ==
-                    Brightness.dark
-                ? CupertinoDynamicColor.resolve(
-                    CupertinoColors.secondarySystemBackground, context)
-                : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
-        boxShadow: SchedulerBinding.instance.platformDispatcher.platformBrightness ==
-            Brightness.dark
-            ? null : widget.boxShadow
-      ),
+          borderRadius: BorderRadius.circular(12),
+          // In light mode, color is white; in dark mode, color is black
+          color: SchedulerBinding
+                      .instance.platformDispatcher.platformBrightness ==
+                  Brightness.dark
+              ? CupertinoDynamicColor.resolve(
+                  CupertinoColors.secondarySystemBackground, context)
+              : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
+          boxShadow:
+              SchedulerBinding.instance.platformDispatcher.platformBrightness ==
+                      Brightness.dark
+                  ? null
+                  : widget.boxShadow),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -145,8 +146,7 @@ class RoundRectangleCardWithForehead extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             color: CupertinoDynamicColor.resolve(foreheadColor, context),
-            boxShadow: const [
-            ],
+            boxShadow: const [],
           ),
         ))),
         Column(

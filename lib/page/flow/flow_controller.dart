@@ -34,18 +34,6 @@ class FlowController extends GetxController {
     super.onInit();
   }
 
-  @override
-  void onReady() {
-    // TODO: implement onReady
-    super.onReady();
-  }
-
-  @override
-  void onClose() {
-    // TODO: implement onClose
-    super.onClose();
-  }
-
   Future<void> saveToDb() async {
     await _db.setFlowList(flowList);
     await _db.setFlowListUpdateTime(flowListLastUpdate.value);

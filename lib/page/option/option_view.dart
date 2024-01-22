@@ -11,9 +11,11 @@ import 'option_controller.dart';
 class OptionPage extends StatelessWidget {
   final _optionController = Get.put(OptionController());
 
+  OptionPage({super.key});
+
   @override
   Widget build(BuildContext context) {
-    var _trailingTextStyle = TextStyle(
+    var trailingTextStyle = TextStyle(
         color: CupertinoDynamicColor.resolve(
             CupertinoColors.secondaryLabel, context),
         fontSize: 16);
@@ -163,7 +165,7 @@ class OptionPage extends StatelessWidget {
                     trailing: BackChervonRow(
                         child: Obx(() => Text(
                             durationToString(_optionController.restTime),
-                            style: _trailingTextStyle))),
+                            style: trailingTextStyle))),
                     onTap: () async {
                       Duration newRestTime = _optionController.restTime;
                       await showCupertinoDialog(
@@ -208,11 +210,11 @@ class OptionPage extends StatelessWidget {
                     trailing: BackChervonRow(
                         child: Obx(() => Text(
                             '${_optionController.allowTimeLength} 个时段',
-                            style: _trailingTextStyle))),
+                            style: trailingTextStyle))),
                     onTap: () async {
                       await Navigator.of(context, rootNavigator: true)
                           .push(CupertinoPageRoute(
-                        builder: (context) => AllowTimeEditPage(),
+                        builder: (context) => const AllowTimeEditPage(),
                       ));
                     },
                   ),
@@ -233,7 +235,7 @@ class OptionPage extends StatelessWidget {
                     CupertinoListTile(
                       title: const Text('关于 Celechron'),
                       trailing: BackChervonRow(
-                        child: Text('0.2.1 beta', style: _trailingTextStyle),
+                        child: Text('0.2.1 beta', style: trailingTextStyle),
                       ),
                       onTap: () async {
                         Navigator.of(context, rootNavigator: true).push(

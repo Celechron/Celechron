@@ -35,7 +35,11 @@ void main() async {
   if (Platform.isAndroid) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarIconBrightness: SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark ? Brightness.light : Brightness.dark,
+      statusBarIconBrightness:
+          SchedulerBinding.instance.platformDispatcher.platformBrightness ==
+                  Brightness.dark
+              ? Brightness.light
+              : Brightness.dark,
       systemNavigationBarColor: Colors.transparent,
     ));
   }
@@ -49,17 +53,18 @@ class CelechronApp extends StatefulWidget {
 }
 
 class _CelechronAppState extends State<CelechronApp> {
-  Future<void> initTimezone() async {
-  }
+  Future<void> initTimezone() async {}
 
   Future<void> initUser() async {
     var user = Get.find<Rx<User>>(tag: 'user');
     if (user.value.isLogin) {
+      // ignore: avoid_print
       print("数据加载成功");
       await user.value.login();
       await user.value.refresh();
       user.refresh();
     } else {
+      // ignore: avoid_print
       print("数据加载失败");
     }
   }
@@ -118,7 +123,9 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       tabBar: CupertinoTabBar(
         iconSize: 26,
-        backgroundColor: CupertinoDynamicColor.resolve(CupertinoColors.secondarySystemBackground, context).withOpacity(0.5),
+        backgroundColor: CupertinoDynamicColor.resolve(
+                CupertinoColors.secondarySystemBackground, context)
+            .withOpacity(0.5),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.time),
@@ -166,7 +173,11 @@ class _MyHomePageState extends State<MyHomePage> {
     if (Platform.isAndroid) {
       SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
       SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        statusBarIconBrightness: SchedulerBinding.instance.platformDispatcher.platformBrightness == Brightness.dark ? Brightness.light : Brightness.dark,
+        statusBarIconBrightness:
+            SchedulerBinding.instance.platformDispatcher.platformBrightness ==
+                    Brightness.dark
+                ? Brightness.light
+                : Brightness.dark,
         systemNavigationBarColor: Colors.transparent,
       ));
     }

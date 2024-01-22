@@ -11,12 +11,13 @@ class GradeCard extends StatefulWidget {
   final CupertinoDynamicColor backgroundColor;
 
   const GradeCard({
+    super.key,
     required this.grade,
     this.backgroundColor = CupertinoColors.systemBackground,
   });
 
   @override
-  _GradeCardState createState() => _GradeCardState();
+  State<GradeCard> createState() => _GradeCardState();
 }
 
 class _GradeCardState extends State<GradeCard>
@@ -48,7 +49,6 @@ class _GradeCardState extends State<GradeCard>
 
   @override
   Widget build(BuildContext context) {
-
     var brightness = MediaQuery.of(context).platformBrightness;
     var isDown = false;
     var isCancel = false;
@@ -61,7 +61,9 @@ class _GradeCardState extends State<GradeCard>
         await Future.delayed(const Duration(milliseconds: 125));
         isDown = false;
         if (isCancel) {
-          Navigator.of(context).push(CupertinoPageRoute(builder: (context) => CourseDetailPage(courseId: widget.grade.id)));
+          navigator!.push(CupertinoPageRoute(
+              builder: (context) =>
+                  CourseDetailPage(courseId: widget.grade.id)));
           _animationController.reverse();
           isCancel = false;
         }
@@ -74,10 +76,14 @@ class _GradeCardState extends State<GradeCard>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
-          padding: const EdgeInsets.only(left: 12, right: 12, bottom: 8, top: 8),
+          padding:
+              const EdgeInsets.only(left: 12, right: 12, bottom: 8, top: 8),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: brightness == Brightness.dark ? CupertinoColors.systemFill : CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+            color: brightness == Brightness.dark
+                ? CupertinoColors.systemFill
+                : CupertinoDynamicColor.resolve(
+                    widget.backgroundColor, context),
             // boxShadow
             boxShadow: [
               BoxShadow(
@@ -89,57 +95,77 @@ class _GradeCardState extends State<GradeCard>
               ),
             ],
           ),
-          child:
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Row(
+                  Expanded(
+                      child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.grade.name,
-                            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                      Text(
+                        widget.grade.name,
+                        style: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .copyWith(
                               fontSize: 16,
                               fontWeight: FontWeight.normal,
-                              color: CupertinoTheme.of(context).textTheme.textStyle.color,
+                              color: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .color,
                               overflow: TextOverflow.ellipsis,
                             ),
-                          ),
-                          Text(
-                              '${widget.grade.id.substring(0,22)} / ${widget.grade.credit.toStringAsFixed(1)}学分',
-                              style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                                color: CupertinoTheme.of(context).textTheme.textStyle.color!.withOpacity(0.5),
+                      ),
+                      Text(
+                          '${widget.grade.id.substring(0, 22)} / ${widget.grade.credit.toStringAsFixed(1)}学分',
+                          style: CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .copyWith(
+                                color: CupertinoTheme.of(context)
+                                    .textTheme
+                                    .textStyle
+                                    .color!
+                                    .withOpacity(0.5),
                                 fontSize: 12,
                                 fontWeight: FontWeight.normal,
                                 overflow: TextOverflow.ellipsis,
                               )),
-                        ],
-                      )),
-                      Text(
-                        '${widget.grade.original} / ${widget.grade.fivePoint.toStringAsFixed(1)}',
-                        style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                          fontSize: 20,
-                          fontWeight: FontWeight.normal,
-                          color: CupertinoTheme.of(context).textTheme.textStyle.color,
-                        ),
-                      ),
                     ],
-                  ),
-                  const SizedBox(height: 4),
-                  SizedBox(
-                    height: 8,
-                    width: max((context.width - 60) * (widget.grade.fivePoint - 1.4) / 3.6, 0),
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: CupertinoDynamicColor.resolve(CupertinoColors.systemTeal, context),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
+                  )),
+                  Text(
+                    '${widget.grade.original} / ${widget.grade.fivePoint.toStringAsFixed(1)}',
+                    style:
+                        CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                              fontSize: 20,
+                              fontWeight: FontWeight.normal,
+                              color: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .color,
+                            ),
                   ),
                 ],
               ),
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 8,
+                width: max(
+                    (context.width - 60) * (widget.grade.fivePoint - 1.4) / 3.6,
+                    0),
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: CupertinoDynamicColor.resolve(
+                        CupertinoColors.systemTeal, context),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -8,7 +8,13 @@ class SubtitleRow extends StatelessWidget {
   late final String heroTag = subtitle;
   final double fontSize;
 
-  SubtitleRow({required this.subtitle, this.right, this.padHorizontal = 2, this.fontSize = 20, this.padVertical = 12});
+  SubtitleRow(
+      {super.key,
+      required this.subtitle,
+      this.right,
+      this.padHorizontal = 2,
+      this.fontSize = 20,
+      this.padVertical = 12});
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +46,8 @@ class SubSubtitleRow extends StatelessWidget {
   final double padHorizontal;
   late final String heroTag = subtitle;
 
-  SubSubtitleRow({required this.subtitle, this.right, this.padHorizontal = 2});
+  SubSubtitleRow(
+      {super.key, required this.subtitle, this.right, this.padHorizontal = 2});
 
   @override
   Widget build(BuildContext context) {

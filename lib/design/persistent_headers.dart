@@ -1,6 +1,5 @@
 import 'dart:ui';
 
-
 import 'package:flutter/cupertino.dart';
 
 class CelechronSliverTextHeader extends StatelessWidget {
@@ -9,7 +8,7 @@ class CelechronSliverTextHeader extends StatelessWidget {
   final double fontSize;
   final bool firstPage;
 
-  CelechronSliverTextHeader(
+  const CelechronSliverTextHeader(
       {super.key,
       required this.subtitle,
       this.right,
@@ -80,29 +79,32 @@ class CelechronHeader extends SliverPersistentHeaderDelegate {
                                 CupertinoColors.label, context),
                           ))),
                 // Title at the center
-                Row(mainAxisAlignment: MainAxisAlignment.center, crossAxisAlignment: CrossAxisAlignment.end, children: [
-                  Container(
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 8),
-                      child: Hero(
-                        tag: subtitle,
-                        child: Column(children: [
-                          Text(
-                            subtitle,
-                            style: CupertinoTheme.of(context)
-                                .textTheme
-                                .navTitleTextStyle
-                                .copyWith(fontSize: fontSize - (bottom == null ? 0 : 2)),
-                          ),
-                          if (bottom != null) bottom!,
-                        ]),
-                      )),
-                ]),
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Container(
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(vertical: 8),
+                          child: Hero(
+                            tag: subtitle,
+                            child: Column(children: [
+                              Text(
+                                subtitle,
+                                style: CupertinoTheme.of(context)
+                                    .textTheme
+                                    .navTitleTextStyle
+                                    .copyWith(
+                                        fontSize: fontSize -
+                                            (bottom == null ? 0 : 2)),
+                              ),
+                              if (bottom != null) bottom!,
+                            ]),
+                          )),
+                    ]),
                 // Right button
                 if (right != null)
-                  Container(
-                      alignment: Alignment.centerRight,
-                      child: right),
+                  Container(alignment: Alignment.centerRight, child: right),
               ],
             )
           ])),

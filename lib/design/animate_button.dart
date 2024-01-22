@@ -6,13 +6,14 @@ class AnimateButton extends StatefulWidget {
   final CupertinoDynamicColor backgroundColor;
 
   const AnimateButton({
+    super.key,
     required this.text,
     this.onTap,
     this.backgroundColor = CupertinoColors.systemBackground,
   });
 
   @override
-  _AnimateButtonState createState() => _AnimateButtonState();
+  State<AnimateButton> createState() => _AnimateButtonState();
 }
 
 class _AnimateButtonState extends State<AnimateButton>
@@ -23,28 +24,27 @@ class _AnimateButtonState extends State<AnimateButton>
   @override
   void initState() {
     super.initState();
-      _animationController = AnimationController(
-        vsync: this,
-        duration: const Duration(milliseconds: 200),
-        reverseDuration: const Duration(milliseconds: 400),
-      );
-      _scaleAnimation = Tween<double>(begin: 1, end: 0.95).animate(
-        CurvedAnimation(
-          parent: _animationController,
-          curve: Curves.easeInOut,
-        ),
-      );
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 200),
+      reverseDuration: const Duration(milliseconds: 400),
+    );
+    _scaleAnimation = Tween<double>(begin: 1, end: 0.95).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: Curves.easeInOut,
+      ),
+    );
   }
 
   @override
   void dispose() {
-      _animationController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-
     var isDown = false;
     var isCancel = false;
     var brightness = MediaQuery.of(context).platformBrightness;
@@ -73,7 +73,10 @@ class _AnimateButtonState extends State<AnimateButton>
           padding: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
-            color: brightness == Brightness.dark ? CupertinoColors.secondarySystemFill : CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+            color: brightness == Brightness.dark
+                ? CupertinoColors.secondarySystemFill
+                : CupertinoDynamicColor.resolve(
+                    widget.backgroundColor, context),
             // boxShadow
             boxShadow: const [
               BoxShadow(
@@ -90,10 +93,16 @@ class _AnimateButtonState extends State<AnimateButton>
               Text(
                 widget.text,
                 style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                  fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: brightness == Brightness.dark ? CupertinoDynamicColor.resolve(widget.backgroundColor, context) : CupertinoTheme.of(context).textTheme.textStyle.color,
-                ),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: brightness == Brightness.dark
+                          ? CupertinoDynamicColor.resolve(
+                              widget.backgroundColor, context)
+                          : CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .color,
+                    ),
               ),
             ],
           ),

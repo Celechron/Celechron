@@ -12,13 +12,12 @@ import '../../../design/custom_colors.dart';
 import 'course_list_controller.dart';
 
 class CourseListPage extends StatelessWidget {
-
   late final CourseListController _courseListController;
 
-  CourseListPage({required String initialSemesterName, super.key}){
+  CourseListPage({required String initialSemesterName, super.key}) {
     Get.delete<CourseListController>();
-    _courseListController = Get.put(CourseListController(
-        initialName: initialSemesterName));
+    _courseListController =
+        Get.put(CourseListController(initialName: initialSemesterName));
   }
 
   Widget _semesterPicker(BuildContext context) {
@@ -35,22 +34,21 @@ class CourseListPage extends StatelessWidget {
                   itemBuilder: (context, index) {
                     final semester = _courseListController.semesters[index];
                     return Obx(() => Stack(children: [
-                      AnimateButton(
-                        text:
-                        '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
-                        onTap: () {
-                          _courseListController.semesterIndex.value =
-                              index;
-                          _courseListController.semesterIndex.refresh();
-                        },
-                        backgroundColor:
-                        _courseListController.semesterIndex.value ==
-                            index
-                            ? CustomCupertinoDynamicColors.cyan
-                            : CupertinoColors.systemFill,
-                      ),
-                      const SizedBox(width: 90),
-                    ]));
+                          AnimateButton(
+                            text:
+                                '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
+                            onTap: () {
+                              _courseListController.semesterIndex.value = index;
+                              _courseListController.semesterIndex.refresh();
+                            },
+                            backgroundColor:
+                                _courseListController.semesterIndex.value ==
+                                        index
+                                    ? CustomCupertinoDynamicColors.cyan
+                                    : CupertinoColors.systemFill,
+                          ),
+                          const SizedBox(width: 90),
+                        ]));
                   }),
             ),
           ),
@@ -64,24 +62,28 @@ class CourseListPage extends StatelessWidget {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          CelechronSliverTextHeader(subtitle: '课程'),
+          const CelechronSliverTextHeader(subtitle: '课程'),
           SliverPinnedToBoxAdapter(
             child: Padding(
-                padding: const EdgeInsets.only(left: 16, right:16, bottom: 10),
+                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 10),
                 child: Obx(() => _semesterPicker(context))),
           ),
           Obx(() => SliverList(
-            delegate: SliverChildBuilderDelegate(
+                delegate: SliverChildBuilderDelegate(
                   (context, index) => Container(
-                padding: index == 0 ? const EdgeInsets.only(top: 0, bottom: 5, left: 16, right: 16) : const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-                child: CourseBriefCard(
-                  course: _courseListController.courses[index],
-                  allowDirect: true,
+                    padding: index == 0
+                        ? const EdgeInsets.only(
+                            top: 0, bottom: 5, left: 16, right: 16)
+                        : const EdgeInsets.symmetric(
+                            horizontal: 16, vertical: 5),
+                    child: CourseBriefCard(
+                      course: _courseListController.courses[index],
+                      allowDirect: true,
+                    ),
+                  ),
+                  childCount: _courseListController.courses.length,
                 ),
-              ),
-              childCount: _courseListController.courses.length,
-            ),
-          )),
+              )),
         ],
       ),
     );

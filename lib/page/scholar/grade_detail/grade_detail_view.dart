@@ -9,11 +9,10 @@ import '../scholar_controller.dart';
 import 'grade_detail_controller.dart';
 
 class GradeDetailPage extends StatelessWidget {
-
   final _scholarController = Get.find<ScholarController>();
   late final GradeDetailController _gradeDetailController;
 
-  GradeDetailPage({super.key}){
+  GradeDetailPage({super.key}) {
     Get.delete<GradeDetailController>();
     _gradeDetailController = Get.put(GradeDetailController());
   }
@@ -24,8 +23,10 @@ class GradeDetailPage extends StatelessWidget {
         Row(
           children: [
             Expanded(
-                child: Hero(tag: 'gradeBrief', child: RoundRectangleCard(
-                    child: Column(
+                child: Hero(
+                    tag: 'gradeBrief',
+                    child: RoundRectangleCard(
+                        child: Column(
                       children: [
                         Row(
                           children: [
@@ -34,7 +35,8 @@ class GradeDetailPage extends StatelessWidget {
                                   title: '五分制',
                                   content: _scholarController.user.gpa[0]
                                       .toStringAsFixed(2),
-                                  backgroundColor: CustomCupertinoDynamicColors.cyan)),
+                                  backgroundColor:
+                                      CustomCupertinoDynamicColors.cyan)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -42,7 +44,8 @@ class GradeDetailPage extends StatelessWidget {
                                   title: '获得学分',
                                   content: _scholarController.user.credit
                                       .toStringAsFixed(1),
-                                  backgroundColor: CustomCupertinoDynamicColors.peach)),
+                                  backgroundColor:
+                                      CustomCupertinoDynamicColors.peach)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -50,7 +53,8 @@ class GradeDetailPage extends StatelessWidget {
                                   title: '四分制',
                                   content: _scholarController.user.gpa[1]
                                       .toStringAsFixed(2),
-                                  backgroundColor: CustomCupertinoDynamicColors.spring)),
+                                  backgroundColor:
+                                      CustomCupertinoDynamicColors.spring)),
                             ),
                           ],
                         ),
@@ -63,7 +67,8 @@ class GradeDetailPage extends StatelessWidget {
                                   content: _scholarController
                                       .user.majorGpaAndCredit[0]
                                       .toStringAsFixed(2),
-                                  backgroundColor: CustomCupertinoDynamicColors.sakura)),
+                                  backgroundColor:
+                                      CustomCupertinoDynamicColors.sakura)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -72,7 +77,8 @@ class GradeDetailPage extends StatelessWidget {
                                   content: _scholarController
                                       .user.majorGpaAndCredit[1]
                                       .toStringAsFixed(1),
-                                  backgroundColor: CustomCupertinoDynamicColors.sand)),
+                                  backgroundColor:
+                                      CustomCupertinoDynamicColors.sand)),
                             ),
                             const SizedBox(width: 8),
                             Expanded(
@@ -80,7 +86,8 @@ class GradeDetailPage extends StatelessWidget {
                                   title: '百分制',
                                   content: _scholarController.user.gpa[2]
                                       .toStringAsFixed(2),
-                                  backgroundColor: CustomCupertinoDynamicColors.magenta)),
+                                  backgroundColor:
+                                      CustomCupertinoDynamicColors.magenta)),
                             ),
                           ],
                         ),
@@ -100,39 +107,49 @@ class GradeDetailPage extends StatelessWidget {
           children: [
             Expanded(
                 child: RoundRectangleCard(
-                  animate: false,
-                  child: Column(children: [
-                    // Horizontal scrollable list to list all semesters
-                    SizedBox(
-                      height: 81,
-                      child: Obx(() => ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          itemCount: _gradeDetailController.semestersWithGrades.length,
-                          itemBuilder: (context, index) {
-                            final semester = _gradeDetailController.semestersWithGrades[index];
-                            return Obx(() => Row(children: [
+              animate: false,
+              child: Column(children: [
+                // Horizontal scrollable list to list all semesters
+                SizedBox(
+                  height: 81,
+                  child: Obx(() => ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount:
+                          _gradeDetailController.semestersWithGrades.length,
+                      itemBuilder: (context, index) {
+                        final semester =
+                            _gradeDetailController.semestersWithGrades[index];
+                        return Obx(() => Row(children: [
                               TwoLineCard(
                                 animate: true,
                                 withColoredFont: true,
                                 width: 120,
                                 title:
-                                '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
+                                    '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
                                 content:
-                                '${semester.gpa[0].toStringAsFixed(2)}/${semester.credits.toStringAsFixed(1)}',
+                                    '${semester.gpa[0].toStringAsFixed(2)}/${semester.credits.toStringAsFixed(1)}',
                                 onTap: () {
-                                  _gradeDetailController.semesterIndex.value = index;
-                                  _gradeDetailController.semesterIndex.refresh();
+                                  _gradeDetailController.semesterIndex.value =
+                                      index;
+                                  _gradeDetailController.semesterIndex
+                                      .refresh();
                                 },
-                                backgroundColor: _gradeDetailController.semesterIndex.value == index
+                                backgroundColor: _gradeDetailController
+                                            .semesterIndex.value ==
+                                        index
                                     ? CustomCupertinoDynamicColors.cyan
                                     : CupertinoColors.systemFill,
                               ),
-                              if(index != _gradeDetailController.semestersWithGrades.length - 1) const SizedBox(width: 6),
+                              if (index !=
+                                  _gradeDetailController
+                                          .semestersWithGrades.length -
+                                      1)
+                                const SizedBox(width: 6),
                             ]));
-                          })),
-                    ),
-                  ]),
-                )),
+                      })),
+                ),
+              ]),
+            )),
           ],
         ),
         const SizedBox(height: 20),
@@ -144,26 +161,26 @@ class GradeDetailPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
         child: CustomScrollView(
-          slivers: [
-            CelechronSliverTextHeader(subtitle: '成绩'),
-            SliverToBoxAdapter(
-                child: Column(children: [
-                  Row(
-                    children: [
-                      const SizedBox(width: 18),
-                      Expanded(
-                        child: Column(
-                          children: [
-                            _buildGradeBrief(context),
-                            _buildHistory(context),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 18),
-                    ],
-                  )
-                ])),
-            Obx(() => SliverList(
+      slivers: [
+        const CelechronSliverTextHeader(subtitle: '成绩'),
+        SliverToBoxAdapter(
+            child: Column(children: [
+          Row(
+            children: [
+              const SizedBox(width: 18),
+              Expanded(
+                child: Column(
+                  children: [
+                    _buildGradeBrief(context),
+                    _buildHistory(context),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 18),
+            ],
+          )
+        ])),
+        Obx(() => SliverList(
               delegate: SliverChildBuilderDelegate((context, index) {
                 return Column(children: [
                   Row(
@@ -171,16 +188,24 @@ class GradeDetailPage extends StatelessWidget {
                       const SizedBox(width: 18),
                       Expanded(
                           child: GradeCard(
-                            grade: _gradeDetailController.semestersWithGrades[_gradeDetailController.semesterIndex.value].grades[index],
-                          )),
+                        grade: _gradeDetailController
+                            .semestersWithGrades[
+                                _gradeDetailController.semesterIndex.value]
+                            .grades[index],
+                      )),
                       const SizedBox(width: 18),
                     ],
                   ),
                   const SizedBox(height: 8),
                 ]);
-              }, childCount: _gradeDetailController.semestersWithGrades[_gradeDetailController.semesterIndex.value].grades.length),
+              },
+                  childCount: _gradeDetailController
+                      .semestersWithGrades[
+                          _gradeDetailController.semesterIndex.value]
+                      .grades
+                      .length),
             )),
-          ],
-        ));
+      ],
+    ));
   }
 }

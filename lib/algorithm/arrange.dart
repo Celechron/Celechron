@@ -15,17 +15,14 @@ class TimeAssignSet {
 }
 
 TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
-    List<Deadline> _deadlineList, List<Period> _ableList) {
-  for (var x in _deadlineList) {}
-  for (var x in _ableList) {}
-
+    List<Deadline> deadlineList_, List<Period> ableList_) {
   List<Deadline> deadlineList = [];
   List<Period> ableList = [];
 
-  for (var x in _deadlineList) {
+  for (var x in deadlineList_) {
     deadlineList.add(x.copyWith());
   }
-  for (var x in _ableList) {
+  for (var x in ableList_) {
     ableList.add(x.copyWith());
   }
   for (var x in ableList) {

@@ -3,7 +3,6 @@ import '../../database/database_helper.dart';
 import '../../model/user.dart';
 
 class OptionController extends GetxController {
-
   final _db = Get.find<DatabaseHelper>(tag: 'db');
   final user = Get.find<Rx<User>>(tag: 'user');
   late final Rx<Duration> _workTime;
@@ -40,17 +39,4 @@ class OptionController extends GetxController {
     user.value.logout();
     user.refresh();
   }
-
-  @override
-  void onReady() {
-    // TODO: implement onReady
-    super.onReady();
-  }
-
-  @override
-  void onClose() {
-    // TODO: implement onClose
-    super.onClose();
-  }
-
 }

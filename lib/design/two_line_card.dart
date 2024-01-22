@@ -14,6 +14,7 @@ class TwoLineCard extends StatefulWidget {
   final double? width;
 
   const TwoLineCard({
+    super.key,
     required this.title,
     required this.content,
     this.animate = false,
@@ -25,10 +26,11 @@ class TwoLineCard extends StatefulWidget {
     this.width,
   });
 
-  static Widget dummy(String title, String content) => const TwoLineCard(title: 'title', content: 'content');
+  static Widget dummy(String title, String content) =>
+      const TwoLineCard(title: 'title', content: 'content');
 
   @override
-  _TwoLineCardState createState() => _TwoLineCardState();
+  State<TwoLineCard> createState() => _TwoLineCardState();
 }
 
 class _TwoLineCardState extends State<TwoLineCard>
@@ -64,7 +66,6 @@ class _TwoLineCardState extends State<TwoLineCard>
 
   @override
   Widget build(BuildContext context) {
-
     var isDown = false;
     var isCancel = false;
     var brightness = MediaQuery.of(context).platformBrightness;
@@ -78,22 +79,21 @@ class _TwoLineCardState extends State<TwoLineCard>
           crossAxisAlignment: CrossAxisAlignment.start,
           // add a colored edge
           children: [
-            Text(
-                widget.title,
+            Text(widget.title,
                 style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                  color: const Color.fromRGBO(0, 0, 0, 0),
-                  fontSize: 14,
-                  fontWeight: FontWeight.normal,
-                )),
+                      color: const Color.fromRGBO(0, 0, 0, 0),
+                      fontSize: 14,
+                      fontWeight: FontWeight.normal,
+                    )),
             const SizedBox(height: 8),
             Text(
               widget.content,
               style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                fontFeatures: [const FontFeature.tabularFigures()],
-                color: const Color.fromRGBO(0, 0, 0, 0),
-              ),
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    fontFeatures: [const FontFeature.tabularFigures()],
+                    color: const Color.fromRGBO(0, 0, 0, 0),
+                  ),
             ),
           ],
         ),
@@ -106,7 +106,9 @@ class _TwoLineCardState extends State<TwoLineCard>
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
-        color: brightness == Brightness.dark ? CupertinoColors.secondarySystemFill : CupertinoDynamicColor.resolve(widget.backgroundColor, context),
+        color: brightness == Brightness.dark
+            ? CupertinoColors.secondarySystemFill
+            : CupertinoDynamicColor.resolve(widget.backgroundColor, context),
         // boxShadow
         boxShadow: const [
           BoxShadow(
@@ -120,61 +122,72 @@ class _TwoLineCardState extends State<TwoLineCard>
         crossAxisAlignment: CrossAxisAlignment.start,
         // add a colored edge
         children: [
-          Text(
-              widget.title,
+          Text(widget.title,
               style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                color: CupertinoTheme.of(context).textTheme.textStyle.color!.withOpacity(0.5),
-                fontSize: 14,
-                fontWeight: FontWeight.normal,
-              )),
+                    color: CupertinoTheme.of(context)
+                        .textTheme
+                        .textStyle
+                        .color!
+                        .withOpacity(0.5),
+                    fontSize: 14,
+                    fontWeight: FontWeight.normal,
+                  )),
           const SizedBox(height: 2),
-          widget.withColoredFont ? const SizedBox(height: 4) : SizedBox(
-            height: 4,
-            child: Container(
-              decoration: BoxDecoration(
-                color: CupertinoDynamicColor.resolve(widget.backgroundColor, context),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
+          widget.withColoredFont
+              ? const SizedBox(height: 4)
+              : SizedBox(
+                  height: 4,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: CupertinoDynamicColor.resolve(
+                          widget.backgroundColor, context),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
           const SizedBox(height: 2),
           Text(
             widget.content,
             style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: (widget.withColoredFont && brightness == Brightness.dark) ? CupertinoDynamicColor.resolve(widget.backgroundColor, context) : CupertinoTheme.of(context).textTheme.textStyle.color,
-            ),
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: (widget.withColoredFont &&
+                          brightness == Brightness.dark)
+                      ? CupertinoDynamicColor.resolve(
+                          widget.backgroundColor, context)
+                      : CupertinoTheme.of(context).textTheme.textStyle.color,
+                ),
           ),
         ],
       ),
     );
 
-    return widget.animate ? GestureDetector(
-      onTapDown: (_) async {
-        isDown = true;
-        isCancel = false;
-        _animationController.forward();
-        await Future.delayed(const Duration(milliseconds: 125));
-        isDown = false;
-        if (isCancel) {
-          _animationController.reverse();
-          isCancel = false;
-        }
-      },
-      onTapUp: (_) async {
-        isCancel = true;
-        if (!isDown) _animationController.reverse();
-      },
-      onTapCancel: () => _animationController.reverse(),
-      onTap: widget.onTap,
-      child: ScaleTransition(
-        scale: _scaleAnimation,
-        child: core
-      ),
-    ) : widget.onTap == null ? core : GestureDetector(
-      onTap: () => widget.onTap!.call(),
-      child: core,
-    );
+    return widget.animate
+        ? GestureDetector(
+            onTapDown: (_) async {
+              isDown = true;
+              isCancel = false;
+              _animationController.forward();
+              await Future.delayed(const Duration(milliseconds: 125));
+              isDown = false;
+              if (isCancel) {
+                _animationController.reverse();
+                isCancel = false;
+              }
+            },
+            onTapUp: (_) async {
+              isCancel = true;
+              if (!isDown) _animationController.reverse();
+            },
+            onTapCancel: () => _animationController.reverse(),
+            onTap: widget.onTap,
+            child: ScaleTransition(scale: _scaleAnimation, child: core),
+          )
+        : widget.onTap == null
+            ? core
+            : GestureDetector(
+                onTap: () => widget.onTap!.call(),
+                child: core,
+              );
   }
 }

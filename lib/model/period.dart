@@ -37,7 +37,7 @@ class Period {
   Period copyWith({
     String? uid,
     String? fromUid,
-    PeriodType? periodType,
+    PeriodType? type,
     String? description,
     DateTime? startTime,
     DateTime? endTime,
@@ -47,7 +47,7 @@ class Period {
     return Period(
       uid: uid ?? this.uid,
       fromUid: fromUid ?? this.fromUid,
-      type: periodType ?? this.type,
+      type: type ?? this.type,
       description: description ?? this.description,
       startTime: startTime ?? this.startTime,
       endTime: endTime ?? this.endTime,

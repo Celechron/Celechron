@@ -52,7 +52,11 @@ class User {
 
   Semester get thisSemester {
     if (semesters.length > 1) {
-      if (semesters[1].periods.last.endTime.isAfter(DateTime.now().subtract(const Duration(days: 14)))) {
+      if (semesters[1]
+          .periods
+          .last
+          .endTime
+          .isAfter(DateTime.now().subtract(const Duration(days: 14)))) {
         return semesters[1];
       } else {
         return semesters[0];
@@ -90,16 +94,17 @@ class User {
 
   // 刷新数据
   Future<List<String?>> refresh() async {
-    return await _spider
-        .getEverything()
-        .then((value) async {
-          for (var e in value.item1) {
-            if(e != null) print(e);
-          }
-          for (var e in value.item2) {
-            if(e != null) print(e);
-          }
-      if (value.item1.every((e) => e == null) && value.item2.every((e) => e == null)) {
+    return await _spider.getEverything().then((value) async {
+      for (var e in value.item1) {
+        // ignore: avoid_print
+        if (e != null) print(e);
+      }
+      for (var e in value.item2) {
+        // ignore: avoid_print
+        if (e != null) print(e);
+      }
+      if (value.item1.every((e) => e == null) &&
+          value.item2.every((e) => e == null)) {
         lastUpdateTime = DateTime.now();
       }
       semesters = value.item3;
@@ -121,8 +126,7 @@ class User {
         aboardGpa = result.item1;
         // 所获学分，不包括挂科的。
         credit = result.item2;
-      }
-      else {
+      } else {
         credit = 0.0;
       }
 
@@ -141,8 +145,9 @@ class User {
       'aboardGpa': aboardGpa,
       'credit': credit,
       'majorGpaAndCredit': majorGpaAndCredit,
-      'specialDates': specialDates.map((k, v) => MapEntry(k.toIso8601String(), v)),
-      'lastUpdateTime' : lastUpdateTime.toIso8601String(),
+      'specialDates':
+          specialDates.map((k, v) => MapEntry(k.toIso8601String(), v)),
+      'lastUpdateTime': lastUpdateTime.toIso8601String(),
     };
   }
 
@@ -160,7 +165,8 @@ class User {
     aboardGpa = List<double>.from(json['aboardGpa']);
     credit = json['credit'];
     majorGpaAndCredit = List<double>.from(json['majorGpaAndCredit']);
-    specialDates = ((json['specialDates'] ?? {}) as Map).map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
+    specialDates = ((json['specialDates'] ?? {}) as Map)
+        .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
     lastUpdateTime = DateTime.parse(json['lastUpdateTime']);
     isLogin = true;
   }
