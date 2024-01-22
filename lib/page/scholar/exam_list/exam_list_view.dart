@@ -262,7 +262,7 @@ class ExamListPage extends StatelessWidget {
           ),
           Padding(
               padding: EdgeInsets.only(left: 4, top: 4, bottom: 4),
-              child: Text('更新于10分钟前',
+              child: Text('请务必前往教务网核对',
                   style: TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.bold,

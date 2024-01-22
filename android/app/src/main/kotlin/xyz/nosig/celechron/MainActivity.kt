@@ -1,4 +1,4 @@
-package org.cc.celechron
+package xyz.nosig.celechron
 
 import android.os.Build
 import android.os.Bundle
