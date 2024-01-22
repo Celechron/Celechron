@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../../model/period.dart';
-import '../../model/user.dart';
+import 'package:celechron/model/period.dart';
+import 'package:celechron/model/user.dart';
 
 class CalendarController extends GetxController {
   final selectedDay = DateTime.now().obs;

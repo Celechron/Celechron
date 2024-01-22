@@ -1,4 +1,4 @@
-import '../utils/timehelper.dart';
+import 'package:celechron/utils/timehelper.dart';
 
 class Exam {
   String id;
@@ -10,8 +10,7 @@ class Exam {
   String? location;
   String? seat;
 
-  Exam._fromExam(this.id, this.name, Map<String, dynamic> examList, this.type)
-  {
+  Exam._fromExam(this.id, this.name, Map<String, dynamic> examList, this.type) {
     switch (type) {
       case ExamType.midterm:
         time = TimeHelper.parseExamDateTime(examList['qzkssj']);
@@ -26,29 +25,32 @@ class Exam {
     }
   }
 
-  static List<Exam> parseExams(Map<String, dynamic> json, String id, String name) {
+  static List<Exam> parseExams(
+      Map<String, dynamic> json, String id, String name) {
     var exams = <Exam>[];
-    if (json.containsKey("qzkssj")) exams.add(Exam._fromExam(id, name, json, ExamType.midterm));
-    if (json.containsKey("qmkssj")) exams.add(Exam._fromExam(id, name, json, ExamType.finalExam));
+    if (json.containsKey("qzkssj"))
+      exams.add(Exam._fromExam(id, name, json, ExamType.midterm));
+    if (json.containsKey("qmkssj"))
+      exams.add(Exam._fromExam(id, name, json, ExamType.finalExam));
     return exams;
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'type': type.index,
-    'time': time.map((e) => e.toIso8601String()).toList(),
-    'location': location,
-    'seat': seat,
-  };
+        'id': id,
+        'name': name,
+        'type': type.index,
+        'time': time.map((e) => e.toIso8601String()).toList(),
+        'location': location,
+        'seat': seat,
+      };
 
   Exam.fromJson(Map<String, dynamic> json)
-    : id = json['id'],
-      name = json['name'],
-      type = ExamType.values[json['type']],
-      time = (json['time'] as List).map((e) => DateTime.parse(e)).toList(),
-      location = json['location'],
-      seat = json['seat'];
+      : id = json['id'],
+        name = json['name'],
+        type = ExamType.values[json['type']],
+        time = (json['time'] as List).map((e) => DateTime.parse(e)).toList(),
+        location = json['location'],
+        seat = json['seat'];
 
   get chineseTime => TimeHelper.chineseTime(time[0], time[1]);
 

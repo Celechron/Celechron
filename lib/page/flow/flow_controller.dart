@@ -1,11 +1,11 @@
 import 'dart:async';
 import 'package:get/get.dart';
-import '../../algorithm/arrange.dart';
-import '../../database/database_helper.dart';
-import '../../model/deadline.dart';
-import '../../model/period.dart';
-import '../../model/user.dart';
-import '../../utils/utils.dart';
+import 'package:celechron/algorithm/arrange.dart';
+import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/model/deadline.dart';
+import 'package:celechron/model/period.dart';
+import 'package:celechron/model/user.dart';
+import 'package:celechron/utils/utils.dart';
 
 class FlowController extends GetxController {
   final user = Get.find<Rx<User>>(tag: 'user');

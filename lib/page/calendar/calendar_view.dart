@@ -3,12 +3,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
-import '../../model/period.dart';
-import '../../utils/utils.dart';
+import 'package:celechron/model/period.dart';
+import 'package:celechron/utils/utils.dart';
 
 import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:celechron/design/custom_colors.dart';
-import '../scholar/course_detail/course_detail_view.dart';
+import 'package:celechron/page/scholar/course_detail/course_detail_view.dart';
 import 'calendar_controller.dart';
 
 class CalendarPage extends StatelessWidget {

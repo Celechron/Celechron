@@ -1,4 +1,4 @@
-import '../utils/utils.dart';
+import 'package:celechron/utils/utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
 

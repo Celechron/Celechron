@@ -1,7 +1,7 @@
 import 'package:celechron/model/deadline.dart';
 import 'package:hive/hive.dart';
-import '../model/user.dart';
-import '../model/period.dart';
+import 'package:celechron/model/user.dart';
+import 'package:celechron/model/period.dart';
 import 'adapters/duration_adapter.dart';
 import 'adapters/user_adapter.dart';
 import 'adapters/deadline_adapter.dart';
