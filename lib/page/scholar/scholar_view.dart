@@ -39,7 +39,7 @@ class ScholarPage extends StatelessWidget {
                         forehead: Obx(() => Row(children: [
                               // University Icon
                               Padding(
-                                padding: EdgeInsets.only(
+                                padding: const EdgeInsets.only(
                                     left: 12, top: 6, bottom: 6),
                                 child: Icon(
                                   Icons.school,
@@ -49,7 +49,7 @@ class ScholarPage extends StatelessWidget {
                                 ),
                               ),
                               Padding(
-                                  padding: EdgeInsets.only(
+                                  padding: const EdgeInsets.only(
                                       left: 6, top: 6, bottom: 6),
                                   child: Text('成绩',
                                       style: TextStyle(
@@ -62,7 +62,8 @@ class ScholarPage extends StatelessWidget {
                               const Spacer(),
                               // alert icon
                               Padding(
-                                padding: EdgeInsets.only(top: 4, bottom: 4),
+                                padding:
+                                    const EdgeInsets.only(top: 4, bottom: 4),
                                 child: Icon(
                                   _scholarController
                                               .durationToLastUpdate.inMinutes <
@@ -76,14 +77,14 @@ class ScholarPage extends StatelessWidget {
                                 ),
                               ),
                               Padding(
-                                  padding: EdgeInsets.only(
+                                  padding: const EdgeInsets.only(
                                       left: 4, top: 4, bottom: 4, right: 16),
                                   child: Text(
                                       _scholarController.durationToLastUpdate
                                                   .inMinutes >
                                               10000000
                                           ? '获取数据时遇到问题'
-                                          : '更新于${_scholarController.durationToLastUpdate.inMinutes}分钟前',
+                                          : '更新于 ${_scholarController.durationToLastUpdate.inMinutes} 分钟前',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -185,8 +186,8 @@ class ScholarPage extends StatelessWidget {
                     forehead: Obx(() => Row(children: [
                           // University Icon
                           Padding(
-                            padding:
-                                EdgeInsets.only(left: 12, top: 6, bottom: 6),
+                            padding: const EdgeInsets.only(
+                                left: 12, top: 6, bottom: 6),
                             child: Icon(
                               Icons.calendar_month_rounded,
                               color: CupertinoDynamicColor.resolve(
@@ -195,8 +196,8 @@ class ScholarPage extends StatelessWidget {
                             ),
                           ),
                           Padding(
-                              padding:
-                                  EdgeInsets.only(left: 6, top: 6, bottom: 6),
+                              padding: const EdgeInsets.only(
+                                  left: 6, top: 6, bottom: 6),
                               child: Text('课程',
                                   style: TextStyle(
                                     fontSize: 18,
@@ -208,7 +209,7 @@ class ScholarPage extends StatelessWidget {
                           const Spacer(),
                           // alert icon
                           Padding(
-                            padding: EdgeInsets.only(top: 4, bottom: 4),
+                            padding: const EdgeInsets.only(top: 4, bottom: 4),
                             child: Icon(
                               _scholarController
                                           .durationToLastUpdate.inMinutes <
@@ -221,14 +222,14 @@ class ScholarPage extends StatelessWidget {
                             ),
                           ),
                           Padding(
-                              padding: EdgeInsets.only(
+                              padding: const EdgeInsets.only(
                                   left: 4, top: 4, bottom: 4, right: 16),
                               child: Text(
                                   _scholarController
                                               .durationToLastUpdate.inMinutes >
                                           10000000
                                       ? '获取数据时遇到问题'
-                                      : '更新于${_scholarController.durationToLastUpdate.inMinutes}分钟前',
+                                      : '更新于 ${_scholarController.durationToLastUpdate.inMinutes} 分钟前',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.bold,
@@ -417,7 +418,7 @@ class ScholarPage extends StatelessWidget {
                       children: [
                         Expanded(
                           child: CupertinoSearchTextField(
-                            placeholder: '搜索课程，事项...',
+                            placeholder: '搜索课程、事项……',
                             placeholderStyle: CupertinoTheme.of(context)
                                 .textTheme
                                 .textStyle
