@@ -24,7 +24,9 @@ class ScholarPage extends StatelessWidget {
   final _scholarController = Get.put(ScholarController());
 
   Widget _buildGradeBrief(BuildContext context) {
-    return Column(
+    return RoundRectangleCard(
+      padding: const EdgeInsets.all(0),
+        child:Column(
       children: [
         Row(
           children: [
@@ -167,13 +169,14 @@ class ScholarPage extends StatelessWidget {
                         )))),
           ],
         ),
-        const SizedBox(height: 20),
       ],
-    );
+    ));
   }
 
   Widget _buildSemester(BuildContext context) {
-    return Column(
+    return RoundRectangleCard(
+      padding: const EdgeInsets.all(0),
+    child:Column(
       children: [
         Row(
           children: [
@@ -351,16 +354,13 @@ class ScholarPage extends StatelessWidget {
                     ))),
           ],
         ),
-        const SizedBox(height: 20),
       ],
-    );
+    ));
   }
 
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-        backgroundColor: CupertinoDynamicColor.resolve(
-            CupertinoColors.systemGroupedBackground, context),
         child: SafeArea(
             bottom: false,
             child: CustomScrollView(

@@ -8,12 +8,14 @@ class RoundRectangleCard extends StatefulWidget {
   final Function()? onTap;
   final bool animate;
   final List<BoxShadow> boxShadow;
+  final EdgeInsets padding;
 
   const RoundRectangleCard({
     Key? key,
     required this.child,
     this.onTap,
     this.animate = true,
+    this.padding = const EdgeInsets.all(12),
     this.boxShadow = const [
       BoxShadow(
         color: CupertinoColors.systemGrey5,
@@ -64,6 +66,7 @@ class _RoundRectangleCardState extends State<RoundRectangleCard>
     var isDown = false;
     var isCancel = false;
     var core = Container(
+      padding: widget.padding,
       decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           // In light mode, color is white; in dark mode, color is black
@@ -78,20 +81,7 @@ class _RoundRectangleCardState extends State<RoundRectangleCard>
                       Brightness.dark
                   ? null
                   : widget.boxShadow),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const SizedBox(width: 12),
-              Expanded(child: widget.child),
-              const SizedBox(width: 12),
-            ],
-          ),
-          const SizedBox(height: 12),
-        ],
-      ),
+      child: widget.child
     );
     return widget.animate
         ? GestureDetector(
