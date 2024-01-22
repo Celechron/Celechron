@@ -257,7 +257,9 @@ class FlowPage extends StatelessWidget {
   Widget createCard(context, Period period, String? title) {
     Color themeColor = (period.type == PeriodType.flow
         ? UidColors.colorFromUid(period.fromUid ?? '')
-        : CupertinoColors.systemTeal);
+        : (period.type == PeriodType.classes
+            ? TimeColors.colorFromHour(period.startTime.hour)
+            : CupertinoColors.systemTeal));
     return Column(
       children: [
         title == null
@@ -402,76 +404,60 @@ class FlowPage extends StatelessWidget {
   }
 
   Future<void> newFlowList(context) async {
-    DateTime newTime = DateTime.now();
-
+    DateTime newTime = DateTime.now()
+        .copyWith(second: 0, millisecond: 0, microsecond: 0)
+        .add(const Duration(seconds: 90));
     await showCupertinoDialog(
         context: context,
         builder: (BuildContext context) {
-          DateTime time = DateTime.now()
-              .copyWith(second: 0, millisecond: 0, microsecond: 0)
-              .add(const Duration(seconds: 90));
-          newTime = time;
-
           return CupertinoAlertDialog(
             title: const Text(
-              '选择规划开始时间',
+              '开始规划',
             ),
             content: StatefulBuilder(
               builder: (BuildContext context, StateSetter setState) {
                 return SizedBox(
                   width: double.maxFinite,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '${time.year} 年 ${time.month} 月 ${time.day} 日 ${time.toIso8601String().substring(11, 16)}',
-                          ),
-                          CupertinoButton(
-                            onPressed: () async {
-                              await showCupertinoModalPopup(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return Container(
-                                      height: MediaQuery.of(context)
-                                              .copyWith()
-                                              .size
-                                              .height /
-                                          3,
-                                      color: Colors.white,
-                                      child: CupertinoDatePicker(
-                                        initialDateTime: time,
-                                        use24hFormat: true,
-                                        minuteInterval: 1,
-                                        mode:
-                                            CupertinoDatePickerMode.dateAndTime,
-                                        onDateTimeChanged: (DateTime newTime) {
-                                          setState(() {
-                                            time = newTime;
-                                          });
-                                        },
-                                      ),
-                                    );
-                                  });
-                            },
-                            child: const Text('更改'),
-                          ),
-                        ],
-                      ),
                       const SizedBox(
                         height: 8,
                       ),
-                      Text(
-                        '工作 ${durationToString(db.getWorkTime())}',
+                      const Text(
+                        '点击修改开始时间',
                       ),
-                      const SizedBox(
-                        height: 8,
+                      CupertinoButton(
+                        onPressed: () async {
+                          await showCupertinoModalPopup(
+                              context: context,
+                              builder: (BuildContext context) {
+                                return Container(
+                                  height: MediaQuery.of(context)
+                                          .copyWith()
+                                          .size
+                                          .height /
+                                      3,
+                                  color: Colors.white,
+                                  child: CupertinoDatePicker(
+                                    initialDateTime: newTime,
+                                    use24hFormat: true,
+                                    minuteInterval: 1,
+                                    mode: CupertinoDatePickerMode.dateAndTime,
+                                    onDateTimeChanged: (DateTime val) {
+                                      setState(() {
+                                        newTime = val;
+                                      });
+                                    },
+                                  ),
+                                );
+                              });
+                        },
+                        child: Text(TimeHelper.chineseDateTime(newTime)),
                       ),
                       Text(
-                        '休息 ${durationToString(db.getRestTime())}',
+                        '工作 ${durationToString(db.getWorkTime())} - 休息 ${durationToString(db.getRestTime())}',
                       ),
                     ],
                   ),
@@ -484,18 +470,19 @@ class FlowPage extends StatelessWidget {
                 child: const Text('返回'),
               ),
               CupertinoDialogAction(
-                onPressed: () async {
+                onPressed: () {
                   if (newTime.isAfter(DateTime.now())) {
                     int ret = _flowController.updateFlowList(newTime);
                     if (ret < 0) {
-                      await showCupertinoDialog(
+                      showCupertinoDialog(
                         context: context,
                         builder: (BuildContext context) {
                           return CupertinoAlertDialog(
                             title: const Text(
                               '时间不够了！',
                             ),
-                            content: const Text('即使是完全不休息也有任务无法完成。请压缩任务的预期时间。'),
+                            content: const Text(
+                                '即使是完全不休息也有任务无法完成。请压缩任务的预期时间，或者检查是否有任务在规划开始时间之前就结束。'),
                             actions: [
                               CupertinoDialogAction(
                                 child: const Text('确定'),
@@ -508,7 +495,8 @@ class FlowPage extends StatelessWidget {
                         },
                       );
                     } else if (ret != db.getRestTime().inMinutes) {
-                      await showCupertinoDialog(
+                      navigator!.pop();
+                      showCupertinoDialog(
                         context: context,
                         builder: (BuildContext context) {
                           return CupertinoAlertDialog(
@@ -528,10 +516,11 @@ class FlowPage extends StatelessWidget {
                           );
                         },
                       );
+                    } else {
+                      navigator!.pop();
                     }
-                    navigator!.pop();
                   } else {
-                    await showCupertinoDialog(
+                    showCupertinoDialog(
                       context: context,
                       builder: (BuildContext context) {
                         return CupertinoAlertDialog(
@@ -592,15 +581,27 @@ class FlowPage extends StatelessWidget {
           child: Obx(() {
             if (_flowController.isFlowListOutdated()) {
               return MaterialBanner(
+                backgroundColor: CupertinoColors.systemGroupedBackground,
+                dividerColor: Colors.transparent,
                 content: const Text('规划方案已过期'),
+                contentTextStyle: TextStyle(
+                  fontSize: 16,
+                  color: CupertinoTheme.of(context).textTheme.textStyle.color!,
+                ),
                 leading: const Icon(CupertinoIcons.exclamationmark_triangle),
                 actions: [
-                  TextButton(
+                  CupertinoButton(
+                    child: const Text('忽略'),
+                    onPressed: () {
+                      _flowController.updateDeadlineListTime();
+                    },
+                  ),
+                  CupertinoButton(
                     onPressed: () async {
                       await newFlowList(context);
                       _flowController.flowList.refresh();
                     },
-                    child: const Text('创建新的规划'),
+                    child: const Text('重新规划'),
                   ),
                 ],
               );

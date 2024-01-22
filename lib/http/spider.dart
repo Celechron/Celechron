@@ -41,21 +41,23 @@ class Spider {
         await ZjuAm.getSsoCookie(_httpClient, _username, _password)
             .timeout(const Duration(seconds: 8))
             .catchError((e) {
-          loginErrorMessages[0] = "无法登录统一身份认证，$e";
-          return null;
-        });
-    if(_iPlanetDirectoryPro == null) return loginErrorMessages;
+      loginErrorMessages[0] = "无法登录统一身份认证，$e";
+      return null;
+    });
+    if (_iPlanetDirectoryPro == null) return loginErrorMessages;
     loginErrorMessages.addAll(await Future.wait([
       _appService
-          .login(_httpClient, _iPlanetDirectoryPro).then((value)=>null as String?)
+          .login(_httpClient, _iPlanetDirectoryPro)
+          .then((value) => null as String?)
           .timeout(const Duration(seconds: 8))
           .catchError((e) => "无法登录钉工作台，$e"),
       _zdbk
-          .login(_httpClient, _iPlanetDirectoryPro).then((value)=>null as String?)
+          .login(_httpClient, _iPlanetDirectoryPro)
+          .then((value) => null as String?)
           .timeout(const Duration(seconds: 8))
           .catchError((e) => "无法登录教务网，$e"),
     ]).then((value) {
-      if(value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
+      if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
       return [value[0], value[1]];
     }));
     return loginErrorMessages;
@@ -71,13 +73,19 @@ class Spider {
   }
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
-  Future<Tuple6<List<String?>, List<String?>, List<Semester>,Map<String, List<Grade>>, List<double>, Map<DateTime,String>>> getEverything() async {
-
+  Future<
+      Tuple6<
+          List<String?>,
+          List<String?>,
+          List<Semester>,
+          Map<String, List<Grade>>,
+          List<double>,
+          Map<DateTime, String>>> getEverything() async {
     // 返回值初始化
     var outSemesters = <Semester>[];
     var outGrades = <String, List<Grade>>{};
     var outMajorGrade = <double>[];
-    var outSpecialDates = <DateTime,String>{};
+    var outSpecialDates = <DateTime, String>{};
     var loginErrorMessages = <String?>[null, null, null];
 
     // 如果Cookie过期了，就重新登录
@@ -112,10 +120,20 @@ class Spider {
         if (value.item2 != null) {
           outSemesters[semesterIndexMap['$yearStr-1']!]
               .addZjuCalendar(jsonDecode(value.item2!));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(0,8)), '${v as String}放假·调${DateTime.parse(k.substring(8,16)).month}月${DateTime.parse(k.substring(8,16)).day}日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(8,16)), '${v as String}调休·调${DateTime.parse(k.substring(0,8)).month}月${DateTime.parse(k.substring(0,8)).day}日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
+              .map((k, v) =>
+                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
+              .map((k, v) => MapEntry(
+                  DateTime.parse((k as String).substring(0, 8)),
+                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
+              .map((k, v) => MapEntry(
+                  DateTime.parse((k as String).substring(8, 16)),
+                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
+              (k, v) =>
+                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
@@ -124,10 +142,20 @@ class Spider {
         if (value.item2 != null) {
           outSemesters[semesterIndexMap['$yearStr-2']!]
               .addZjuCalendar(jsonDecode(value.item2!));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(0,8)), '${v as String}放假·调${DateTime.parse(k.substring(8,16)).month}月${DateTime.parse(k.substring(8,16)).day}日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map).map((k, v) => MapEntry(DateTime.parse((k as String).substring(8,16)), '${v as String}调休·调${DateTime.parse(k.substring(0,8)).month}月${DateTime.parse(k.substring(0,8)).day}日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map((k, v) => MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
+              .map((k, v) =>
+                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
+              .map((k, v) => MapEntry(
+                  DateTime.parse((k as String).substring(0, 8)),
+                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
+              .map((k, v) => MapEntry(
+                  DateTime.parse((k as String).substring(8, 16)),
+                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
+              (k, v) =>
+                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
@@ -135,43 +163,47 @@ class Spider {
       examFetches
           .add(_appService.getExamsDto(_httpClient, yearStr, "1").then((value) {
         for (var e in value.item2) {
-          outSemesters[
-                  semesterIndexMap[e.id.substring(1, 12)]!]
-              .addExam(e);
+          outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
       examFetches
           .add(_appService.getExamsDto(_httpClient, yearStr, "2").then((value) {
         for (var e in value.item2) {
-          outSemesters[
-          semesterIndexMap[e.id.substring(1, 12)]!]
-              .addExam(e);
+          outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
       // 查课表
-      timetableFetches.add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {
+      timetableFetches
+          .add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {
         for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-1']!].addSession(e, '$yearStr-1');
+          outSemesters[semesterIndexMap['$yearStr-1']!]
+              .addSession(e, '$yearStr-1');
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
-      timetableFetches.add(_zdbk.getTimetable(_httpClient, yearStr, "1|冬").then((value) {
+      timetableFetches
+          .add(_zdbk.getTimetable(_httpClient, yearStr, "1|冬").then((value) {
         for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-1']!].addSession(e, '$yearStr-1');
+          outSemesters[semesterIndexMap['$yearStr-1']!]
+              .addSession(e, '$yearStr-1');
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
-      timetableFetches.add(_zdbk.getTimetable(_httpClient, yearStr, "2|春").then((value) {
+      timetableFetches
+          .add(_zdbk.getTimetable(_httpClient, yearStr, "2|春").then((value) {
         for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-2']!].addSession(e, '$yearStr-2');
+          outSemesters[semesterIndexMap['$yearStr-2']!]
+              .addSession(e, '$yearStr-2');
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
-      timetableFetches.add(_zdbk.getTimetable(_httpClient, yearStr, "2|夏").then((value) {
+      timetableFetches
+          .add(_zdbk.getTimetable(_httpClient, yearStr, "2|夏").then((value) {
         for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-2']!].addSession(e, '$yearStr-2');
+          outSemesters[semesterIndexMap['$yearStr-2']!]
+              .addSession(e, '$yearStr-2');
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
@@ -188,9 +220,8 @@ class Spider {
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
     // 查成绩，也加入请求列表
-    fetches.add(
-        _zdbk.getTranscript(_httpClient).then((value) {
-          for (var e in value.item2) {
+    fetches.add(_zdbk.getTranscript(_httpClient).then((value) {
+      for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addGrade(e);
         //体育课
         var key = e.id.substring(14, 22);
@@ -212,32 +243,35 @@ class Spider {
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-
     // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
       outSemesters.removeWhere(
-              (e) => e.grades.isEmpty && e.sessions.isEmpty && e.exams.isEmpty);
+          (e) => e.grades.isEmpty && e.sessions.isEmpty && e.exams.isEmpty);
     });
 
     // 检查是否有查询失败的情况
-    if(fetchErrorMessages.every((e) => e == null)) {
+    if (fetchErrorMessages.every((e) => e == null)) {
       _lastUpdateTime = DateTime.now();
     }
     for (var i = 0; i < fetchErrorMessages.length; i++) {
       if (fetchErrorMessages[i] != null) {
-        fetchErrorMessages[i] = '${fetchSequence[i]}查询出错：${fetchErrorMessages[i]}';
+        fetchErrorMessages[i] =
+            '${fetchSequence[i]}查询出错：${fetchErrorMessages[i]}';
       }
     }
 
     for (var semester in outSemesters) {
       var toRemove = semester.courses.keys.toList();
-      var toAdd = semester.courses.values.map((e) => MapEntry(e.id ?? e.name+e.toString(), e)).toList();
+      var toAdd = semester.courses.values
+          .map((e) => MapEntry(e.id ?? e.name + e.toString(), e))
+          .toList();
       semester.courses.addEntries(toAdd);
-      for(var key in toRemove) {
+      for (var key in toRemove) {
         semester.courses.remove(key);
       }
     }
 
-    return Tuple6(loginErrorMessages, fetchErrorMessages, outSemesters, outGrades, outMajorGrade, outSpecialDates);
+    return Tuple6(loginErrorMessages, fetchErrorMessages, outSemesters,
+        outGrades, outMajorGrade, outSpecialDates);
   }
 }

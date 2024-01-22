@@ -26,16 +26,11 @@ class TaskPage extends StatelessWidget {
         context: context,
         builder: (BuildContext context) {
           return CupertinoAlertDialog(
-            title: Row(
-              children: [
-                Text(
-                  deadline.summary,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ],
+            title: Text(
+              '${deadline.summary}：${deadlineTypeName[deadline.deadlineType]!}',
+              style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             content: SizedBox(
-              width: double.maxFinite,
               child: SingleChildScrollView(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -43,29 +38,17 @@ class TaskPage extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      deadlineTypeName[deadline.deadlineType]!,
-                      textAlign: TextAlign.right,
-                      style: const TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8.0),
-                    Text(
                       '截止于 ${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
-                      style: const TextStyle(),
                     ),
-                    const SizedBox(height: 8.0),
                     Text(
                       deadlineProgress(deadline),
-                      style: const TextStyle(),
                     ),
                     if (deadline.location.isNotEmpty) ...[
-                      const SizedBox(height: 8.0),
                       Text(
                         '地点：${deadline.location}',
-                        style: const TextStyle(),
                       ),
                     ],
                     if (deadline.description.isNotEmpty) ...[
-                      const SizedBox(height: 8.0),
                       Text(
                         '说明：${deadline.description}',
                       ),
