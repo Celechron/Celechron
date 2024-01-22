@@ -433,23 +433,24 @@ class FlowPage extends StatelessWidget {
                           await showCupertinoModalPopup(
                               context: context,
                               builder: (BuildContext context) {
-                                return Container(
-                                  height: MediaQuery.of(context)
-                                          .copyWith()
-                                          .size
-                                          .height /
-                                      3,
-                                  color: Colors.white,
-                                  child: CupertinoDatePicker(
-                                    initialDateTime: newTime,
-                                    use24hFormat: true,
-                                    minuteInterval: 1,
-                                    mode: CupertinoDatePickerMode.dateAndTime,
-                                    onDateTimeChanged: (DateTime val) {
-                                      setState(() {
-                                        newTime = val;
-                                      });
-                                    },
+                                return CupertinoPageScaffold(
+                                  child: SizedBox(
+                                    height: MediaQuery.of(context)
+                                            .copyWith()
+                                            .size
+                                            .height /
+                                        3,
+                                    child: CupertinoDatePicker(
+                                      initialDateTime: newTime,
+                                      use24hFormat: true,
+                                      minuteInterval: 1,
+                                      mode: CupertinoDatePickerMode.dateAndTime,
+                                      onDateTimeChanged: (DateTime val) {
+                                        setState(() {
+                                          newTime = val;
+                                        });
+                                      },
+                                    ),
                                   ),
                                 );
                               });
@@ -581,7 +582,8 @@ class FlowPage extends StatelessWidget {
           child: Obx(() {
             if (_flowController.isFlowListOutdated()) {
               return MaterialBanner(
-                backgroundColor: CupertinoColors.systemGroupedBackground,
+                backgroundColor: CupertinoDynamicColor.resolve(
+                    CupertinoColors.secondarySystemBackground, context),
                 dividerColor: Colors.transparent,
                 content: const Text('规划方案已过期'),
                 contentTextStyle: TextStyle(

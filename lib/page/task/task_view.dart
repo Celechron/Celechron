@@ -277,7 +277,8 @@ class TaskPage extends StatelessWidget {
                   LinearProgressIndicator(
                     value: deadline.timeSpent.inSeconds /
                         deadline.timeNeeded.inSeconds,
-                    backgroundColor: CupertinoColors.systemGrey5,
+                    backgroundColor: CupertinoDynamicColor.resolve(
+                        CupertinoColors.separator, context),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
@@ -286,7 +287,8 @@ class TaskPage extends StatelessWidget {
                   LinearProgressIndicator(
                     value: deadline.timeSpent.inSeconds /
                         deadline.timeNeeded.inSeconds,
-                    backgroundColor: CupertinoColors.systemGrey5,
+                    backgroundColor: CupertinoDynamicColor.resolve(
+                        CupertinoColors.separator, context),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
@@ -294,7 +296,8 @@ class TaskPage extends StatelessWidget {
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
                     value: 1,
-                    backgroundColor: CupertinoColors.systemGrey5,
+                    backgroundColor: CupertinoDynamicColor.resolve(
+                        CupertinoColors.separator, context),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
@@ -302,7 +305,8 @@ class TaskPage extends StatelessWidget {
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
                     value: 0,
-                    backgroundColor: CupertinoColors.systemGrey5,
+                    backgroundColor: CupertinoDynamicColor.resolve(
+                        CupertinoColors.separator, context),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],

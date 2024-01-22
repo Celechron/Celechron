@@ -20,7 +20,8 @@ class MultipleColumns extends StatelessWidget {
 
     var children = <Widget>[];
     for (var i = 0; i < columnCount; i++) {
-      children.add(_ColumnWidget(
+      children.add(
+        _ColumnWidget(
           content: contents[i],
           title: titles[i],
           onTap: onTaps[i],
@@ -54,17 +55,18 @@ class _ColumnWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(child: GestureDetector(
-        onTap: onTap,
-        behavior: HitTestBehavior.opaque,
-        child: Column(
-          children: [
-            content,
-            Text(title,
-                style: const TextStyle(
-                    color: CupertinoColors.systemGrey, fontSize: 14)),
-          ],
-        )));
+    return Expanded(
+        child: GestureDetector(
+            onTap: onTap,
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              children: [
+                content,
+                Text(title,
+                    style: const TextStyle(
+                        color: CupertinoColors.systemGrey, fontSize: 14)),
+              ],
+            )));
   }
 }
 

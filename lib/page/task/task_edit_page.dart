@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:celechron/model/deadline.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:celechron/utils/timehelper.dart';
@@ -85,23 +84,24 @@ class _TaskEditPageState extends State<TaskEditPage> {
                         await showCupertinoModalPopup(
                             context: context,
                             builder: (BuildContext context) {
-                              return Container(
-                                height: MediaQuery.of(context)
-                                        .copyWith()
-                                        .size
-                                        .height /
-                                    3,
-                                color: Colors.white,
-                                child: CupertinoDatePicker(
-                                  initialDateTime: now.endTime,
-                                  use24hFormat: true,
-                                  minuteInterval: 1,
-                                  mode: CupertinoDatePickerMode.dateAndTime,
-                                  onDateTimeChanged: (DateTime newTime) {
-                                    setState(() {
-                                      now.endTime = newTime;
-                                    });
-                                  },
+                              return CupertinoPageScaffold(
+                                child: SizedBox(
+                                  height: MediaQuery.of(context)
+                                          .copyWith()
+                                          .size
+                                          .height /
+                                      3,
+                                  child: CupertinoDatePicker(
+                                    initialDateTime: now.endTime,
+                                    use24hFormat: true,
+                                    minuteInterval: 1,
+                                    mode: CupertinoDatePickerMode.dateAndTime,
+                                    onDateTimeChanged: (DateTime newTime) {
+                                      setState(() {
+                                        now.endTime = newTime;
+                                      });
+                                    },
+                                  ),
                                 ),
                               );
                             });
@@ -119,28 +119,29 @@ class _TaskEditPageState extends State<TaskEditPage> {
                         await showCupertinoModalPopup(
                             context: context,
                             builder: (BuildContext context) {
-                              return Container(
-                                height: MediaQuery.of(context)
-                                        .copyWith()
-                                        .size
-                                        .height /
-                                    3,
-                                color: Colors.white,
-                                child: CupertinoTimerPicker(
-                                  mode: CupertinoTimerPickerMode.hm,
-                                  initialTimerDuration: now.timeNeeded,
-                                  onTimerDurationChanged: (value) {
-                                    if (value > Duration.zero) {
-                                      setState(() {
-                                        now.timeNeeded = value;
-                                      });
-                                    } else {
-                                      setState(() {
-                                        now.timeNeeded =
-                                            const Duration(minutes: 1);
-                                      });
-                                    }
-                                  },
+                              return CupertinoPageScaffold(
+                                child: SizedBox(
+                                  height: MediaQuery.of(context)
+                                          .copyWith()
+                                          .size
+                                          .height /
+                                      3,
+                                  child: CupertinoTimerPicker(
+                                    mode: CupertinoTimerPickerMode.hm,
+                                    initialTimerDuration: now.timeNeeded,
+                                    onTimerDurationChanged: (value) {
+                                      if (value > Duration.zero) {
+                                        setState(() {
+                                          now.timeNeeded = value;
+                                        });
+                                      } else {
+                                        setState(() {
+                                          now.timeNeeded =
+                                              const Duration(minutes: 1);
+                                        });
+                                      }
+                                    },
+                                  ),
                                 ),
                               );
                             });
@@ -153,21 +154,22 @@ class _TaskEditPageState extends State<TaskEditPage> {
                         await showCupertinoModalPopup(
                             context: context,
                             builder: (BuildContext context) {
-                              return Container(
-                                height: MediaQuery.of(context)
-                                        .copyWith()
-                                        .size
-                                        .height /
-                                    3,
-                                color: Colors.white,
-                                child: CupertinoTimerPicker(
-                                  mode: CupertinoTimerPickerMode.hm,
-                                  initialTimerDuration: now.timeSpent,
-                                  onTimerDurationChanged: (value) {
-                                    setState(() {
-                                      now.timeSpent = value;
-                                    });
-                                  },
+                              return CupertinoPageScaffold(
+                                child: SizedBox(
+                                  height: MediaQuery.of(context)
+                                          .copyWith()
+                                          .size
+                                          .height /
+                                      3,
+                                  child: CupertinoTimerPicker(
+                                    mode: CupertinoTimerPickerMode.hm,
+                                    initialTimerDuration: now.timeSpent,
+                                    onTimerDurationChanged: (value) {
+                                      setState(() {
+                                        now.timeSpent = value;
+                                      });
+                                    },
+                                  ),
                                 ),
                               );
                             });

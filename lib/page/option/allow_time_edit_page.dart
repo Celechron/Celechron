@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
 import 'option_controller.dart';
@@ -63,29 +62,36 @@ class _DateTimePairEditDialogState extends State<DateTimePairEditDialog> {
                   children: [
                     Text(
                       '开始：${timeToString(val.first)}',
+                      style: CupertinoTheme.of(context)
+                          .textTheme
+                          .textStyle
+                          .copyWith(
+                            fontSize: 16,
+                          ),
                     ),
                     CupertinoButton(
                       onPressed: () async {
                         await showCupertinoModalPopup(
                             context: context,
                             builder: (BuildContext context) {
-                              return Container(
-                                height: MediaQuery.of(context)
-                                        .copyWith()
-                                        .size
-                                        .height /
-                                    3,
-                                color: Colors.white,
-                                child: CupertinoDatePicker(
-                                  initialDateTime: val.first,
-                                  use24hFormat: true,
-                                  minuteInterval: 1,
-                                  mode: CupertinoDatePickerMode.time,
-                                  onDateTimeChanged: (DateTime newTime) {
-                                    setState(() {
-                                      val.first = newTime;
-                                    });
-                                  },
+                              return CupertinoPageScaffold(
+                                child: SizedBox(
+                                  height: MediaQuery.of(context)
+                                          .copyWith()
+                                          .size
+                                          .height /
+                                      3,
+                                  child: CupertinoDatePicker(
+                                    initialDateTime: val.first,
+                                    use24hFormat: true,
+                                    minuteInterval: 1,
+                                    mode: CupertinoDatePickerMode.time,
+                                    onDateTimeChanged: (DateTime newTime) {
+                                      setState(() {
+                                        val.first = newTime;
+                                      });
+                                    },
+                                  ),
                                 ),
                               );
                             });
@@ -99,29 +105,36 @@ class _DateTimePairEditDialogState extends State<DateTimePairEditDialog> {
                   children: [
                     Text(
                       '结束：${timeToString(val.second)}',
+                      style: CupertinoTheme.of(context)
+                          .textTheme
+                          .textStyle
+                          .copyWith(
+                            fontSize: 16,
+                          ),
                     ),
                     CupertinoButton(
                       onPressed: () async {
                         await showCupertinoModalPopup(
                             context: context,
                             builder: (BuildContext context) {
-                              return Container(
-                                height: MediaQuery.of(context)
-                                        .copyWith()
-                                        .size
-                                        .height /
-                                    3,
-                                color: Colors.white,
-                                child: CupertinoDatePicker(
-                                  initialDateTime: val.second,
-                                  use24hFormat: true,
-                                  minuteInterval: 1,
-                                  mode: CupertinoDatePickerMode.time,
-                                  onDateTimeChanged: (DateTime newTime) {
-                                    setState(() {
-                                      val.second = newTime;
-                                    });
-                                  },
+                              return CupertinoPageScaffold(
+                                child: SizedBox(
+                                  height: MediaQuery.of(context)
+                                          .copyWith()
+                                          .size
+                                          .height /
+                                      3,
+                                  child: CupertinoDatePicker(
+                                    initialDateTime: val.second,
+                                    use24hFormat: true,
+                                    minuteInterval: 1,
+                                    mode: CupertinoDatePickerMode.time,
+                                    onDateTimeChanged: (DateTime newTime) {
+                                      setState(() {
+                                        val.second = newTime;
+                                      });
+                                    },
+                                  ),
                                 ),
                               );
                             });
@@ -281,14 +294,6 @@ class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
             );
           },
         );
-        /*Fluttertoast.showToast(
-          msg: '开始时间必须早于结束时间',
-          toastLength: Toast.LENGTH_SHORT,
-          gravity: ToastGravity.CENTER,
-          timeInSecForIosWeb: 1,
-          textColor: Colors.white,
-          fontSize: 16.0,
-        );*/
         getAllowTime();
         return;
       }
@@ -316,14 +321,6 @@ class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
               );
             },
           );
-          /*Fluttertoast.showToast(
-            msg: '时间段之间有重合或直接相邻',
-            toastLength: Toast.LENGTH_SHORT,
-            gravity: ToastGravity.CENTER,
-            timeInSecForIosWeb: 1,
-            textColor: Colors.white,
-            fontSize: 16.0,
-          );*/
           getAllowTime();
           return;
         }
