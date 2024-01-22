@@ -1,4 +1,5 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/material.dart';
 
 class UidColors {
   static Color colorFromUid(String uid) {
@@ -9,6 +10,48 @@ class UidColors {
             (80 + (value + 155) % 20) / 100.00,
             (60 + (value + 494) % 20) / 100.00)
         .toColor();
+  }
+}
+
+class TimeColors {
+  static Color colorFromHour(int hour) {
+    Color color = Colors.red;
+    if (hour <= 8) {
+      color = Colors.red;
+    } else if (hour >= 9 && hour <= 12) {
+      color = Colors.amber;
+    } else if (hour == 13) {
+      color = const Color.fromARGB(255, 163, 232, 0);
+    } else if (hour >= 14 && hour <= 15) {
+      color = Colors.green;
+    } else if (hour >= 16 && hour <= 17) {
+      color = Colors.lightBlue;
+    } else if (hour >= 18 && hour <= 19) {
+      color = const Color.fromARGB(255, 38, 0, 255);
+    } else if (hour >= 20) {
+      color = const Color.fromARGB(255, 195, 0, 255);
+    }
+    return color;
+  }
+
+  static Color colorFromClass(int number) {
+    Color color = Colors.red;
+    if (number <= 1) {
+      color = Colors.red;
+    } else if (number >= 2 && number <= 5) {
+      color = Colors.amber;
+    } else if (number == 6) {
+      color = const Color.fromARGB(255, 163, 232, 0);
+    } else if (number >= 7 && number <= 8) {
+      color = Colors.green;
+    } else if (number >= 9 && number <= 10) {
+      color = Colors.lightBlue;
+    } else if (number >= 11 && number <= 12) {
+      color = const Color.fromARGB(255, 38, 0, 255);
+    } else if (number >= 13) {
+      color = const Color.fromARGB(255, 195, 0, 255);
+    }
+    return color;
   }
 }
 

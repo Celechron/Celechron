@@ -64,21 +64,24 @@ class FlowController extends GetxController {
   }
 
   int updateFlowList(DateTime startsAt) {
-    flowList.clear();
     Duration workTime = _db.getWorkTime();
     Duration restTime = _db.getRestTime();
 
     List<Deadline> deadlines = [];
     DateTime lastDeadlineEndsAt = startsAt;
     for (var x in deadlineList) {
-      if (x.deadlineType == DeadlineType.running &&
-          x.endTime.isAfter(startsAt)) {
-        deadlines.add(x.copyWith());
-        if (x.endTime.isAfter(lastDeadlineEndsAt)) {
-          lastDeadlineEndsAt = x.endTime;
+      if (x.deadlineType == DeadlineType.running) {
+        if (x.endTime.isBefore(startsAt)) {
+          return -1;
+        } else {
+          deadlines.add(x.copyWith());
+          if (x.endTime.isAfter(lastDeadlineEndsAt)) {
+            lastDeadlineEndsAt = x.endTime;
+          }
         }
       }
     }
+    flowList.clear();
     if (lastDeadlineEndsAt.difference(startsAt) < const Duration(days: 1)) {
       lastDeadlineEndsAt = startsAt.add(const Duration(days: 1));
     }
