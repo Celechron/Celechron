@@ -1,41 +1,27 @@
 import 'package:get/get.dart';
-
-import 'package:celechron/model/semester.dart';
 import 'package:celechron/model/user.dart';
-import 'package:celechron/model/exam.dart';
+import 'package:celechron/model/course.dart';
 
-class SearchController extends GetxController {
+class SearchPageController extends GetxController {
 
   final _user = Get.find<Rx<User>>(tag: 'user');
-  late final RxInt semesterIndex;
+  late List<Course> allCourses;
 
-  SearchController({required String initialName}){
-    semesterIndex = semesters.indexWhere((e) => e.name == initialName).obs;
-  }
-
-  Semester get semester => _user.value.semesters[semesterIndex.value];
-  List<Semester> get semesters => _user.value.semesters;
-
-  List<List<Exam>> get exams {
-    var exams = semester.exams
-        .fold(<List<Exam>>[], (previousValue, element) {
-      if (previousValue.isEmpty) {
-        previousValue.add([element]);
-      } else {
-        if (previousValue.last[0].time[0].year == element.time[0].year && previousValue.last[0].time[0].month == element.time[0].month && previousValue.last[0].time[0].day == element.time[0].day ) {
-          previousValue.last.add(element);
-        } else {
-          previousValue.add([element]);
-        }
-      }
-      return previousValue;
-    });
-    exams.sort((a, b) => a[0].time[0].compareTo(b[0].time[0]));
-    return exams;
+  RxString searchWord = ''.obs;
+  List<Course> get courseResult {
+    if (searchWord.value == '') {
+      return <Course>[];
+    }
+    return allCourses.where((e) => e.name.contains(searchWord.value)).toList();
   }
 
   @override
   void onInit() {
+    allCourses = _user.value.semesters.fold(<Course>[], (p, e) {
+      p.addAll(e.courses.values);
+      return p;
+    });
+    ever(_user, (callback) => refreshAllCourses());
     super.onInit();
   }
 
@@ -47,5 +33,12 @@ class SearchController extends GetxController {
   @override
   void onClose() {
     super.onClose();
+  }
+
+  void refreshAllCourses(){
+    allCourses = _user.value.semesters.fold(<Course>[], (p, e) {
+      p.addAll(e.courses.values);
+      return p;
+    });
   }
 }
