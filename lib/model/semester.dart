@@ -13,6 +13,7 @@ class Semester {
   final Map<String, Course> _courses;
   final List<Exam> _exams;
   final List<Grade> _grades;
+  final List<Session> _sessions;
 
   // 第几节课 => 时间
   // 例如，对于第六节课，_sessionToTime[6].first = 13:25, _sessionToTime[6].last = 14:10
@@ -59,7 +60,8 @@ class Semester {
   Semester(this.name)
       : _courses = {},
         _exams = [],
-        _grades = [];
+        _grades = [],
+        _sessions = [];
 
   String get firstHalfName {
     return name.substring(9, 10);
@@ -95,17 +97,11 @@ class Semester {
   }
 
   // 所有课程（几乎没用，绘制课程表是要分学期的，看下面的）
-  List<Session> get sessions {
-    return _courses.values.fold(<Session>[], (p, e)
-    {
-      p.addAll(e.sessions);
-      return p;
-    });
-  }
+  List<Session> get sessions => _sessions;
 
   // 上半学期课表
   List<List<Session>> get firstHalfTimetable {
-    return sessions
+    return _sessions
         .where((e) => e.firstHalf && e.confirmed)
         .fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
       p[e.dayOfWeek].add(e);
@@ -115,7 +111,7 @@ class Semester {
 
   // 下半学期课表
   List<List<Session>> get secondHalfTimetable {
-    return sessions
+    return _sessions
         .where((e) => e.secondHalf && e.confirmed)
         .fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
       p[e.dayOfWeek].add(e);
@@ -124,14 +120,14 @@ class Semester {
   }
 
   double get firstHalfSessionCount {
-    return sessions.where((e) => e.firstHalf && e.confirmed).fold(
+    return _sessions.where((e) => e.firstHalf && e.confirmed).fold(
         0.0,
         (p, e) =>
             p + (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
   }
 
   double get secondHalfSessionCount {
-    return sessions.where((e) => e.secondHalf && e.confirmed).fold(
+    return _sessions.where((e) => e.secondHalf && e.confirmed).fold(
         0.0,
         (p, e) =>
             p + (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
@@ -139,7 +135,7 @@ class Semester {
 
   List<Period> get periods {
     List<Period> periods = [];
-    for (var session in sessions) {
+    for (var session in _sessions) {
       if (session.firstHalf) {
         if (session.evenWeek) {
           for (var day in _dayOfWeekToDays[0][0][session.dayOfWeek]) {
@@ -244,10 +240,10 @@ class Semester {
     if (_courses.containsKey(key)) {
       // 坑爹的API，有时同一节课会出现两次，必须鉴别是否重复。
       if (_courses[key]!.completeSession(session)) {
-        sessions.add(session);
+        _sessions.add(session);
       }
     } else {
-      sessions.add(session);
+      _sessions.add(session);
       _courses.addEntries([MapEntry(key, Course.fromSession(session))]);
     }
   }
@@ -343,7 +339,7 @@ class Semester {
       'name': name,
       'courses': _courses,
       'exams': _exams,
-      //'sessions': _sessions,
+      'sessions': _sessions,
       'grades': _grades,
       'gpa': gpa,
       'credits': credits,
@@ -364,21 +360,21 @@ class Semester {
   }
 
   Semester.fromJson(Map<String, dynamic> json)
-      : name = json['name'],
-        _courses = (json['courses'] as Map).map((k, v) =>
+      : name = json['name'] ?? DateTime.now().toIso8601String(),
+        _courses = ((json['courses'] ?? {}) as Map).map((k, v) =>
             MapEntry(k as String, Course.fromJson(v as Map<String, dynamic>))),
-        _exams = (json['exams'] as List).map((e) => Exam.fromJson(e)).toList(),
-        //_sessions =
-        //    (json['sessions'] as List).map((e) => Session.fromJson(e)).toList(),
+        _exams = ((json['exams'] ?? []) as List).map((e) => Exam.fromJson(e)).toList(),
+        _sessions =
+            ((json['sessions'] ?? []) as List).map((e) => Session.fromJson(e)).toList(),
         _grades =
-            (json['grades'] as List).map((e) => Grade.fromJson(e)).toList(),
-        gpa = (json['gpa'] as List).map((e) => e as double).toList(),
-        credits = json['credits'],
-        _sessionToTime = (json['sessionToTime'] as List)
+            ((json['grades'] ?? []) as List).map((e) => Grade.fromJson(e)).toList(),
+        gpa = ((json['gpa'] ?? []) as List).map((e) => e as double).toList(),
+        credits = json['credits'] ?? 0.0,
+        _sessionToTime = ((json['sessionToTime'] ?? []) as List)
             .map((e) =>
                 (e as List).map((e) => Duration(minutes: e as int)).toList())
             .toList(),
-        _dayOfWeekToDays = (json['dayOfWeekToDays'] as List)
+        _dayOfWeekToDays = ((json['dayOfWeekToDays'] ?? []) as List)
             .map((e) => (e as List)
                 .map((e) => (e as List)
                     .map((e) => (e as List)
