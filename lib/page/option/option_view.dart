@@ -49,7 +49,8 @@ class OptionPage extends StatelessWidget {
                             '已登录: ${_optionController.user.value.username}');
                       } else {
                         return const Text('点击登录',
-                            style: TextStyle(color: Colors.blue));
+                            style:
+                                TextStyle(color: CupertinoColors.activeBlue));
                       }
                     }),
                     trailing: BackChervonRow(child: Obx(() {

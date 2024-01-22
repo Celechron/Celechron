@@ -28,10 +28,12 @@ class Exam {
   static List<Exam> parseExams(
       Map<String, dynamic> json, String id, String name) {
     var exams = <Exam>[];
-    if (json.containsKey("qzkssj"))
+    if (json.containsKey("qzkssj")) {
       exams.add(Exam._fromExam(id, name, json, ExamType.midterm));
-    if (json.containsKey("qmkssj"))
+    }
+    if (json.containsKey("qmkssj")) {
       exams.add(Exam._fromExam(id, name, json, ExamType.finalExam));
+    }
     return exams;
   }
 
