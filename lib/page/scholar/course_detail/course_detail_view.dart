@@ -349,7 +349,7 @@ class CourseDetailPage extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 5, left: 16, right: 16),
               child: Column(
                 children: [
-                  SubSubtitleRow(subtitle: '基本'),
+                  SubSubtitleRow(subtitle: '基本信息'),
                   CourseBriefCard(course: course),
                 ],
               ),

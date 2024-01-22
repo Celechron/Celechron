@@ -16,16 +16,8 @@ class TimeAssignSet {
 
 TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
     List<Deadline> _deadlineList, List<Period> _ableList) {
-  print('findSolution: ');
-  print('$workTime $targetRestTime');
-  print('deadlineList: ');
-  for (var x in _deadlineList) {
-    print(x.endTime.toString());
-  }
-  print('ableList: ');
-  for (var x in _ableList) {
-    print('${x.startTime} ${x.endTime}');
-  }
+  for (var x in _deadlineList) {}
+  for (var x in _ableList) {}
 
   List<Deadline> deadlineList = [];
   List<Period> ableList = [];
@@ -40,7 +32,7 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
     x.genUid();
   }
 
-  deadlineList.sort((a,b) => a.endTime.compareTo(b.endTime));
+  deadlineList.sort((a, b) => a.endTime.compareTo(b.endTime));
   ableList.sort(comparePeriod);
   ableList = List.from(ableList.reversed);
 
@@ -56,8 +48,6 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
   );
 
   for (Deadline cur in deadlineList) {
-    print(
-        'deadlineList ${cur.endTime.toString()}, ${cur.timeSpent} / ${cur.timeNeeded}, ${ans.assignSet.length}');
     if (targetRestTime <= Duration.zero) cur.isBreakable = false;
     bool isStarting = cur.isBreakable;
 

@@ -40,16 +40,23 @@ class CourseBriefCard extends StatelessWidget {
                           ),
                           const SizedBox(width: 8.0),
                           Expanded(
-                              child: Text(course.name,
-                                  style: CupertinoTheme.of(context)
-                                      .textTheme
-                                      .textStyle
-                                      .copyWith(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        overflow: TextOverflow.ellipsis,
-                                      ))),
-                          Text('${course.credit.toStringAsFixed(1)} 学分',
+                            child: FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                course.name,
+                                style: CupertinoTheme.of(context)
+                                    .textTheme
+                                    .textStyle
+                                    .copyWith(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                              ),
+                            ),
+                          ),
+                          Text('  ${course.credit.toStringAsFixed(1)} 学分',
                               style: CupertinoTheme.of(context)
                                   .textTheme
                                   .textStyle

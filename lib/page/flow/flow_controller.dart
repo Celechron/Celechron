@@ -65,7 +65,6 @@ class FlowController extends GetxController {
 
   int updateFlowList(DateTime startsAt) {
     flowList.clear();
-    print('updateFlowList');
     Duration workTime = _db.getWorkTime();
     Duration restTime = _db.getRestTime();
 
@@ -112,14 +111,14 @@ class FlowController extends GetxController {
         mappedList.add(tmpr);
       }
     });
-    /*for (var x in _basePeriodList) {
+    for (var x in _basePeriodList) {
       if (!x.startTime.isAfter(lastDeadlineEndsAt)) {
         mappedList.add(x.startTime.copyWith());
       }
       if (!x.endTime.isBefore(startsAt)) {
         mappedList.add(x.endTime.copyWith());
       }
-    }*/
+    }
     for (var x in deadlines) {
       mappedList.add(x.endTime.copyWith());
     }
@@ -158,7 +157,7 @@ class FlowController extends GetxController {
       }
     });
 
-    /*for (var x in _basePeriodList) {
+    for (var x in _basePeriodList) {
       DateTime tmpl = x.startTime.copyWith();
       DateTime tmpr = x.endTime.copyWith();
 
@@ -174,15 +173,14 @@ class FlowController extends GetxController {
       for (int i = indexl; i < indexr; i++) {
         useAble[i] = false;
       }
-    }*/
+    }
 
     List<Period> ableList = [];
 
-    print('ableList:');
     for (int i = 0, j = 0; i < mappedList.length; i++) {
       if (!useAble[i]) continue;
       j = i;
-      while (j < mappedList.length && useAble[j]) {
+      while (j + 1 < mappedList.length && useAble[j]) {
         j++;
       }
       Period period = Period(
@@ -190,20 +188,15 @@ class FlowController extends GetxController {
         startTime: mappedList[i],
         endTime: mappedList[j],
       );
-      print(period.startTime);
-      print(period.endTime);
       period.genUid();
-      if (period.endTime.difference(period.startTime) >
-          const Duration(minutes: 25)) {
+      if (period.endTime.difference(period.startTime) > restTime) {
         ableList.add(period);
       }
       i = j;
     }
 
-    print('updateFlowList: calc');
     TimeAssignSet ans =
         getTimeAssignSet(workTime, restTime, deadlines, ableList);
-    print(ans.isValid);
     if (!ans.isValid) return -1;
     flowList.addAll(ans.assignSet);
     flowList.sort((a, b) {
