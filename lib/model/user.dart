@@ -21,10 +21,10 @@ class User {
   late String _password;
   late Spider _spider;
 
-  // 按学期整理好的详细数据，包括该学期的所有科目、考试、课表、均绩等
+  // 按学期整理好的学业信息，包括该学期的所有科目、考试、课表、均绩等
   List<Semester> semesters = <Semester>[];
 
-  // 按课程号整理好的成绩单，方便算重修成绩
+  // 按课程号整理好的成绩单（方便算重修成绩）
   Map<String, List<Grade>> grades = {};
 
   // 保研GPA, 三个数据依次为五分制，四分制，百分制
@@ -36,7 +36,7 @@ class User {
   // 所获学分
   double credit = 0.0;
 
-  // 主修数据，两个数据依次为主修GPA，主修学分
+  // 主修成绩，两个数据依次为主修GPA，主修学分
   List<double> majorGpaAndCredit = [0.0, 0.0];
 
   // 特殊日期

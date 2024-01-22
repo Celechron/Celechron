@@ -5,10 +5,10 @@ import 'grade.dart';
 import 'session.dart';
 
 class Course {
-  late String id;
+  String? id;
   late String name;
   late bool confirmed;
-  late double credit;
+  double credit = 0.0;
 
   Grade? grade;
   String? teacher;
@@ -25,7 +25,6 @@ class Course {
   }
 
   Course.fromSession(Session session) {
-    id = session.id;
     name = session.name;
     confirmed = session.confirmed;
     teacher = session.teacher;
@@ -54,38 +53,47 @@ class Course {
     }
   }*/
 
-  static bool completeExam(Course course, ExamDto examDto) {
-    course.credit = examDto.credit;
-    course.exams.addAll(examDto.exams);
-    return true;
+  void completeExam(ExamDto examDto) {
+    credit = examDto.credit;
+    exams.addAll(examDto.exams);
+    // 如果调用了这个函数，则表明该Course对象可能是基于Session创建的。因此，id可能为null，必须补全。
+    id ??= examDto.id;
+    for (var e in sessions) { e.id == id; }
   }
 
-  static bool completeSession(Course course, Session session) {
-    course.teacher = session.teacher;
-    if (course.sessions.any((e) =>
+  bool completeSession(Session session) {
+    // 如果调用了这个函数，则表明该Course对象不是基于Session创建的。因此，其id不可能为null。
+    session.id = id;
+    teacher ??= session.teacher;
+    if (sessions.any((e) =>
+        e.dayOfWeek == session.dayOfWeek &&
+        e.oddWeek == session.oddWeek &&
+        e.evenWeek == session.evenWeek &&
+        e.location == session.location &&
+        e.time.contains(session.time.first))) return false;
+    if (sessions.any((e) =>
         e.dayOfWeek == session.dayOfWeek &&
         e.oddWeek == session.oddWeek &&
         e.evenWeek == session.evenWeek &&
         e.location == session.location &&
         (e.time.last + 1 == session.time.first))) {
-      var incompleteSession = course.sessions.firstWhere((e) =>
+      var incompleteSession = sessions.firstWhere((e) =>
           e.dayOfWeek == session.dayOfWeek &&
           e.oddWeek == session.oddWeek &&
           e.evenWeek == session.evenWeek &&
           e.location == session.location &&
           (e.time.last + 1 == session.time.first));
       incompleteSession.time.addAll(session.time);
-      return true;
-    } else {
-      course.sessions.add(session);
       return false;
+    } else {
+      sessions.add(session);
+      return true;
     }
   }
 
-  static bool completeGrade(Course course, Grade grade) {
-    course.credit = grade.credit;
-    course.grade = grade;
-    return true;
+  void completeGrade(Grade grade) {
+    credit = grade.credit;
+    this.grade = grade;
   }
 
   Map<String, dynamic> toJson() {
@@ -102,7 +110,7 @@ class Course {
   }
 
   Course.fromJson(Map<String, dynamic> json)
-      : id = json['id'] as String,
+      : id = json['id'] as String?,
         name = json['name'] as String,
         confirmed = json['confirmed'] as bool,
         credit = json['credit'] as double,

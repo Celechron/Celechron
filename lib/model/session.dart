@@ -1,8 +1,11 @@
 class Session {
-  String id;
-  String name;
-  String teacher;
+  String? id;
+  late String name;
+  late String teacher;
+  String? location;
   bool confirmed;
+  int dayOfWeek;
+  late List<int> time;
 
   // firstHalf : 秋/春 需要上课
   // secondHalf: 夏/冬 需要上课
@@ -16,11 +19,7 @@ class Session {
   bool oddWeek;
   bool evenWeek;
 
-  int dayOfWeek;
-  List<int> time;
-  String? location;
-
-  String get semesterId => id.substring(1, 12);
+  String get semesterId => id!.substring(1, 12);
 
   static const String dayMap = '零一二三四五六日';
 
@@ -40,6 +39,35 @@ class Session {
       var semester = json['xq'] as String;
       firstHalf = semester.contains("秋") || semester.contains("春");
       secondHalf = semester.contains("冬") || semester.contains("夏");
+    }
+  }
+
+  Session.fromZdbk(Map<String, dynamic> json)
+      : confirmed = (json['sfqd'] as String) == '1',
+        dayOfWeek = int.parse(json['xqj']),
+        oddWeek = (json['dsz'] as String) != '1',
+        evenWeek = (json['dsz'] as String) != '0' {
+    //名称、教师、地点
+    if (json.containsKey('kcb')) {
+      var nameTeacherPosition = RegExp(r'(.*?)<br>(.*?)<br>(.*?)<br>(.*?)zwf').firstMatch(json['kcb'] as String);
+      if(nameTeacherPosition != null) {
+        // ZDBK上，课程名称中的括号有时会变成英文括号，此处统一改成中文括号
+        name = nameTeacherPosition.group(1)!.replaceAll('(', '（').replaceAll(')', '）');
+        teacher = nameTeacherPosition.group(3)!;
+        location = nameTeacherPosition.group(4);
+      }
+    }
+    // 短学期 or 长学期
+    if (json.containsKey('xxq')) {
+      var semester = json['xxq'] as String;
+      firstHalf = semester.contains("秋") || semester.contains("春");
+      secondHalf = semester.contains("冬") || semester.contains("夏");
+    }
+    // 第几节
+    if (json.containsKey('djj') && json.containsKey('skcd')) {
+      var initial = int.parse(json['djj'] as String);
+      var duration = int.parse(json['skcd'] as String);
+      time = List<int>.generate(duration, (index) => initial+index);
     }
   }
 

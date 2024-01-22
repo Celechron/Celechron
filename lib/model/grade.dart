@@ -16,6 +16,8 @@ class Grade {
   // 获得的学分（挂科、不计学分的不计）
   double get earnedCredit => (creditIncluded || fivePoint != 0) ? credit : 0.0;
 
+  String get semesterId => id.substring(1, 12);
+
   static final Map<double, double> _toFourPoint = {
     5.0: 4.3,
     4.8: 4.2,
@@ -48,10 +50,10 @@ class Grade {
     "待录": 0,
   };
 
-  // 从所有成绩查询处爬取，不含主修标记
+  // 从所有成绩查询处爬取，因此不含主修标记
   Grade(Map<String, dynamic> json)
       : id = json['xkkh'] as String,
-        name = json['kcmc'] as String,
+        name = (json['kcmc'] as String).replaceAll('(','（').replaceAll(')', '）'),
         credit = double.parse(json['xf'] as String),
         original = json['cj'] as String,
         fivePoint = double.parse(json['jd'] as String) {
@@ -62,10 +64,10 @@ class Grade {
     gpaIncluded = creditIncluded && original != "合格" && original != "不合格";
   }
 
-  // 从主修成绩查询处爬取，含主修标记
+  // 从主修成绩查询处爬取，因此打上主修标记
   Grade.fromMajor(Map<String, dynamic> json)
       : id = json['xkkh'] as String,
-        name = json['kcmc'] as String,
+        name = (json['kcmc'] as String).replaceAll('(','（').replaceAll(')', '）'),
         credit = double.parse(json['xf'] as String),
         original = json['cj'] as String,
         fivePoint = double.parse(json['jd'] as String) {

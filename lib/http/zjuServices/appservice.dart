@@ -127,7 +127,7 @@ class AppService {
     }
   }
 
-  // 这个API用了些Trick————只要输入的学年和学期不合法，就会返回一个包含所有课程的课表
+  // 这个API用了些Trick————只要输入的学年和学期不合法，就会返回一个包含所有学期课程的课表
   // 如果哪天不行了，就还是按照传统的学年+学期传参老老实实爬吧
   // 修复API返回的课表中的括号不是中文字符的问题
   Future<Tuple<Exception?, Iterable<Session>>> getTimetable(
