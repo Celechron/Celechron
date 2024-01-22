@@ -255,6 +255,9 @@ class FlowPage extends StatelessWidget {
   }
 
   Widget createCard(context, Period period, String? title) {
+    Color themeColor = (period.type == PeriodType.flow
+        ? UidColors.colorFromUid(period.fromUid ?? '')
+        : CupertinoColors.systemTeal);
     return Column(
       children: [
         title == null
@@ -281,8 +284,8 @@ class FlowPage extends StatelessWidget {
                               Container(
                                 width: 12.0,
                                 height: 12.0,
-                                decoration: const BoxDecoration(
-                                  color: CupertinoColors.systemTeal,
+                                decoration: BoxDecoration(
+                                  color: themeColor,
                                   shape: BoxShape.circle,
                                 ),
                               ),
