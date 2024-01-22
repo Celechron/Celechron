@@ -189,7 +189,7 @@ class Zdbk {
           exception,
           (jsonDecode((_db.getCachedWebPage('zdbk_Timetable') ?? '[]'))
                   as List<dynamic>)
-              .where((e) => e['kcid'] != null)
+              .where((e) => e['kcb'] != null)
               .map((e) => Session.fromZdbk(e)));
     }
   }
