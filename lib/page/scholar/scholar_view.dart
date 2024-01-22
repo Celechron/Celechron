@@ -381,7 +381,7 @@ class ScholarPage extends StatelessWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           child: CupertinoSearchTextField(
-                            placeholder: '搜索课程、事项……',
+                            placeholder: '搜索课程、事项...',
                             placeholderStyle: CupertinoTheme.of(context)
                                 .textTheme
                                 .textStyle
