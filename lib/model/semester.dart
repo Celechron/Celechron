@@ -12,7 +12,6 @@ class Semester {
   final String name;
   final Map<String, Course> _courses;
   final List<Exam> _exams;
-  final List<Session> _sessions;
   final List<Grade> _grades;
 
   // 第几节课 => 时间
@@ -60,7 +59,6 @@ class Semester {
   Semester(this.name)
       : _courses = {},
         _exams = [],
-        _sessions = [],
         _grades = [];
 
   String get firstHalfName {
@@ -98,12 +96,16 @@ class Semester {
 
   // 所有课程（几乎没用，绘制课程表是要分学期的，看下面的）
   List<Session> get sessions {
-    return _sessions;
+    return _courses.values.fold(<Session>[], (p, e)
+    {
+      p.addAll(e.sessions);
+      return p;
+    });
   }
 
   // 上半学期课表
   List<List<Session>> get firstHalfTimetable {
-    return _sessions
+    return sessions
         .where((e) => e.firstHalf && e.confirmed)
         .fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
       p[e.dayOfWeek].add(e);
@@ -113,7 +115,7 @@ class Semester {
 
   // 下半学期课表
   List<List<Session>> get secondHalfTimetable {
-    return _sessions
+    return sessions
         .where((e) => e.secondHalf && e.confirmed)
         .fold(<List<Session>>[[], [], [], [], [], [], [], []], (p, e) {
       p[e.dayOfWeek].add(e);
@@ -122,14 +124,14 @@ class Semester {
   }
 
   double get firstHalfSessionCount {
-    return _sessions.where((e) => e.firstHalf && e.confirmed).fold(
+    return sessions.where((e) => e.firstHalf && e.confirmed).fold(
         0.0,
         (p, e) =>
             p + (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
   }
 
   double get secondHalfSessionCount {
-    return _sessions.where((e) => e.secondHalf && e.confirmed).fold(
+    return sessions.where((e) => e.secondHalf && e.confirmed).fold(
         0.0,
         (p, e) =>
             p + (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
@@ -137,7 +139,7 @@ class Semester {
 
   List<Period> get periods {
     List<Period> periods = [];
-    for (var session in _sessions) {
+    for (var session in sessions) {
       if (session.firstHalf) {
         if (session.evenWeek) {
           for (var day in _dayOfWeekToDays[0][0][session.dayOfWeek]) {
@@ -242,16 +244,16 @@ class Semester {
     if (_courses.containsKey(key)) {
       // 坑爹的API，有时同一节课会出现两次，必须鉴别是否重复。
       if (_courses[key]!.completeSession(session)) {
-        _sessions.add(session);
+        sessions.add(session);
       }
     } else {
-      _sessions.add(session);
+      sessions.add(session);
       _courses.addEntries([MapEntry(key, Course.fromSession(session))]);
     }
   }
 
   void addExam(ExamDto examDto) {
-    // 有的课没有考试，但是能查到考试信息，其时间为null。又是什么破问题？
+    // 有的课没有考试，但是能查到考试信息，其考试时间为null。
     _exams.addAll(examDto.exams);
     var key = '${examDto.semesterId}${examDto.name}';
     if (_courses.containsKey(key)) {
@@ -341,7 +343,7 @@ class Semester {
       'name': name,
       'courses': _courses,
       'exams': _exams,
-      'sessions': _sessions,
+      //'sessions': _sessions,
       'grades': _grades,
       'gpa': gpa,
       'credits': credits,
@@ -366,8 +368,8 @@ class Semester {
         _courses = (json['courses'] as Map).map((k, v) =>
             MapEntry(k as String, Course.fromJson(v as Map<String, dynamic>))),
         _exams = (json['exams'] as List).map((e) => Exam.fromJson(e)).toList(),
-        _sessions =
-            (json['sessions'] as List).map((e) => Session.fromJson(e)).toList(),
+        //_sessions =
+        //    (json['sessions'] as List).map((e) => Session.fromJson(e)).toList(),
         _grades =
             (json['grades'] as List).map((e) => Grade.fromJson(e)).toList(),
         gpa = (json['gpa'] as List).map((e) => e as double).toList(),

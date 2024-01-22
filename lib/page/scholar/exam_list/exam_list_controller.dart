@@ -21,6 +21,7 @@ class ExamListController extends GetxController {
   Duration get durationToLastUpdate => _durationToLastUpdate.value;
 
   List<List<Exam>> get exams {
+    semester.sortExams();
     var exams = semester.exams
         .fold(<List<Exam>>[], (previousValue, element) {
       if (previousValue.isEmpty) {

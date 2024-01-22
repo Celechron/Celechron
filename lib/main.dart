@@ -1,4 +1,5 @@
 import 'package:celechron/page/scholar/scholar_view.dart';
+import 'package:celechron/page/search/search_view.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Colors, Icons;
 import 'package:flutter/scheduler.dart';
@@ -24,7 +25,6 @@ void main() async {
   await db.init();
 
   // 注入数据观察项（相当于事件总线，更新这些变量将导致Widget重绘
-  // （如果没有自动更新，就refresh一下，比如user.refresh()））
   Get.put(db.getUser().obs, tag: 'user');
   Get.put(db.getDeadlineList().obs, tag: 'deadlineList');
   Get.put(db.getDeadlineListUpdateTime().obs, tag: 'deadlineListLastUpdate');
@@ -160,6 +160,7 @@ class _MyHomePageState extends State<MyHomePage> {
       TaskPage(),
       ScholarPage(),
       OptionPage(),
+      SearchPage(), // 缓存一下
     ];
 
     if (Platform.isAndroid) {
