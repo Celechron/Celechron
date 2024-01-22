@@ -1,6 +1,6 @@
 import 'package:celechron/utils/utils.dart';
-import '../model/deadline.dart';
-import '../model/period.dart';
+import 'package:celechron/model/deadline.dart';
+import 'package:celechron/model/period.dart';
 
 class TimeAssignSet {
   bool isValid;

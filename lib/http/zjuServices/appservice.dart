@@ -5,7 +5,7 @@ import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:celechron/model/exams_dto.dart';
 
-import '../../model/session.dart';
+import 'package:celechron/model/session.dart';
 import 'exceptions.dart';
 
 class AppService {
@@ -109,9 +109,8 @@ class AppService {
           ?.group(1);
       if (examJson == null) throw ExceptionWithMessage("Cookie无效或参数错误");
 
-      var examDtos = (jsonDecode(examJson)
-              as List<dynamic>)
-          .map((e) => ExamDto(e));
+      var examDtos =
+          (jsonDecode(examJson) as List<dynamic>).map((e) => ExamDto(e));
 
       _db.setCachedWebPage('appService_examDto_$xn-$xq', examJson);
       return Tuple(null, examDtos);
@@ -121,8 +120,7 @@ class AppService {
       return Tuple(
           exception,
           (jsonDecode((_db.getCachedWebPage('appService_examDto_$xn-$xq') ??
-                          '[]'))
-                  as List<dynamic>)
+                  '[]')) as List<dynamic>)
               .map((e) => ExamDto(e)));
     }
   }
@@ -154,8 +152,7 @@ class AppService {
           ?.group(1);
       if (courseJson == null) throw ExceptionWithMessage("无法解析");
 
-      var sessions = (jsonDecode(courseJson)
-              as List<dynamic>)
+      var sessions = (jsonDecode(courseJson) as List<dynamic>)
           .where((e) => e['kcid'] != null)
           .map((e) => Session(e));
       _db.setCachedWebPage('appService_Timetable', courseJson);

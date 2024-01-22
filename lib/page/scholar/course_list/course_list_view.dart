@@ -7,8 +7,8 @@ import 'package:celechron/page/scholar/course_list/course_brief_card.dart';
 import 'package:celechron/design/persistent_headers.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
 
-import '../../../design/animate_button.dart';
-import '../../../design/custom_colors.dart';
+import 'package:celechron/design/animate_button.dart';
+import 'package:celechron/design/custom_colors.dart';
 import 'course_list_controller.dart';
 
 class CourseListPage extends StatelessWidget {

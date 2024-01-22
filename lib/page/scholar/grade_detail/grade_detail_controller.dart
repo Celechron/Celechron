@@ -1,7 +1,7 @@
 import 'package:get/get.dart';
 
-import '../../../model/semester.dart';
-import '../../../model/user.dart';
+import 'package:celechron/model/semester.dart';
+import 'package:celechron/model/user.dart';
 
 class GradeDetailController extends GetxController {
   final user = Get.find<Rx<User>>(tag: 'user');

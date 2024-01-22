@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../../utils/utils.dart';
+import 'package:celechron/utils/utils.dart';
 import './allow_time_edit_page.dart';
 import './creditspage.dart';
 import 'package:get/get.dart';

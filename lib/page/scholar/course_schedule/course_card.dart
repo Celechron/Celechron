@@ -1,4 +1,4 @@
-import '../course_detail/course_detail_view.dart';
+import 'package:celechron/page/scholar/course_detail/course_detail_view.dart';
 import 'package:flutter/cupertino.dart';
 
 import 'package:celechron/model/session.dart';

@@ -5,13 +5,13 @@ import 'package:celechron/utils/timehelper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
-import '../../database/database_helper.dart';
-import '../../model/period.dart';
-import '../../utils/utils.dart';
+import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/model/period.dart';
+import 'package:celechron/utils/utils.dart';
 
 import 'package:celechron/design/sub_title.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
-import '../scholar/course_detail/course_detail_view.dart';
+import 'package:celechron/page/scholar/course_detail/course_detail_view.dart';
 import 'flow_controller.dart';
 
 class FlowPage extends StatelessWidget {

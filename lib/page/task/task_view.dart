@@ -5,7 +5,7 @@ import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:celechron/design/custom_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import '../../model/deadline.dart';
+import 'package:celechron/model/deadline.dart';
 import 'task_edit_page.dart';
 import 'dart:async';
 import 'package:get/get.dart';

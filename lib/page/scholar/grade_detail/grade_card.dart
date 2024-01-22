@@ -3,8 +3,8 @@ import 'dart:math';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
-import '../../../model/grade.dart';
-import '../course_detail/course_detail_view.dart';
+import 'package:celechron/model/grade.dart';
+import 'package:celechron/page/scholar/course_detail/course_detail_view.dart';
 
 class GradeCard extends StatefulWidget {
   final Grade grade;

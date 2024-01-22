@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
-import '../../database/database_helper.dart';
-import '../../model/user.dart';
+import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/model/user.dart';
 
 class OptionController extends GetxController {
   final _db = Get.find<DatabaseHelper>(tag: 'db');

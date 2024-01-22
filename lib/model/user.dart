@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 
 import 'grade.dart';
 import 'semester.dart';
-import '../http/spider.dart';
+import 'package:celechron/http/spider.dart';
 import 'package:celechron/database/database_helper.dart';
 
 class User {

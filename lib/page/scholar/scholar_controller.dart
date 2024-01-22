@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:celechron/model/semester.dart';
 import 'package:get/get.dart';
-import '../../model/user.dart';
+import 'package:celechron/model/user.dart';
 
 class ScholarController extends GetxController {
   final _user = Get.find<Rx<User>>(tag: 'user');
@@ -13,11 +13,13 @@ class ScholarController extends GetxController {
   List<Semester> get semesters => _user.value.semesters;
   Semester get selectedSemester {
     if (semesterIndex >= semesters.length || semesterIndex < 0) {
-      var thisSemesterIndex = semesters.indexWhere((e) => e.name == _user.value.thisSemester.name);
+      var thisSemesterIndex =
+          semesters.indexWhere((e) => e.name == _user.value.thisSemester.name);
       semesterIndex.value = thisSemesterIndex >= 0 ? thisSemesterIndex : 0;
     }
     return semesters[semesterIndex.value];
   }
+
   Duration get durationToLastUpdate => _durationToLastUpdate.value;
 
   Future<List<String?>> fetchData() async {

@@ -5,9 +5,9 @@ import 'package:celechron/http/time_config_service.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:get/get.dart';
 
-import '../database/database_helper.dart';
-import '../model/grade.dart';
-import '../model/semester.dart';
+import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/model/grade.dart';
+import 'package:celechron/model/semester.dart';
 import 'zjuServices/appservice.dart';
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';

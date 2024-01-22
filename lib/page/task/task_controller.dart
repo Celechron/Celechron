@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:get/get.dart';
-import '../../database/database_helper.dart';
-import '../../model/deadline.dart';
-import '../../utils/utils.dart';
+import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/model/deadline.dart';
+import 'package:celechron/utils/utils.dart';
 
 class TaskController extends GetxController {
   final deadlineList = Get.find<RxList<Deadline>>(tag: 'deadlineList');

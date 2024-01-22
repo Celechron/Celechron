@@ -6,7 +6,7 @@ import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:get/get.dart';
 import 'package:celechron/utils/gpahelper.dart';
-import '../../model/session.dart';
+import 'package:celechron/model/session.dart';
 import 'exceptions.dart';
 
 class Zdbk {
