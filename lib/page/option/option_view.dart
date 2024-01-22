@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../utils/utils.dart';
-import './allowtimeeditpage.dart';
+import './allow_time_edit_page.dart';
 import './creditspage.dart';
 import 'package:get/get.dart';
 
@@ -210,14 +210,10 @@ class OptionPage extends StatelessWidget {
                             '${_optionController.allowTimeLength} 个时段',
                             style: _trailingTextStyle))),
                     onTap: () async {
-                      Map<DateTime, DateTime> now = _optionController.allowTime;
-                      Map<DateTime, DateTime> res = await Navigator.push(
-                              context,
-                              CupertinoPageRoute(
-                                  builder: (context) =>
-                                      AllowTimeEditPage(now))) ??
-                          now;
-                      _optionController.allowTime = res;
+                      await Navigator.of(context, rootNavigator: true)
+                          .push(CupertinoPageRoute(
+                        builder: (context) => AllowTimeEditPage(),
+                      ));
                     },
                   ),
                 ])),

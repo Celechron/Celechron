@@ -4,6 +4,7 @@ import 'package:celechron/page/task/task_controller.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:celechron/design/sub_title.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
+import 'package:celechron/design/custom_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import '../../model/deadline.dart';
@@ -78,20 +79,21 @@ class TaskPage extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('返回'),
               ),
-              CupertinoDialogAction(
-                onPressed: () {
-                  if (deadline.deadlineType != DeadlineType.completed) {
-                    deadline.deadlineType = DeadlineType.completed;
-                  } else {
-                    deadline.forceRefreshType();
-                  }
-                  _taskController.updateDeadlineListTime();
-                  _taskController.deadlineList.refresh();
-                  Navigator.of(context).pop();
-                },
-                child: Text(
-                    '标记为${deadline.deadlineType == DeadlineType.completed ? '未' : ''}完成'),
-              ),
+              if (deadline.timeSpent < deadline.timeNeeded)
+                CupertinoDialogAction(
+                  onPressed: () {
+                    if (deadline.deadlineType != DeadlineType.completed) {
+                      deadline.deadlineType = DeadlineType.completed;
+                    } else {
+                      deadline.forceRefreshType();
+                    }
+                    _taskController.updateDeadlineListTime();
+                    _taskController.deadlineList.refresh();
+                    Navigator.of(context).pop();
+                  },
+                  child: Text(
+                      '标记为${deadline.deadlineType == DeadlineType.completed ? '未' : ''}完成'),
+                ),
               if (deadline.deadlineType == DeadlineType.running ||
                   deadline.deadlineType == DeadlineType.suspended)
                 CupertinoDialogAction(
@@ -112,10 +114,12 @@ class TaskPage extends StatelessWidget {
               CupertinoDialogAction(
                 onPressed: () async {
                   Navigator.of(context).pop();
-                  Deadline res = await Navigator.push(
-                          context,
-                          CupertinoPageRoute(
-                              builder: (context) => TaskEditPage(deadline))) ??
+                  Deadline res = await showCupertinoModalPopup(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return TaskEditPage(deadline);
+                        },
+                      ) ??
                       deadline;
                   if (deadline != res) {
                     _taskController.updateDeadlineListTime();
@@ -144,8 +148,12 @@ class TaskPage extends StatelessWidget {
     Deadline? deadline =
         Deadline(endTime: DateTime.now().add(const Duration(hours: 1)));
     deadline.reset();
-    Deadline? res = await Navigator.push(context,
-        CupertinoPageRoute(builder: (context) => TaskEditPage(deadline)));
+    Deadline? res = await showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return TaskEditPage(deadline);
+      },
+    );
     if (res != null) {
       _taskController.deadlineList.add(res);
       _taskController.updateDeadlineListTime();
@@ -398,11 +406,8 @@ class TaskPage extends StatelessWidget {
                         child: createCard(
                             context,
                             _taskController.todoDeadlineList[index],
-                            TaskPageColors
-                                .taskMarkColors[Random(_taskController
-                                        .todoDeadlineList[index].hashCode)
-                                    .nextInt(9)]
-                                .darkColor,
+                            UidColors.colorFromUid(
+                                _taskController.todoDeadlineList[index].uid),
                             index == 0 ? '待办' : null));
                   },
                   childCount: _taskController.todoDeadlineList.length,
@@ -420,11 +425,8 @@ class TaskPage extends StatelessWidget {
                         child: createCard(
                             context,
                             _taskController.doneDeadlineList[index],
-                            TaskPageColors
-                                .taskMarkColors[Random(_taskController
-                                        .doneDeadlineList[index].hashCode)
-                                    .nextInt(9)]
-                                .darkColor,
+                            UidColors.colorFromUid(
+                                _taskController.todoDeadlineList[index].uid),
                             index == 0 ? '已完成' : null));
                   },
                   childCount: _taskController.doneDeadlineList.length,

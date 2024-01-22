@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui';
+import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/utils/timehelper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -20,6 +21,9 @@ class FlowPage extends StatelessWidget {
   final db = Get.find<DatabaseHelper>(tag: 'db');
 
   Widget createFirst(context, Period period, String? title) {
+    Color themeColor = (period.type == PeriodType.flow
+        ? UidColors.colorFromUid(period.fromUid ?? '')
+        : CupertinoColors.systemTeal);
     return Column(
       children: [
         title == null
@@ -44,8 +48,8 @@ class FlowPage extends StatelessWidget {
                         Container(
                           width: 12.0,
                           height: 12.0,
-                          decoration: const BoxDecoration(
-                            color: CupertinoColors.systemTeal,
+                          decoration: BoxDecoration(
+                            color: themeColor,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -73,10 +77,10 @@ class FlowPage extends StatelessWidget {
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                 Row(children: [
-                                  const Icon(
+                                  Icon(
                                     CupertinoIcons.location_solid,
                                     size: 14,
-                                    color: CupertinoColors.systemTeal,
+                                    color: themeColor,
                                   ),
                                   const SizedBox(width: 6),
                                   Text(period.location,
@@ -102,10 +106,10 @@ class FlowPage extends StatelessWidget {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 CupertinoIcons.time_solid,
                                 size: 14,
-                                color: CupertinoColors.systemTeal,
+                                color: themeColor,
                               ),
                               const SizedBox(width: 6),
                               Text(
@@ -235,7 +239,7 @@ class FlowPage extends StatelessWidget {
                                   child: Container(
                                     decoration: BoxDecoration(
                                       color: CupertinoDynamicColor.resolve(
-                                          CupertinoColors.systemTeal, context),
+                                          themeColor, context),
                                       borderRadius: BorderRadius.circular(4),
                                     ),
                                   ),
@@ -309,7 +313,7 @@ class FlowPage extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                                 child: Text(
-                              '${TimeHelper.chineseDayRelation(period.startTime)} ${period.startTime.hour}:${period.startTime.minute.toString().padLeft(2, '0')} - ${period.endTime.hour}:${period.endTime.minute.toString().padLeft(2, '0')}',
+                              '${TimeHelper.chineseDayRelation(period.startTime)}${period.startTime.hour}:${period.startTime.minute.toString().padLeft(2, '0')} - ${period.endTime.hour}:${period.endTime.minute.toString().padLeft(2, '0')}',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.normal,
@@ -586,7 +590,7 @@ class FlowPage extends StatelessWidget {
             if (_flowController.isFlowListOutdated()) {
               return MaterialBanner(
                 content: const Text('规划方案已过期'),
-                leading: const Icon(Icons.warning),
+                leading: const Icon(CupertinoIcons.exclamationmark_triangle),
                 actions: [
                   TextButton(
                     onPressed: () async {

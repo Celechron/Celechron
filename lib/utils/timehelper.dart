@@ -1,16 +1,19 @@
 class TimeHelper {
   static List<DateTime> parseExamDateTime(String datetimeStr) {
     // Input format: 2021年01月22日(08:00-10:00)
-    var date = '${datetimeStr.substring(0, 4)}${datetimeStr.substring(5, 7)}${datetimeStr.substring(8, 10)}T';
+    var date =
+        '${datetimeStr.substring(0, 4)}${datetimeStr.substring(5, 7)}${datetimeStr.substring(8, 10)}T';
     var timeBegin = datetimeStr.substring(12, 17);
     var timeEnd = datetimeStr.substring(18, 23);
     return [DateTime.parse(date + timeBegin), DateTime.parse(date + timeEnd)];
   }
 
+  static String chineseDateTime(DateTime dateTime) {
+    return '${dateTime.year} 年 ${dateTime.month} 月 ${dateTime.day} 日 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
   static String chineseTime(DateTime begin, DateTime end) {
-    var beginStr = '${begin.year}年${begin.month}月${begin.day}日 ${begin.hour}:${begin.minute.toString().padLeft(2, '0')}';
-    var endStr = '${end.hour}:${end.minute.toString().padLeft(2, '0')}';
-    return '$beginStr - $endStr';
+    return '${chineseDateTime(begin)} - ${end.hour}:${end.minute.toString().padLeft(2, '0')}';
   }
 
   static String chineseDay(DateTime date) {
@@ -32,8 +35,10 @@ class TimeHelper {
   }
 
   static String chineseDayRelation(DateTime date) {
-    var day = date.copyWith(hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
-    var today = DateTime.now().copyWith(hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+    var day = date.copyWith(
+        hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
+    var today = DateTime.now().copyWith(
+        hour: 0, minute: 0, second: 0, millisecond: 0, microsecond: 0);
     var diff = day.difference(today).inDays;
     if (diff == 0) {
       return '';
