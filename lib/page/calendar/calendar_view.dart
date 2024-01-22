@@ -2,6 +2,7 @@ import 'package:celechron/design/sub_title.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:hive/hive.dart';
 import 'package:table_calendar/table_calendar.dart';
 import '../../model/period.dart';
 import '../../utils/utils.dart';
@@ -203,11 +204,13 @@ class CalendarPage extends StatelessWidget {
                       height: 12.0,
                       decoration: BoxDecoration(
                         color: period.type == PeriodType.classes
-                            ? CupertinoColors.systemTeal
+                            ? (TimeColors.colorFromHour(period.startTime.hour))
                             : (period.type == PeriodType.test
                                 ? CupertinoColors.systemPink
                                 : CupertinoColors.inactiveGray),
-                        shape: BoxShape.circle,
+                        shape: period.type == PeriodType.test
+                            ? BoxShape.rectangle
+                            : BoxShape.circle,
                       ),
                     ),
                     const SizedBox(width: 8.0),
@@ -296,21 +299,7 @@ class CalendarPage extends StatelessWidget {
 
     Color color = Colors.red;
     if (event.type != PeriodType.test) {
-      if (event.startTime.hour <= 8) {
-        color = Colors.red;
-      } else if (event.startTime.hour >= 9 && event.startTime.hour <= 12) {
-        color = Colors.amber;
-      } else if (event.startTime.hour == 13) {
-        color = const Color.fromARGB(255, 163, 232, 0);
-      } else if (event.startTime.hour >= 14 && event.startTime.hour <= 15) {
-        color = Colors.green;
-      } else if (event.startTime.hour >= 16 && event.startTime.hour <= 17) {
-        color = Colors.lightBlue;
-      } else if (event.startTime.hour >= 18 && event.startTime.hour <= 19) {
-        color = const Color.fromARGB(255, 38, 0, 255);
-      } else if (event.startTime.hour >= 20) {
-        color = const Color.fromARGB(255, 195, 0, 255);
-      }
+      color = TimeColors.colorFromHour(event.startTime.hour);
     }
 
     BoxShape shape = BoxShape.circle;

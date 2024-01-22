@@ -1,5 +1,6 @@
 import 'package:celechron/page/scholar/course_list/course_brief_card.dart';
 import 'package:celechron/design/sub_title.dart';
+import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/design/persistent_headers.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:flutter/cupertino.dart';
@@ -22,6 +23,7 @@ class CourseDetailPage extends StatelessWidget {
   }
 
   Widget createSessionCard(context, List<Session> sessions) {
+    sessions.sort((a, b) => a.time.first.compareTo(b.time.first));
     return Column(
       children: [
         SubSubtitleRow(subtitle: '课时'),
@@ -42,8 +44,9 @@ class CourseDetailPage extends StatelessWidget {
                             Container(
                               width: 12.0,
                               height: 12.0,
-                              decoration: const BoxDecoration(
-                                color: CupertinoColors.systemTeal,
+                              decoration: BoxDecoration(
+                                color: TimeColors.colorFromClass(
+                                    sessions[0].time.first),
                                 shape: BoxShape.circle,
                               ),
                             ),
@@ -102,8 +105,9 @@ class CourseDetailPage extends StatelessWidget {
                               Container(
                                 width: 12.0,
                                 height: 12.0,
-                                decoration: const BoxDecoration(
-                                  color: CupertinoColors.systemTeal,
+                                decoration: BoxDecoration(
+                                  color: TimeColors.colorFromClass(
+                                      sessions[i].time.first),
                                   shape: BoxShape.circle,
                                 ),
                               ),
@@ -180,7 +184,7 @@ class CourseDetailPage extends StatelessWidget {
                               height: 12.0,
                               decoration: const BoxDecoration(
                                 color: CupertinoColors.systemPink,
-                                shape: BoxShape.circle,
+                                shape: BoxShape.rectangle,
                               ),
                             ),
                             const SizedBox(width: 8.0),
@@ -263,7 +267,7 @@ class CourseDetailPage extends StatelessWidget {
                                 height: 12.0,
                                 decoration: const BoxDecoration(
                                   color: CupertinoColors.systemPink,
-                                  shape: BoxShape.circle,
+                                  shape: BoxShape.rectangle,
                                 ),
                               ),
                               const SizedBox(width: 8.0),
