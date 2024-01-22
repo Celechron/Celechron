@@ -233,7 +233,7 @@ class OptionPage extends StatelessWidget {
                     CupertinoListTile(
                       title: const Text('关于 Celechron'),
                       trailing: BackChervonRow(
-                        child: Text('1.0.0', style: _trailingTextStyle),
+                        child: Text('0.2.1 beta', style: _trailingTextStyle),
                       ),
                       onTap: () async {
                         Navigator.of(context, rootNavigator: true).push(
