@@ -12,7 +12,13 @@ class ScholarController extends GetxController {
 
   User get user => _user.value;
   List<Semester> get semesters => _user.value.semesters;
-  Semester get selectedSemester => semesters[semesterIndex.value];
+  Semester get selectedSemester {
+    if (semesterIndex >= semesters.length || semesterIndex < 0) {
+      var thisSemesterIndex = semesters.indexWhere((e) => e.name == _user.value.thisSemester.name);
+      semesterIndex.value = thisSemesterIndex >= 0 ? thisSemesterIndex : 0;
+    }
+    return semesters[semesterIndex.value];
+  }
   Duration get durationToLastUpdate => _durationToLastUpdate.value;
 
   Future<List<String?>> fetchData() async {
