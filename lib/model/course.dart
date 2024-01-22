@@ -58,7 +58,7 @@ class Course {
     exams.addAll(examDto.exams);
     // 如果调用了这个函数，则表明该Course对象可能是基于Session创建的。因此，id可能为null，必须补全。
     id ??= examDto.id;
-    for (var e in sessions) { e.id == id; }
+    for (var e in sessions) { e.id = id; }
   }
 
   bool completeSession(Session session) {
