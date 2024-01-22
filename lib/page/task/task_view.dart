@@ -121,8 +121,13 @@ class TaskPage extends StatelessWidget {
                         },
                       ) ??
                       deadline;
-                  if (deadline != res) {
-                    _taskController.updateDeadlineListTime();
+                  bool needUpdate = false;
+                  if (deadline.timeSpent != res.timeSpent ||
+                      deadline.timeNeeded != res.timeNeeded ||
+                      deadline.endTime != res.endTime ||
+                      deadline.deadlineType != res.deadlineType ||
+                      deadline.isBreakable != res.isBreakable) {
+                    needUpdate = true;
                   }
                   deadline.uid = res.uid;
                   deadline.summary = res.summary;
@@ -134,7 +139,9 @@ class TaskPage extends StatelessWidget {
                   deadline.deadlineType = res.deadlineType;
                   deadline.isBreakable = res.isBreakable;
                   _taskController.updateDeadlineList();
-                  _taskController.updateDeadlineListTime();
+                  if (needUpdate) {
+                    _taskController.updateDeadlineListTime();
+                  }
                   _taskController.deadlineList.refresh();
                 },
                 child: const Text('编辑'),
@@ -426,7 +433,7 @@ class TaskPage extends StatelessWidget {
                             context,
                             _taskController.doneDeadlineList[index],
                             UidColors.colorFromUid(
-                                _taskController.todoDeadlineList[index].uid),
+                                _taskController.doneDeadlineList[index].uid),
                             index == 0 ? '已完成' : null));
                   },
                   childCount: _taskController.doneDeadlineList.length,
