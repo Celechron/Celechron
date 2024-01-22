@@ -309,7 +309,7 @@ class ExamListPage extends StatelessWidget {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          CelechronSliverTextHeader(
+          const CelechronSliverTextHeader(
             subtitle: '考试',
           ),
           SliverToBoxAdapter(

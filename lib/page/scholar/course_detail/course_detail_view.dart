@@ -347,7 +347,7 @@ class CourseDetailPage extends StatelessWidget {
     return CupertinoPageScaffold(
       child: CustomScrollView(
         slivers: [
-          CelechronSliverTextHeader(subtitle: '课程详情'),
+          const CelechronSliverTextHeader(subtitle: '课程详情'),
           SliverToBoxAdapter(
             child: Container(
               padding: const EdgeInsets.only(bottom: 5, left: 16, right: 16),

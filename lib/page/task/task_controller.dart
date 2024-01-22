@@ -31,18 +31,6 @@ class TaskController extends GetxController {
     super.onInit();
   }
 
-  @override
-  void onReady() {
-    // TODO: implement onReady
-    super.onReady();
-  }
-
-  @override
-  void onClose() {
-    // TODO: implement onClose
-    super.onClose();
-  }
-
   void refreshDeadlineList() {
     saveDeadlineListToDb();
     //print('TaskListPage: refreshed');

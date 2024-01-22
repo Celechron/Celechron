@@ -294,7 +294,7 @@ class CourseSchedulePage extends StatelessWidget {
     return CupertinoPageScaffold(
         child: CustomScrollView(
       slivers: [
-        CelechronSliverTextHeader(subtitle: '课表'),
+        const CelechronSliverTextHeader(subtitle: '课表'),
         SliverToBoxAdapter(
             child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),

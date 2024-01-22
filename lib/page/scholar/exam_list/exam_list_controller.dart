@@ -7,12 +7,11 @@ import 'package:celechron/model/user.dart';
 import 'package:celechron/model/exam.dart';
 
 class ExamListController extends GetxController {
-
   final _user = Get.find<Rx<User>>(tag: 'user');
   late final RxInt semesterIndex;
   final Rx<Duration> _durationToLastUpdate = const Duration().obs;
 
-  ExamListController({required String initialName}){
+  ExamListController({required String initialName}) {
     semesterIndex = semesters.indexWhere((e) => e.name == initialName).obs;
   }
 
@@ -22,12 +21,13 @@ class ExamListController extends GetxController {
 
   List<List<Exam>> get exams {
     semester.sortExams();
-    var exams = semester.exams
-        .fold(<List<Exam>>[], (previousValue, element) {
+    var exams = semester.exams.fold(<List<Exam>>[], (previousValue, element) {
       if (previousValue.isEmpty) {
         previousValue.add([element]);
       } else {
-        if (previousValue.last[0].time[0].year == element.time[0].year && previousValue.last[0].time[0].month == element.time[0].month && previousValue.last[0].time[0].day == element.time[0].day ) {
+        if (previousValue.last[0].time[0].year == element.time[0].year &&
+            previousValue.last[0].time[0].month == element.time[0].month &&
+            previousValue.last[0].time[0].day == element.time[0].day) {
           previousValue.last.add(element);
         } else {
           previousValue.add([element]);
@@ -40,20 +40,11 @@ class ExamListController extends GetxController {
   }
 
   @override
-  void onInit() {
-    super.onInit();
-  }
-
-  @override
   void onReady() {
     super.onReady();
     Timer.periodic(const Duration(seconds: 1), (timer) {
-      _durationToLastUpdate.value = DateTime.now().difference(_user.value.lastUpdateTime);
+      _durationToLastUpdate.value =
+          DateTime.now().difference(_user.value.lastUpdateTime);
     });
-  }
-
-  @override
-  void onClose() {
-    super.onClose();
   }
 }

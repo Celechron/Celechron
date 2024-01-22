@@ -3,7 +3,6 @@ import 'package:celechron/model/user.dart';
 import 'package:celechron/model/course.dart';
 
 class SearchPageController extends GetxController {
-
   final _user = Get.find<Rx<User>>(tag: 'user');
   late List<Course> allCourses;
 
@@ -25,17 +24,7 @@ class SearchPageController extends GetxController {
     super.onInit();
   }
 
-  @override
-  void onReady() {
-    super.onReady();
-  }
-
-  @override
-  void onClose() {
-    super.onClose();
-  }
-
-  void refreshAllCourses(){
+  void refreshAllCourses() {
     allCourses = _user.value.semesters.fold(<Course>[], (p, e) {
       p.addAll(e.courses.values);
       return p;

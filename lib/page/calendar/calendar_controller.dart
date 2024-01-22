@@ -18,11 +18,13 @@ class CalendarController extends GetxController {
     if (semester == null) return '考试周/假期';
 
     var toFirstWeek = day.difference(semester.firstDay).inDays ~/ 7;
-    if (toFirstWeek < 8)
+    if (toFirstWeek < 8) {
       return '${semester.name[9]}${numToChinese[toFirstWeek]}周';
+    }
     var toLastWeek = 7 - semester.lastDay.difference(day).inDays ~/ 7;
-    if (toLastWeek < 8)
+    if (toLastWeek < 8) {
       return '${semester.name[10]}${numToChinese[toLastWeek]}周';
+    }
     return '考试周/假期';
   }
 
@@ -31,17 +33,6 @@ class CalendarController extends GetxController {
     refreshEvents();
     ever(user, (callback) => refreshEvents());
     super.onInit();
-  }
-
-  @override
-  void onReady() {
-    super.onReady();
-  }
-
-  @override
-  void onClose() {
-    // TODO: implement onClose
-    super.onClose();
   }
 
   void refreshEvents() {
@@ -65,7 +56,7 @@ class CalendarController extends GetxController {
   List<Period> getEventsForDay(DateTime day) {
     DateTime chop = chopDate(day);
     var eventsOfDay = events[chop] ?? [];
-    eventsOfDay.sort((a,b) => a.startTime.compareTo(b.startTime));
+    eventsOfDay.sort((a, b) => a.startTime.compareTo(b.startTime));
     return eventsOfDay;
   }
 }
