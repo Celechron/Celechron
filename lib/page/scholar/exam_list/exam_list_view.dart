@@ -1,3 +1,4 @@
+import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -312,12 +313,12 @@ class ExamListPage extends StatelessWidget {
           const CelechronSliverTextHeader(
             subtitle: '考试',
           ),
-          SliverToBoxAdapter(
-            child: Padding(
-                padding: const EdgeInsets.only(
-                    left: 16, right: 16, bottom: 10, top: 10),
-                child: _semesterPicker(context)),
-          ),
+          SliverPinnedToBoxAdapter(
+              child: Padding(
+                  padding: const EdgeInsets.only(
+                      left: 16, right: 16, bottom: 10, top: 10),
+                  child: _semesterPicker(context)),
+            ),
           Obx(() => SliverList(
                 delegate: SliverChildBuilderDelegate(
                   (context, index) => Container(
