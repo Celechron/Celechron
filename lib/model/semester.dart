@@ -71,7 +71,7 @@ class Semester {
     return name.substring(10, 11);
   }
 
-  // 科目列表
+  // 课程数据
   Map<String, Course> get courses {
     return _courses;
   }
@@ -79,11 +79,9 @@ class Semester {
   int get courseCount {
     return _courses.length;
   }
-
   int get examCount {
     return _exams.length;
   }
-
   double get courseCredit {
     return _courses.values.fold(0.0, (p, e) => p + e.credit);
   }
@@ -238,36 +236,38 @@ class Semester {
     }
   }
 
-  void addSession(Session session) {
-    var courseKey = session.id;
-    if (_courses.containsKey(courseKey)) {
-      if (!Course.completeSession(_courses[courseKey]!, session)) {
+  void addSession(Session session, String semesterId) {
+    // 由于ZDBK不给课号，Session的id初始值为null，不能直接拿来用！
+    var key = '$semesterId${session.name}';
+    if (_courses.containsKey(key)) {
+      // 坑爹的API，有时同一节课会出现两次，必须鉴别是否重复。
+      if (_courses[key]!.completeSession(session)) {
         _sessions.add(session);
       }
     } else {
       _sessions.add(session);
-      _courses.addEntries([MapEntry(courseKey, Course.fromSession(session))]);
+      _courses.addEntries([MapEntry(key, Course.fromSession(session))]);
     }
   }
 
   void addExam(ExamDto examDto) {
-    // 有的课没有考试但是能查到考试项
+    // 有的课没有考试，但是能查到考试信息，其时间为null。又是什么破问题？
     _exams.addAll(examDto.exams);
-    var courseId = examDto.id;
-    if (_courses.containsKey(courseId)) {
-      Course.completeExam(_courses[courseId]!, examDto);
+    var key = '${examDto.semesterId}${examDto.name}';
+    if (_courses.containsKey(key)) {
+      _courses[key]!.completeExam(examDto);
     } else {
-      _courses.addEntries([MapEntry(courseId, Course.fromExam(examDto))]);
+      _courses.addEntries([MapEntry(key, Course.fromExam(examDto))]);
     }
   }
 
   void addGrade(Grade grade) {
     _grades.add(grade);
-    var courseKey = grade.id;
-    if (_courses.containsKey(courseKey)) {
-      Course.completeGrade(_courses[courseKey]!, grade);
+    var key = '${grade.semesterId}${grade.name}';
+    if (_courses.containsKey(key)) {
+      _courses[key]!.completeGrade(grade);
     } else {
-      _courses.addEntries([MapEntry(courseKey, Course.fromGrade(grade))]);
+      _courses.addEntries([MapEntry(key, Course.fromGrade(grade))]);
     }
   }
 
