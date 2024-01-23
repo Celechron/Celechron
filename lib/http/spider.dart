@@ -247,7 +247,7 @@ class Spider {
     // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
       outSemesters.removeWhere(
-          (e) => e.grades.isEmpty && e.sessions.isEmpty && e.exams.isEmpty);
+          (e) => e.grades.isEmpty && e.sessions.isEmpty && e.exams.isEmpty && e.courses.isEmpty);
     });
 
     // 检查是否有查询失败的情况
