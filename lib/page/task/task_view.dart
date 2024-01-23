@@ -1,3 +1,4 @@
+import 'package:celechron/page/flow/flow_controller.dart';
 import 'package:celechron/page/task/task_controller.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:celechron/design/sub_title.dart';
@@ -14,6 +15,7 @@ class TaskPage extends StatelessWidget {
   TaskPage({super.key});
 
   final _taskController = Get.put(TaskController());
+  final _flowController = Get.put(FlowController());
 
   String deadlineProgress(Deadline deadline) {
     return '${(deadline.getProgress()).toInt()}% 已完成：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded <= deadline.timeSpent ? Duration.zero : (deadline.timeNeeded - deadline.timeSpent))}';
@@ -142,7 +144,7 @@ class TaskPage extends StatelessWidget {
         return TaskEditPage(deadline);
       },
     );
-    if (res != null) {
+    if (res != null && res.deadlineType != DeadlineType.deleted) {
       _taskController.deadlineList.add(res);
       _taskController.updateDeadlineListTime();
       _taskController.deadlineList.refresh();
@@ -354,7 +356,7 @@ class TaskPage extends StatelessWidget {
                       builder: (BuildContext context) => CupertinoActionSheet(
                         actions: <Widget>[
                           CupertinoActionSheetAction(
-                            child: const Text('移除已完成任务'),
+                            child: const Text('删除已完成任务'),
                             onPressed: () async {
                               _taskController.removeCompletedDeadline(context);
                               _taskController.updateDeadlineList();
@@ -363,11 +365,35 @@ class TaskPage extends StatelessWidget {
                             },
                           ),
                           CupertinoActionSheetAction(
-                            child: const Text('移除已过期任务'),
+                            child: const Text('删除已过期任务'),
                             onPressed: () async {
                               _taskController.removeFailedDeadline(context);
                               _taskController.updateDeadlineList();
                               _taskController.deadlineList.refresh();
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          CupertinoActionSheetAction(
+                            child: const Text('暂停所有任务'),
+                            onPressed: () {
+                              if (_taskController.suspendAllDeadline(context) >
+                                  0) {
+                                _flowController.removeFlowInFlowList();
+                                _taskController.updateDeadlineListTime();
+                                _taskController.deadlineList.refresh();
+                              }
+                              Navigator.of(context).pop();
+                            },
+                          ),
+                          CupertinoActionSheetAction(
+                            child: const Text('继续所有任务'),
+                            onPressed: () {
+                              if (_taskController.continueAllDeadline(context) >
+                                  0) {
+                                _flowController.removeFlowInFlowList();
+                                _taskController.updateDeadlineListTime();
+                                _taskController.deadlineList.refresh();
+                              }
                               Navigator.of(context).pop();
                             },
                           ),

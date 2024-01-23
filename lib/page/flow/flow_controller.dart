@@ -51,6 +51,10 @@ class FlowController extends GetxController {
     flowListLastUpdate.value = deadlineListLastUpdate.value.copyWith();
   }
 
+  void removeFlowInFlowList() {
+    flowList.removeWhere((element) => element.type == PeriodType.flow);
+  }
+
   int updateFlowList(DateTime startsAt) {
     Duration workTime = _db.getWorkTime();
     Duration restTime = _db.getRestTime();
