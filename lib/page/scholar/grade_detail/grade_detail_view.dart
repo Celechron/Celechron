@@ -53,6 +53,8 @@ class GradeDetailPage extends StatelessWidget {
                                   title: '四分制',
                                   content: _scholarController.user.gpa[1]
                                       .toStringAsFixed(2),
+                                  extraContent: _scholarController.user.gpa[2]
+                                      .toStringAsFixed(2),
                                   backgroundColor:
                                       CustomCupertinoDynamicColors.spring)),
                             ),
@@ -84,7 +86,7 @@ class GradeDetailPage extends StatelessWidget {
                             Expanded(
                               child: Obx(() => TwoLineCard(
                                   title: '百分制',
-                                  content: _scholarController.user.gpa[2]
+                                  content: _scholarController.user.gpa[3]
                                       .toStringAsFixed(2),
                                   backgroundColor:
                                       CustomCupertinoDynamicColors.magenta)),

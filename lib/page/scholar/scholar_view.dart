@@ -205,6 +205,9 @@ class ScholarPage extends StatelessWidget {
                                           content: _scholarController
                                               .user.gpa[1]
                                               .toStringAsFixed(2),
+                                          extraContent: _scholarController
+                                              .user.gpa[2]
+                                              .toStringAsFixed(2),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
                                                   .spring)),
@@ -240,7 +243,7 @@ class ScholarPage extends StatelessWidget {
                                       child: Obx(() => TwoLineCard(
                                           title: '百分制',
                                           content: _scholarController
-                                              .user.gpa[2]
+                                              .user.gpa[3]
                                               .toStringAsFixed(2),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors

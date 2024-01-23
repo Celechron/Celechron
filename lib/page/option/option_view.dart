@@ -1,8 +1,10 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:celechron/utils/utils.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:url_launcher/url_launcher_string.dart';
 import './allow_time_edit_page.dart';
-import './creditspage.dart';
+import 'credits_page.dart';
 import 'package:get/get.dart';
 
 import 'login_page.dart';
@@ -236,12 +238,21 @@ class OptionPage extends StatelessWidget {
                     CupertinoListTile(
                       title: const Text('关于 Celechron'),
                       trailing: BackChervonRow(
-                        child: Text('0.2.1 beta', style: trailingTextStyle),
+                        child: Text(celechronVersion, style: trailingTextStyle),
                       ),
                       onTap: () async {
                         Navigator.of(context, rootNavigator: true).push(
                             CupertinoPageRoute(
                                 builder: (context) => const CreditsPage()));
+                      },
+                    ),
+                    CupertinoListTile(
+                      title: const Text('前往项目网站'),
+                      onTap: () async {
+                        await launchUrlString(
+                          'https://celechron.top',
+                          mode: LaunchMode.externalApplication,
+                        );
                       },
                     ),
                   ]),

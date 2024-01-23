@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 class TwoLineCard extends StatefulWidget {
   final String title;
   final String content;
+  final String? extraContent;
   final bool withColoredFont;
   final bool animate;
   final VoidCallback? onTap;
@@ -17,6 +18,7 @@ class TwoLineCard extends StatefulWidget {
     super.key,
     required this.title,
     required this.content,
+    this.extraContent,
     this.animate = false,
     this.withColoredFont = false,
     this.onTap,
@@ -86,14 +88,32 @@ class _TwoLineCardState extends State<TwoLineCard>
                       fontWeight: FontWeight.normal,
                     )),
             const SizedBox(height: 8),
-            Text(
-              widget.content,
-              style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    fontFeatures: [const FontFeature.tabularFigures()],
-                    color: const Color.fromRGBO(0, 0, 0, 0),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  widget.content,
+                  style:
+                      CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            fontFeatures: [const FontFeature.tabularFigures()],
+                            color: const Color.fromRGBO(0, 0, 0, 0),
+                          ),
+                ),
+                if (widget.extraContent != null)
+                  Text(
+                    ' / ${widget.extraContent}',
+                    style: CupertinoTheme.of(context)
+                        .textTheme
+                        .textStyle
+                        .copyWith(
+                          fontSize: 12,
+                          fontFeatures: [const FontFeature.tabularFigures()],
+                          color: const Color.fromRGBO(0, 0, 0, 0),
+                        ),
                   ),
+              ],
             ),
           ],
         ),
@@ -146,17 +166,41 @@ class _TwoLineCardState extends State<TwoLineCard>
                   ),
                 ),
           const SizedBox(height: 2),
-          Text(
-            widget.content,
-            style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: (widget.withColoredFont &&
-                          brightness == Brightness.dark)
-                      ? CupertinoDynamicColor.resolve(
-                          widget.backgroundColor, context)
-                      : CupertinoTheme.of(context).textTheme.textStyle.color,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                widget.content,
+                style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: (widget.withColoredFont &&
+                              brightness == Brightness.dark)
+                          ? CupertinoDynamicColor.resolve(
+                              widget.backgroundColor, context)
+                          : CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .color,
+                    ),
+              ),
+              if (widget.extraContent != null)
+                Text(
+                  ' / ${widget.extraContent}',
+                  style:
+                      CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                            fontSize: 12,
+                            color: (widget.withColoredFont &&
+                                    brightness == Brightness.dark)
+                                ? CupertinoDynamicColor.resolve(
+                                    widget.backgroundColor, context)
+                                : CupertinoTheme.of(context)
+                                    .textTheme
+                                    .textStyle
+                                    .color,
+                          ),
                 ),
+            ],
           ),
         ],
       ),
