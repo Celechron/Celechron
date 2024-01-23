@@ -72,4 +72,26 @@ class TaskController extends GetxController {
     deadlineList
         .removeWhere((element) => element.deadlineType == DeadlineType.failed);
   }
+
+  int suspendAllDeadline(context) {
+    int count = 0;
+    for (var x in deadlineList) {
+      if (x.deadlineType == DeadlineType.running) {
+        x.deadlineType = DeadlineType.suspended;
+        count++;
+      }
+    }
+    return count;
+  }
+
+  int continueAllDeadline(context) {
+    int count = 0;
+    for (var x in deadlineList) {
+      if (x.deadlineType == DeadlineType.suspended) {
+        x.deadlineType = DeadlineType.running;
+        count++;
+      }
+    }
+    return count;
+  }
 }
