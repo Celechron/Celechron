@@ -9,13 +9,14 @@ class GpaHelper {
     var affectGpaList = grades.where((e) => e.gpaIncluded);
     var affectGpaCredit =
         affectGpaList.fold<double>(0.0, (p, e) => p + e.credit);
-    if (affectGpaCredit == 0.0) return Tuple([0.0, 0.0, 0.0], 0.0);
+    if (affectGpaCredit == 0.0) return Tuple([0.0, 0.0, 0.0, 0.0], 0.0);
     var sum = affectGpaList.fold<List<double>>(
-        [0.0, 0.0, 0.0],
+        [0.0, 0.0, 0.0, 0.0],
         (p, e) => [
               p[0] + e.fivePoint * e.credit,
               p[1] + e.fourPoint * e.credit,
-              p[2] + e.hundredPoint * e.credit
+              p[2] + e.fourPointLegacy * e.credit,
+              p[3] + e.hundredPoint * e.credit
             ]);
     return Tuple(sum.map((e) => e / affectGpaCredit).toList(), earnedCredits);
   }

@@ -22,6 +22,7 @@ dependencies:
   extended_sliver: any
   flutter_launcher_icons: any
   rename_app: any
+  url_launcher: any
 
 dev_dependencies:
   flutter_test:

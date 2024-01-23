@@ -27,11 +27,11 @@ class User {
   // 按课程号整理好的成绩单（方便算重修成绩）
   Map<String, List<Grade>> grades = {};
 
-  // 保研GPA, 三个数据依次为五分制，四分制，百分制
-  List<double> gpa = [0.0, 0.0, 0.0];
+  // 保研 GPA, 四个数据依次为五分制、四分制（4.3 分制）、原始的四分制、百分制
+  List<double> gpa = [0.0, 0.0, 0.0, 0.0];
 
-  // 出国GPA, 三个数据依次为五分制，四分制，百分制
-  List<double> aboardGpa = [0.0, 0.0, 0.0];
+  // 出国 GPA, 四个数据依次为五分制、四分制（4.3 分制）、原始的四分制、百分制
+  List<double> aboardGpa = [0.0, 0.0, 0.0, 0.0];
 
   // 所获学分
   double credit = 0.0;
@@ -82,8 +82,8 @@ class User {
     _password = "";
     semesters = [];
     grades = {};
-    gpa = [0.0, 0.0, 0.0];
-    aboardGpa = [0.0, 0.0, 0.0];
+    gpa = [0.0, 0.0, 0.0, 0.0];
+    aboardGpa = [0.0, 0.0, 0.0, 0.0];
     credit = 0.0;
     majorGpaAndCredit = [0.0, 0.0];
     isLogin = false;

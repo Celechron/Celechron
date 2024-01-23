@@ -1,3 +1,5 @@
+String celechronVersion = '0.2.1 beta';
+
 enum PeriodType { classes, test, user, virtual, flow }
 
 enum DeadlineType { running, suspended, completed, failed, deleted }

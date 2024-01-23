@@ -1,12 +1,13 @@
 class Grade {
-  String id;              // 课程号
-  String name;            // 课程名
-  double credit;          // 学分
-  String original;        // 原始成绩
-  double fivePoint;       // 五分制成绩
-  late double fourPoint;  // 四分制成绩
-  late int hundredPoint;  // 百分制成绩
-  bool major=false;       // 计入主修
+  String id; // 课程号
+  String name; // 课程名
+  double credit; // 学分
+  String original; // 原始成绩
+  double fivePoint; // 五分制成绩
+  late double fourPoint; // 四分制成绩（4.3 满分）
+  late double fourPointLegacy; // 原始的四分制成绩
+  late int hundredPoint; // 百分制成绩
+  bool major = false; // 计入主修
 
   // 计入GPA（弃修、待录、缓考、二级制的不计）
   late bool gpaIncluded;
@@ -53,43 +54,46 @@ class Grade {
   // 从所有成绩查询处爬取，因此不含主修标记
   Grade(Map<String, dynamic> json)
       : id = json['xkkh'] as String,
-        name = (json['kcmc'] as String).replaceAll('(','（').replaceAll(')', '）'),
+        name =
+            (json['kcmc'] as String).replaceAll('(', '（').replaceAll(')', '）'),
         credit = double.parse(json['xf'] as String),
         original = json['cj'] as String,
         fivePoint = double.parse(json['jd'] as String) {
     hundredPoint = _toHundredPoint[original] ?? int.parse(original);
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
-    creditIncluded =
-        original != "弃修" && original != "待录" && original != "缓考";
+    fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
+    creditIncluded = original != "弃修" && original != "待录" && original != "缓考";
     gpaIncluded = creditIncluded && original != "合格" && original != "不合格";
   }
 
   // 从主修成绩查询处爬取，因此打上主修标记
   Grade.fromMajor(Map<String, dynamic> json)
       : id = json['xkkh'] as String,
-        name = (json['kcmc'] as String).replaceAll('(','（').replaceAll(')', '）'),
+        name =
+            (json['kcmc'] as String).replaceAll('(', '（').replaceAll(')', '）'),
         credit = double.parse(json['xf'] as String),
         original = json['cj'] as String,
         fivePoint = double.parse(json['jd'] as String) {
     hundredPoint = _toHundredPoint[original] ?? int.parse(original);
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
-    creditIncluded =
-        original != "弃修" && original != "待录" && original != "缓考";
+    fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
+    creditIncluded = original != "弃修" && original != "待录" && original != "缓考";
     gpaIncluded = creditIncluded && original != "合格" && original != "不合格";
     major = true;
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'credit': credit,
-    'original': original,
-    'fivePoint': fivePoint,
-    'fourPoint': fourPoint,
-    'hundredPoint': hundredPoint,
-    'gpaIncluded': gpaIncluded,
-    'creditIncluded': creditIncluded,
-  };
+        'id': id,
+        'name': name,
+        'credit': credit,
+        'original': original,
+        'fivePoint': fivePoint,
+        'fourPoint': fourPoint,
+        'fourPointLegacy': fourPointLegacy,
+        'hundredPoint': hundredPoint,
+        'gpaIncluded': gpaIncluded,
+        'creditIncluded': creditIncluded,
+      };
 
   Grade.fromJson(Map<String, dynamic> json)
       : id = json['id'],
@@ -98,6 +102,7 @@ class Grade {
         original = json['original'],
         fivePoint = json['fivePoint'],
         fourPoint = json['fourPoint'],
+        fourPointLegacy = json['fourPointLegacy'] ?? 0.0,
         hundredPoint = json['hundredPoint'],
         gpaIncluded = json['gpaIncluded'],
         creditIncluded = json['creditIncluded'];

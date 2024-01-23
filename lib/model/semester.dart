@@ -53,8 +53,8 @@ class Semester {
   Map<DateTime, String> _holidays = {};
   Map<DateTime, DateTime> _exchanges = {};
 
-  // GPA, 三个数据依次为五分制，四分制，百分制
-  List<double> gpa = [0.0, 0.0, 0.0];
+  // GPA, 四个数据依次为五分制、四分制（4.3 分制）、原始的四分制、百分制
+  List<double> gpa = [0.0, 0.0, 0.0, 0.0];
   double credits = 0.0;
 
   Semester(this.name)
@@ -79,9 +79,11 @@ class Semester {
   int get courseCount {
     return _courses.length;
   }
+
   int get examCount {
     return _exams.length;
   }
+
   double get courseCredit {
     return _courses.values.fold(0.0, (p, e) => p + e.credit);
   }
@@ -363,11 +365,15 @@ class Semester {
       : name = json['name'] ?? DateTime.now().toIso8601String(),
         _courses = ((json['courses'] ?? {}) as Map).map((k, v) =>
             MapEntry(k as String, Course.fromJson(v as Map<String, dynamic>))),
-        _exams = ((json['exams'] ?? []) as List).map((e) => Exam.fromJson(e)).toList(),
-        _sessions =
-            ((json['sessions'] ?? []) as List).map((e) => Session.fromJson(e)).toList(),
-        _grades =
-            ((json['grades'] ?? []) as List).map((e) => Grade.fromJson(e)).toList(),
+        _exams = ((json['exams'] ?? []) as List)
+            .map((e) => Exam.fromJson(e))
+            .toList(),
+        _sessions = ((json['sessions'] ?? []) as List)
+            .map((e) => Session.fromJson(e))
+            .toList(),
+        _grades = ((json['grades'] ?? []) as List)
+            .map((e) => Grade.fromJson(e))
+            .toList(),
         gpa = ((json['gpa'] ?? []) as List).map((e) => e as double).toList(),
         credits = json['credits'] ?? 0.0,
         _sessionToTime = ((json['sessionToTime'] ?? []) as List)
