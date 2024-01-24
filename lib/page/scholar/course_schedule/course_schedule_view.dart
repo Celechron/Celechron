@@ -301,7 +301,18 @@ class CourseSchedulePage extends StatelessWidget {
                 child: Column(
                   children: [
                     _semesterPicker(context),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 8),
+                    Container(
+                      padding: const EdgeInsets.only(left: 16, right: 16),
+                      child: Text(
+                        '请前往教务网查看冲突选课课表',
+                        style: TextStyle(
+                            color: CupertinoDynamicColor.resolve(
+                                CupertinoColors.secondaryLabel, context),
+                            fontSize: 14),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
                     _courseSchedule(context),
                     const SizedBox(height: 20),
                   ],
