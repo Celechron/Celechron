@@ -7,6 +7,7 @@ import 'package:celechron/model/grade.dart';
 import 'package:get/get.dart';
 import 'package:celechron/utils/gpahelper.dart';
 import 'package:celechron/model/session.dart';
+import '../../model/exams_dto.dart';
 import 'exceptions.dart';
 
 class Zdbk {
@@ -191,6 +192,48 @@ class Zdbk {
                   as List<dynamic>)
               .where((e) => e['kcb'] != null)
               .map((e) => Session.fromZdbk(e)));
+    }
+  }
+
+  Future<Tuple<Exception?, Iterable<ExamDto>>> getExamsDto(
+      HttpClient httpClient) async {
+    late HttpClientRequest request;
+    late HttpClientResponse response;
+
+    try {
+      if (_jSessionId == null || _route == null) {
+        throw ExceptionWithMessage("未登录");
+      }
+      request = await httpClient
+          .postUrl(Uri.parse(
+          "http://zdbk.zju.edu.cn/jwglxt/xskscx/kscx_cxXsgrksIndex.html?doType=query&queryModel.showCount=5000"))
+          .timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      request.cookies.add(_jSessionId!);
+      request.cookies.add(_route!);
+      request.followRedirects = false;
+      response = await request.close().timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+
+      var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
+          .firstMatch(await response.transform(utf8.decoder).join())
+          ?.group(0);
+      if (transcriptJson == null) throw ExceptionWithMessage("无法解析");
+
+      var exams = (jsonDecode(transcriptJson) as List<dynamic>)
+          .where((e) => e['xkkh'] != null)
+          .map((e) => ExamDto.fromZdbk(e));
+      _db.setCachedWebPage('zdbk_exams', transcriptJson);
+      return Tuple(null, exams);
+    } catch (e) {
+      var exception =
+      e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      return Tuple(
+          exception,
+          (jsonDecode((_db.getCachedWebPage('zdbk_exams') ?? '[]'))
+          as List<dynamic>)
+              .where((e) => e['xkkh'] != null)
+              .map((e) => ExamDto.fromZdbk(e)));
     }
   }
 }

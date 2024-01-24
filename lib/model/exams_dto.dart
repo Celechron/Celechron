@@ -16,6 +16,13 @@ class ExamDto {
     exams = Exam.parseExams(json, id, name);
   }
 
+  ExamDto.fromZdbk(Map<String, dynamic> json) :
+    id = json['xkkh'] as String,
+    name = (json['kcmc'] as String).replaceAll('(','（').replaceAll(')', '）'),
+    credit = double.parse(json['xf'] as String) {
+    exams = Exam.parseExamsFromZdbk(json, id, name);
+  }
+
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,

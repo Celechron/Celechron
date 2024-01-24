@@ -161,7 +161,7 @@ class Spider {
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
       // 查考试
-      examFetches
+      /*examFetches
           .add(_appService.getExamsDto(_httpClient, yearStr, "1").then((value) {
         for (var e in value.item2) {
           outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
@@ -174,7 +174,7 @@ class Spider {
           outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => e.toString()));*/
       // 查课表
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {
@@ -215,8 +215,14 @@ class Spider {
     var fetches = <Future<String?>>[];
     fetches.add(Future.wait(semesterConfigFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
-    fetches.add(Future.wait(examFetches)
-        .then((value) => value.firstWhereOrNull((e) => e != null)));
+    /*fetches.add(Future.wait(examFetches)
+        .then((value) => value.firstWhereOrNull((e) => e != null)));*/
+    fetches.add(_zdbk.getExamsDto(_httpClient).then((value) {
+      for (var e in value.item2) {
+        outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
+      }
+      return value.item1?.toString();
+    }).catchError((e) => e.toString()));
     fetches.add(Future.wait(timetableFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
