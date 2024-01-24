@@ -88,7 +88,7 @@ class ScholarPage extends StatelessWidget {
   }
 
   final _scholarController = Get.put(ScholarController());
-  final _optionController = Get.find<OptionController>();
+  final _optionController = Get.put(OptionController());
 
   Widget _buildGradeBrief(BuildContext context) {
     return RoundRectangleCard(
