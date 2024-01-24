@@ -10,17 +10,17 @@ class Exam {
   String? location;
   String? seat;
 
-  Exam._fromExam(this.id, this.name, Map<String, dynamic> examList, this.type) {
+  Exam._fromAppService(this.id, this.name, Map<String, dynamic> json, this.type) {
     switch (type) {
       case ExamType.midterm:
-        time = TimeHelper.parseExamDateTime(examList['qzkssj']);
-        location = examList['qzksdd'];
-        seat = examList['qzzwxh'];
+        time = TimeHelper.parseExamDateTime(json['qzkssj']);
+        location = json['qzksdd'];
+        seat = json['qzzwxh'];
         break;
       case ExamType.finalExam:
-        time = TimeHelper.parseExamDateTime(examList['qmkssj']);
-        location = examList['qmksdd'];
-        seat = examList['zwxh'];
+        time = TimeHelper.parseExamDateTime(json['qmkssj']);
+        location = json['qmksdd'];
+        seat = json['zwxh'];
         break;
     }
   }
@@ -29,10 +29,37 @@ class Exam {
       Map<String, dynamic> json, String id, String name) {
     var exams = <Exam>[];
     if (json.containsKey("qzkssj")) {
-      exams.add(Exam._fromExam(id, name, json, ExamType.midterm));
+      exams.add(Exam._fromAppService(id, name, json, ExamType.midterm));
     }
     if (json.containsKey("qmkssj")) {
-      exams.add(Exam._fromExam(id, name, json, ExamType.finalExam));
+      exams.add(Exam._fromAppService(id, name, json, ExamType.finalExam));
+    }
+    return exams;
+  }
+
+  Exam._fromZdbk(this.id, this.name, Map<String, dynamic> json, this.type) {
+    switch (type) {
+      case ExamType.midterm:
+        time = TimeHelper.parseExamDateTime(json['qzkssj']);
+        location = json['qzjsmc'];
+        seat = json['qzzwxh'];
+        break;
+      case ExamType.finalExam:
+        time = TimeHelper.parseExamDateTime(json['kssj']);
+        location = json['jsmc'];
+        seat = json['zwxh'];
+        break;
+    }
+  }
+
+  static List<Exam> parseExamsFromZdbk(
+      Map<String, dynamic> json, String id, String name) {
+    var exams = <Exam>[];
+    if (json.containsKey("qzkssj")) {
+      exams.add(Exam._fromZdbk(id, name, json, ExamType.midterm));
+    }
+    if (json.containsKey("kssj")) {
+      exams.add(Exam._fromZdbk(id, name, json, ExamType.finalExam));
     }
     return exams;
   }
