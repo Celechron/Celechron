@@ -391,6 +391,10 @@ class Semester {
             .toList(),
         _holidays = ((json['holidays'] ?? {}) as Map)
             .map((k, v) => MapEntry(DateTime.parse(k as String), v as String)),
-        _exchanges = ((json['exchanges'] ?? {}) as Map).map((k, v) =>
-            MapEntry(DateTime.parse(k as String), DateTime.parse(v as String)));
+        _exchanges = ((json['exchanges'] ?? {}) as Map).map((k, v) => MapEntry(
+            DateTime.parse(k as String), DateTime.parse(v as String))) {
+    if (gpa.length == 3) {
+      gpa.insert(2, 0);
+    }
+  }
 }

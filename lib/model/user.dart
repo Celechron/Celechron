@@ -169,5 +169,11 @@ class User {
         .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
     lastUpdateTime = DateTime.parse(json['lastUpdateTime']);
     isLogin = true;
+    if (gpa.length == 3) {
+      gpa.insert(2, 0);
+    }
+    if (aboardGpa.length == 3) {
+      aboardGpa.insert(2, 0);
+    }
   }
 }
