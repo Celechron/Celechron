@@ -139,7 +139,7 @@ class Semester {
     List<Period> periods = [];
     for (var session in _sessions) {
       if (session.firstHalf) {
-        if (session.evenWeek) {
+        if (session.oddWeek) {
           for (var day in _dayOfWeekToDays[0][0][session.dayOfWeek]) {
             var period = Period(
                 uid: '${session.id}${session.dayOfWeek}${session.time.first}',
@@ -153,7 +153,7 @@ class Semester {
             periods.add(period);
           }
         }
-        if (session.oddWeek) {
+        if (session.evenWeek) {
           for (var day in _dayOfWeekToDays[0][1][session.dayOfWeek]) {
             var period = Period(
                 uid: '${session.id}${session.dayOfWeek}${session.time.first}',
@@ -169,7 +169,7 @@ class Semester {
         }
       }
       if (session.secondHalf) {
-        if (session.evenWeek) {
+        if (session.oddWeek) {
           for (var day in _dayOfWeekToDays[1][0][session.dayOfWeek]) {
             var period = Period(
               uid: '${session.id}${session.dayOfWeek}${session.time.first}',
@@ -184,7 +184,7 @@ class Semester {
             periods.add(period);
           }
         }
-        if (session.oddWeek) {
+        if (session.evenWeek) {
           for (var day in _dayOfWeekToDays[1][1][session.dayOfWeek]) {
             var period = Period(
               uid: '${session.id}${session.dayOfWeek}${session.time.first}',
