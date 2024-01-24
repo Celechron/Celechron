@@ -1,5 +1,4 @@
 // Official packages
-import 'package:celechron/page/option/option_controller.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -88,7 +87,6 @@ class ScholarPage extends StatelessWidget {
   }
 
   final _scholarController = Get.put(ScholarController());
-  final _optionController = Get.put(OptionController());
 
   Widget _buildGradeBrief(BuildContext context) {
     return RoundRectangleCard(
@@ -182,9 +180,7 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '五分制',
-                                          content: _scholarController.user
-                                              .getGPA(_optionController
-                                                  .gpaStrategy.value)[0]
+                                          content: _scholarController.gpa[0]
                                               .toStringAsFixed(2),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
@@ -205,13 +201,9 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '四分制',
-                                          content: _scholarController.user
-                                              .getGPA(_optionController
-                                                  .gpaStrategy.value)[1]
+                                          content: _scholarController.gpa[1]
                                               .toStringAsFixed(2),
-                                          extraContent: _scholarController.user
-                                              .getGPA(_optionController
-                                                  .gpaStrategy.value)[2]
+                                          extraContent: _scholarController.gpa[2]
                                               .toStringAsFixed(2),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
@@ -247,9 +239,7 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '百分制',
-                                          content: _scholarController.user
-                                              .getGPA(_optionController
-                                                  .gpaStrategy.value)[3]
+                                          content: _scholarController.gpa[3]
                                               .toStringAsFixed(2),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors

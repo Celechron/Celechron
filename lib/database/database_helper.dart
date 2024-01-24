@@ -28,11 +28,14 @@ class DatabaseHelper {
     originalWebPageBox = await Hive.openBox(dbOriginalWebPage);
   }
 
+
+
   // Options
   final String dbOptions = 'dbOptions';
   final String kWorkTime = 'workTime';
   final String kRestTime = 'restTime';
   final String kAllowTime = 'allowTime';
+  final String kGpaStrategy = 'gpaStrategy';
 
   Duration getWorkTime() {
     if (optionsBox.get(kWorkTime) == null) {
@@ -70,6 +73,19 @@ class DatabaseHelper {
     await optionsBox.put(kAllowTime, allowTime);
   }
 
+  int getGpaStrategy() {
+    if (optionsBox.get(kGpaStrategy) == null) {
+      optionsBox.put(kGpaStrategy, 0);
+    }
+    return optionsBox.get(kGpaStrategy);
+  }
+
+  Future<void> setGpaStrategy(int gpaStrategy) async {
+    await optionsBox.put(kGpaStrategy, gpaStrategy);
+  }
+
+
+
   // Flow
   final String dbFlow = 'dbFlow';
   final String kFlowList = 'flowList';
@@ -91,6 +107,8 @@ class DatabaseHelper {
   Future<void> setFlowListUpdateTime(DateTime flowListUpdateTime) async {
     await flowBox.put(kFlowListUpdateTime, flowListUpdateTime);
   }
+
+
 
   // Deadline
   final String dbDeadline = 'dbDeadline';
@@ -114,6 +132,8 @@ class DatabaseHelper {
       DateTime deadlineListUpdateTime) async {
     await deadlineBox.put(kDeadlineListUpdateTime, deadlineListUpdateTime);
   }
+
+
 
   // User
   final String dbUser = 'dbUser';

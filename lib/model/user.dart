@@ -50,10 +50,6 @@ class User {
     return semesters.fold(<Period>[], (p, e) => p + e.periods);
   }
 
-  List<double> getGPA(int gpaStrategy) {
-    return gpaStrategy == 0 ? gpa : aboardGpa;
-  }
-
   Semester get thisSemester {
     if (semesters.length > 1) {
       if (semesters[1]

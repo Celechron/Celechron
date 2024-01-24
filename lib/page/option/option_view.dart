@@ -93,9 +93,9 @@ class OptionPage extends StatelessWidget {
                                     .textStyle
                                     .copyWith(fontSize: 16)),
                           },
-                          groupValue: _optionController.gpaStrategy.value,
+                          groupValue: _optionController.gpaStrategy,
                           onValueChanged: (value) {
-                            _optionController.gpaStrategy.value = value!;
+                            _optionController.gpaStrategy = value!;
                           },
                         )),
                   ),
