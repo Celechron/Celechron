@@ -1,4 +1,4 @@
-String celechronVersion = '0.2.1 beta';
+String celechronVersion = '0.2.2 beta';
 
 enum PeriodType { classes, test, user, virtual, flow }
 

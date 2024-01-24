@@ -142,7 +142,11 @@ class _TwoLineCardState extends State<TwoLineCard>
         crossAxisAlignment: CrossAxisAlignment.start,
         // add a colored edge
         children: [
-          Text(widget.title,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              widget.title,
               style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
                     color: CupertinoTheme.of(context)
                         .textTheme
@@ -151,7 +155,9 @@ class _TwoLineCardState extends State<TwoLineCard>
                         .withOpacity(0.5),
                     fontSize: 14,
                     fontWeight: FontWeight.normal,
-                  )),
+                  ),
+            ),
+          ),
           const SizedBox(height: 2),
           widget.withColoredFont
               ? const SizedBox(height: 4)
@@ -166,30 +172,18 @@ class _TwoLineCardState extends State<TwoLineCard>
                   ),
                 ),
           const SizedBox(height: 2),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                widget.content,
-                style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: (widget.withColoredFont &&
-                              brightness == Brightness.dark)
-                          ? CupertinoDynamicColor.resolve(
-                              widget.backgroundColor, context)
-                          : CupertinoTheme.of(context)
-                              .textTheme
-                              .textStyle
-                              .color,
-                    ),
-              ),
-              if (widget.extraContent != null)
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
                 Text(
-                  ' / ${widget.extraContent}',
+                  widget.content,
                   style:
                       CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                            fontSize: 12,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
                             color: (widget.withColoredFont &&
                                     brightness == Brightness.dark)
                                 ? CupertinoDynamicColor.resolve(
@@ -200,7 +194,24 @@ class _TwoLineCardState extends State<TwoLineCard>
                                     .color,
                           ),
                 ),
-            ],
+                if (widget.extraContent != null)
+                  Text(
+                    ' / ${widget.extraContent}',
+                    style:
+                        CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+                              fontSize: 12,
+                              color: (widget.withColoredFont &&
+                                      brightness == Brightness.dark)
+                                  ? CupertinoDynamicColor.resolve(
+                                      widget.backgroundColor, context)
+                                  : CupertinoTheme.of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .color,
+                            ),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
