@@ -19,35 +19,40 @@ class CreditsPage extends StatelessWidget {
               SliverList(
                 delegate: SliverChildListDelegate([
                   const SizedBox(
-                    height: 72,
+                    height: 36,
                   ),
-                  Align(
-                    alignment: Alignment.center,
-                    child: Image.asset(
-                      "assets/logo.png",
-                      height: 160,
-                    ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        "assets/logo.png",
+                        height: 72,
+                      ),
+                      const SizedBox(
+                        width: 8,
+                      ),
+                      Column(
+                        children: [
+                          const Text(
+                            'Celechron',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 32,
+                            ),
+                          ),
+                          Text(
+                            '$celechronVersion 版本',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
                   ),
                   const SizedBox(
-                    height: 8,
-                  ),
-                  const Text(
-                    'Celechron',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 24,
-                    ),
-                  ),
-                  Text(
-                    '$celechronVersion 版本',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      fontSize: 12,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 16,
+                    height: 24,
                   ),
                   const Text(
                     '制作人员',
@@ -58,7 +63,7 @@ class CreditsPage extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(
-                    height: 16,
+                    height: 24,
                   ),
                   const Text(
                     '设计',
@@ -91,7 +96,7 @@ class CreditsPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(
-                    height: 16,
+                    height: 24,
                   ),
                   const Text(
                     '开发者',
@@ -124,7 +129,7 @@ class CreditsPage extends StatelessWidget {
                     ],
                   ),
                   const SizedBox(
-                    height: 16,
+                    height: 24,
                   ),
                   const Text(
                     '本程序采用 GPLv3 协议开源',
