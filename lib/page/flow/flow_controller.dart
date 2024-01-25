@@ -62,13 +62,15 @@ class FlowController extends GetxController {
     List<Deadline> deadlines = [];
     DateTime lastDeadlineEndsAt = startsAt;
     for (var x in deadlineList) {
-      if (x.deadlineStatus == DeadlineStatus.running) {
-        if (x.endTime.isBefore(startsAt)) {
-          return -1;
-        } else {
-          deadlines.add(x.copyWith());
-          if (x.endTime.isAfter(lastDeadlineEndsAt)) {
-            lastDeadlineEndsAt = x.endTime;
+      if (x.deadlineType == DeadlineType.normal) {
+        if (x.deadlineStatus == DeadlineStatus.running) {
+          if (x.endTime.isBefore(startsAt)) {
+            return -1;
+          } else {
+            deadlines.add(x.copyWith());
+            if (x.endTime.isAfter(lastDeadlineEndsAt)) {
+              lastDeadlineEndsAt = x.endTime;
+            }
           }
         }
       }
@@ -106,6 +108,30 @@ class FlowController extends GetxController {
         mappedList.add(tmpr);
       }
     });
+
+    List<Period> blockedPeriod = <Period>[];
+    for (var x in deadlineList) {
+      if (x.deadlineType == DeadlineType.fixed && x.blockArrangements) {
+        DateTime date = DateTime(startsAt.year, startsAt.month, startsAt.day);
+        while (!date.isAfter(dateOnly(lastDeadlineEndsAt))) {
+          List<Period> periods = x.getPeriodOfDay(date);
+          for (var p in periods) {
+            DateTime tmpl = p.startTime;
+            DateTime tmpr = p.endTime;
+            if (tmpr.isAfter(lastDeadlineEndsAt)) tmpr = lastDeadlineEndsAt;
+            if (tmpl.isBefore(startsAt)) tmpl = startsAt;
+            tmpl = tmpl.copyWith();
+            tmpr = tmpr.copyWith();
+
+            mappedList.add(tmpl);
+            mappedList.add(tmpr);
+            blockedPeriod.add(Period(startTime: tmpl, endTime: tmpr));
+          }
+          date = date.add(const Duration(days: 1));
+        }
+      }
+    }
+
     for (var x in _basePeriodList) {
       if (!x.startTime.isAfter(lastDeadlineEndsAt)) {
         mappedList.add(x.startTime.copyWith());
@@ -151,6 +177,14 @@ class FlowController extends GetxController {
         }
       }
     });
+
+    for (var p in blockedPeriod) {
+      int indexl = atListIndex[p.startTime]!;
+      int indexr = atListIndex[p.endTime]!;
+      for (int i = indexl; i < indexr; i++) {
+        useAble[i] = false;
+      }
+    }
 
     for (var x in _basePeriodList) {
       DateTime tmpl = x.startTime.copyWith();
@@ -210,10 +244,20 @@ class FlowController extends GetxController {
 
     Map<String, Deadline> existingUid = {};
     for (var x in deadlineList) {
-      existingUid[x.uid] = x;
+      if (x.deadlineType == DeadlineType.normal) {
+        existingUid[x.uid] = x;
+      }
     }
+
     for (var i = 0; i < flowList.length; i++) {
-      if (!existingUid.containsKey(flowList[i].fromUid)) {
+      if (flowList[i].type == PeriodType.user) {
+        flowList.removeAt(i);
+        i--;
+        continue;
+      }
+
+      if (flowList[i].type == PeriodType.flow &&
+          !existingUid.containsKey(flowList[i].fromUid)) {
         flowList.removeAt(i);
         i--;
       } else {
@@ -239,6 +283,11 @@ class FlowController extends GetxController {
         }
       }
     }
+
+    flowList.sort((a, b) {
+      return a.startTime.compareTo(b.startTime);
+    });
+
     while (flowList.isNotEmpty) {
       if (flowList[0].type == PeriodType.flow) {
         Duration prevProgress =
@@ -268,6 +317,23 @@ class FlowController extends GetxController {
         break;
       }
     }
+
+    for (var x in deadlineList) {
+      if (x.deadlineType == DeadlineType.fixed && x.blockArrangements) {
+        DateTime time = DateTime.now();
+        for (int i = 0; i < 5; i++) {
+          Period? period = x.deadlineOfTime(time);
+          if (period != null) {
+            flowList.add(period);
+          }
+          time = time.add(const Duration(days: 1));
+        }
+      }
+    }
+    flowList.sort((a, b) {
+      return a.startTime.compareTo(b.startTime);
+    });
+
     saveToDb();
   }
 

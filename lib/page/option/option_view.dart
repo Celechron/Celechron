@@ -141,10 +141,15 @@ class OptionPage extends StatelessWidget {
                                     Expanded(
                                       child: CupertinoTimerPicker(
                                         mode: CupertinoTimerPickerMode.hm,
+                                        minuteInterval: 5,
                                         initialTimerDuration: newWorkTime,
                                         onTimerDurationChanged: (value) {
-                                          if (value > Duration.zero) {
+                                          if (value >=
+                                              const Duration(minutes: 5)) {
                                             newWorkTime = value;
+                                          } else {
+                                            newWorkTime =
+                                                const Duration(minutes: 5);
                                           }
                                         },
                                       ),

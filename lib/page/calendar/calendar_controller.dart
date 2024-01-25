@@ -1,3 +1,5 @@
+import 'package:celechron/model/deadline.dart';
+import 'package:celechron/utils/utils.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:celechron/model/period.dart';
@@ -9,6 +11,7 @@ class CalendarController extends GetxController {
   final calendarFormat = CalendarFormat.month.obs;
   final events = <DateTime, List<Period>>{}.obs;
   final user = Get.find<Rx<User>>(tag: 'user');
+  final deadlineList = Get.find<RxList<Deadline>>(tag: 'deadlineList');
 
   static List<String> numToChinese = ['一', '二', '三', '四', '五', '六', '七', '八'];
 
@@ -55,7 +58,21 @@ class CalendarController extends GetxController {
 
   List<Period> getEventsForDay(DateTime day) {
     DateTime chop = chopDate(day);
-    var eventsOfDay = events[chop] ?? [];
+    var eventsOfDay = <Period>[];
+    if (events[chop] != null) {
+      for (var event in events[chop]!) {
+        eventsOfDay.add(event.copyWith());
+      }
+    }
+    for (var deadline in deadlineList) {
+      if (deadline.deadlineType == DeadlineType.fixed ||
+          deadline.deadlineType == DeadlineType.fixedlegacy) {
+        List<Period> periods = deadline.getPeriodOfDay(dateOnly(day));
+        for (var p in periods) {
+          eventsOfDay.add(p);
+        }
+      }
+    }
     eventsOfDay.sort((a, b) => a.startTime.compareTo(b.startTime));
     return eventsOfDay;
   }

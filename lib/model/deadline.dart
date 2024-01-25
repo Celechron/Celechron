@@ -3,10 +3,7 @@ import 'package:celechron/utils/utils.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
-
-DateTime dateOnly(DateTime date, {int? hour, int? minute}) {
-  return DateTime(date.year, date.month, date.day, hour ?? 0, minute ?? 0);
-}
+import 'package:quiver/time.dart';
 
 class DateTimePair {
   DateTime first, second;
@@ -23,13 +20,14 @@ DateTimePair? chopDatePeriod(
     return null;
   }
   DateTime l = dateOnly(date);
-  DateTime r = dateOnly(date, hour: 23, minute: 59);
+  DateTime r = dateOnly(date, hour: 24, minute: 00);
   if (isSameDay(date, startDate)) {
     l = dateOnly(date, hour: startTime.hour, minute: startTime.minute);
   }
   if (isSameDay(date, endDate)) {
     r = dateOnly(date, hour: endTime.hour, minute: endTime.minute);
   }
+  if (l == r) return null;
   return DateTimePair(first: l, second: r);
 }
 
@@ -64,6 +62,8 @@ class Deadline {
   int deadlineRepeatPeriod; // 固定日程重复的周期（单位为天）。
   @HiveField(13)
   DateTime deadlineRepeatEndsTime; // 固定日程重复的截止日期（没有时间）。晚于这个日期的话就不再重复。
+  @HiveField(14)
+  bool blockArrangements;
 
   Deadline({
     this.uid = '114514',
@@ -80,6 +80,7 @@ class Deadline {
     this.deadlineRepeatType = DeadlineRepeatType.norepeat,
     this.deadlineRepeatPeriod = 1,
     required this.deadlineRepeatEndsTime,
+    this.blockArrangements = true,
   });
 
   void reset() {
@@ -88,20 +89,20 @@ class Deadline {
     description = "";
     timeSpent = const Duration(minutes: 0);
     timeNeeded = const Duration(hours: 1);
-    endTime = DateTime.now().add(const Duration(days: 1));
-    endTime = DateTime(endTime.year, endTime.month, endTime.day, 23, 59);
+    endTime = DateTime.now();
+    endTime = DateTime(
+        endTime.year, endTime.month, endTime.day, endTime.hour, endTime.minute);
     location = "";
     summary = "";
     isBreakable = true;
 
     deadlineType = DeadlineType.normal;
-    startTime = DateTime.now();
-    startTime = DateTime(startTime.year, startTime.month, startTime.day,
-        startTime.hashCode, startTime.minute);
+    startTime = endTime;
     deadlineRepeatType = DeadlineRepeatType.norepeat;
     deadlineRepeatPeriod = 1;
     deadlineRepeatEndsTime =
         DateTime(startTime.year, startTime.month, startTime.day);
+    blockArrangements = true;
   }
 
   Deadline copyWith({
@@ -119,6 +120,7 @@ class Deadline {
     DeadlineRepeatType? deadlineRepeatType,
     int? deadlineRepeatPeriod,
     DateTime? deadlineRepeatEndsTime,
+    bool? blockArrangements,
   }) {
     return Deadline(
       uid: uid ?? this.uid,
@@ -136,6 +138,7 @@ class Deadline {
       deadlineRepeatPeriod: deadlineRepeatPeriod ?? this.deadlineRepeatPeriod,
       deadlineRepeatEndsTime:
           deadlineRepeatEndsTime ?? this.deadlineRepeatEndsTime,
+      blockArrangements: blockArrangements ?? this.blockArrangements,
     );
   }
 
@@ -144,43 +147,116 @@ class Deadline {
   }
 
   double getProgress() {
-    return 100.00 * timeSpent.inMicroseconds / timeNeeded.inMicroseconds;
+    double progress = 0;
+    if (deadlineType == DeadlineType.fixed) {
+      if (DateTime.now().isBefore(startTime)) {
+        progress = 0;
+      } else if (DateTime.now().isAfter(endTime)) {
+        progress = 1;
+      } else {
+        progress = (DateTime.now().difference(startTime).inSeconds) /
+            (endTime.difference(startTime).inSeconds);
+      }
+    } else if (deadlineType == DeadlineType.normal) {
+      progress = timeSpent.inSeconds / timeNeeded.inSeconds;
+    }
+    if (progress > 1) {
+      progress = 1;
+    }
+    if (progress < 0) {
+      progress = 0;
+    }
+    return progress;
   }
 
   void updateTimeSpent(Duration length) {
+    if (deadlineType != DeadlineType.normal) {
+      return;
+    }
     timeSpent = length;
     if (timeSpent > timeNeeded) {
       timeSpent = timeNeeded;
     }
-    refreshType();
+    refreshStatus();
   }
 
-  void refreshType() {
-    if (timeSpent >= timeNeeded) {
-      deadlineStatus = DeadlineStatus.completed;
-    } else if (endTime.isBefore(DateTime.now())) {
-      deadlineStatus = DeadlineStatus.failed;
+  void refreshStatus() {
+    if (deadlineType == DeadlineType.normal) {
+      if (timeSpent >= timeNeeded) {
+        deadlineStatus = DeadlineStatus.completed;
+      } else if (endTime.isBefore(DateTime.now())) {
+        deadlineStatus = DeadlineStatus.failed;
+      }
+    } else if (deadlineType == DeadlineType.fixed) {
+      if (startTime.isAfter(deadlineRepeatEndsTime)) {
+        deadlineStatus = DeadlineStatus.outdated;
+      } else {
+        deadlineStatus = DeadlineStatus.running;
+      }
     }
   }
 
-  void forceRefreshType() {
-    if (timeSpent >= timeNeeded) {
-      deadlineStatus = DeadlineStatus.completed;
-    } else if (endTime.isBefore(DateTime.now())) {
-      deadlineStatus = DeadlineStatus.failed;
-    } else {
-      deadlineStatus = DeadlineStatus.running;
+  void forceRefreshStatus() {
+    if (deadlineType == DeadlineType.normal) {
+      if (timeSpent >= timeNeeded) {
+        deadlineStatus = DeadlineStatus.completed;
+      } else if (endTime.isBefore(DateTime.now())) {
+        deadlineStatus = DeadlineStatus.failed;
+      } else {
+        deadlineStatus = DeadlineStatus.running;
+      }
+    } else if (deadlineType == DeadlineType.fixed) {
+      if (startTime.isAfter(deadlineRepeatEndsTime)) {
+        deadlineStatus = DeadlineStatus.outdated;
+      } else {
+        deadlineStatus = DeadlineStatus.running;
+      }
     }
   }
 
-  Period? getPeriodOfDay(DateTime date) {
+  void setToNextPeriod() {
+    if (deadlineType != DeadlineType.fixed ||
+        deadlineStatus == DeadlineStatus.outdated) {
+      return;
+    }
+    if (deadlineRepeatType == DeadlineRepeatType.norepeat) {
+      deadlineStatus = DeadlineStatus.outdated;
+    } else if (deadlineRepeatType == DeadlineRepeatType.days) {
+      if (deadlineRepeatPeriod < 1) {
+        deadlineRepeatPeriod = 1;
+      }
+      startTime = startTime.add(Duration(days: deadlineRepeatPeriod));
+      endTime = endTime.add(Duration(days: deadlineRepeatPeriod));
+    } else if (deadlineRepeatType == DeadlineRepeatType.month) {
+      DateTime nex = DateTime(startTime.year, startTime.month + 1, 1);
+      while (daysInMonth(nex.year, nex.month) < startTime.day) {
+        nex = DateTime(nex.year, nex.month + 1, 1);
+      }
+      nex = DateTime(nex.year, nex.month, startTime.day);
+      int difference = nex.difference(startTime).inDays;
+      startTime = startTime.add(Duration(days: difference));
+      endTime = endTime.add(Duration(days: difference));
+    } else if (deadlineRepeatType == DeadlineRepeatType.year) {
+      DateTime nex = DateTime(startTime.year + 1, startTime.month, 1);
+      while (daysInMonth(nex.year, nex.month) < startTime.day) {
+        nex = DateTime(nex.year + 1, nex.month, 1);
+      }
+      nex = DateTime(nex.year, startTime.month, startTime.day);
+      int difference = nex.difference(startTime).inDays;
+      startTime = startTime.add(Duration(days: difference));
+      endTime = endTime.add(Duration(days: difference));
+    }
+    if (dateOnly(startTime).isAfter(dateOnly(deadlineRepeatEndsTime))) {
+      deadlineStatus = DeadlineStatus.outdated;
+    }
+  }
+
+  Period? deadlineOfTime(DateTime dateTime) {
     if (deadlineType != DeadlineType.fixed) {
       return null;
     }
 
-    date = dateOnly(date);
-    DateTime startDate = dateOnly(startTime);
-    if (date.isBefore(startDate)) {
+    if (dateTime.isBefore(startTime)) {
       return null;
     }
 
@@ -195,44 +271,76 @@ class Deadline {
       summary: summary,
     );
 
+    if (deadlineRepeatType == DeadlineRepeatType.norepeat) {
+      if (!startTime.isAfter(dateTime) && !endTime.isBefore(dateTime)) {
+        return period.copyWith(
+            startTime: startTime.copyWith(), endTime: endTime.copyWith());
+      }
+      return null;
+    } else {
+      Deadline dummy = copyWith();
+      while (!dummy.startTime.isAfter(dateTime) &&
+          dummy.deadlineStatus != DeadlineStatus.outdated) {
+        if (!dummy.endTime.isBefore(dateTime)) {
+          return period.copyWith(
+              startTime: dummy.startTime.copyWith(),
+              endTime: dummy.endTime.copyWith());
+        }
+        dummy.setToNextPeriod();
+      }
+      return null;
+    }
+  }
+
+  List<Period> getPeriodOfDay(DateTime date) {
+    if (deadlineType != DeadlineType.fixed) {
+      return [];
+    }
+
+    date = dateOnly(date);
+    DateTime startDate = dateOnly(startTime);
+    if (date.isBefore(startDate)) {
+      return [];
+    }
+
+    Period period = Period(
+      fromUid: uid,
+      type: PeriodType.user,
+      description: description,
+      startTime: startTime,
+      endTime: endTime,
+      location: location,
+      lastUpdateTime: DateTime.now(),
+      summary: summary,
+    );
+    List<Period> ans = <Period>[];
+
     DateTimePair? pair;
     if (deadlineRepeatType == DeadlineRepeatType.norepeat) {
       pair = chopDatePeriod(startTime, endTime, date);
-    } else if (deadlineRepeatType == DeadlineRepeatType.days) {
-      if (deadlineRepeatPeriod <= 0) {
-        return null;
+      if (pair != null) {
+        ans.add(period.copyWith(
+          startTime: pair.first,
+          endTime: pair.second,
+        ));
       }
-      int difference = date.difference(startDate).inDays;
-      if (difference % deadlineRepeatPeriod != 0) {
-        return null;
+    } else {
+      Deadline dummy = copyWith();
+      while (!dateOnly(dummy.startTime).isAfter(date) &&
+          dummy.deadlineStatus != DeadlineStatus.outdated) {
+        if (!dateOnly(dummy.endTime).isBefore(date)) {
+          pair = chopDatePeriod(dummy.startTime, dummy.endTime, date);
+          if (pair != null) {
+            ans.add(period.copyWith(
+              startTime: pair.first,
+              endTime: pair.second,
+            ));
+          }
+        }
+        dummy.setToNextPeriod();
       }
-      DateTime thatStartTime = startTime.add(Duration(days: difference));
-      DateTime thatEndTime = endTime.add(Duration(days: difference));
-      pair = chopDatePeriod(thatStartTime, thatEndTime, date);
-    } else if (deadlineRepeatType == DeadlineRepeatType.month) {
-      if (date.day != startTime.day) {
-        return null;
-      }
-      int difference = date.difference(startDate).inDays;
-      DateTime thatStartTime = startTime.add(Duration(days: difference));
-      DateTime thatEndTime = endTime.add(Duration(days: difference));
-      pair = chopDatePeriod(thatStartTime, thatEndTime, date);
-    } else if (deadlineRepeatType == DeadlineRepeatType.year) {
-      if (date.day != startTime.day || date.month != startTime.month) {
-        return null;
-      }
-      int difference = date.difference(startDate).inDays;
-      DateTime thatStartTime = startTime.add(Duration(days: difference));
-      DateTime thatEndTime = endTime.add(Duration(days: difference));
-      pair = chopDatePeriod(thatStartTime, thatEndTime, date);
     }
 
-    if (pair == null) {
-      return null;
-    }
-    period.startTime = pair.first;
-    period.endTime = pair.second;
-
-    return period;
+    return ans;
   }
 }

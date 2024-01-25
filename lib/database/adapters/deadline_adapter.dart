@@ -48,7 +48,7 @@ class DeadlineAdapter extends TypeAdapter<Deadline> {
   @override
   void write(BinaryWriter writer, Deadline obj) {
     writer
-      ..writeByte(14)
+      ..writeByte(15)
       ..writeByte(0)
       ..write(obj.uid)
       ..writeByte(1)
@@ -76,7 +76,9 @@ class DeadlineAdapter extends TypeAdapter<Deadline> {
       ..writeByte(12)
       ..write(obj.deadlineRepeatPeriod)
       ..writeByte(13)
-      ..write(obj.deadlineRepeatEndsTime);
+      ..write(obj.deadlineRepeatEndsTime)
+      ..writeByte(14)
+      ..write(obj.blockArrangements);
   }
 
   @override
@@ -105,6 +107,7 @@ class DeadlineAdapter extends TypeAdapter<Deadline> {
           fields[11] as DeadlineRepeatType? ?? DeadlineRepeatType.norepeat
       ..deadlineRepeatPeriod = fields[12] as int? ?? 1
       ..deadlineRepeatEndsTime =
-          fields[13] as DateTime? ?? (fields[5] as DateTime);
+          fields[13] as DateTime? ?? (fields[5] as DateTime)
+      ..blockArrangements = fields[14] as bool? ?? true;
   }
 }

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 import 'dart:ui';
 import 'package:celechron/design/custom_colors.dart';
+import 'package:celechron/design/custom_decoration.dart';
 import 'package:celechron/utils/timehelper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -22,9 +23,14 @@ class FlowPage extends StatelessWidget {
   final db = Get.find<DatabaseHelper>(tag: 'db');
 
   Widget createFirst(context, Period period, String? title) {
-    Color themeColor = (period.type == PeriodType.flow
-        ? UidColors.colorFromUid(period.fromUid ?? '')
-        : CupertinoColors.systemTeal);
+    Color themeColor =
+        (period.type == PeriodType.flow || period.type == PeriodType.user
+            ? UidColors.colorFromUid(period.fromUid)
+            : period.type == PeriodType.test
+                ? Colors.red
+                : (period.type == PeriodType.classes
+                    ? TimeColors.colorFromHour(period.startTime.hour)
+                    : CupertinoColors.systemTeal));
     return Column(
       children: [
         title == null
@@ -49,22 +55,25 @@ class FlowPage extends StatelessWidget {
                         Container(
                           width: 12.0,
                           height: 12.0,
-                          decoration: BoxDecoration(
+                          decoration: customDecoration(
                             color: themeColor,
-                            shape: BoxShape.circle,
+                            shape: periodTypeShape[period.type]!,
                           ),
                         ),
                         const SizedBox(width: 8),
                         Expanded(
-                            child: Text(period.summary,
-                                style: CupertinoTheme.of(context)
-                                    .textTheme
-                                    .textStyle
-                                    .copyWith(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      overflow: TextOverflow.ellipsis,
-                                    ))),
+                          child: Text(
+                            period.summary,
+                            style: CupertinoTheme.of(context)
+                                .textTheme
+                                .textStyle
+                                .copyWith(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                          ),
+                        ),
                       ]),
                       Divider(
                         color: CupertinoDynamicColor.resolve(
@@ -114,7 +123,7 @@ class FlowPage extends StatelessWidget {
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                '${period.startTime.hour}:${period.startTime.minute.toString().padLeft(2, '0')} - ${period.endTime.hour}:${period.endTime.minute.toString().padLeft(2, '0')}',
+                                period.getTimePeriodHumanReadable(),
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.normal,
@@ -258,11 +267,14 @@ class FlowPage extends StatelessWidget {
   }
 
   Widget createCard(context, Period period, String? title) {
-    Color themeColor = (period.type == PeriodType.flow
-        ? UidColors.colorFromUid(period.fromUid ?? '')
-        : (period.type == PeriodType.classes
-            ? TimeColors.colorFromHour(period.startTime.hour)
-            : CupertinoColors.systemTeal));
+    Color themeColor =
+        (period.type == PeriodType.flow || period.type == PeriodType.user
+            ? UidColors.colorFromUid(period.fromUid)
+            : period.type == PeriodType.test
+                ? Colors.red
+                : (period.type == PeriodType.classes
+                    ? TimeColors.colorFromHour(period.startTime.hour)
+                    : CupertinoColors.systemTeal));
     return Column(
       children: [
         title == null
@@ -289,9 +301,9 @@ class FlowPage extends StatelessWidget {
                               Container(
                                 width: 12.0,
                                 height: 12.0,
-                                decoration: BoxDecoration(
+                                decoration: customDecoration(
                                   color: themeColor,
-                                  shape: BoxShape.circle,
+                                  shape: periodTypeShape[period.type]!,
                                 ),
                               ),
                               const SizedBox(width: 8.0),
@@ -321,7 +333,7 @@ class FlowPage extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                                 child: Text(
-                              '${TimeHelper.chineseDayRelation(period.startTime)}${period.startTime.hour}:${period.startTime.minute.toString().padLeft(2, '0')} - ${period.endTime.hour}:${period.endTime.minute.toString().padLeft(2, '0')}',
+                              '${TimeHelper.chineseDayRelation(period.startTime)}${period.getTimePeriodHumanReadable()}',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.normal,
