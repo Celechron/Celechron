@@ -24,7 +24,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
   void removeAndExit() {
     FormState().save();
     now.forceRefreshType();
-    now.deadlineType = DeadlineType.deleted;
+    now.deadlineStatus = DeadlineStatus.deleted;
     Navigator.of(context).pop(now);
   }
 

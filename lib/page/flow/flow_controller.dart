@@ -62,7 +62,7 @@ class FlowController extends GetxController {
     List<Deadline> deadlines = [];
     DateTime lastDeadlineEndsAt = startsAt;
     for (var x in deadlineList) {
-      if (x.deadlineType == DeadlineType.running) {
+      if (x.deadlineStatus == DeadlineStatus.running) {
         if (x.endTime.isBefore(startsAt)) {
           return -1;
         } else {
@@ -241,15 +241,21 @@ class FlowController extends GetxController {
     }
     while (flowList.isNotEmpty) {
       if (flowList[0].type == PeriodType.flow) {
-        Duration distan = DateTime.now().difference(flowList[0].startTime);
+        Duration prevProgress =
+            (flowList[0].lastUpdateTime ?? flowList[0].startTime)
+                .difference(flowList[0].startTime);
+        flowList[0].lastUpdateTime = DateTime.now();
+        Duration currProgress =
+            flowList[0].lastUpdateTime!.difference(flowList[0].startTime);
         Duration length = flowList[0].endTime.difference(flowList[0].startTime);
 
-        if (distan <= Duration.zero) break;
-        if (distan > length) distan = length;
+        if (currProgress <= Duration.zero) break;
+        if (currProgress > length) currProgress = length;
 
         for (var deadline in deadlineList) {
           if (deadline.uid != flowList[0].fromUid) continue;
-          deadline.updateTimeSpent(distan);
+          deadline.updateTimeSpent(
+              deadline.timeSpent - prevProgress + currProgress);
         }
         deadlineList.refresh();
         flowList.refresh();

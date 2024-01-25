@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/utils/timehelper.dart';
@@ -228,13 +229,15 @@ class FlowPage extends StatelessWidget {
                             Obx(() => SizedBox(
                                   height: 8,
                                   width: _flowController.isDuringFlow
-                                      ? (constraints.maxWidth) *
-                                          _flowController.timeNow.value
-                                              .difference(period.startTime)
-                                              .inMilliseconds /
-                                          period.endTime
-                                              .difference(period.startTime)
-                                              .inMilliseconds
+                                      ? (max(
+                                          (constraints.maxWidth) *
+                                              _flowController.timeNow.value
+                                                  .difference(period.startTime)
+                                                  .inMilliseconds /
+                                              period.endTime
+                                                  .difference(period.startTime)
+                                                  .inMilliseconds,
+                                          0.0))
                                       : (constraints.maxWidth),
                                   child: Container(
                                     decoration: BoxDecoration(

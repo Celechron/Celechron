@@ -143,7 +143,9 @@ class OptionPage extends StatelessWidget {
                                         mode: CupertinoTimerPickerMode.hm,
                                         initialTimerDuration: newWorkTime,
                                         onTimerDurationChanged: (value) {
-                                          newWorkTime = value;
+                                          if (value > Duration.zero) {
+                                            newWorkTime = value;
+                                          }
                                         },
                                       ),
                                     ),

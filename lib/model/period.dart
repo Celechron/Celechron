@@ -23,6 +23,9 @@ class Period {
   @HiveField(7)
   String summary;
 
+  @HiveField(8)
+  DateTime? lastUpdateTime;
+
   Period({
     this.uid = '1919810',
     this.fromUid,
@@ -32,6 +35,7 @@ class Period {
     required this.endTime,
     this.location = "胖可丁公会",
     this.summary = "不可思议迷宫导论",
+    this.lastUpdateTime,
   });
 
   Period copyWith({
@@ -43,6 +47,7 @@ class Period {
     DateTime? endTime,
     String? location,
     String? summary,
+    DateTime? lastUpdateTime,
   }) {
     return Period(
       uid: uid ?? this.uid,
@@ -53,6 +58,7 @@ class Period {
       endTime: endTime ?? this.endTime,
       location: location ?? this.location,
       summary: summary ?? this.summary,
+      lastUpdateTime: lastUpdateTime ?? this.lastUpdateTime,
     );
   }
 
