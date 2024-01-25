@@ -1,3 +1,4 @@
+import 'package:celechron/page/option/custom_license_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:celechron/utils/utils.dart';
@@ -243,6 +244,15 @@ class OptionPage extends StatelessWidget {
                         Navigator.of(context, rootNavigator: true).push(
                             CupertinoPageRoute(
                                 builder: (context) => const CreditsPage()));
+                      },
+                    ),
+                    CupertinoListTile(
+                      title: const Text('服务条款'),
+                      onTap: () async {
+                        Navigator.of(context, rootNavigator: true).push(
+                            CupertinoPageRoute(
+                                builder: (context) =>
+                                    const CustomLicensePage()));
                       },
                     ),
                     CupertinoListTile(
