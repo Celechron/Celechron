@@ -11,15 +11,19 @@ class TaskController extends GetxController {
   final _db = Get.find<DatabaseHelper>(tag: 'db');
 
   List<Deadline> get todoDeadlineList => deadlineList
-      .where((element) =>
-          element.deadlineStatus == DeadlineStatus.running ||
-          element.deadlineStatus == DeadlineStatus.suspended)
+      .where((element) => (element.deadlineType == DeadlineType.normal &&
+          (element.deadlineStatus == DeadlineStatus.running ||
+              element.deadlineStatus == DeadlineStatus.suspended)))
       .toList();
 
   List<Deadline> get doneDeadlineList => deadlineList
-      .where((element) =>
-          element.deadlineStatus == DeadlineStatus.completed ||
-          element.deadlineStatus == DeadlineStatus.failed)
+      .where((element) => (element.deadlineType == DeadlineType.normal &&
+          (element.deadlineStatus == DeadlineStatus.completed ||
+              element.deadlineStatus == DeadlineStatus.failed)))
+      .toList();
+
+  List<Deadline> get fixedDeadlineList => deadlineList
+      .where((element) => (element.deadlineType == DeadlineType.fixed))
       .toList();
 
   @override
@@ -52,31 +56,54 @@ class TaskController extends GetxController {
   void updateDeadlineList() {
     deadlineList.removeWhere(
         (element) => element.deadlineStatus == DeadlineStatus.deleted);
-    deadlineList.sort((a, b) => a.endTime.compareTo(b.endTime));
 
+    Set<String> existingUid = {};
+    List<Deadline> newDeadlineList = [];
     for (var deadline in deadlineList) {
-      if (deadline.timeSpent >= deadline.timeNeeded) {
-        deadline.deadlineStatus = DeadlineStatus.completed;
-      } else if (deadline.endTime.isBefore(DateTime.now())) {
-        deadline.deadlineStatus = DeadlineStatus.failed;
+      deadline.refreshStatus();
+      if (deadline.deadlineType == DeadlineType.normal) {
+        if (deadline.timeSpent >= deadline.timeNeeded) {
+          deadline.deadlineStatus = DeadlineStatus.completed;
+        } else if (deadline.endTime.isBefore(DateTime.now())) {
+          deadline.deadlineStatus = DeadlineStatus.failed;
+        }
+      } else if (deadline.deadlineType == DeadlineType.fixed) {
+        existingUid.add(deadline.uid);
+        while (deadline.endTime.isBefore(DateTime.now()) &&
+            deadline.deadlineStatus != DeadlineStatus.outdated) {
+          newDeadlineList.add(deadline.copyWith(
+            deadlineType: DeadlineType.fixedlegacy,
+            deadlineRepeatType: DeadlineRepeatType.norepeat,
+          ));
+          deadline.setToNextPeriod();
+        }
       }
     }
+    deadlineList.addAll(newDeadlineList);
+    deadlineList.removeWhere((element) =>
+        element.deadlineType == DeadlineType.fixedlegacy &&
+        !existingUid.contains(element.uid));
+
+    deadlineList.sort((a, b) => a.endTime.compareTo(b.endTime));
   }
 
   void removeCompletedDeadline(context) {
-    deadlineList.removeWhere(
-        (element) => element.deadlineStatus == DeadlineStatus.completed);
+    deadlineList.removeWhere((element) =>
+        element.deadlineType == DeadlineType.normal &&
+        element.deadlineStatus == DeadlineStatus.completed);
   }
 
   void removeFailedDeadline(context) {
-    deadlineList.removeWhere(
-        (element) => element.deadlineStatus == DeadlineStatus.failed);
+    deadlineList.removeWhere((element) =>
+        element.deadlineType == DeadlineType.normal &&
+        element.deadlineStatus == DeadlineStatus.failed);
   }
 
   int suspendAllDeadline(context) {
     int count = 0;
     for (var x in deadlineList) {
-      if (x.deadlineStatus == DeadlineStatus.running) {
+      if (x.deadlineType == DeadlineType.normal &&
+          x.deadlineStatus == DeadlineStatus.running) {
         x.deadlineStatus = DeadlineStatus.suspended;
         count++;
       }
@@ -87,7 +114,8 @@ class TaskController extends GetxController {
   int continueAllDeadline(context) {
     int count = 0;
     for (var x in deadlineList) {
-      if (x.deadlineStatus == DeadlineStatus.suspended) {
+      if (x.deadlineType == DeadlineType.normal &&
+          x.deadlineStatus == DeadlineStatus.suspended) {
         x.deadlineStatus = DeadlineStatus.running;
         count++;
       }

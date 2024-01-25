@@ -1,3 +1,4 @@
+import 'package:celechron/design/custom_decoration.dart';
 import 'package:celechron/page/flow/flow_controller.dart';
 import 'package:celechron/page/task/task_controller.dart';
 import 'package:celechron/utils/utils.dart';
@@ -18,7 +19,7 @@ class TaskPage extends StatelessWidget {
   final _flowController = Get.put(FlowController());
 
   String deadlineProgress(Deadline deadline) {
-    return '${(deadline.getProgress()).toInt()}% 已完成：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded <= deadline.timeSpent ? Duration.zero : (deadline.timeNeeded - deadline.timeSpent))}';
+    return '${(deadline.getProgress() * 100).toInt()}% 已完成：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded <= deadline.timeSpent ? Duration.zero : (deadline.timeNeeded - deadline.timeSpent))}';
   }
 
   Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
@@ -27,7 +28,7 @@ class TaskPage extends StatelessWidget {
         builder: (BuildContext context) {
           return CupertinoAlertDialog(
             title: Text(
-              '${deadline.summary}：${deadlineStatusName[deadline.deadlineStatus]!}',
+              '${deadline.summary}：${deadline.deadlineType == DeadlineType.normal ? deadlineStatusName[deadline.deadlineStatus]! : deadlineTypeName[DeadlineType.fixed]}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
             content: SizedBox(
@@ -37,12 +38,22 @@ class TaskPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(
-                      '截止于 ${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
-                    ),
-                    Text(
-                      deadlineProgress(deadline),
-                    ),
+                    if (deadline.deadlineType == DeadlineType.fixed) ...[
+                      Text(
+                        '开始于 ${toStringHumanReadable(deadline.startTime)}',
+                      ),
+                      Text(
+                        '结束于 ${toStringHumanReadable(deadline.endTime)}',
+                      ),
+                    ],
+                    if (deadline.deadlineType == DeadlineType.normal) ...[
+                      Text(
+                        '截止于 ${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
+                      ),
+                      Text(
+                        deadlineProgress(deadline),
+                      ),
+                    ],
                     if (deadline.location.isNotEmpty) ...[
                       Text(
                         '地点：${deadline.location}',
@@ -62,13 +73,14 @@ class TaskPage extends StatelessWidget {
                 onPressed: () => Navigator.of(context).pop(),
                 child: const Text('返回'),
               ),
-              if (deadline.timeSpent < deadline.timeNeeded)
+              if (deadline.deadlineType == DeadlineType.normal &&
+                  deadline.timeSpent < deadline.timeNeeded)
                 CupertinoDialogAction(
                   onPressed: () {
                     if (deadline.deadlineStatus != DeadlineStatus.completed) {
                       deadline.deadlineStatus = DeadlineStatus.completed;
                     } else {
-                      deadline.forceRefreshType();
+                      deadline.forceRefreshStatus();
                     }
                     _taskController.updateDeadlineListTime();
                     _taskController.deadlineList.refresh();
@@ -77,8 +89,9 @@ class TaskPage extends StatelessWidget {
                   child: Text(
                       '标记为${deadline.deadlineStatus == DeadlineStatus.completed ? '未' : ''}完成'),
                 ),
-              if (deadline.deadlineStatus == DeadlineStatus.running ||
-                  deadline.deadlineStatus == DeadlineStatus.suspended)
+              if (deadline.deadlineType == DeadlineType.normal &&
+                  (deadline.deadlineStatus == DeadlineStatus.running ||
+                      deadline.deadlineStatus == DeadlineStatus.suspended))
                 CupertinoDialogAction(
                   onPressed: () {
                     if (deadline.deadlineStatus == DeadlineStatus.running) {
@@ -105,11 +118,22 @@ class TaskPage extends StatelessWidget {
                       ) ??
                       deadline;
                   bool needUpdate = false;
-                  if (deadline.timeSpent != res.timeSpent ||
+                  if (deadline.deadlineType != res.deadlineType ||
+                      deadline.timeSpent != res.timeSpent ||
                       deadline.timeNeeded != res.timeNeeded ||
+                      (deadline.deadlineType == DeadlineType.fixed &&
+                          deadline.endTime != res.endTime) ||
                       deadline.endTime != res.endTime ||
                       deadline.deadlineStatus != res.deadlineStatus ||
-                      deadline.isBreakable != res.isBreakable) {
+                      deadline.isBreakable != res.isBreakable ||
+                      deadline.deadlineRepeatType != res.deadlineRepeatType ||
+                      deadline.deadlineRepeatPeriod !=
+                          res.deadlineRepeatPeriod ||
+                      deadline.deadlineRepeatEndsTime !=
+                          res.deadlineRepeatEndsTime ||
+                      (deadline.deadlineType == DeadlineType.fixed &&
+                          deadline.blockArrangements !=
+                              res.blockArrangements)) {
                     needUpdate = true;
                   }
                   deadline.uid = res.uid;
@@ -121,6 +145,12 @@ class TaskPage extends StatelessWidget {
                   deadline.location = res.location;
                   deadline.deadlineStatus = res.deadlineStatus;
                   deadline.isBreakable = res.isBreakable;
+                  deadline.deadlineType = res.deadlineType;
+                  deadline.startTime = res.startTime;
+                  deadline.deadlineRepeatType = res.deadlineRepeatType;
+                  deadline.deadlineRepeatPeriod = res.deadlineRepeatPeriod;
+                  deadline.deadlineRepeatEndsTime = res.deadlineRepeatEndsTime;
+                  deadline.blockArrangements = res.blockArrangements;
                   _taskController.updateDeadlineList();
                   if (needUpdate) {
                     _taskController.updateDeadlineListTime();
@@ -156,17 +186,16 @@ class TaskPage extends StatelessWidget {
   }
 
   Widget createCard(context, Deadline deadline, Color color, String? title) {
-    String deadlineEnds =
-        deadline.endTime.toIso8601String().replaceFirst(RegExp(r'T'), ' ');
-    deadlineEnds = deadlineEnds.substring(0, deadlineEnds.length - 7);
-    if (deadline.endTime.isBefore(DateTime.now())) {
-      deadlineEnds = '$deadlineEnds - 已过期';
-    }
-    return Column(children: [
-      title == null ? const SizedBox(height: 0) : SubtitleRow(subtitle: title),
-      RoundRectangleCard(
-        onTap: () => showCardDialog(context, deadline),
-        child: Padding(
+    double progress = deadline.getProgress();
+
+    return Column(
+      children: [
+        title == null
+            ? const SizedBox(height: 0)
+            : SubtitleRow(subtitle: title),
+        RoundRectangleCard(
+          onTap: () => showCardDialog(context, deadline),
+          child: Padding(
             padding: const EdgeInsets.only(left: 8, right: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -176,9 +205,9 @@ class TaskPage extends StatelessWidget {
                     Container(
                       width: 12.0,
                       height: 12.0,
-                      decoration: BoxDecoration(
+                      decoration: customDecoration(
                         color: color,
-                        shape: BoxShape.circle,
+                        shape: periodTypeShape[PeriodType.user]!,
                       ),
                     ),
                     const SizedBox(width: 8.0),
@@ -194,7 +223,14 @@ class TaskPage extends StatelessWidget {
                                   overflow: TextOverflow.ellipsis,
                                 ))),
                     const Spacer(),
-                    Text(deadlineStatusName[deadline.deadlineStatus]!,
+                    Text(
+                        deadline.deadlineType == DeadlineType.normal
+                            ? deadlineStatusName[deadline.deadlineStatus]!
+                            : (DateTime.now().isBefore(deadline.startTime)
+                                ? '未开始'
+                                : (!DateTime.now().isBefore(deadline.endTime)
+                                    ? '已结束'
+                                    : '进行中')),
                         style: CupertinoTheme.of(context)
                             .textTheme
                             .textStyle
@@ -206,19 +242,51 @@ class TaskPage extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8.0),
-                Row(children: [
-                  Icon(
-                    CupertinoIcons.time_solid,
-                    size: 14,
-                    color: CupertinoTheme.of(context)
-                        .textTheme
-                        .textStyle
-                        .color!
-                        .withOpacity(0.5),
-                  ),
-                  Expanded(
+                Row(
+                  children: [
+                    Icon(
+                      CupertinoIcons.time_solid,
+                      size: 14,
+                      color: CupertinoTheme.of(context)
+                          .textTheme
+                          .textStyle
+                          .color!
+                          .withOpacity(0.5),
+                    ),
+                    Expanded(
                       child: Text(
-                          ' 截止于：${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
+                        deadline.deadlineType == DeadlineType.fixed
+                            ? ' 开始于：${toStringHumanReadable(deadline.startTime)}'
+                            : ' 截止于：${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.normal,
+                          color: CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .color!
+                              .withOpacity(0.75),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                if (deadline.deadlineType == DeadlineType.fixed) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        CupertinoIcons.time,
+                        size: 14,
+                        color: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .color!
+                            .withOpacity(0.5),
+                      ),
+                      Expanded(
+                        child: Text(
+                          ' 结束于：${toStringHumanReadable(deadline.endTime)}',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.normal,
@@ -228,8 +296,12 @@ class TaskPage extends StatelessWidget {
                                 .color!
                                 .withOpacity(0.75),
                             overflow: TextOverflow.ellipsis,
-                          )))
-                ]),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
                 if (deadline.location.isNotEmpty) ...[
                   Row(children: [
                     Icon(
@@ -255,50 +327,52 @@ class TaskPage extends StatelessWidget {
                             )))
                   ]),
                 ],
-                Row(children: [
-                  Icon(
-                    CupertinoIcons.play_fill,
-                    size: 14,
-                    color: CupertinoTheme.of(context)
-                        .textTheme
-                        .textStyle
-                        .color!
-                        .withOpacity(0.5),
-                  ),
-                  Expanded(
-                      child: Text(deadlineProgress(deadline),
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.normal,
-                            color: CupertinoTheme.of(context)
-                                .textTheme
-                                .textStyle
-                                .color!
-                                .withOpacity(0.75),
-                            overflow: TextOverflow.ellipsis,
-                          ))),
-                ]),
-                if (deadline.deadlineStatus == DeadlineStatus.running) ...[
+                if (deadline.deadlineType == DeadlineType.normal)
+                  Row(children: [
+                    Icon(
+                      CupertinoIcons.play_fill,
+                      size: 14,
+                      color: CupertinoTheme.of(context)
+                          .textTheme
+                          .textStyle
+                          .color!
+                          .withOpacity(0.5),
+                    ),
+                    Expanded(
+                        child: Text(deadlineProgress(deadline),
+                            style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.normal,
+                              color: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .color!
+                                  .withOpacity(0.75),
+                              overflow: TextOverflow.ellipsis,
+                            ))),
+                  ]),
+                if (deadline.deadlineType == DeadlineType.fixed ||
+                    deadline.deadlineStatus == DeadlineStatus.running) ...[
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
-                    value: deadline.timeSpent.inSeconds /
-                        deadline.timeNeeded.inSeconds,
+                    value: progress,
                     backgroundColor: CupertinoDynamicColor.resolve(
                         CupertinoColors.separator, context),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
-                if (deadline.deadlineStatus == DeadlineStatus.suspended) ...[
+                if (deadline.deadlineType == DeadlineType.normal &&
+                    deadline.deadlineStatus == DeadlineStatus.suspended) ...[
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
-                    value: deadline.timeSpent.inSeconds /
-                        deadline.timeNeeded.inSeconds,
+                    value: progress,
                     backgroundColor: CupertinoDynamicColor.resolve(
                         CupertinoColors.separator, context),
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
-                if (deadline.deadlineStatus == DeadlineStatus.completed) ...[
+                if (deadline.deadlineType == DeadlineType.normal &&
+                    deadline.deadlineStatus == DeadlineStatus.completed) ...[
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
                     value: 1,
@@ -307,7 +381,8 @@ class TaskPage extends StatelessWidget {
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
-                if (deadline.deadlineStatus == DeadlineStatus.failed) ...[
+                if (deadline.deadlineType == DeadlineType.normal &&
+                    deadline.deadlineStatus == DeadlineStatus.failed) ...[
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
                     value: 0,
@@ -317,9 +392,11 @@ class TaskPage extends StatelessWidget {
                   ),
                 ],
               ],
-            )),
-      )
-    ]);
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   @override
@@ -419,27 +496,29 @@ class TaskPage extends StatelessWidget {
                 ],
               ),
             ),
-            Obx(() => (SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      return Container(
-                        padding: EdgeInsets.only(
-                          top: index == 0 ? 0 : 5,
-                          bottom: 5,
-                          left: 16,
-                          right: 16,
-                        ),
-                        child: createCard(
-                            context,
-                            _taskController.todoDeadlineList[index],
-                            UidColors.colorFromUid(
-                                _taskController.todoDeadlineList[index].uid),
-                            index == 0 ? '待办' : null),
-                      );
-                    },
-                    childCount: _taskController.todoDeadlineList.length,
-                  ),
-                ))),
+            Obx(
+              () => SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    return Container(
+                      padding: EdgeInsets.only(
+                        top: index == 0 ? 0 : 5,
+                        bottom: 5,
+                        left: 16,
+                        right: 16,
+                      ),
+                      child: createCard(
+                          context,
+                          _taskController.todoDeadlineList[index],
+                          UidColors.colorFromUid(
+                              _taskController.todoDeadlineList[index].uid),
+                          index == 0 ? '待办' : null),
+                    );
+                  },
+                  childCount: _taskController.todoDeadlineList.length,
+                ),
+              ),
+            ),
             Obx(
               () => SliverList(
                 delegate: SliverChildBuilderDelegate(
@@ -460,6 +539,29 @@ class TaskPage extends StatelessWidget {
                     );
                   },
                   childCount: _taskController.doneDeadlineList.length,
+                ),
+              ),
+            ),
+            Obx(
+              () => SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    return Container(
+                      padding: EdgeInsets.only(
+                        top: index == 0 ? 0 : 5,
+                        bottom: 5,
+                        left: 16,
+                        right: 16,
+                      ),
+                      child: createCard(
+                          context,
+                          _taskController.fixedDeadlineList[index],
+                          UidColors.colorFromUid(
+                              _taskController.fixedDeadlineList[index].uid),
+                          index == 0 ? '日程列表' : null),
+                    );
+                  },
+                  childCount: _taskController.fixedDeadlineList.length,
                 ),
               ),
             ),

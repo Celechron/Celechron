@@ -12,6 +12,10 @@ class TimeHelper {
     return '${dateTime.year} 年 ${dateTime.month} 月 ${dateTime.day} 日 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
+  static String chineseDate(DateTime date) {
+    return '${date.year} 年 ${date.month} 月 ${date.day} 日';
+  }
+
   static String chineseTime(DateTime begin, DateTime end) {
     return '${chineseDateTime(begin)} - ${end.hour}:${end.minute.toString().padLeft(2, '0')}';
   }

@@ -23,6 +23,7 @@ dependencies:
   flutter_launcher_icons: any
   rename_app: any
   url_launcher: any
+  quiver: ^3.2.1
 
 dev_dependencies:
   flutter_test:

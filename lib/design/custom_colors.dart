@@ -2,8 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 class UidColors {
-  static Color colorFromUid(String uid) {
-    int value = uid.hashCode;
+  static Color colorFromUid(String? uid) {
+    int value = (uid ?? '').hashCode;
     return HSLColor.fromAHSL(
             1.0,
             (20 + (value * 19 + 133) % 310),
