@@ -2,14 +2,18 @@ String celechronVersion = '0.2.2 beta';
 
 enum PeriodType { classes, test, user, virtual, flow }
 
-enum DeadlineType { running, suspended, completed, failed, deleted }
+enum DeadlineType { normal, fixed }
 
-Map<DeadlineType, String> deadlineTypeName = {
-  DeadlineType.running: '进行中',
-  DeadlineType.suspended: '已暂停',
-  DeadlineType.completed: '完成',
-  DeadlineType.failed: '失败',
-  DeadlineType.deleted: '已删除',
+enum DeadlineStatus { running, suspended, completed, failed, deleted }
+
+enum DeadlineRepeatType { norepeat, days, month, year }
+
+Map<DeadlineStatus, String> deadlineStatusName = {
+  DeadlineStatus.running: '进行中',
+  DeadlineStatus.suspended: '已暂停',
+  DeadlineStatus.completed: '完成',
+  DeadlineStatus.failed: '失败',
+  DeadlineStatus.deleted: '已删除',
 };
 
 String durationToString(Duration duration) {

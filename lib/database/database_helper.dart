@@ -17,7 +17,9 @@ class DatabaseHelper {
   Future<void> init() async {
     Hive.registerAdapter(DurationAdapter());
     Hive.registerAdapter(UserAdapter());
+    Hive.registerAdapter(DeadlineStatusAdapter());
     Hive.registerAdapter(DeadlineTypeAdapter());
+    Hive.registerAdapter(DeadlineRepeatTypeAdapter());
     Hive.registerAdapter(DeadlineAdapter());
     Hive.registerAdapter(PeriodTypeAdapter());
     Hive.registerAdapter(PeriodAdapter());
@@ -27,8 +29,6 @@ class DatabaseHelper {
     flowBox = await Hive.openBox(dbFlow);
     originalWebPageBox = await Hive.openBox(dbOriginalWebPage);
   }
-
-
 
   // Options
   final String dbOptions = 'dbOptions';
@@ -84,8 +84,6 @@ class DatabaseHelper {
     await optionsBox.put(kGpaStrategy, gpaStrategy);
   }
 
-
-
   // Flow
   final String dbFlow = 'dbFlow';
   final String kFlowList = 'flowList';
@@ -107,8 +105,6 @@ class DatabaseHelper {
   Future<void> setFlowListUpdateTime(DateTime flowListUpdateTime) async {
     await flowBox.put(kFlowListUpdateTime, flowListUpdateTime);
   }
-
-
 
   // Deadline
   final String dbDeadline = 'dbDeadline';
@@ -132,8 +128,6 @@ class DatabaseHelper {
       DateTime deadlineListUpdateTime) async {
     await deadlineBox.put(kDeadlineListUpdateTime, deadlineListUpdateTime);
   }
-
-
 
   // User
   final String dbUser = 'dbUser';

@@ -20,7 +20,7 @@ class PeriodAdapter extends TypeAdapter<Period> {
   @override
   void write(BinaryWriter writer, Period obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.uid)
       ..writeByte(1)
@@ -36,7 +36,9 @@ class PeriodAdapter extends TypeAdapter<Period> {
       ..writeByte(6)
       ..write(obj.location)
       ..writeByte(7)
-      ..write(obj.summary);
+      ..write(obj.summary)
+      ..writeByte(8)
+      ..write(obj.lastUpdateTime);
   }
 
   @override
@@ -45,7 +47,10 @@ class PeriodAdapter extends TypeAdapter<Period> {
     var fields = <int, dynamic>{
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Period(startTime: DateTime.now(), endTime: DateTime.now())
+    return Period(
+      startTime: DateTime.now(),
+      endTime: DateTime.now(),
+    )
       ..uid = fields[0] as String
       ..fromUid = fields[1] as String?
       ..type = fields[2] as PeriodType
@@ -53,6 +58,7 @@ class PeriodAdapter extends TypeAdapter<Period> {
       ..startTime = fields[4] as DateTime
       ..endTime = fields[5] as DateTime
       ..location = fields[6] as String
-      ..summary = fields[7] as String;
+      ..summary = fields[7] as String
+      ..lastUpdateTime = fields[8] as DateTime?;
   }
 }

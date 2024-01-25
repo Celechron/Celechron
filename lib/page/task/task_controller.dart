@@ -12,14 +12,14 @@ class TaskController extends GetxController {
 
   List<Deadline> get todoDeadlineList => deadlineList
       .where((element) =>
-          element.deadlineType == DeadlineType.running ||
-          element.deadlineType == DeadlineType.suspended)
+          element.deadlineStatus == DeadlineStatus.running ||
+          element.deadlineStatus == DeadlineStatus.suspended)
       .toList();
 
   List<Deadline> get doneDeadlineList => deadlineList
       .where((element) =>
-          element.deadlineType == DeadlineType.completed ||
-          element.deadlineType == DeadlineType.failed)
+          element.deadlineStatus == DeadlineStatus.completed ||
+          element.deadlineStatus == DeadlineStatus.failed)
       .toList();
 
   @override
@@ -50,34 +50,34 @@ class TaskController extends GetxController {
   }
 
   void updateDeadlineList() {
-    deadlineList
-        .removeWhere((element) => element.deadlineType == DeadlineType.deleted);
+    deadlineList.removeWhere(
+        (element) => element.deadlineStatus == DeadlineStatus.deleted);
     deadlineList.sort((a, b) => a.endTime.compareTo(b.endTime));
 
     for (var deadline in deadlineList) {
       if (deadline.timeSpent >= deadline.timeNeeded) {
-        deadline.deadlineType = DeadlineType.completed;
+        deadline.deadlineStatus = DeadlineStatus.completed;
       } else if (deadline.endTime.isBefore(DateTime.now())) {
-        deadline.deadlineType = DeadlineType.failed;
+        deadline.deadlineStatus = DeadlineStatus.failed;
       }
     }
   }
 
   void removeCompletedDeadline(context) {
     deadlineList.removeWhere(
-        (element) => element.deadlineType == DeadlineType.completed);
+        (element) => element.deadlineStatus == DeadlineStatus.completed);
   }
 
   void removeFailedDeadline(context) {
-    deadlineList
-        .removeWhere((element) => element.deadlineType == DeadlineType.failed);
+    deadlineList.removeWhere(
+        (element) => element.deadlineStatus == DeadlineStatus.failed);
   }
 
   int suspendAllDeadline(context) {
     int count = 0;
     for (var x in deadlineList) {
-      if (x.deadlineType == DeadlineType.running) {
-        x.deadlineType = DeadlineType.suspended;
+      if (x.deadlineStatus == DeadlineStatus.running) {
+        x.deadlineStatus = DeadlineStatus.suspended;
         count++;
       }
     }
@@ -87,8 +87,8 @@ class TaskController extends GetxController {
   int continueAllDeadline(context) {
     int count = 0;
     for (var x in deadlineList) {
-      if (x.deadlineType == DeadlineType.suspended) {
-        x.deadlineType = DeadlineType.running;
+      if (x.deadlineStatus == DeadlineStatus.suspended) {
+        x.deadlineStatus = DeadlineStatus.running;
         count++;
       }
     }

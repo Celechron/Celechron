@@ -6,9 +6,9 @@ class UidColors {
     int value = uid.hashCode;
     return HSLColor.fromAHSL(
             1.0,
-            (20 + (value + 133) % 310),
-            (80 + (value + 155) % 20) / 100.00,
-            (60 + (value + 494) % 20) / 100.00)
+            (20 + (value * 19 + 133) % 310),
+            (80 + (value * 17 + 155) % 20) / 100.00,
+            (60 + (value * 13 + 494) % 20) / 100.00)
         .toColor();
   }
 }
