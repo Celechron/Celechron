@@ -6,6 +6,7 @@ class Session {
   bool confirmed;
   int dayOfWeek;
   late List<int> time;
+  bool? grsClass;
 
   // firstHalf : 秋/春 需要上课
   // secondHalf: 夏/冬 需要上课
@@ -22,6 +23,12 @@ class Session {
   String get semesterId => id!.substring(1, 12);
 
   static const String dayMap = '零一二三四五六日';
+
+  Session.empty()
+    : confirmed = true,
+      oddWeek = false,
+      evenWeek = false,
+      dayOfWeek = 1;
 
   Session(Map<String, dynamic> json)
       : id = RegExp(r'(.*?-){5}\d+(?=.*\d{10})')
@@ -83,6 +90,7 @@ class Session {
     'day': dayOfWeek,
     'time': time,
     'location': location,
+    'grsClass': grsClass,
   };
 
   Session.fromJson(Map<String, dynamic> json)
@@ -96,7 +104,8 @@ class Session {
         evenWeek = json['evenWeek'],
         dayOfWeek = json['day'],
         time = List<int>.from(json['time']),
-        location = json['location'];
+        location = json['location'],
+        grsClass = json['grsClass'];
 
   String get chineseTime {
     var timeString = '${(oddWeek & evenWeek) ? '' : oddWeek ? '单 - ' : '双 - '}周${dayMap[dayOfWeek]}第';
@@ -109,5 +118,9 @@ class Session {
     timeString.trimRight();
     timeString += '节';
     return timeString;
+  }
+
+  bool get isGrsClass {
+    return grsClass ?? false;
   }
 }
