@@ -1,3 +1,5 @@
+import 'package:celechron/utils/utils.dart';
+
 class TimeHelper {
   static List<DateTime> parseExamDateTime(String datetimeStr) {
     // Input format: 2021年01月22日(08:00-10:00)
@@ -36,6 +38,19 @@ class TimeHelper {
     var minutes = duration.inMinutes - hours * 60;
     var seconds = duration.inSeconds - hours * 3600 - minutes * 60;
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
+  }
+
+  static String chineseDayAfterRelation(DateTime now, DateTime nex) {
+    now = dateOnly(now);
+    nex = dateOnly(nex);
+    int diff = nex.difference(now).inDays;
+    if (diff <= 0) {
+      return '';
+    } else if (diff == 1) {
+      return '次日 ';
+    } else {
+      return '$diff 天后 ';
+    }
   }
 
   static String chineseDayRelation(DateTime date) {

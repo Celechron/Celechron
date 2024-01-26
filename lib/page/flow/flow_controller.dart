@@ -319,12 +319,17 @@ class FlowController extends GetxController {
     }
 
     for (var x in deadlineList) {
-      if (x.deadlineType == DeadlineType.fixed && x.blockArrangements) {
+      if (x.deadlineType == DeadlineType.fixed) {
         DateTime time = DateTime.now();
+        // ignore: avoid_init_to_null
+        DateTime? last = null;
         for (int i = 0; i < 5; i++) {
-          Period? period = x.deadlineOfTime(time);
+          Period? period = x.deadlineOfTime(time, predicting: true);
           if (period != null) {
-            flowList.add(period);
+            if (last == null || last.compareTo(period.startTime) != 0) {
+              flowList.add(period);
+              last = period.startTime.copyWith();
+            }
           }
           time = time.add(const Duration(days: 1));
         }
