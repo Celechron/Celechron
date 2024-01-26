@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/http/time_config_service.dart';
+import 'package:celechron/http/zjuServices/grs_new.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:get/get.dart';
 
@@ -18,6 +19,7 @@ class Spider {
   late String _password;
   late AppService _appService;
   late Zdbk _zdbk;
+  late GrsNew _grsNew;
   late TimeConfigService _timeConfigService;
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
@@ -29,6 +31,7 @@ class Spider {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     _appService = AppService();
     _zdbk = Zdbk();
+    _grsNew = GrsNew();
     _timeConfigService = TimeConfigService();
     _username = username;
     _password = password;
@@ -57,6 +60,12 @@ class Spider {
           .then((value) => null as String?)
           .timeout(const Duration(seconds: 8))
           .catchError((e) => "无法登录教务网，$e"),
+      _grsNew
+          .login(_httpClient, _iPlanetDirectoryPro)
+          // ignore: unnecessary_cast
+          .then((value) => null as String?)
+          .timeout(const Duration(seconds: 8))
+          .catchError((e) => "无法登录研究生院网，$e"),
     ]).then((value) {
       if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
       return [value[0], value[1]];
@@ -70,6 +79,7 @@ class Spider {
     _iPlanetDirectoryPro = null;
     _appService.logout();
     _zdbk.logout();
+    _grsNew.logout();
     Get.find<DatabaseHelper>(tag: 'db').removeAllCachedWebPage();
   }
 
@@ -202,6 +212,37 @@ class Spider {
       }).catchError((e) => e.toString()));
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "2|夏").then((value) {
+        for (var e in value.item2) {
+          outSemesters[semesterIndexMap['$yearStr-2']!]
+              .addSession(e, '$yearStr-2');
+        }
+        return value.item1?.toString();
+      }).catchError((e) => e.toString()));
+      timetableFetches
+          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
+        for (var e in value.item2) {
+          outSemesters[semesterIndexMap['$yearStr-1']!]
+              .addSession(e, '$yearStr-1');
+        }
+        return value.item1?.toString();
+      }).catchError((e) => e.toString()));
+      timetableFetches
+          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 12).then((value) {
+        for (var e in value.item2) {
+          outSemesters[semesterIndexMap['$yearStr-1']!]
+              .addSession(e, '$yearStr-1');
+        }
+        return value.item1?.toString();
+      }).catchError((e) => e.toString()));
+      timetableFetches
+          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
+        for (var e in value.item2) {
+          outSemesters[semesterIndexMap['$yearStr-2']!]
+              .addSession(e, '$yearStr-2');
+        }
+        return value.item1?.toString();
+      }).catchError((e) => e.toString()));timetableFetches
+          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
         for (var e in value.item2) {
           outSemesters[semesterIndexMap['$yearStr-2']!]
               .addSession(e, '$yearStr-2');
