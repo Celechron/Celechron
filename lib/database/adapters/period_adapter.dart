@@ -20,7 +20,7 @@ class PeriodAdapter extends TypeAdapter<Period> {
   @override
   void write(BinaryWriter writer, Period obj) {
     writer
-      ..writeByte(9)
+      ..writeByte(10)
       ..writeByte(0)
       ..write(obj.uid)
       ..writeByte(1)
@@ -38,7 +38,9 @@ class PeriodAdapter extends TypeAdapter<Period> {
       ..writeByte(7)
       ..write(obj.summary)
       ..writeByte(8)
-      ..write(obj.lastUpdateTime);
+      ..write(obj.lastUpdateTime)
+      ..writeByte(9)
+      ..write(obj.fromFromUid);
   }
 
   @override
@@ -59,6 +61,7 @@ class PeriodAdapter extends TypeAdapter<Period> {
       ..endTime = fields[5] as DateTime
       ..location = fields[6] as String
       ..summary = fields[7] as String
-      ..lastUpdateTime = fields[8] as DateTime?;
+      ..lastUpdateTime = fields[8] as DateTime?
+      ..fromFromUid = fields[9] as String?;
   }
 }

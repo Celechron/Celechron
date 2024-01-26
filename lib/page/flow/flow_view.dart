@@ -27,7 +27,7 @@ class FlowPage extends StatelessWidget {
         (period.type == PeriodType.flow || period.type == PeriodType.user
             ? UidColors.colorFromUid(period.fromUid)
             : period.type == PeriodType.test
-                ? Colors.red
+                ? CupertinoColors.systemPink
                 : (period.type == PeriodType.classes
                     ? TimeColors.colorFromHour(period.startTime.hour)
                     : CupertinoColors.systemTeal));
@@ -273,7 +273,7 @@ class FlowPage extends StatelessWidget {
         (period.type == PeriodType.flow || period.type == PeriodType.user
             ? UidColors.colorFromUid(period.fromUid)
             : period.type == PeriodType.test
-                ? Colors.red
+                ? CupertinoColors.systemPink
                 : (period.type == PeriodType.classes
                     ? TimeColors.colorFromHour(period.startTime.hour)
                     : CupertinoColors.systemTeal));

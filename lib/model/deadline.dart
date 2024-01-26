@@ -64,6 +64,8 @@ class Deadline {
   DateTime deadlineRepeatEndsTime; // 固定日程重复的截止日期（没有时间）。晚于这个日期的话就不再重复。
   @HiveField(14)
   bool blockArrangements;
+  @HiveField(15)
+  String? fromUid;
 
   Deadline({
     this.uid = '114514',
@@ -81,6 +83,7 @@ class Deadline {
     this.deadlineRepeatPeriod = 1,
     required this.deadlineRepeatEndsTime,
     this.blockArrangements = true,
+    this.fromUid,
   });
 
   void reset() {
@@ -103,6 +106,26 @@ class Deadline {
     deadlineRepeatEndsTime =
         DateTime(startTime.year, startTime.month, startTime.day);
     blockArrangements = true;
+    fromUid = null;
+  }
+
+  void copy(Deadline another) {
+    uid = another.uid;
+    deadlineStatus = another.deadlineStatus;
+    description = another.description;
+    timeSpent = another.timeSpent;
+    timeNeeded = another.timeNeeded;
+    endTime = another.endTime;
+    location = another.location;
+    summary = another.summary;
+    isBreakable = another.isBreakable;
+    deadlineType = another.deadlineType;
+    startTime = another.startTime;
+    deadlineRepeatType = another.deadlineRepeatType;
+    deadlineRepeatPeriod = another.deadlineRepeatPeriod;
+    deadlineRepeatEndsTime = another.deadlineRepeatEndsTime;
+    blockArrangements = another.blockArrangements;
+    fromUid = another.fromUid;
   }
 
   Deadline copyWith({
@@ -121,6 +144,7 @@ class Deadline {
     int? deadlineRepeatPeriod,
     DateTime? deadlineRepeatEndsTime,
     bool? blockArrangements,
+    String? fromUid,
   }) {
     return Deadline(
       uid: uid ?? this.uid,
@@ -139,6 +163,7 @@ class Deadline {
       deadlineRepeatEndsTime:
           deadlineRepeatEndsTime ?? this.deadlineRepeatEndsTime,
       blockArrangements: blockArrangements ?? this.blockArrangements,
+      fromUid: fromUid ?? this.fromUid,
     );
   }
 
@@ -214,13 +239,14 @@ class Deadline {
     }
   }
 
-  void setToNextPeriod() {
+  bool setToNextPeriod() {
     if (deadlineType != DeadlineType.fixed ||
         deadlineStatus == DeadlineStatus.outdated) {
-      return;
+      return false;
     }
     if (deadlineRepeatType == DeadlineRepeatType.norepeat) {
       deadlineStatus = DeadlineStatus.outdated;
+      return false;
     } else if (deadlineRepeatType == DeadlineRepeatType.days) {
       if (deadlineRepeatPeriod < 1) {
         deadlineRepeatPeriod = 1;
@@ -249,6 +275,7 @@ class Deadline {
     if (dateOnly(startTime).isAfter(dateOnly(deadlineRepeatEndsTime))) {
       deadlineStatus = DeadlineStatus.outdated;
     }
+    return true;
   }
 
   Period? deadlineOfTime(DateTime dateTime, {bool predicting = false}) {
@@ -322,6 +349,7 @@ class Deadline {
       location: location,
       lastUpdateTime: DateTime.now(),
       summary: summary,
+      fromFromUid: deadlineType == DeadlineType.fixed ? null : fromUid,
     );
     List<Period> ans = <Period>[];
 
@@ -352,5 +380,23 @@ class Deadline {
     }
 
     return ans;
+  }
+
+  bool differentForFlow(Deadline another) {
+    if (deadlineType != another.deadlineType ||
+        timeSpent != another.timeSpent ||
+        timeNeeded != another.timeNeeded ||
+        (deadlineType == DeadlineType.fixed && endTime != another.endTime) ||
+        endTime != another.endTime ||
+        deadlineStatus != another.deadlineStatus ||
+        isBreakable != another.isBreakable ||
+        deadlineRepeatType != another.deadlineRepeatType ||
+        deadlineRepeatPeriod != another.deadlineRepeatPeriod ||
+        deadlineRepeatEndsTime != another.deadlineRepeatEndsTime ||
+        (deadlineType == DeadlineType.fixed &&
+            blockArrangements != another.blockArrangements)) {
+      return true;
+    }
+    return false;
   }
 }

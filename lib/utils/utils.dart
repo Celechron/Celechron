@@ -11,6 +11,7 @@ enum DeadlineRepeatType { norepeat, days, month, year }
 const Map<DeadlineType, String> deadlineTypeName = {
   DeadlineType.normal: 'DDL',
   DeadlineType.fixed: '日程',
+  DeadlineType.fixedlegacy: '过去日程',
 };
 
 const Map<DeadlineStatus, String> deadlineStatusName = {

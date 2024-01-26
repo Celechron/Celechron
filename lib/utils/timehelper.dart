@@ -23,7 +23,7 @@ class TimeHelper {
   }
 
   static String chineseDay(DateTime date) {
-    var dayStr = '${date.month}月${date.day}日';
+    var dayStr = '${date.month} 月 ${date.day} 日 ';
     return dayStr;
   }
 
