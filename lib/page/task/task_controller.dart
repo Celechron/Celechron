@@ -73,19 +73,25 @@ class TaskController extends GetxController {
         existingUid.add(deadline.uid);
         while (deadline.endTime.isBefore(DateTime.now()) &&
             deadline.deadlineStatus != DeadlineStatus.outdated) {
-          newDeadlineList.add(deadline.copyWith(
+          Deadline temp = deadline.copyWith(
             summary: '${deadline.summary}（过去日程）',
             deadlineType: DeadlineType.fixedlegacy,
             deadlineRepeatType: DeadlineRepeatType.norepeat,
-          ));
-          deadline.setToNextPeriod();
+            fromUid: deadline.uid,
+          );
+          if (deadline.setToNextPeriod()) {
+            temp.genUid();
+            newDeadlineList.add(temp);
+          } else {
+            break;
+          }
         }
       }
     }
     deadlineList.addAll(newDeadlineList);
     deadlineList.removeWhere((element) =>
         element.deadlineType == DeadlineType.fixedlegacy &&
-        !existingUid.contains(element.uid));
+        !existingUid.contains(element.fromUid));
 
     deadlineList.sort((a, b) => a.endTime.compareTo(b.endTime));
   }

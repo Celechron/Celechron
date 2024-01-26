@@ -1,5 +1,8 @@
 import 'package:celechron/design/custom_decoration.dart';
 import 'package:celechron/design/sub_title.dart';
+import 'package:celechron/model/deadline.dart';
+import 'package:celechron/page/task/task_controller.dart';
+import 'package:celechron/page/task/task_edit_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -15,6 +18,8 @@ import 'calendar_controller.dart';
 class CalendarPage extends StatelessWidget {
   CalendarPage({Key? key}) : super(key: key);
   final _calendarController = Get.put(CalendarController());
+  final _taskController = Get.put(TaskController());
+  final deadlineList = Get.find<RxList<Deadline>>(tag: 'deadlineList');
 
   @override
   Widget build(BuildContext context) {
@@ -27,17 +32,42 @@ class CalendarPage extends StatelessWidget {
               () => SubtitleRow(
                 subtitle:
                     '${_calendarController.focusedDay.value.year} 年 ${_calendarController.focusedDay.value.month} 月',
-                right: CupertinoButton(
-                  padding: EdgeInsets.zero,
-                  child: Text('今天',
-                      style: TextStyle(
-                          fontSize: 18,
-                          color: CupertinoDynamicColor.resolve(
-                              CupertinoColors.systemBlue, context))),
-                  onPressed: () {
-                    _calendarController.focusedDay.value = DateTime.now();
-                    _calendarController.selectedDay.value = DateTime.now();
-                  },
+                right: Row(
+                  children: [
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: const Icon(
+                        CupertinoIcons.add_circled,
+                        semanticLabel: 'Add',
+                      ),
+                      onPressed: () async {
+                        await newDeadline(
+                          context,
+                          time: DateTime(
+                            _calendarController.selectedDay.value.year,
+                            _calendarController.selectedDay.value.month,
+                            _calendarController.selectedDay.value.day,
+                            DateTime.now().hour,
+                            DateTime.now().minute,
+                          ),
+                        );
+                        _taskController.updateDeadlineList();
+                        _taskController.deadlineList.refresh();
+                      },
+                    ),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: Text('今天',
+                          style: TextStyle(
+                              fontSize: 18,
+                              color: CupertinoDynamicColor.resolve(
+                                  CupertinoColors.systemBlue, context))),
+                      onPressed: () {
+                        _calendarController.focusedDay.value = DateTime.now();
+                        _calendarController.selectedDay.value = DateTime.now();
+                      },
+                    ),
+                  ],
                 ),
                 padHorizontal: 18,
               ),
@@ -170,13 +200,37 @@ class CalendarPage extends StatelessWidget {
     );
   }
 
-  static Future<void> showCardDialog(
-      BuildContext context, Period period) async {
+  Future<void> newDeadline(context, {required DateTime time}) async {
+    Deadline? deadline = Deadline(
+      endTime: time,
+      startTime: time,
+      deadlineRepeatEndsTime: time,
+    );
+    deadline.reset();
+    deadline.startTime = time.copyWith();
+    deadline.endTime = time.copyWith();
+    deadline.deadlineRepeatEndsTime = time.copyWith();
+    deadline.deadlineType = DeadlineType.fixed;
+    deadline.deadlineStatus = DeadlineStatus.running;
+    Deadline? res = await showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return TaskEditPage(deadline);
+      },
+    );
+    if (res != null && res.deadlineStatus != DeadlineStatus.deleted) {
+      _taskController.deadlineList.add(res);
+      _taskController.updateDeadlineListTime();
+      _taskController.deadlineList.refresh();
+    }
+  }
+
+  Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text(period.summary),
+        return CupertinoAlertDialog(
+          title: Text(deadline.summary),
           content: SizedBox(
             width: double.maxFinite,
             child: Column(
@@ -184,22 +238,68 @@ class CalendarPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
+                if (deadline.deadlineRepeatType !=
+                    DeadlineRepeatType.norepeat) ...[
+                  const Text(
+                    '重复日程，接下来的时段：',
+                  ),
+                ],
                 Text(
-                  period.getTimePeriodHumanReadable(),
-                  style: const TextStyle(),
+                  '开始于 ${toStringHumanReadable(deadline.startTime)}',
                 ),
-                const SizedBox(height: 8.0),
                 Text(
-                  period.location,
-                  style: const TextStyle(),
+                  '结束于 ${toStringHumanReadable(deadline.endTime)}',
                 ),
-                const SizedBox(height: 8.0),
-                Text(
-                  period.description,
-                ),
+                if (deadline.location.isNotEmpty) ...[
+                  Text(
+                    '地点：${deadline.location}',
+                  ),
+                ],
+                if (deadline.description.isNotEmpty) ...[
+                  Text(
+                    '说明：${deadline.description}',
+                  ),
+                ],
               ],
             ),
           ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('返回'),
+            ),
+            if (deadline.deadlineType == DeadlineType.fixed)
+              CupertinoDialogAction(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  Deadline res = await showCupertinoModalPopup(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return TaskEditPage(deadline);
+                        },
+                      ) ??
+                      deadline;
+                  bool needUpdate = deadline.differentForFlow(res);
+                  deadline.copy(res);
+                  _taskController.updateDeadlineList();
+                  if (needUpdate) {
+                    _taskController.updateDeadlineListTime();
+                  }
+                  _taskController.deadlineList.refresh();
+                },
+                child: const Text('编辑'),
+              ),
+            if (deadline.deadlineType == DeadlineType.fixedlegacy)
+              CupertinoDialogAction(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  deadline.deadlineStatus = DeadlineStatus.deleted;
+                  _taskController.updateDeadlineList();
+                  _taskController.deadlineList.refresh();
+                },
+                child: const Text('删除'),
+              ),
+          ],
         );
       },
     );
@@ -213,7 +313,20 @@ class CalendarPage extends StatelessWidget {
                   CupertinoPageRoute(
                       builder: (context) =>
                           CourseDetailPage(courseId: period.fromUid)))
-              : null,
+              : (period.type == PeriodType.user
+                  ? (() async {
+                      Deadline? deadline;
+                      for (var x in deadlineList) {
+                        if (x.uid == period.fromUid) {
+                          deadline = x;
+                          break;
+                        }
+                      }
+                      if (deadline != null) {
+                        showCardDialog(context, deadline);
+                      }
+                    })
+                  : null),
       child: Padding(
         padding: const EdgeInsets.only(left: 8, right: 8),
         child: Row(
@@ -235,7 +348,8 @@ class CalendarPage extends StatelessWidget {
                                   ? CupertinoColors.systemPink
                                   : (period.type == PeriodType.user &&
                                           period.fromUid != null
-                                      ? UidColors.colorFromUid(period.fromUid)
+                                      ? UidColors.colorFromUid(
+                                          period.fromFromUid ?? period.fromUid)
                                       : CupertinoColors.inactiveGray)),
                           shape: periodTypeShape[period.type]!,
                         ),
@@ -338,11 +452,11 @@ class CalendarPage extends StatelessWidget {
       return const SizedBox.shrink();
     }
 
-    Color color = Colors.red;
+    Color color = CupertinoColors.systemPink;
     if (event.type == PeriodType.classes) {
       color = TimeColors.colorFromHour(event.startTime.hour);
     } else if (event.type == PeriodType.user) {
-      color = UidColors.colorFromUid(event.fromUid);
+      color = UidColors.colorFromUid(event.fromFromUid ?? event.fromUid);
     }
 
     double size = 4.5;

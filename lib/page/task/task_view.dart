@@ -24,89 +24,91 @@ class TaskPage extends StatelessWidget {
 
   Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
     return showDialog<void>(
-        context: context,
-        builder: (BuildContext context) {
-          return CupertinoAlertDialog(
-            title: Text(
-              '${deadline.summary}：${deadline.deadlineType == DeadlineType.normal ? deadlineStatusName[deadline.deadlineStatus]! : deadlineTypeName[DeadlineType.fixed]}',
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            content: SizedBox(
-              child: SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (deadline.deadlineType == DeadlineType.fixed) ...[
-                      Text(
-                        '开始于 ${toStringHumanReadable(deadline.startTime)}',
-                      ),
-                      Text(
-                        '结束于 ${toStringHumanReadable(deadline.endTime)}',
-                      ),
-                    ],
-                    if (deadline.deadlineType == DeadlineType.normal) ...[
-                      Text(
-                        '截止于 ${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
-                      ),
-                      Text(
-                        deadlineProgress(deadline),
-                      ),
-                    ],
-                    if (deadline.location.isNotEmpty) ...[
-                      Text(
-                        '地点：${deadline.location}',
-                      ),
-                    ],
-                    if (deadline.description.isNotEmpty) ...[
-                      Text(
-                        '说明：${deadline.description}',
-                      ),
-                    ],
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: Text(
+            '${deadline.summary}：${deadline.deadlineType == DeadlineType.normal ? deadlineStatusName[deadline.deadlineStatus]! : deadline.deadlineType == DeadlineType.fixed ? deadlineTypeName[DeadlineType.fixed] : ''}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
+          content: SizedBox(
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (deadline.deadlineType == DeadlineType.fixed) ...[
+                    Text(
+                      '开始于 ${toStringHumanReadable(deadline.startTime)}',
+                    ),
+                    Text(
+                      '结束于 ${toStringHumanReadable(deadline.endTime)}',
+                    ),
                   ],
-                ),
+                  if (deadline.deadlineType == DeadlineType.normal) ...[
+                    Text(
+                      '截止于 ${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
+                    ),
+                    Text(
+                      deadlineProgress(deadline),
+                    ),
+                  ],
+                  if (deadline.location.isNotEmpty) ...[
+                    Text(
+                      '地点：${deadline.location}',
+                    ),
+                  ],
+                  if (deadline.description.isNotEmpty) ...[
+                    Text(
+                      '说明：${deadline.description}',
+                    ),
+                  ],
+                ],
               ),
             ),
-            actions: [
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('返回'),
+            ),
+            if (deadline.deadlineType == DeadlineType.normal &&
+                deadline.timeSpent < deadline.timeNeeded)
               CupertinoDialogAction(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('返回'),
+                onPressed: () {
+                  if (deadline.deadlineStatus != DeadlineStatus.completed) {
+                    deadline.deadlineStatus = DeadlineStatus.completed;
+                  } else {
+                    deadline.forceRefreshStatus();
+                  }
+                  _taskController.updateDeadlineListTime();
+                  _taskController.deadlineList.refresh();
+                  Navigator.of(context).pop();
+                },
+                child: Text(
+                    '标记为${deadline.deadlineStatus == DeadlineStatus.completed ? '未' : ''}完成'),
               ),
-              if (deadline.deadlineType == DeadlineType.normal &&
-                  deadline.timeSpent < deadline.timeNeeded)
-                CupertinoDialogAction(
-                  onPressed: () {
-                    if (deadline.deadlineStatus != DeadlineStatus.completed) {
-                      deadline.deadlineStatus = DeadlineStatus.completed;
-                    } else {
-                      deadline.forceRefreshStatus();
-                    }
-                    _taskController.updateDeadlineListTime();
-                    _taskController.deadlineList.refresh();
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(
-                      '标记为${deadline.deadlineStatus == DeadlineStatus.completed ? '未' : ''}完成'),
-                ),
-              if (deadline.deadlineType == DeadlineType.normal &&
-                  (deadline.deadlineStatus == DeadlineStatus.running ||
-                      deadline.deadlineStatus == DeadlineStatus.suspended))
-                CupertinoDialogAction(
-                  onPressed: () {
-                    if (deadline.deadlineStatus == DeadlineStatus.running) {
-                      deadline.deadlineStatus = DeadlineStatus.suspended;
-                    } else {
-                      deadline.deadlineStatus = DeadlineStatus.running;
-                    }
-                    _taskController.updateDeadlineListTime();
-                    _taskController.deadlineList.refresh();
-                    Navigator.of(context).pop();
-                  },
-                  child: Text(deadline.deadlineStatus == DeadlineStatus.running
-                      ? '暂停'
-                      : '继续'),
-                ),
+            if (deadline.deadlineType == DeadlineType.normal &&
+                (deadline.deadlineStatus == DeadlineStatus.running ||
+                    deadline.deadlineStatus == DeadlineStatus.suspended))
+              CupertinoDialogAction(
+                onPressed: () {
+                  if (deadline.deadlineStatus == DeadlineStatus.running) {
+                    deadline.deadlineStatus = DeadlineStatus.suspended;
+                  } else {
+                    deadline.deadlineStatus = DeadlineStatus.running;
+                  }
+                  _taskController.updateDeadlineListTime();
+                  _taskController.deadlineList.refresh();
+                  Navigator.of(context).pop();
+                },
+                child: Text(deadline.deadlineStatus == DeadlineStatus.running
+                    ? '暂停'
+                    : '继续'),
+              ),
+            if (deadline.deadlineType == DeadlineType.normal ||
+                deadline.deadlineType == DeadlineType.fixed)
               CupertinoDialogAction(
                 onPressed: () async {
                   Navigator.of(context).pop();
@@ -117,40 +119,8 @@ class TaskPage extends StatelessWidget {
                         },
                       ) ??
                       deadline;
-                  bool needUpdate = false;
-                  if (deadline.deadlineType != res.deadlineType ||
-                      deadline.timeSpent != res.timeSpent ||
-                      deadline.timeNeeded != res.timeNeeded ||
-                      (deadline.deadlineType == DeadlineType.fixed &&
-                          deadline.endTime != res.endTime) ||
-                      deadline.endTime != res.endTime ||
-                      deadline.deadlineStatus != res.deadlineStatus ||
-                      deadline.isBreakable != res.isBreakable ||
-                      deadline.deadlineRepeatType != res.deadlineRepeatType ||
-                      deadline.deadlineRepeatPeriod !=
-                          res.deadlineRepeatPeriod ||
-                      deadline.deadlineRepeatEndsTime !=
-                          res.deadlineRepeatEndsTime ||
-                      (deadline.deadlineType == DeadlineType.fixed &&
-                          deadline.blockArrangements !=
-                              res.blockArrangements)) {
-                    needUpdate = true;
-                  }
-                  deadline.uid = res.uid;
-                  deadline.summary = res.summary;
-                  deadline.description = res.description;
-                  deadline.timeSpent = res.timeSpent;
-                  deadline.timeNeeded = res.timeNeeded;
-                  deadline.endTime = res.endTime;
-                  deadline.location = res.location;
-                  deadline.deadlineStatus = res.deadlineStatus;
-                  deadline.isBreakable = res.isBreakable;
-                  deadline.deadlineType = res.deadlineType;
-                  deadline.startTime = res.startTime;
-                  deadline.deadlineRepeatType = res.deadlineRepeatType;
-                  deadline.deadlineRepeatPeriod = res.deadlineRepeatPeriod;
-                  deadline.deadlineRepeatEndsTime = res.deadlineRepeatEndsTime;
-                  deadline.blockArrangements = res.blockArrangements;
+                  bool needUpdate = deadline.differentForFlow(res);
+                  deadline.copy(res);
                   _taskController.updateDeadlineList();
                   if (needUpdate) {
                     _taskController.updateDeadlineListTime();
@@ -159,17 +129,28 @@ class TaskPage extends StatelessWidget {
                 },
                 child: const Text('编辑'),
               ),
-            ],
-          );
-        });
+            if (deadline.deadlineType == DeadlineType.fixedlegacy)
+              CupertinoDialogAction(
+                onPressed: () async {
+                  Navigator.of(context).pop();
+                  deadline.deadlineStatus = DeadlineStatus.deleted;
+                  _taskController.updateDeadlineList();
+                  _taskController.deadlineList.refresh();
+                },
+                child: const Text('删除'),
+              ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> newDeadline(context) async {
-    DateTime endTime = DateTime.now().add(const Duration(days: 1));
+    DateTime time = DateTime.now();
     Deadline? deadline = Deadline(
-      endTime: endTime,
-      startTime: endTime,
-      deadlineRepeatEndsTime: endTime,
+      endTime: time,
+      startTime: time,
+      deadlineRepeatEndsTime: time,
     );
     deadline.reset();
     Deadline? res = await showCupertinoModalPopup(
