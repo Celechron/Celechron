@@ -491,16 +491,16 @@ class _TaskEditPageState extends State<TaskEditPage> {
                       ),
                     ],
                   ),
-                  Container(
-                    padding: const EdgeInsets.only(left: 40, right: 40),
-                    child: Text(
-                      '可以在其中安排任务的日程不会出现在“接下来”栏中。',
-                      style: TextStyle(
-                          color: CupertinoDynamicColor.resolve(
-                              CupertinoColors.secondaryLabel, context),
-                          fontSize: 14),
-                    ),
-                  ),
+                  // Container(
+                  //   padding: const EdgeInsets.only(left: 40, right: 40),
+                  //   child: Text(
+                  //     '可以在其中安排任务的日程不会出现在“接下来”栏中。',
+                  //     style: TextStyle(
+                  //         color: CupertinoDynamicColor.resolve(
+                  //             CupertinoColors.secondaryLabel, context),
+                  //         fontSize: 14),
+                  //   ),
+                  // ),
                 ],
                 CupertinoListSection.insetGrouped(
                   header: const Text('附加信息'),

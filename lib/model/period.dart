@@ -1,3 +1,4 @@
+import 'package:celechron/utils/timehelper.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
@@ -67,7 +68,11 @@ class Period {
   }
 
   String getTimePeriodHumanReadable() {
-    return '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')} - ${endTime.hour == 0 && endTime.minute == 0 ? '次日 ' : ''}${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+    return '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')} - ${TimeHelper.chineseDayAfterRelation(startTime, endTime)}${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  bool hasStarted() {
+    return !startTime.isAfter(DateTime.now());
   }
 }
 

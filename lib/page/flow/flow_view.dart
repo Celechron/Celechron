@@ -112,112 +112,114 @@ class FlowPage extends StatelessWidget {
                       ),
                     ])),
                     Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(
+                              CupertinoIcons.time_solid,
+                              size: 14,
+                              color: themeColor,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              period.getTimePeriodHumanReadable(),
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.normal,
+                                color: CupertinoTheme.of(context)
+                                    .textTheme
+                                    .textStyle
+                                    .color!
+                                    .withOpacity(0.75),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.only(left: 20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.end,
                             children: [
-                              Icon(
-                                CupertinoIcons.time_solid,
-                                size: 14,
-                                color: themeColor,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                period.getTimePeriodHumanReadable(),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.normal,
-                                  color: CupertinoTheme.of(context)
-                                      .textTheme
-                                      .textStyle
-                                      .color!
-                                      .withOpacity(0.75),
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.only(left: 20),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Obx(() => period.startTime
+                              Obx(
+                                () => period.startTime
                                         .isBefore(_flowController.timeNow.value)
                                     ? Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                            Text('离结束还有',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.normal,
-                                                  color:
-                                                      CupertinoTheme.of(context)
-                                                          .textTheme
-                                                          .textStyle
-                                                          .color!
-                                                          .withOpacity(0.75),
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                )),
-                                            Text(
-                                                TimeHelper.toHMS(period.endTime
-                                                    .difference(_flowController
-                                                        .timeNow.value)),
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color:
-                                                      CupertinoTheme.of(context)
-                                                          .textTheme
-                                                          .textStyle
-                                                          .color!,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ))
-                                          ])
+                                          Text(
+                                            '离结束还有',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.normal,
+                                              color: CupertinoTheme.of(context)
+                                                  .textTheme
+                                                  .textStyle
+                                                  .color!
+                                                  .withOpacity(0.75),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          Text(
+                                            TimeHelper.toHMS(period.endTime
+                                                .difference(_flowController
+                                                    .timeNow.value)),
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              color: CupertinoTheme.of(context)
+                                                  .textTheme
+                                                  .textStyle
+                                                  .color!,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      )
                                     : Column(
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                            Text('开始还有',
-                                                style: TextStyle(
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.normal,
-                                                  color:
-                                                      CupertinoTheme.of(context)
-                                                          .textTheme
-                                                          .textStyle
-                                                          .color!
-                                                          .withOpacity(0.75),
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                )),
-                                            Text(
-                                                TimeHelper.toHMS(period
-                                                    .startTime
-                                                    .difference(_flowController
-                                                        .timeNow.value)),
-                                                style: TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  fontFeatures: const [
-                                                    FontFeature.tabularFigures()
-                                                  ],
-                                                  color:
-                                                      CupertinoTheme.of(context)
-                                                          .textTheme
-                                                          .textStyle
-                                                          .color!,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                ))
-                                          ]))
-                              ],
-                            ),
-                          )
-                        ]),
+                                          Text(
+                                            '开始还有',
+                                            style: TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.normal,
+                                              color: CupertinoTheme.of(context)
+                                                  .textTheme
+                                                  .textStyle
+                                                  .color!
+                                                  .withOpacity(0.75),
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                          Text(
+                                            TimeHelper.toHMS(period.startTime
+                                                .difference(_flowController
+                                                    .timeNow.value)),
+                                            style: TextStyle(
+                                              fontSize: 18,
+                                              fontWeight: FontWeight.bold,
+                                              fontFeatures: const [
+                                                FontFeature.tabularFigures()
+                                              ],
+                                              color: CupertinoTheme.of(context)
+                                                  .textTheme
+                                                  .textStyle
+                                                  .color!,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
                 const SizedBox(height: 8),
@@ -423,127 +425,82 @@ class FlowPage extends StatelessWidget {
         .copyWith(second: 0, millisecond: 0, microsecond: 0)
         .add(const Duration(seconds: 90));
     await showCupertinoDialog(
-        context: context,
-        builder: (BuildContext context) {
-          return CupertinoAlertDialog(
-            title: const Text(
-              '开始规划',
-            ),
-            content: StatefulBuilder(
-              builder: (BuildContext context, StateSetter setState) {
-                return SizedBox(
-                  width: double.maxFinite,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      const SizedBox(
-                        height: 8,
-                      ),
-                      const Text(
-                        '点击修改开始时间',
-                      ),
-                      CupertinoButton(
-                        onPressed: () async {
-                          await showCupertinoModalPopup(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return CupertinoPageScaffold(
-                                  child: SizedBox(
-                                    height: MediaQuery.of(context)
-                                            .copyWith()
-                                            .size
-                                            .height /
-                                        3,
-                                    child: CupertinoDatePicker(
-                                      initialDateTime: newTime,
-                                      use24hFormat: true,
-                                      minuteInterval: 1,
-                                      mode: CupertinoDatePickerMode.dateAndTime,
-                                      onDateTimeChanged: (DateTime val) {
-                                        setState(() {
-                                          newTime = val;
-                                        });
-                                      },
-                                    ),
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoAlertDialog(
+          title: const Text(
+            '开始规划',
+          ),
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return SizedBox(
+                width: double.maxFinite,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    const SizedBox(
+                      height: 8,
+                    ),
+                    const Text(
+                      '点击修改开始时间',
+                    ),
+                    CupertinoButton(
+                      onPressed: () async {
+                        await showCupertinoModalPopup(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return CupertinoPageScaffold(
+                                child: SizedBox(
+                                  height: MediaQuery.of(context)
+                                          .copyWith()
+                                          .size
+                                          .height /
+                                      3,
+                                  child: CupertinoDatePicker(
+                                    initialDateTime: newTime,
+                                    use24hFormat: true,
+                                    minuteInterval: 1,
+                                    mode: CupertinoDatePickerMode.dateAndTime,
+                                    onDateTimeChanged: (DateTime val) {
+                                      setState(() {
+                                        newTime = val;
+                                      });
+                                    },
                                   ),
-                                );
-                              });
-                        },
-                        child: Text(TimeHelper.chineseDateTime(newTime)),
-                      ),
-                      Text(
-                        '工作 ${durationToString(db.getWorkTime())} - 休息 ${durationToString(db.getRestTime())}',
-                      ),
-                    ],
-                  ),
-                );
-              },
+                                ),
+                              );
+                            });
+                      },
+                      child: Text(TimeHelper.chineseDateTime(newTime)),
+                    ),
+                    Text(
+                      '工作 ${durationToString(db.getWorkTime())} - 休息 ${durationToString(db.getRestTime())}',
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+          actions: [
+            CupertinoDialogAction(
+              onPressed: () => navigator!.pop(),
+              child: const Text('返回'),
             ),
-            actions: [
-              CupertinoDialogAction(
-                onPressed: () => navigator!.pop(),
-                child: const Text('返回'),
-              ),
-              CupertinoDialogAction(
-                onPressed: () {
-                  if (newTime.isAfter(DateTime.now())) {
-                    int ret = _flowController.updateFlowList(newTime);
-                    if (ret < 0) {
-                      showCupertinoDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return CupertinoAlertDialog(
-                            title: const Text(
-                              '时间不够了！',
-                            ),
-                            content: const Text(
-                                '即使是完全不休息也有任务无法完成。请压缩任务的预期时间，或者检查是否有任务在规划开始时间之前就结束。'),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('确定'),
-                                onPressed: () async {
-                                  Navigator.of(context).pop();
-                                },
-                              )
-                            ],
-                          );
-                        },
-                      );
-                    } else if (ret != db.getRestTime().inMinutes) {
-                      navigator!.pop();
-                      showCupertinoDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return CupertinoAlertDialog(
-                            title: const Text(
-                              '休息时间已压缩',
-                            ),
-                            content: Text(
-                                '因为任务过多，你需要把休息时间压缩到 ${durationToString(Duration(minutes: ret))}才能完成任务。'),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('确定'),
-                                onPressed: () async {
-                                  Navigator.of(context).pop();
-                                },
-                              )
-                            ],
-                          );
-                        },
-                      );
-                    } else {
-                      navigator!.pop();
-                    }
-                  } else {
+            CupertinoDialogAction(
+              onPressed: () {
+                if (newTime.isAfter(DateTime.now())) {
+                  int ret = _flowController.updateFlowList(newTime);
+                  if (ret < 0) {
                     showCupertinoDialog(
                       context: context,
                       builder: (BuildContext context) {
                         return CupertinoAlertDialog(
                           title: const Text(
-                            '开始时间必须晚于现在',
+                            '时间不够了！',
                           ),
-                          content: const Text('请调整开始时间。'),
+                          content: const Text(
+                              '即使是完全不休息也有任务无法完成。请压缩任务的预期时间，或者检查是否有任务在规划开始时间之前就结束。'),
                           actions: [
                             CupertinoDialogAction(
                               child: const Text('确定'),
@@ -555,120 +512,212 @@ class FlowPage extends StatelessWidget {
                         );
                       },
                     );
+                  } else if (ret != db.getRestTime().inMinutes) {
+                    navigator!.pop();
+                    showCupertinoDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return CupertinoAlertDialog(
+                          title: const Text(
+                            '休息时间已压缩',
+                          ),
+                          content: Text(
+                              '因为任务过多，你需要把休息时间压缩到 ${durationToString(Duration(minutes: ret))}才能完成任务。'),
+                          actions: [
+                            CupertinoDialogAction(
+                              child: const Text('确定'),
+                              onPressed: () async {
+                                Navigator.of(context).pop();
+                              },
+                            )
+                          ],
+                        );
+                      },
+                    );
+                  } else {
+                    navigator!.pop();
                   }
-                },
-                child: const Text('创建'),
-              )
-            ],
-          );
-        });
+                } else {
+                  showCupertinoDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return CupertinoAlertDialog(
+                        title: const Text(
+                          '开始时间必须晚于现在',
+                        ),
+                        content: const Text('请调整开始时间。'),
+                        actions: [
+                          CupertinoDialogAction(
+                            child: const Text('确定'),
+                            onPressed: () async {
+                              Navigator.of(context).pop();
+                            },
+                          )
+                        ],
+                      );
+                    },
+                  );
+                }
+              },
+              child: const Text('创建'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-        child: SafeArea(
-            child: CustomScrollView(
-      // Allow the list to shrink wrap around the top and bottom bars.
-      slivers: [
-        CupertinoSliverNavigationBar(
-          largeTitle: const Text('接下来'),
-          stretch: true,
-          border: null,
-          trailing: // Two buttons in the nav bar.
-              Row(
-            mainAxisSize: MainAxisSize.min,
-            children: <Widget>[
-              CupertinoButton(
-                padding: EdgeInsets.zero,
-                child: const Icon(
-                  CupertinoIcons.refresh_circled,
-                  semanticLabel: 'Add',
-                ),
-                onPressed: () async {
-                  await newFlowList(context);
-                  _flowController.flowList.refresh();
-                },
-              ),
-            ],
-          ),
-        ),
-        SliverToBoxAdapter(
-          child: Obx(() {
-            if (_flowController.isFlowListOutdated()) {
-              return MaterialBanner(
-                backgroundColor: CupertinoDynamicColor.resolve(
-                    CupertinoColors.secondarySystemBackground, context),
-                dividerColor: Colors.transparent,
-                content: const Text('规划方案已过期'),
-                contentTextStyle: TextStyle(
-                  fontSize: 16,
-                  color: CupertinoTheme.of(context).textTheme.textStyle.color!,
-                ),
-                leading: const Icon(CupertinoIcons.exclamationmark_triangle),
-                actions: [
+      child: SafeArea(
+        child: CustomScrollView(
+          // Allow the list to shrink wrap around the top and bottom bars.
+          slivers: [
+            CupertinoSliverNavigationBar(
+              largeTitle: const Text('接下来'),
+              stretch: true,
+              border: null,
+              trailing: // Two buttons in the nav bar.
+                  Row(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
                   CupertinoButton(
-                    child: const Text('忽略'),
-                    onPressed: () {
-                      _flowController.updateDeadlineListTime();
-                    },
-                  ),
-                  CupertinoButton(
+                    padding: EdgeInsets.zero,
+                    child: const Icon(
+                      CupertinoIcons.refresh_circled,
+                      semanticLabel: 'Add',
+                    ),
                     onPressed: () async {
                       await newFlowList(context);
                       _flowController.flowList.refresh();
                     },
-                    child: const Text('重新规划'),
                   ),
                 ],
-              );
-            }
-            return const SizedBox();
-          }),
-        ),
-        Obx(() {
-          if (_flowController.flowList.isEmpty) {
-            return SliverToBoxAdapter(
-                child: SizedBox(
-                    height: 500,
-                    child: Column(children: [
-                      const Spacer(),
-                      Text('今日无事可做',
-                          style:
-                              CupertinoTheme.of(context).textTheme.textStyle),
-                      const Spacer()
-                    ])));
-          }
-          return SliverList(
-            delegate: SliverChildBuilderDelegate(
-              (BuildContext context, int index) {
-                return index == 0
-                    ? Container(
-                        padding: EdgeInsets.only(
-                            top: index == 0 ? 0 : 5,
-                            bottom: 5,
-                            left: 16,
-                            right: 16),
-                        child: createFirst(
-                            context,
-                            _flowController.flowList[index],
-                            _flowController.isDuringFlow ? '正在进行' : '即将开始'))
-                    : Container(
-                        padding: EdgeInsets.only(
-                            top: index == 0 ? 0 : 5,
-                            bottom: 5,
-                            left: 16,
-                            right: 16),
-                        child: createCard(
-                            context,
-                            _flowController.flowList[index],
-                            index == 1 ? '之后的安排' : null));
-              },
-              childCount: _flowController.flowList.length,
+              ),
             ),
-          );
-        }),
-      ],
-    )));
+            SliverToBoxAdapter(
+              child: Obx(() {
+                if (_flowController.isFlowListOutdated()) {
+                  return MaterialBanner(
+                    backgroundColor: CupertinoDynamicColor.resolve(
+                        CupertinoColors.secondarySystemBackground, context),
+                    dividerColor: Colors.transparent,
+                    content: const Text('规划方案已过期'),
+                    contentTextStyle: TextStyle(
+                      fontSize: 16,
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color!,
+                    ),
+                    leading:
+                        const Icon(CupertinoIcons.exclamationmark_triangle),
+                    actions: [
+                      CupertinoButton(
+                        child: const Text('忽略'),
+                        onPressed: () {
+                          _flowController.updateDeadlineListTime();
+                        },
+                      ),
+                      CupertinoButton(
+                        onPressed: () async {
+                          await newFlowList(context);
+                          _flowController.flowList.refresh();
+                        },
+                        child: const Text('重新规划'),
+                      ),
+                    ],
+                  );
+                }
+                return const SizedBox();
+              }),
+            ),
+            Obx(
+              () {
+                if (_flowController.flowList.isEmpty) {
+                  return SliverToBoxAdapter(
+                    child: SizedBox(
+                      height: 500,
+                      child: Column(
+                        children: [
+                          const Spacer(),
+                          Text('今日无事可做',
+                              style: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle),
+                          const Spacer(),
+                        ],
+                      ),
+                    ),
+                  );
+                }
+
+                List<bool> hasPlaced = [false, false, false];
+                return SliverList(
+                  delegate: SliverChildBuilderDelegate(
+                    (BuildContext context, int index) {
+                      var container = Container(
+                        padding: EdgeInsets.only(
+                            top: index == 0 ? 0 : 5,
+                            bottom: 5,
+                            left: 16,
+                            right: 16),
+                        child: (_flowController.flowList[index].hasStarted() ||
+                                index == 0)
+                            ? createFirst(
+                                context,
+                                _flowController.flowList[index],
+                                _flowController.flowList[index].hasStarted()
+                                    ? (hasPlaced[0] ? null : '正在进行')
+                                    : (hasPlaced[1] ? null : '即将开始'),
+                              )
+                            : createCard(
+                                context,
+                                _flowController.flowList[index],
+                                hasPlaced[2] ? null : '之后的安排'),
+                      );
+                      if (_flowController.flowList[index].hasStarted() ||
+                          index == 0) {
+                        if (_flowController.flowList[index].hasStarted()) {
+                          hasPlaced[0] = true;
+                        } else {
+                          hasPlaced[1] = true;
+                        }
+                      } else {
+                        hasPlaced[2] = true;
+                      }
+                      return container;
+                      // return index == 0
+                      //     ? Container(
+                      //         padding: EdgeInsets.only(
+                      //             top: index == 0 ? 0 : 5,
+                      //             bottom: 5,
+                      //             left: 16,
+                      //             right: 16),
+                      //         child: createFirst(
+                      //             context,
+                      //             _flowController.flowList[index],
+                      //             _flowController.isDuringFlow
+                      //                 ? '正在进行'
+                      //                 : '即将开始'))
+                      //     : Container(
+                      //         padding: EdgeInsets.only(
+                      //             top: index == 0 ? 0 : 5,
+                      //             bottom: 5,
+                      //             left: 16,
+                      //             right: 16),
+                      //         child: createCard(
+                      //             context,
+                      //             _flowController.flowList[index],
+                      //             index == 1 ? '之后的安排' : null));
+                    },
+                    childCount: _flowController.flowList.length,
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }

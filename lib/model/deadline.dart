@@ -188,7 +188,7 @@ class Deadline {
         deadlineStatus = DeadlineStatus.failed;
       }
     } else if (deadlineType == DeadlineType.fixed) {
-      if (startTime.isAfter(deadlineRepeatEndsTime)) {
+      if (dateOnly(startTime).isAfter(deadlineRepeatEndsTime)) {
         deadlineStatus = DeadlineStatus.outdated;
       } else {
         deadlineStatus = DeadlineStatus.running;
@@ -206,7 +206,7 @@ class Deadline {
         deadlineStatus = DeadlineStatus.running;
       }
     } else if (deadlineType == DeadlineType.fixed) {
-      if (startTime.isAfter(deadlineRepeatEndsTime)) {
+      if (dateOnly(startTime).isAfter(deadlineRepeatEndsTime)) {
         deadlineStatus = DeadlineStatus.outdated;
       } else {
         deadlineStatus = DeadlineStatus.running;
@@ -251,12 +251,8 @@ class Deadline {
     }
   }
 
-  Period? deadlineOfTime(DateTime dateTime) {
+  Period? deadlineOfTime(DateTime dateTime, {bool predicting = false}) {
     if (deadlineType != DeadlineType.fixed) {
-      return null;
-    }
-
-    if (dateTime.isBefore(startTime)) {
       return null;
     }
 
@@ -271,15 +267,28 @@ class Deadline {
       summary: summary,
     );
 
-    if (deadlineRepeatType == DeadlineRepeatType.norepeat) {
-      if (!startTime.isAfter(dateTime) && !endTime.isBefore(dateTime)) {
+    if (dateTime.isBefore(startTime)) {
+      if (predicting) {
         return period.copyWith(
-            startTime: startTime.copyWith(), endTime: endTime.copyWith());
+          startTime: startTime.copyWith(),
+          endTime: endTime.copyWith(),
+        );
+      }
+      return null;
+    }
+
+    if (deadlineRepeatType == DeadlineRepeatType.norepeat) {
+      if ((predicting || !startTime.isAfter(dateTime)) &&
+          !endTime.isBefore(dateTime)) {
+        return period.copyWith(
+          startTime: startTime.copyWith(),
+          endTime: endTime.copyWith(),
+        );
       }
       return null;
     } else {
       Deadline dummy = copyWith();
-      while (!dummy.startTime.isAfter(dateTime) &&
+      while ((predicting || !dummy.startTime.isAfter(dateTime)) &&
           dummy.deadlineStatus != DeadlineStatus.outdated) {
         if (!dummy.endTime.isBefore(dateTime)) {
           return period.copyWith(
@@ -293,7 +302,8 @@ class Deadline {
   }
 
   List<Period> getPeriodOfDay(DateTime date) {
-    if (deadlineType != DeadlineType.fixed) {
+    if (deadlineType != DeadlineType.fixed &&
+        deadlineType != DeadlineType.fixedlegacy) {
       return [];
     }
 
@@ -307,8 +317,8 @@ class Deadline {
       fromUid: uid,
       type: PeriodType.user,
       description: description,
-      startTime: startTime,
-      endTime: endTime,
+      startTime: startTime.copyWith(),
+      endTime: endTime.copyWith(),
       location: location,
       lastUpdateTime: DateTime.now(),
       summary: summary,

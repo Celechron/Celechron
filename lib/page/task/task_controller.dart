@@ -30,6 +30,7 @@ class TaskController extends GetxController {
   void onInit() {
     updateDeadlineList();
     Timer.periodic(const Duration(seconds: 1), (Timer t) {
+      updateDeadlineList();
       refreshDeadlineList();
     });
     super.onInit();
@@ -68,10 +69,12 @@ class TaskController extends GetxController {
           deadline.deadlineStatus = DeadlineStatus.failed;
         }
       } else if (deadline.deadlineType == DeadlineType.fixed) {
+        deadline.refreshStatus();
         existingUid.add(deadline.uid);
         while (deadline.endTime.isBefore(DateTime.now()) &&
             deadline.deadlineStatus != DeadlineStatus.outdated) {
           newDeadlineList.add(deadline.copyWith(
+            summary: '${deadline.summary}（过去日程）',
             deadlineType: DeadlineType.fixedlegacy,
             deadlineRepeatType: DeadlineRepeatType.norepeat,
           ));
