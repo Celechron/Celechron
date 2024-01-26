@@ -111,7 +111,7 @@ class Spider {
     // 查校历（存在CDN上，JSON格式的，内含学期起止日期、单日时间表、放假调休等信息）
     var semesterConfigFetches = <Future<String?>>[];
     // 查考试
-    var examFetches = <Future<String?>>[];
+    // var examFetches = <Future<String?>>[];
     // 查课表
     var timetableFetches = <Future<String?>>[];
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
@@ -252,8 +252,11 @@ class Spider {
 
     // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
-      outSemesters.removeWhere(
-          (e) => e.grades.isEmpty && e.sessions.isEmpty && e.exams.isEmpty && e.courses.isEmpty);
+      outSemesters.removeWhere((e) =>
+          e.grades.isEmpty &&
+          e.sessions.isEmpty &&
+          e.exams.isEmpty &&
+          e.courses.isEmpty);
     });
 
     // 检查是否有查询失败的情况

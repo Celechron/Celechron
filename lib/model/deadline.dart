@@ -171,6 +171,17 @@ class Deadline {
     uid = const Uuid().v4();
   }
 
+  bool checkTimeValid() {
+    startTime = DateTime(startTime.year, startTime.month, startTime.day,
+        startTime.hour, startTime.minute);
+    endTime = DateTime(
+        endTime.year, endTime.month, endTime.day, endTime.hour, endTime.minute);
+    if (!startTime.isBefore(endTime)) {
+      return false;
+    }
+    return true;
+  }
+
   double getProgress() {
     double progress = 0;
     if (deadlineType == DeadlineType.fixed) {

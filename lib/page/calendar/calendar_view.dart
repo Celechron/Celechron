@@ -218,7 +218,9 @@ class CalendarPage extends StatelessWidget {
         return TaskEditPage(deadline);
       },
     );
-    if (res != null && res.deadlineStatus != DeadlineStatus.deleted) {
+    if (res != null &&
+        res.checkTimeValid() &&
+        res.deadlineStatus != DeadlineStatus.deleted) {
       _taskController.deadlineList.add(res);
       _taskController.updateDeadlineListTime();
       _taskController.deadlineList.refresh();
