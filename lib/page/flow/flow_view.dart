@@ -123,7 +123,7 @@ class FlowPage extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              period.getTimePeriodHumanReadable(),
+                              period.getTimePeriodHumanReadableTodayBased(),
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.normal,
@@ -147,7 +147,7 @@ class FlowPage extends StatelessWidget {
                                         .isBefore(_flowController.timeNow.value)
                                     ? Column(
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                            CrossAxisAlignment.end,
                                         children: [
                                           Text(
                                             '离结束还有',
@@ -180,7 +180,7 @@ class FlowPage extends StatelessWidget {
                                       )
                                     : Column(
                                         crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                            CrossAxisAlignment.end,
                                         children: [
                                           Text(
                                             '开始还有',

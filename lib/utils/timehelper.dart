@@ -44,7 +44,9 @@ class TimeHelper {
     now = dateOnly(now);
     nex = dateOnly(nex);
     int diff = nex.difference(now).inDays;
-    if (diff <= 0) {
+    if (diff < 0) {
+      return '${-diff} 天前 ';
+    } else if (diff == 0) {
       return '';
     } else if (diff == 1) {
       return '次日 ';

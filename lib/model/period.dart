@@ -76,6 +76,10 @@ class Period {
     return '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')} - ${TimeHelper.chineseDayAfterRelation(startTime, endTime)}${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
   }
 
+  String getTimePeriodHumanReadableTodayBased() {
+    return '${TimeHelper.chineseDayAfterRelation(DateTime.now(), startTime)}${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')} - ${TimeHelper.chineseDayAfterRelation(DateTime.now(), endTime)}${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+  }
+
   bool hasStarted() {
     return !startTime.isAfter(DateTime.now());
   }
