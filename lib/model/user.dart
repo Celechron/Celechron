@@ -93,7 +93,19 @@ class User {
   }
 
   // 刷新数据
+  var _mutex = 0;
   Future<List<String?>> refresh() async {
+    if (!isLogin) {
+      return ["未登录"];
+    }
+    if (_mutex > 0) {
+      // Wait until the mutex is released.
+      while (_mutex > 0) {
+        await Future.delayed(const Duration(milliseconds: 100));
+      }
+      return [];
+    }
+    _mutex++;
     return await _spider.getEverything().then((value) async {
       for (var e in value.item1) {
         // ignore: avoid_print
@@ -132,7 +144,7 @@ class User {
 
       await _db.setUser(this);
       return value.item1.every((e) => e == null) ? value.item2 : value.item1;
-    });
+    }).whenComplete(() => _mutex--);
   }
 
   Map<String, dynamic> toJson() {
