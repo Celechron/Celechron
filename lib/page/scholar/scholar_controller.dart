@@ -3,13 +3,15 @@ import 'package:get/get.dart';
 
 import 'package:celechron/model/semester.dart';
 import 'package:celechron/model/user.dart';
+import 'package:celechron/model/option.dart';
 
 
 class ScholarController extends GetxController {
   final _user = Get.find<Rx<User>>(tag: 'user');
-  final _gpaStrategy = Get.find<RxInt>(tag: 'gpaStrategy');
-  late final RxInt semesterIndex;
+  final _option = Get.find<Option>(tag: 'option');
   final Rx<Duration> _durationToLastUpdate = const Duration().obs;
+
+  late final RxInt semesterIndex;
 
   User get user => _user.value;
 
@@ -26,7 +28,7 @@ class ScholarController extends GetxController {
 
   Duration get durationToLastUpdate => _durationToLastUpdate.value;
 
-  List<double> get gpa => _gpaStrategy.value == 0
+  List<double> get gpa => _option.gpaStrategy.value == 0
       ? _user.value.gpa
       : _user.value.aboardGpa;
 

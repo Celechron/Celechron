@@ -1,7 +1,9 @@
 import 'package:celechron/model/deadline.dart';
+import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:celechron/model/user.dart';
 import 'package:celechron/model/period.dart';
+import 'package:celechron/model/option.dart';
 import 'adapters/duration_adapter.dart';
 import 'adapters/user_adapter.dart';
 import 'adapters/deadline_adapter.dart';
@@ -36,6 +38,15 @@ class DatabaseHelper {
   final String kRestTime = 'restTime';
   final String kAllowTime = 'allowTime';
   final String kGpaStrategy = 'gpaStrategy';
+
+  Option getOption() {
+    return Option(
+      workTime: getWorkTime().obs,
+      restTime: getRestTime().obs,
+      allowTime: getAllowTime().obs,
+      gpaStrategy: getGpaStrategy().obs,
+    );
+  }
 
   Duration getWorkTime() {
     if (optionsBox.get(kWorkTime) == null) {

@@ -30,7 +30,7 @@ void main() async {
   Get.put(db.getDeadlineListUpdateTime().obs, tag: 'deadlineListLastUpdate');
   Get.put(db.getFlowList().obs, tag: 'flowList');
   Get.put(db.getFlowListUpdateTime().obs, tag: 'flowListLastUpdate');
-  Get.put(db.getGpaStrategy().obs, tag: 'gpaStrategy');
+  Get.put(db.getOption(), tag: 'option');
 
   runApp(const CelechronApp());
   if (Platform.isAndroid) {

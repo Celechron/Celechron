@@ -1,43 +1,37 @@
 import 'package:get/get.dart';
-import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/user.dart';
+import 'package:celechron/model/option.dart';
+import 'package:celechron/database/database_helper.dart';
 
 class OptionController extends GetxController {
-  final _db = Get.find<DatabaseHelper>(tag: 'db');
-  final _gpaStrategy = Get.find<RxInt>(tag: 'gpaStrategy');
+  final option = Get.find<Option>(tag: 'option');
   final user = Get.find<Rx<User>>(tag: 'user');
-  late final Rx<Duration> _workTime;
-  late final Rx<Duration> _restTime;
-  late final RxInt allowTimeLength;
+  final _db = Get.find<DatabaseHelper>(tag: 'db');
+  late final RxInt allowTimeLength = option.allowTime.length.obs;
 
-  OptionController() {
-    _workTime = _db.getWorkTime().obs;
-    _restTime = _db.getRestTime().obs;
-    allowTimeLength = _db.getAllowTime().length.obs;
-    //_gpaStrategy = _db.getGpaStrategy().obs;
-  }
 
-  Duration get workTime => _workTime.value;
+  Duration get workTime => option.workTime.value;
   set workTime(Duration value) {
-    _workTime.value = value;
+    option.workTime.value = value;
     _db.setWorkTime(value);
   }
 
-  Duration get restTime => _restTime.value;
+  Duration get restTime => option.restTime.value;
   set restTime(Duration value) {
-    _restTime.value = value;
+    option.restTime.value = value;
     _db.setRestTime(value);
   }
 
-  Map<DateTime, DateTime> get allowTime => _db.getAllowTime();
+  Map<DateTime, DateTime> get allowTime => option.allowTime;
   set allowTime(Map<DateTime, DateTime> value) {
+    option.allowTime.value = value;
     _db.setAllowTime(value);
     allowTimeLength.value = value.length;
   }
 
-  int get gpaStrategy => _gpaStrategy.value;
+  int get gpaStrategy => option.gpaStrategy.value;
   set gpaStrategy(int value) {
-    _gpaStrategy.value = value;
+    option.gpaStrategy.value = value;
     _db.setGpaStrategy(value);
   }
 
