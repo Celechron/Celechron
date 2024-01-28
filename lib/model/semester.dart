@@ -34,23 +34,71 @@ class Semester {
     []
   ];
 
-  List<List<Duration>> _sessionToTimeGrs = [
-    [Duration(hours: 0, minutes: 0), Duration(hours: 0, minutes: 0)],
-    [Duration(hours: 8, minutes: 0), Duration(hours: 8, minutes: 45)],
-    [Duration(hours: 8, minutes: 50), Duration(hours: 9, minutes: 35)],
-    [Duration(hours: 10, minutes: 0), Duration(hours: 10, minutes: 45)],
-    [Duration(hours: 10, minutes: 50), Duration(hours: 11, minutes: 35)],
-    [Duration(hours: 11, minutes: 40), Duration(hours: 12, minutes: 25)],
-    [Duration(hours: 13, minutes: 25), Duration(hours: 14, minutes: 10)],
-    [Duration(hours: 12, minutes: 40), Duration(hours: 13, minutes: 20)],
-    [Duration(hours: 13, minutes: 30), Duration(hours: 14, minutes: 10)],
-    [Duration(hours: 14, minutes: 15), Duration(hours: 15, minutes: 00)],
-    [Duration(hours: 15, minutes: 05), Duration(hours: 15, minutes: 50)],
-    [Duration(hours: 16, minutes: 15), Duration(hours: 17, minutes: 00)],
-    [Duration(hours: 17, minutes: 05), Duration(hours: 17, minutes: 50)],
-    [Duration(hours: 18, minutes: 50), Duration(hours: 19, minutes: 35)],
-    [Duration(hours: 19, minutes: 40), Duration(hours: 20, minutes: 25)],
-    [Duration(hours: 20, minutes: 30), Duration(hours: 21, minutes: 15)]
+  final List<List<Duration>> _sessionToTimeGrs = [
+    [
+      const Duration(hours: 0, minutes: 0),
+      const Duration(hours: 0, minutes: 0)
+    ],
+    [
+      const Duration(hours: 8, minutes: 0),
+      const Duration(hours: 8, minutes: 45)
+    ],
+    [
+      const Duration(hours: 8, minutes: 50),
+      const Duration(hours: 9, minutes: 35)
+    ],
+    [
+      const Duration(hours: 10, minutes: 0),
+      const Duration(hours: 10, minutes: 45)
+    ],
+    [
+      const Duration(hours: 10, minutes: 50),
+      const Duration(hours: 11, minutes: 35)
+    ],
+    [
+      const Duration(hours: 11, minutes: 40),
+      const Duration(hours: 12, minutes: 25)
+    ],
+    [
+      const Duration(hours: 13, minutes: 25),
+      const Duration(hours: 14, minutes: 10)
+    ],
+    [
+      const Duration(hours: 12, minutes: 40),
+      const Duration(hours: 13, minutes: 20)
+    ],
+    [
+      const Duration(hours: 13, minutes: 30),
+      const Duration(hours: 14, minutes: 10)
+    ],
+    [
+      const Duration(hours: 14, minutes: 15),
+      const Duration(hours: 15, minutes: 00)
+    ],
+    [
+      const Duration(hours: 15, minutes: 05),
+      const Duration(hours: 15, minutes: 50)
+    ],
+    [
+      const Duration(hours: 16, minutes: 15),
+      const Duration(hours: 17, minutes: 00)
+    ],
+    [
+      const Duration(hours: 17, minutes: 05),
+      const Duration(hours: 17, minutes: 50)
+    ],
+    [
+      const Duration(hours: 18, minutes: 50),
+      const Duration(hours: 19, minutes: 35)
+    ],
+    [
+      const Duration(hours: 19, minutes: 40),
+      const Duration(hours: 20, minutes: 25)
+    ],
+    [
+      const Duration(hours: 20, minutes: 30),
+      const Duration(hours: 21, minutes: 15)
+    ]
   ];
 
   // 星期几 => 日期，_dayOfWeekToDays.first为上半学期，_dayOfWeekToDays.last为下半学期

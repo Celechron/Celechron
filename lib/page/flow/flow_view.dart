@@ -422,8 +422,8 @@ class FlowPage extends StatelessWidget {
 
   Future<void> newFlowList(context) async {
     DateTime newTime = DateTime.now()
-        .copyWith(second: 0, millisecond: 0, microsecond: 0)
-        .add(const Duration(seconds: 90));
+        .add(const Duration(seconds: 90))
+        .copyWith(second: 0, millisecond: 0, microsecond: 0);
     await showCupertinoDialog(
       context: context,
       builder: (BuildContext context) {
