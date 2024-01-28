@@ -1,5 +1,6 @@
-import 'package:celechron/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:celechron/utils/utils.dart';
+import 'package:celechron/design/persistent_headers.dart';
 
 class CreditsPage extends StatelessWidget {
   const CreditsPage({super.key});
@@ -7,141 +8,150 @@ class CreditsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('关于'),
-        border: null,
-      ),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.only(left: 32, right: 32),
-          child: CustomScrollView(
-            slivers: [
-              SliverList(
-                delegate: SliverChildListDelegate([
-                  const SizedBox(
-                    height: 36,
-                  ),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.asset(
-                        "assets/logo.png",
-                        height: 72,
-                      ),
-                      const SizedBox(
-                        width: 8,
-                      ),
-                      Column(
-                        children: [
-                          const Text(
-                            'Celechron',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 32,
-                            ),
+        child: CustomScrollView(
+          slivers: [
+            const CelechronSliverTextHeader(subtitle: '关于'),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Image.asset(
+                      "assets/logo.png",
+                      height: 108,
+                    ),
+                    const SizedBox(
+                      width: 8,
+                    ),
+                    Column(
+                      children: [
+                        const Text(
+                          'Celechron',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 32,
                           ),
-                          Text(
-                            '$celechronVersion 版本',
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              fontSize: 12,
-                            ),
+                        ),
+                        Text(
+                          '$celechronVersion 版本',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                            fontSize: 12,
                           ),
-                        ],
-                      )
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 24,
-                  ),
-                  const Text(
-                    '制作人员',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 24,
-                  ),
-                  const Text(
-                    '设计',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
-                    ),
-                  ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    verticalDirection: VerticalDirection.down,
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          'nosig',
-                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          '空之探险队的 Kate',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
+                      ],
+                    )
+                  ],
+                ),
+                const SizedBox(
+                  height: 24,
+                ),
+                const Text(
+                  '制作人员',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 20,
                   ),
-                  const SizedBox(
-                    height: 24,
+                ),
+                const SizedBox(
+                  height: 32,
+                ),
+                const Text(
+                  '🎨设计',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const Text(
-                    '开发者',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 18,
+                ),
+                const SizedBox(
+                  height: 8,
+                ),
+                const Padding(padding: EdgeInsets.symmetric(horizontal: 32), child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  verticalDirection: VerticalDirection.down,
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'nosig',
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                  ),
-                  const SizedBox(
-                    height: 8,
-                  ),
-                  const Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    mainAxisSize: MainAxisSize.max,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    verticalDirection: VerticalDirection.down,
-                    children: <Widget>[
-                      Expanded(
-                        child: Text(
-                          'nosig',
-                          textAlign: TextAlign.center,
-                        ),
+                    Expanded(
+                      child: Text(
+                        '空之探险队的 Kate',
+                        textAlign: TextAlign.center,
                       ),
-                      Expanded(
-                        child: Text(
-                          'iotang',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(
-                    height: 24,
-                  ),
-                  const Text(
-                    '本程序采用 GPLv3 协议开源',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 12,
                     ),
+                  ],
+                )),
+                const SizedBox(
+                  height: 24,
+                ),
+                const Text(
+                  '🧑‍💻开发',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
                   ),
-                ]),
-              ),
-            ],
-          ),
+                ),
+                const SizedBox(
+                  height: 8,
+                ),
+              const Padding(padding: EdgeInsets.symmetric(horizontal: 32), child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  verticalDirection: VerticalDirection.down,
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'nosig',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'iotang',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                )),
+                const SizedBox(
+                  height: 32,
+                ),
+                const Text(
+                  '本程序采用 GPLv3 协议开源',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(
+                  height: 4,
+                ),
+                const Text(
+                  '浙ICP备2024061973号-2A',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 12,
+                  ),
+                ),
+                    const SizedBox(
+                      height: 64,
+                    ),
+              ]),
+            ),
+          ],
         ),
       ),
     );
