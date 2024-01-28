@@ -23,6 +23,7 @@ class FlowController extends GetxController {
 
   @override
   void onInit() {
+    refreshFlowList();
     Timer.periodic(const Duration(seconds: 1), (Timer t) {
       timeNow.value = DateTime.now();
       refreshFlowList();
@@ -256,14 +257,16 @@ class FlowController extends GetxController {
         continue;
       }
 
-      if (flowList[i].type == PeriodType.flow &&
-          !existingUid.containsKey(flowList[i].fromUid)) {
-        flowList.removeAt(i);
-        i--;
-      } else {
-        flowList[i].summary = existingUid[flowList[i].fromUid]!.summary;
-        flowList[i].location = existingUid[flowList[i].fromUid]!.location;
-        flowList[i].description = existingUid[flowList[i].fromUid]!.description;
+      if (flowList[i].type == PeriodType.flow) {
+        if (!existingUid.containsKey(flowList[i].fromUid)) {
+          flowList.removeAt(i);
+          i--;
+        } else {
+          flowList[i].summary = existingUid[flowList[i].fromUid]!.summary;
+          flowList[i].location = existingUid[flowList[i].fromUid]!.location;
+          flowList[i].description =
+              existingUid[flowList[i].fromUid]!.description;
+        }
       }
     }
 
