@@ -270,6 +270,42 @@ class FlowController extends GetxController {
       }
     }
 
+    flowList.sort((a, b) {
+      return a.startTime.compareTo(b.startTime);
+    });
+
+    for (var i = 0; i < flowList.length; i++) {
+      if (flowList[i].startTime.isAfter(DateTime.now())) {
+        break;
+      }
+      if (flowList[i].type == PeriodType.flow) {
+        Duration prevProgress =
+            (flowList[i].lastUpdateTime ?? flowList[i].startTime)
+                .difference(flowList[i].startTime);
+        flowList[i].lastUpdateTime = DateTime.now();
+        Duration currProgress =
+            flowList[i].lastUpdateTime!.difference(flowList[i].startTime);
+        Duration length = flowList[i].endTime.difference(flowList[i].startTime);
+
+        if (currProgress <= Duration.zero) break;
+        if (currProgress > length) currProgress = length;
+
+        for (var deadline in deadlineList) {
+          if (deadline.uid != flowList[i].fromUid) continue;
+          deadline.updateTimeSpent(
+              deadline.timeSpent - prevProgress + currProgress);
+        }
+        deadlineList.refresh();
+        flowList.refresh();
+      }
+      if (flowList[i].endTime.isBefore(DateTime.now())) {
+        flowList.removeAt(i);
+        i--;
+        flowList.refresh();
+        deadlineList.refresh();
+      }
+    }
+
     if (flowList.length <= 5 && _currentBasePeriodCursor != -1) {
       for (var i = 0;
           i < 5 && i + _currentBasePeriodCursor < _basePeriodList.length;
@@ -284,40 +320,6 @@ class FlowController extends GetxController {
           flowList
               .add(_basePeriodList[i + _currentBasePeriodCursor].copyWith());
         }
-      }
-    }
-
-    flowList.sort((a, b) {
-      return a.startTime.compareTo(b.startTime);
-    });
-
-    while (flowList.isNotEmpty) {
-      if (flowList[0].type == PeriodType.flow) {
-        Duration prevProgress =
-            (flowList[0].lastUpdateTime ?? flowList[0].startTime)
-                .difference(flowList[0].startTime);
-        flowList[0].lastUpdateTime = DateTime.now();
-        Duration currProgress =
-            flowList[0].lastUpdateTime!.difference(flowList[0].startTime);
-        Duration length = flowList[0].endTime.difference(flowList[0].startTime);
-
-        if (currProgress <= Duration.zero) break;
-        if (currProgress > length) currProgress = length;
-
-        for (var deadline in deadlineList) {
-          if (deadline.uid != flowList[0].fromUid) continue;
-          deadline.updateTimeSpent(
-              deadline.timeSpent - prevProgress + currProgress);
-        }
-        deadlineList.refresh();
-        flowList.refresh();
-      }
-      if (flowList[0].endTime.isBefore(DateTime.now())) {
-        flowList.removeAt(0);
-        flowList.refresh();
-        deadlineList.refresh();
-      } else {
-        break;
       }
     }
 

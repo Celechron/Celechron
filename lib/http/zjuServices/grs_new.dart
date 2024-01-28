@@ -18,9 +18,9 @@ class GrsNew {
 
     req = await httpClient
         .getUrl(Uri.parse(
-        "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F"))
+            "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F"))
         .timeout(const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("request timeout"));
+            onTimeout: () => throw ExceptionWithMessage("request timeout"));
     req.followRedirects = false;
     req.cookies.add(ssoCookie);
     res = await req.close().timeout(const Duration(seconds: 8),
@@ -39,9 +39,9 @@ class GrsNew {
 
     req = await httpClient
         .getUrl(Uri.parse(
-        "https://yjsy.zju.edu.cn/dataapi/sys/cas/client/validateLogin?ticket=${ticket}&service=https:%2F%2Fyjsy.zju.edu.cn%2F"))
+            "https://yjsy.zju.edu.cn/dataapi/sys/cas/client/validateLogin?ticket=$ticket&service=https:%2F%2Fyjsy.zju.edu.cn%2F"))
         .timeout(const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("request timeout"));
+            onTimeout: () => throw ExceptionWithMessage("request timeout"));
     res = await req.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("request timeout"));
     final loginJson = await res.transform(utf8.decoder).join();
@@ -80,10 +80,11 @@ class GrsNew {
         throw ExceptionWithMessage("not logged in");
       }
 
-      req = await httpClient.getUrl(Uri.parse(
-          "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryXskbByLoginUser?xn=$year&pkxq=$semester"))
+      req = await httpClient
+          .getUrl(Uri.parse(
+              "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryXskbByLoginUser?xn=$year&pkxq=$semester"))
           .timeout(const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("request timeout"));
+              onTimeout: () => throw ExceptionWithMessage("request timeout"));
       req.headers.add("X-Access-Token", _token!);
       res = await req.close().timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("request timeout"));
@@ -98,11 +99,14 @@ class GrsNew {
       final dayWithClasses = result["result"] as Map<String, dynamic>;
       List<Session> sessions = [];
       for (int i = 1; i <= 7; ++i) {
-        var classesThisDay = (dayWithClasses["$i"] ?? defaultMap) as Map<String, dynamic>;
+        var classesThisDay =
+            (dayWithClasses["$i"] ?? defaultMap) as Map<String, dynamic>;
         Map<String, Session> sessionThisDay = {};
         for (int j = 1; j <= 15; ++j) {
-          var wrapper = (classesThisDay["$j"] ?? defaultMap) as Map<String, dynamic>;
-          var classesThisPeriod = (wrapper["pyKcbjSjddVOList"] ?? []) as List<dynamic>;
+          var wrapper =
+              (classesThisDay["$j"] ?? defaultMap) as Map<String, dynamic>;
+          var classesThisPeriod =
+              (wrapper["pyKcbjSjddVOList"] ?? []) as List<dynamic>;
 
           for (var rawClassDyn in classesThisPeriod) {
             try {
@@ -137,8 +141,7 @@ class GrsNew {
               newSession.oddWeek = newSession.evenWeek = true;
 
               sessionThisDay[classId] = newSession;
-            }
-            finally {
+            } finally {
               // log here?
             }
           }
@@ -148,13 +151,11 @@ class GrsNew {
       }
 
       return Tuple(null, sessions);
-    }
-    catch (e, s) {
+    } catch (e, s) {
       print(e);
       print(s);
       return Tuple(null, []);
-    }
-    finally {}
+    } finally {}
   }
 }
 

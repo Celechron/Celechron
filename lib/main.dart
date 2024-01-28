@@ -115,10 +115,27 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   int _indexNum = 0;
+  final CupertinoTabController _controller = CupertinoTabController();
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.index = 0;
+  }
+
+  void changeIndex(int index) {
+    if (_indexNum != index) {
+      setState(() {
+        _indexNum = index;
+        _controller.index = index;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return CupertinoTabScaffold(
+      controller: _controller,
       tabBuilder: (context, index) => CupertinoTabView(
         builder: (context) => _getPagesWidget(index),
       ),
@@ -182,10 +199,42 @@ class _MyHomePageState extends State<MyHomePage> {
         systemNavigationBarColor: Colors.transparent,
       ));
     }
-
+    String? swipeDirection;
     return Offstage(
       offstage: _indexNum != index,
-      child: TickerMode(enabled: _indexNum == index, child: widgetList[index]),
+      child: TickerMode(
+        enabled: _indexNum == index,
+        child: GestureDetector(
+          onPanUpdate: (details) {
+            int sensitivity = 4;
+            if (details.delta.dy > sensitivity / 2 ||
+                details.delta.dy < -sensitivity / 2) {
+              return;
+            }
+            if (details.delta.dx > sensitivity) {
+              swipeDirection = 'right';
+            } else if (details.delta.dx < -sensitivity) {
+              swipeDirection = 'left';
+            }
+          },
+          onPanEnd: (details) {
+            if (swipeDirection == null) {
+              return;
+            }
+            if (swipeDirection == 'left') {
+              if (_indexNum < 4) {
+                changeIndex(_indexNum + 1);
+              }
+            }
+            if (swipeDirection == 'right') {
+              if (_indexNum > 0) {
+                changeIndex(_indexNum - 1);
+              }
+            }
+          },
+          child: widgetList[index],
+        ),
+      ),
     );
   }
 }
