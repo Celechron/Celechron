@@ -292,6 +292,8 @@ class CourseSchedulePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+        backgroundColor: CupertinoDynamicColor.resolve(
+            CupertinoColors.systemGroupedBackground, context),
         child: CustomScrollView(
       slivers: [
         const CelechronSliverTextHeader(subtitle: '课表'),

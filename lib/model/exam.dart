@@ -83,7 +83,7 @@ class Exam {
 
   get chineseTime => TimeHelper.chineseTime(time[0], time[1]);
 
-  get chineseDate => TimeHelper.chineseDay(time[0]);
+  get chineseDate => '${time[0].month}月${time[0].day}日';
 }
 
 enum ExamType { midterm, finalExam }

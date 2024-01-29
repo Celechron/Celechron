@@ -203,7 +203,8 @@ class ScholarPage extends StatelessWidget {
                                           title: '四分制',
                                           content: _scholarController.gpa[1]
                                               .toStringAsFixed(2),
-                                          extraContent: _scholarController.gpa[2]
+                                          extraContent: _scholarController
+                                              .gpa[2]
                                               .toStringAsFixed(2),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
@@ -452,165 +453,179 @@ class ScholarPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
-        child: SafeArea(
-            bottom: false,
-            child: CustomScrollView(
-              slivers: [
-                SliverPinnedToBoxAdapter(
-                  child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 8),
-                      child: Column(children: [
-                        Row(
-                          children: [
-                            const SizedBox(width: 2),
-                            Text(
-                              '学业',
-                              style: CupertinoTheme.of(context)
-                                  .textTheme
-                                  .navLargeTitleTextStyle
-                                  .copyWith(fontSize: 24),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: CupertinoSearchTextField(
-                                placeholder: '搜索课程、事项...',
-                                placeholderStyle: CupertinoTheme.of(context)
-                                    .textTheme
-                                    .textStyle
-                                    .copyWith(
-                                        color: CupertinoColors.systemGrey,
-                                        height: 1.25,
-                                        fontSize: 18),
-                                style: CupertinoTheme.of(context)
-                                    .textTheme
-                                    .textStyle
-                                    .copyWith(height: 1.25, fontSize: 18),
-                                borderRadius: BorderRadius.circular(12),
-                                itemColor: CupertinoColors.systemGrey,
-                                itemSize: 20,
-                                suffixInsets:
-                                    const EdgeInsetsDirectional.fromSTEB(
-                                        0, 0, 5, 0),
-                                prefixInsets:
-                                    const EdgeInsetsDirectional.fromSTEB(
-                                        10, 0, 0, 0),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 6, vertical: 8),
-                                onTap: () async {
-                                  FocusManager.instance.primaryFocus?.unfocus();
-                                  Navigator.of(context, rootNavigator: true)
-                                      .push(CupertinoPageRoute(
-                                          builder: (context) => SearchPage()));
-                                },
-                                focusNode: AlwaysDisabledFocusNode(),
-                                // Do not popup the keyboard
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Row(children: [
-                          Expanded(
-                            child: SizedBox(
-                              height: 30,
-                              child: ListView.builder(
-                                  scrollDirection: Axis.horizontal,
-                                  itemCount:
-                                      _scholarController.semesters.length,
-                                  itemBuilder: (context, index) {
-                                    final semester =
-                                        _scholarController.semesters[index];
-                                    return Obx(() => Stack(children: [
-                                          AnimateButton(
-                                            text:
-                                                '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
-                                            onTap: () {
-                                              _scholarController
-                                                  .semesterIndex.value = index;
-                                              _scholarController.semesterIndex
-                                                  .refresh();
-                                            },
-                                            backgroundColor: _scholarController
-                                                        .semesterIndex.value ==
-                                                    index
-                                                ? CustomCupertinoDynamicColors
-                                                    .cyan
-                                                : CupertinoColors.systemFill,
-                                          ),
-                                          const SizedBox(width: 90),
-                                        ]));
-                                  }),
-                            ),
-                          ),
-                        ]),
-                      ])),
-                ),
-                if (_scholarController.user.isLogin)
-                  CupertinoSliverRefreshControl(
-                    onRefresh: () async {
-                      var error = await _scholarController.fetchData();
-                      if (error.any((e) => e != null)) {
-                        if (context.mounted) {
-                          showCupertinoDialog(
-                              context: context,
-                              builder: (context) {
-                                return CupertinoAlertDialog(
-                                  title: const Text('刷新失败'),
-                                  content: Text(error
-                                      .where((e) => e != null)
-                                      .fold('', (p, v) => '$p\n$v')
-                                      .trim()),
-                                  actions: [
-                                    CupertinoDialogAction(
-                                      child: const Text('确定'),
-                                      onPressed: () async {
-                                        Navigator.of(context).pop();
-                                      },
-                                    )
-                                  ],
-                                );
-                              });
-                        }
-                      }
-                    },
-                  ),
-                Obx(() {
-                  if (_scholarController.user.semesters.isNotEmpty) {
-                    return SliverToBoxAdapter(
-                      child: Padding(
+        /*backgroundColor: CupertinoDynamicColor.resolve(
+            CupertinoColors.systemGroupedBackground, context),*/
+        child: CustomScrollView(
+      slivers: [
+        SliverPinnedToBoxAdapter(
+            child: Container(
+          decoration: BoxDecoration(
+            color: CupertinoDynamicColor.resolve(
+                CupertinoColors.systemBackground, context),
+            /*boxShadow: [
+              BoxShadow(
+                color: CupertinoDynamicColor.resolve(
+                    CupertinoColors.systemGrey5, context),
+                offset: const Offset(0, 0),
+                blurRadius: 4,
+              ),
+            ],
+            borderRadius: const BorderRadius.only(
+                bottomLeft: Radius.circular(16),
+                bottomRight: Radius.circular(16)),*/
+          ),
+          child: Padding(
+              padding: EdgeInsets.only(
+                  left: 16,
+                  right: 16,
+                  bottom: 4,
+                  top: 8 + MediaQuery.of(context).padding.top),
+              child: Column(children: [
+                Row(
+                  children: [
+                    const SizedBox(width: 2),
+                    Text(
+                      '学业',
+                      style: CupertinoTheme.of(context)
+                          .textTheme
+                          .navLargeTitleTextStyle
+                          .copyWith(fontSize: 24),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: CupertinoSearchTextField(
+                        placeholder: '搜索课程、事项...',
+                        placeholderStyle: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .copyWith(
+                                color: CupertinoColors.systemGrey,
+                                height: 1.25,
+                                fontSize: 18),
+                        style: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .copyWith(height: 1.25, fontSize: 18),
+                        borderRadius: BorderRadius.circular(12),
+                        itemColor: CupertinoColors.systemGrey,
+                        itemSize: 20,
+                        suffixInsets:
+                            const EdgeInsetsDirectional.fromSTEB(0, 0, 5, 0),
+                        prefixInsets:
+                            const EdgeInsetsDirectional.fromSTEB(10, 0, 0, 0),
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 16, vertical: 8),
-                        child: Column(
-                          children: [
-                            const SizedBox(height: 20),
-                            _buildGradeBrief(context),
-                            const SizedBox(height: 20),
-                            _buildSemester(context),
-                            //_buildHistory(context),
-                          ],
-                        ),
+                            horizontal: 6, vertical: 8),
+                        onTap: () async {
+                          FocusManager.instance.primaryFocus?.unfocus();
+                          Navigator.of(context, rootNavigator: true).push(
+                              CupertinoPageRoute(
+                                  builder: (context) => SearchPage()));
+                        },
+                        focusNode: AlwaysDisabledFocusNode(),
+                        // Do not popup the keyboard
                       ),
-                    );
-                  } else {
-                    return SliverToBoxAdapter(
-                        child: SizedBox(
-                            height: 500,
-                            child: Column(children: [
-                              const Spacer(),
-                              Text(
-                                  _scholarController.user.isLogin
-                                      ? '下拉刷新'
-                                      : '未登录',
-                                  style: CupertinoTheme.of(context)
-                                      .textTheme
-                                      .textStyle),
-                              const Spacer()
-                            ])));
-                  }
-                })
-              ],
-            )));
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Row(children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 30,
+                      child: Obx(() => ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: _scholarController.semesters.length,
+                          itemBuilder: (context, index) {
+                            final semester =
+                                _scholarController.semesters[index];
+                            return Stack(children: [
+                                  Obx(() => AnimateButton(
+                                    text:
+                                        '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
+                                    onTap: () {
+                                      _scholarController.semesterIndex.value =
+                                          index;
+                                      _scholarController.semesterIndex
+                                          .refresh();
+                                    },
+                                    backgroundColor: _scholarController
+                                                .semesterIndex.value ==
+                                            index
+                                        ? CustomCupertinoDynamicColors.cyan
+                                        : CupertinoColors.systemFill,
+                                  )),
+                                  const SizedBox(width: 90),
+                                ]);
+                          }),
+                    ),
+                  )),
+                ]),
+                const SizedBox(height: 4),
+                const Divider(),
+              ])),
+        )),
+        if (_scholarController.user.isLogin)
+          CupertinoSliverRefreshControl(
+            onRefresh: () async {
+              var error = await _scholarController.fetchData();
+              if (error.any((e) => e != null)) {
+                if (context.mounted) {
+                  showCupertinoDialog(
+                      context: context,
+                      builder: (context) {
+                        return CupertinoAlertDialog(
+                          title: const Text('刷新失败'),
+                          content: Text(error
+                              .where((e) => e != null)
+                              .fold('', (p, v) => '$p\n$v')
+                              .trim()),
+                          actions: [
+                            CupertinoDialogAction(
+                              child: const Text('确定'),
+                              onPressed: () async {
+                                Navigator.of(context).pop();
+                              },
+                            )
+                          ],
+                        );
+                      });
+                }
+              }
+            },
+          ),
+        Obx(() {
+          if (_scholarController.user.semesters.isNotEmpty) {
+            return SliverToBoxAdapter(
+              child: Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Column(
+                  children: [
+                    _buildGradeBrief(context),
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 12),
+                    _buildSemester(context),
+                    //_buildHistory(context),
+                  ],
+                ),
+              ),
+            );
+          } else {
+            return SliverToBoxAdapter(
+                child: SizedBox(
+                    height: 500,
+                    child: Column(children: [
+                      const Spacer(),
+                      Text(_scholarController.user.isLogin ? '下拉刷新' : '未登录',
+                          style:
+                              CupertinoTheme.of(context).textTheme.textStyle),
+                      const Spacer()
+                    ])));
+          }
+        })
+      ],
+    ));
   }
 }
 
