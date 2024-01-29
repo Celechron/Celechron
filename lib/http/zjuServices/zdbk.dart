@@ -181,14 +181,14 @@ class Zdbk {
       var sessions = (jsonDecode(timetableJson) as List<dynamic>)
           .where((e) => e['kcb'] != null)
           .map((e) => Session.fromZdbk(e));
-      _db.setCachedWebPage('zdbk_Timetable', timetableJson);
+      _db.setCachedWebPage('zdbk_Timetable$year$semester', timetableJson);
       return Tuple(null, sessions);
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(
           exception,
-          (jsonDecode((_db.getCachedWebPage('zdbk_Timetable') ?? '[]'))
+          (jsonDecode((_db.getCachedWebPage('zdbk_Timetable$year$semester') ?? '[]'))
                   as List<dynamic>)
               .where((e) => e['kcb'] != null)
               .map((e) => Session.fromZdbk(e)));
