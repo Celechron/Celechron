@@ -12,11 +12,13 @@ class CreditsPage extends StatelessWidget {
         child: CustomScrollView(
           slivers: [
             const CelechronSliverTextHeader(subtitle: '关于'),
-            SliverFillRemaining(
-              hasScrollBody: false,
+            SliverToBoxAdapter(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                   children: [
+                const SizedBox(
+                  height: 64,
+                ),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -59,7 +61,7 @@ class CreditsPage extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(
-                  height: 32,
+                  height: 24,
                 ),
                 const Text(
                   '🎨设计',
@@ -126,31 +128,33 @@ class CreditsPage extends StatelessWidget {
                     ),
                   ],
                 )),
-                const SizedBox(
-                  height: 32,
-                ),
-                const Text(
+              ]),
+            ),
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [Text(
                   '本程序采用 GPLv3 协议开源',
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     fontSize: 12,
+                    color: CupertinoDynamicColor.resolve(CupertinoColors.secondaryLabel, context)
                   ),
                 ),
-                const SizedBox(
-                  height: 4,
-                ),
-                const Text(
-                  '浙ICP备2024061973号-2A',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
+                  const SizedBox(
+                    height: 4,
                   ),
-                ),
-                    const SizedBox(
-                      height: 64,
+                  Text(
+                    '浙ICP备2024061973号-2A',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: CupertinoDynamicColor.resolve(CupertinoColors.secondaryLabel, context),
                     ),
-              ]),
-            ),
+                  ),],
+              )
+            )
           ],
         ),
       ),

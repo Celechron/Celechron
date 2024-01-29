@@ -5,6 +5,7 @@ import 'package:flutter/cupertino.dart';
 class CelechronSliverTextHeader extends StatelessWidget {
   final String subtitle;
   final Widget? right;
+  final Widget? bottom;
   final double fontSize;
   final bool firstPage;
 
@@ -12,6 +13,7 @@ class CelechronSliverTextHeader extends StatelessWidget {
       {super.key,
       required this.subtitle,
       this.right,
+      this.bottom,
       this.fontSize = 20,
       this.firstPage = false});
 
@@ -24,6 +26,7 @@ class CelechronSliverTextHeader extends StatelessWidget {
             firstPage: firstPage,
             subtitle: subtitle,
             right: right,
+            bottom: bottom,
             padding: MediaQuery.of(context).padding.top));
   }
 }
@@ -112,10 +115,10 @@ class CelechronHeader extends SliverPersistentHeaderDelegate {
   }
 
   @override
-  double get minExtent => 48 + padding;
+  double get minExtent => 48 + padding + (bottom == null ? 0 : 48);
 
   @override
-  double get maxExtent => 48 + padding;
+  double get maxExtent => 48 + padding + (bottom == null ? 0 : 48);
 
   @override
   bool shouldRebuild(covariant SliverPersistentHeaderDelegate oldDelegate) {

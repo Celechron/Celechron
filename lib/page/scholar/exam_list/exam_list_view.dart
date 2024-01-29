@@ -27,17 +27,119 @@ class ExamListPage extends StatelessWidget {
       children: [
         SubSubtitleRow(subtitle: exams[0].chineseDate),
         RoundRectangleCard(
-            child: Padding(
-          padding: const EdgeInsets.only(left: 8, right: 8),
-          child: Column(children: [
-            Row(
-              children: [
-                Expanded(
-                    child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
+          child: Padding(
+              padding: const EdgeInsets.only(left: 8, right: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Column(
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            width: 12.0,
+                            height: 12.0,
+                            decoration: const BoxDecoration(
+                              color: CupertinoColors.systemPink,
+                              shape: BoxShape.rectangle,
+                            ),
+                          ),
+                          const SizedBox(width: 8.0),
+                          Expanded(
+                              child: Text(exams[0].name,
+                                  style: CupertinoTheme.of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .copyWith(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        overflow: TextOverflow.ellipsis,
+                                      ))),
+                        ],
+                      ),
+                      const SizedBox(height: 4.0),
+                      Row(children: [
+                        Icon(
+                          CupertinoIcons.time_solid,
+                          size: 14,
+                          color: CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .color!
+                              .withOpacity(0.5),
+                        ),
+                        Expanded(
+                            child: Text(' 时间：${exams[0].chineseTime}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.normal,
+                                  color: CupertinoTheme.of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .color!
+                                      .withOpacity(0.75),
+                                  overflow: TextOverflow.ellipsis,
+                                )))
+                      ]),
+                      Row(children: [
+                        Icon(
+                          CupertinoIcons.location_solid,
+                          size: 14,
+                          color: CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .color!
+                              .withOpacity(0.5),
+                        ),
+                        Expanded(
+                            child: Text(' 地点：${exams[0].location ?? '未知'}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.normal,
+                                  color: CupertinoTheme.of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .color!
+                                      .withOpacity(0.75),
+                                  overflow: TextOverflow.ellipsis,
+                                )))
+                      ]),
+                      Row(children: [
+                        Icon(
+                          CupertinoIcons.map_pin_ellipse,
+                          size: 14,
+                          color: CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .color!
+                              .withOpacity(0.5),
+                        ),
+                        Expanded(
+                            child: Text(' 座位：${exams[0].seat ?? '未知'}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.normal,
+                                  color: CupertinoTheme.of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .color!
+                                      .withOpacity(0.75),
+                                  overflow: TextOverflow.ellipsis,
+                                )))
+                      ]),
+                    ],
+                  ),
+                  for (var i = 1; i < exams.length; i++)
                     Column(
                       children: [
+                        Divider(
+                          height: 16,
+                          thickness: 1,
+                          indent: 0,
+                          endIndent: 0,
+                          color: CupertinoDynamicColor.resolve(
+                              CupertinoColors.systemFill, context),
+                        ),
                         Row(
                           children: [
                             Container(
@@ -50,18 +152,18 @@ class ExamListPage extends StatelessWidget {
                             ),
                             const SizedBox(width: 8.0),
                             Expanded(
-                                child: Text(exams[0].name,
+                                child: Text(exams[i].name,
                                     style: CupertinoTheme.of(context)
                                         .textTheme
                                         .textStyle
                                         .copyWith(
-                                          fontSize: 18,
+                                          fontSize: 16,
                                           fontWeight: FontWeight.bold,
                                           overflow: TextOverflow.ellipsis,
                                         ))),
                           ],
                         ),
-                        const SizedBox(height: 8.0),
+                        const SizedBox(height: 4.0),
                         Row(children: [
                           Icon(
                             CupertinoIcons.time_solid,
@@ -73,7 +175,7 @@ class ExamListPage extends StatelessWidget {
                                 .withOpacity(0.5),
                           ),
                           Expanded(
-                              child: Text(' 时间：${exams[0].chineseTime}',
+                              child: Text(' 时间：${exams[i].chineseTime}',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.normal,
@@ -96,7 +198,7 @@ class ExamListPage extends StatelessWidget {
                                 .withOpacity(0.5),
                           ),
                           Expanded(
-                              child: Text(' 地点：${exams[0].location ?? '未知'}',
+                              child: Text(' 地点：${exams[i].location ?? '未知'}',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.normal,
@@ -119,7 +221,7 @@ class ExamListPage extends StatelessWidget {
                                 .withOpacity(0.5),
                           ),
                           Expanded(
-                              child: Text(' 座位：${exams[0].seat ?? '未知'}',
+                              child: Text(' 座位：${exams[i].seat ?? '未知'}',
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.normal,
@@ -133,118 +235,9 @@ class ExamListPage extends StatelessWidget {
                         ]),
                       ],
                     ),
-                    for (var i = 1; i < exams.length; i++)
-                      Column(
-                        children: [
-                          Divider(
-                            height: 16,
-                            thickness: 1,
-                            indent: 0,
-                            endIndent: 0,
-                            color: CupertinoDynamicColor.resolve(
-                                CupertinoColors.systemFill, context),
-                          ),
-                          Row(
-                            children: [
-                              Container(
-                                width: 12.0,
-                                height: 12.0,
-                                decoration: const BoxDecoration(
-                                  color: CupertinoColors.systemPink,
-                                  shape: BoxShape.rectangle,
-                                ),
-                              ),
-                              const SizedBox(width: 8.0),
-                              Expanded(
-                                  child: Text(exams[i].name,
-                                      style: CupertinoTheme.of(context)
-                                          .textTheme
-                                          .textStyle
-                                          .copyWith(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold,
-                                            overflow: TextOverflow.ellipsis,
-                                          ))),
-                            ],
-                          ),
-                          const SizedBox(height: 8.0),
-                          Row(children: [
-                            Icon(
-                              CupertinoIcons.time_solid,
-                              size: 14,
-                              color: CupertinoTheme.of(context)
-                                  .textTheme
-                                  .textStyle
-                                  .color!
-                                  .withOpacity(0.5),
-                            ),
-                            Expanded(
-                                child: Text(' 时间：${exams[i].chineseTime}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.normal,
-                                      color: CupertinoTheme.of(context)
-                                          .textTheme
-                                          .textStyle
-                                          .color!
-                                          .withOpacity(0.75),
-                                      overflow: TextOverflow.ellipsis,
-                                    )))
-                          ]),
-                          Row(children: [
-                            Icon(
-                              CupertinoIcons.location_solid,
-                              size: 14,
-                              color: CupertinoTheme.of(context)
-                                  .textTheme
-                                  .textStyle
-                                  .color!
-                                  .withOpacity(0.5),
-                            ),
-                            Expanded(
-                                child: Text(' 地点：${exams[i].location ?? '未知'}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.normal,
-                                      color: CupertinoTheme.of(context)
-                                          .textTheme
-                                          .textStyle
-                                          .color!
-                                          .withOpacity(0.75),
-                                      overflow: TextOverflow.ellipsis,
-                                    )))
-                          ]),
-                          Row(children: [
-                            Icon(
-                              CupertinoIcons.map_pin_ellipse,
-                              size: 14,
-                              color: CupertinoTheme.of(context)
-                                  .textTheme
-                                  .textStyle
-                                  .color!
-                                  .withOpacity(0.5),
-                            ),
-                            Expanded(
-                                child: Text(' 座位：${exams[i].seat ?? '未知'}',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.normal,
-                                      color: CupertinoTheme.of(context)
-                                          .textTheme
-                                          .textStyle
-                                          .color!
-                                          .withOpacity(0.75),
-                                      overflow: TextOverflow.ellipsis,
-                                    )))
-                          ]),
-                        ],
-                      ),
-                  ],
-                )),
-              ],
-            ),
-          ]),
-        ))
+                ],
+              )),
+        )
       ],
     );
   }
@@ -308,6 +301,8 @@ class ExamListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
+      backgroundColor: CupertinoDynamicColor.resolve(
+          CupertinoColors.systemGroupedBackground, context),
       child: CustomScrollView(
         slivers: [
           const CelechronSliverTextHeader(
