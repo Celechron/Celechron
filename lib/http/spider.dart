@@ -185,7 +185,7 @@ class Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));*/
-      // 查课表
+      // 本科生课
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {
         for (var e in value.item2) {
@@ -218,6 +218,7 @@ class Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
+      // 研究生课
       timetableFetches
           .add(_grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
         for (var e in value.item2) {
