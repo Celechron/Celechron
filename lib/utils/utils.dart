@@ -1,5 +1,3 @@
-String celechronVersion = '0.2.3 beta';
-
 enum PeriodType { classes, test, user, virtual, flow }
 
 enum DeadlineType { normal, fixed, fixedlegacy }

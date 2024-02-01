@@ -1,11 +1,13 @@
 import 'package:get/get.dart';
-import 'package:celechron/model/user.dart';
+import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/option.dart';
+import 'package:celechron/model/fuse.dart';
 import 'package:celechron/database/database_helper.dart';
 
 class OptionController extends GetxController {
   final option = Get.find<Option>(tag: 'option');
-  final user = Get.find<Rx<User>>(tag: 'user');
+  final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
+  final _fuse = Get.find<Rx<Fuse>>(tag: 'fuse');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
   late final RxInt allowTimeLength = option.allowTime.length.obs;
 
@@ -35,8 +37,11 @@ class OptionController extends GetxController {
     _db.setGpaStrategy(value);
   }
 
+  String get celechronVersion => _fuse.value.displayVersion;
+  bool get hasNewVersion => _fuse.value.hasNewVersion;
+
   void logout() {
-    user.value.logout();
-    user.refresh();
+    scholar.value.logout();
+    scholar.refresh();
   }
 }
