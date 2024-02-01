@@ -5,8 +5,10 @@ import 'package:flutter/material.dart' show Colors, Icons;
 import 'package:flutter/scheduler.dart';
 import 'package:get/get.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:url_launcher/url_launcher_string.dart';
+import 'model/fuse.dart';
 import 'page/calendar/calendar_view.dart';
-import 'model/user.dart';
+import 'model/scholar.dart';
 import 'page/flow/flow_view.dart';
 import 'page/task/task_view.dart';
 import 'database/database_helper.dart';
@@ -25,12 +27,13 @@ void main() async {
   await db.init();
 
   // 注入数据观察项（相当于事件总线，更新这些变量将导致Widget重绘
-  Get.put(db.getUser().obs, tag: 'user');
+  Get.put(db.getScholar().obs, tag: 'scholar');
   Get.put(db.getDeadlineList().obs, tag: 'deadlineList');
   Get.put(db.getDeadlineListUpdateTime().obs, tag: 'deadlineListLastUpdate');
   Get.put(db.getFlowList().obs, tag: 'flowList');
   Get.put(db.getFlowListUpdateTime().obs, tag: 'flowListLastUpdate');
   Get.put(db.getOption(), tag: 'option');
+  Get.put(db.getFuse().obs, tag: 'fuse');
 
   runApp(const CelechronApp());
   if (Platform.isAndroid) {
@@ -57,13 +60,13 @@ class _CelechronAppState extends State<CelechronApp> {
   Future<void> initTimezone() async {}
 
   Future<void> initUser() async {
-    var user = Get.find<Rx<User>>(tag: 'user');
-    if (user.value.isLogin) {
+    var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
+    if (scholar.value.isLogin) {
       // ignore: avoid_print
       print("数据加载成功");
-      await user.value.login();
-      await user.value.refresh();
-      user.refresh();
+      await scholar.value.login();
+      await scholar.value.refresh();
+      scholar.refresh();
     } else {
       // ignore: avoid_print
       print("数据加载失败");
@@ -121,6 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
     _controller.index = 0;
+    initFuse();
   }
 
   void changeIndex(int index) {
@@ -236,5 +240,40 @@ class _MyHomePageState extends State<MyHomePage> {
         ),
       ),
     );
+  }
+
+  Future<void> initFuse() async {
+    await Future.delayed(const Duration(seconds: 1));
+    var fuse = Get.find<Rx<Fuse>>(tag: 'fuse');
+    var response = await fuse.value.checkUpdate().whenComplete(() => fuse.refresh());
+    if(response != null) {
+      if (context.mounted) {
+        showCupertinoDialog(
+            context: context,
+            builder: (context) {
+              return CupertinoAlertDialog(
+                title: const Text('更新可用'),
+                content: Text(response),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('忽略'),
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                    },
+                  ),
+                  CupertinoDialogAction(
+                    child: const Text('访问网站'),
+                    onPressed: () async {
+                      await launchUrlString(
+                        'https://celechron.top',
+                        mode: LaunchMode.externalApplication,
+                      );
+                    },
+                  ),
+                ],
+              );
+            });
+      }
+    }
   }
 }

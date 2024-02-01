@@ -1,35 +1,40 @@
 import 'package:celechron/model/deadline.dart';
+import 'package:celechron/model/fuse.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
-import 'package:celechron/model/user.dart';
+import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/option.dart';
 import 'adapters/duration_adapter.dart';
-import 'adapters/user_adapter.dart';
+import 'adapters/scholar_adapter.dart';
 import 'adapters/deadline_adapter.dart';
 import 'adapters/period_adapter.dart';
+import 'adapters/fuse_adapter.dart';
 
 class DatabaseHelper {
   late final Box optionsBox;
-  late final Box userBox;
+  late final Box scholarBox;
   late final Box deadlineBox;
   late final Box flowBox;
   late final Box originalWebPageBox;
+  late final Box fuseBox;
 
   Future<void> init() async {
     Hive.registerAdapter(DurationAdapter());
-    Hive.registerAdapter(UserAdapter());
+    Hive.registerAdapter(ScholarAdapter());
     Hive.registerAdapter(DeadlineStatusAdapter());
     Hive.registerAdapter(DeadlineTypeAdapter());
     Hive.registerAdapter(DeadlineRepeatTypeAdapter());
     Hive.registerAdapter(DeadlineAdapter());
     Hive.registerAdapter(PeriodTypeAdapter());
     Hive.registerAdapter(PeriodAdapter());
+    Hive.registerAdapter(FuseAdapter());
     optionsBox = await Hive.openBox(dbOptions);
-    userBox = await Hive.openBox(dbUser);
+    scholarBox = await Hive.openBox(dbScholar);
     deadlineBox = await Hive.openBox(dbDeadline);
     flowBox = await Hive.openBox(dbFlow);
     originalWebPageBox = await Hive.openBox(dbOriginalWebPage);
+    fuseBox = await Hive.openBox(dbFuse);
   }
 
   // Options
@@ -140,19 +145,19 @@ class DatabaseHelper {
     await deadlineBox.put(kDeadlineListUpdateTime, deadlineListUpdateTime);
   }
 
-  // User
-  final String dbUser = 'dbUser';
+  // Scholar
+  final String dbScholar = 'dbUser';
 
-  User getUser() {
-    return userBox.get('user') ?? User();
+  Scholar getScholar() {
+    return scholarBox.get('user') ?? Scholar();
   }
 
-  Future<void> setUser(User user) async {
-    await userBox.put('user', user);
+  Future<void> setScholar(Scholar scholar) async {
+    await scholarBox.put('user', scholar);
   }
 
-  Future<void> removeUser() async {
-    await userBox.delete('user');
+  Future<void> removeScholar() async {
+    await scholarBox.delete('user');
   }
 
   // Original Web Page
@@ -172,5 +177,16 @@ class DatabaseHelper {
 
   Future<void> removeAllCachedWebPage() async {
     await originalWebPageBox.clear();
+  }
+
+  // Fuse
+  final String dbFuse = 'dbFuse';
+
+  Fuse getFuse() {
+    return fuseBox.get('fuse') ?? Fuse();
+  }
+
+  Future<void> setFuse(Fuse fuse) async {
+    await fuseBox.put('fuse', fuse);
   }
 }

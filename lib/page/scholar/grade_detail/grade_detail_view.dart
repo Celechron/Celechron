@@ -42,7 +42,7 @@ class GradeDetailPage extends StatelessWidget {
                             Expanded(
                               child: Obx(() => TwoLineCard(
                                   title: '获得学分',
-                                  content: _scholarController.user.credit
+                                  content: _scholarController.scholar.credit
                                       .toStringAsFixed(1),
                                   backgroundColor:
                                       CustomCupertinoDynamicColors.peach)),
@@ -67,7 +67,7 @@ class GradeDetailPage extends StatelessWidget {
                               child: Obx(() => TwoLineCard(
                                   title: '主修均绩',
                                   content: _scholarController
-                                      .user.majorGpaAndCredit[0]
+                                      .scholar.majorGpaAndCredit[0]
                                       .toStringAsFixed(2),
                                   backgroundColor:
                                       CustomCupertinoDynamicColors.sakura)),
@@ -77,7 +77,7 @@ class GradeDetailPage extends StatelessWidget {
                               child: Obx(() => TwoLineCard(
                                   title: '主修学分',
                                   content: _scholarController
-                                      .user.majorGpaAndCredit[1]
+                                      .scholar.majorGpaAndCredit[1]
                                       .toStringAsFixed(1),
                                   backgroundColor:
                                       CustomCupertinoDynamicColors.sand)),

@@ -3,20 +3,20 @@ import 'package:celechron/utils/utils.dart';
 import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:celechron/model/period.dart';
-import 'package:celechron/model/user.dart';
+import 'package:celechron/model/scholar.dart';
 
 class CalendarController extends GetxController {
   final selectedDay = DateTime.now().obs;
   final focusedDay = DateTime.now().obs;
   final calendarFormat = CalendarFormat.month.obs;
   final events = <DateTime, List<Period>>{}.obs;
-  final user = Get.find<Rx<User>>(tag: 'user');
+  final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final deadlineList = Get.find<RxList<Deadline>>(tag: 'deadlineList');
 
   static List<String> numToChinese = ['一', '二', '三', '四', '五', '六', '七', '八'];
 
   String dayDescription(DateTime day) {
-    var semester = user.value.semesters.firstWhereOrNull(
+    var semester = scholar.value.semesters.firstWhereOrNull(
         (e) => !day.isBefore(e.firstDay) && !day.isAfter(e.lastDay));
     if (semester == null) return '考试周/假期';
 
@@ -34,14 +34,14 @@ class CalendarController extends GetxController {
   @override
   void onInit() {
     refreshEvents();
-    ever(user, (callback) => refreshEvents());
+    ever(scholar, (callback) => refreshEvents());
     super.onInit();
   }
 
   void refreshEvents() {
     events.clear();
     Set<DateTime> keySet = {};
-    for (var element in Get.find<Rx<User>>(tag: 'user').value.periods) {
+    for (var element in Get.find<Rx<Scholar>>(tag: 'scholar').value.periods) {
       DateTime chop = chopDate(element.startTime);
       if (events[chop] == null) events[chop] = <Period>[];
       events[chop]!.add(element);

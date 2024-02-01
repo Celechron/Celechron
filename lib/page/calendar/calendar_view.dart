@@ -154,7 +154,7 @@ class CalendarPage extends StatelessWidget {
                   subtitle: _calendarController.dayDescription(
                       _calendarController.selectedDay.value
                           .copyWith(isUtc: false)),
-                  right: _calendarController.user.value.specialDates
+                  right: _calendarController.scholar.value.specialDates
                           .containsKey(_calendarController.selectedDay.value
                               .copyWith(isUtc: false))
                       ? Container(
@@ -167,7 +167,7 @@ class CalendarPage extends StatelessWidget {
                                   width: 1),
                               borderRadius: BorderRadius.circular(10)),
                           child: Text(
-                            _calendarController.user.value.specialDates[
+                            _calendarController.scholar.value.specialDates[
                                 _calendarController.selectedDay.value
                                     .copyWith(isUtc: false)]!,
                             style: TextStyle(

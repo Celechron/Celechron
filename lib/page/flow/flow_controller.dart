@@ -4,18 +4,18 @@ import 'package:celechron/algorithm/arrange.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/deadline.dart';
 import 'package:celechron/model/period.dart';
-import 'package:celechron/model/user.dart';
+import 'package:celechron/model/scholar.dart';
 import 'package:celechron/utils/utils.dart';
 
 class FlowController extends GetxController {
-  final user = Get.find<Rx<User>>(tag: 'user');
+  final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final flowList = Get.find<RxList<Period>>(tag: 'flowList');
   final flowListLastUpdate = Get.find<Rx<DateTime>>(tag: 'flowListLastUpdate');
   final deadlineList = Get.find<RxList<Deadline>>(tag: 'deadlineList');
   final deadlineListLastUpdate =
       Get.find<Rx<DateTime>>(tag: 'deadlineListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
-  late var _basePeriodList = user.value.periods;
+  late var _basePeriodList = scholar.value.periods;
   var _currentBasePeriodCursor = -1;
   var timeNow = DateTime.now().obs;
 
@@ -31,7 +31,7 @@ class FlowController extends GetxController {
     _basePeriodList.sort((a, b) => a.startTime.compareTo(b.startTime));
     _currentBasePeriodCursor = _basePeriodList
         .indexWhere((element) => element.startTime.isAfter(DateTime.now()));
-    ever(user, (callback) => refreshBasePeriodList());
+    ever(scholar, (callback) => refreshBasePeriodList());
     super.onInit();
   }
 
@@ -348,7 +348,7 @@ class FlowController extends GetxController {
   }
 
   void refreshBasePeriodList() {
-    _basePeriodList = user.value.periods;
+    _basePeriodList = scholar.value.periods;
     _basePeriodList.sort((a, b) {
       return a.startTime.compareTo(b.startTime);
     });

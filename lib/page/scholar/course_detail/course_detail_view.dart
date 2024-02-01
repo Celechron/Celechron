@@ -10,14 +10,14 @@ import 'package:celechron/model/course.dart';
 
 import 'package:celechron/model/exam.dart';
 import 'package:celechron/model/session.dart';
-import 'package:celechron/model/user.dart';
+import 'package:celechron/model/scholar.dart';
 
 class CourseDetailPage extends StatelessWidget {
-  final _user = Get.find<Rx<User>>(tag: 'user');
+  final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   late final Course course;
 
   CourseDetailPage({required courseId, Key? key}) : super(key: key) {
-    course = _user.value.semesters
+    course = _scholar.value.semesters
         .firstWhere((e) => e.courses.containsKey(courseId))
         .courses[courseId]!;
   }
