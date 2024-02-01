@@ -46,9 +46,9 @@ class OptionPage extends StatelessWidget {
                 children: <CupertinoListTile>[
                   CupertinoListTile(
                     title: Obx(() {
-                      if (_optionController.user.value.isLogin) {
+                      if (_optionController.scholar.value.isLogin) {
                         return Text(
-                            '已登录: ${_optionController.user.value.username}');
+                            '已登录: ${_optionController.scholar.value.username}');
                       } else {
                         return const Text('点击登录',
                             style:
@@ -56,7 +56,7 @@ class OptionPage extends StatelessWidget {
                       }
                     }),
                     trailing: BackChervonRow(child: Obx(() {
-                      if (_optionController.user.value.isLogin) {
+                      if (_optionController.scholar.value.isLogin) {
                         return Text('退出',
                             style: TextStyle(
                                 color: CupertinoDynamicColor.resolve(
@@ -67,7 +67,7 @@ class OptionPage extends StatelessWidget {
                       }
                     })),
                     onTap: () {
-                      if (_optionController.user.value.isLogin) {
+                      if (_optionController.scholar.value.isLogin) {
                         _optionController.logout();
                       } else {
                         // Pop up a login widget from the bottom of the screen
@@ -245,16 +245,20 @@ class OptionPage extends StatelessWidget {
                     CupertinoListTile(
                       title: const Text('关于 Celechron'),
                       trailing: BackChervonRow(
-                        child: Text(celechronVersion, style: trailingTextStyle),
+                        child: Text(_optionController.celechronVersion,
+                            style: trailingTextStyle),
                       ),
                       onTap: () async {
                         Navigator.of(context, rootNavigator: true).push(
                             CupertinoPageRoute(
-                                builder: (context) => const CreditsPage()));
+                                builder: (context) => CreditsPage(
+                                    version:
+                                        _optionController.celechronVersion)));
                       },
                     ),
                     CupertinoListTile(
                       title: const Text('服务条款'),
+                      trailing: const BackChervonRow(),
                       onTap: () async {
                         Navigator.of(context, rootNavigator: true).push(
                             CupertinoPageRoute(
@@ -264,6 +268,25 @@ class OptionPage extends StatelessWidget {
                     ),
                     CupertinoListTile(
                       title: const Text('前往项目网站'),
+                      trailing: BackChervonRow(
+                        child: Obx(() {
+                          if (_optionController.hasNewVersion) {
+                            return Row(children: [
+                              Container(
+                                margin: const EdgeInsets.only(right: 4),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                    color: CupertinoColors.systemRed,
+                                    borderRadius: BorderRadius.circular(4)),
+                              ),
+                              Text('有新版本可用', style: trailingTextStyle)
+                            ]);
+                          } else {
+                            return const Text('');
+                          }
+                        }),
+                      ),
                       onTap: () async {
                         await launchUrlString(
                           'https://celechron.top',
