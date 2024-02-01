@@ -651,7 +651,13 @@ class FlowPage extends StatelessWidget {
                   );
                 }
 
-                List<bool> hasPlaced = [false, false, false];
+                int? lastWaitingFlowIndex;
+                for (int i = 0; i < _flowController.flowList.length; i++) {
+                  if (!_flowController.flowList[i].hasStarted()) {
+                    lastWaitingFlowIndex = i;
+                    break;
+                  }
+                }
                 return SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (BuildContext context, int index) {
@@ -666,25 +672,19 @@ class FlowPage extends StatelessWidget {
                             ? createFirst(
                                 context,
                                 _flowController.flowList[index],
-                                _flowController.flowList[index].hasStarted()
-                                    ? (hasPlaced[0] ? null : '正在进行')
-                                    : (hasPlaced[1] ? null : '即将开始'),
+                                index == 0
+                                    ? (_flowController.flowList[index]
+                                            .hasStarted()
+                                        ? '正在进行'
+                                        : '即将开始')
+                                    : null,
                               )
                             : createCard(
                                 context,
                                 _flowController.flowList[index],
-                                hasPlaced[2] ? null : '之后的安排'),
+                                index == lastWaitingFlowIndex ? '之后的安排' : null),
                       );
-                      if (_flowController.flowList[index].hasStarted() ||
-                          index == 0) {
-                        if (_flowController.flowList[index].hasStarted()) {
-                          hasPlaced[0] = true;
-                        } else {
-                          hasPlaced[1] = true;
-                        }
-                      } else {
-                        hasPlaced[2] = true;
-                      }
+
                       return container;
                       // return index == 0
                       //     ? Container(

@@ -76,7 +76,8 @@ class FlowController extends GetxController {
         }
       }
     }
-    flowList.clear();
+    flowList.removeWhere((element) =>
+        element.type == PeriodType.flow || element.type == PeriodType.classes);
     if (lastDeadlineEndsAt.difference(startsAt) < const Duration(days: 1)) {
       lastDeadlineEndsAt = startsAt.add(const Duration(days: 1));
     }

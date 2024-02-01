@@ -284,22 +284,92 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                             .size
                                             .height /
                                         3,
-                                    child: CupertinoTimerPicker(
-                                      mode: CupertinoTimerPickerMode.hm,
-                                      initialTimerDuration: now.timeNeeded,
-                                      onTimerDurationChanged: (value) {
-                                        if (value > Duration.zero) {
-                                          setState(() {
-                                            now.timeNeeded = value;
-                                          });
-                                        } else {
-                                          setState(() {
-                                            now.timeNeeded =
-                                                const Duration(minutes: 1);
-                                          });
-                                        }
-                                      },
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 150,
+                                          child: CupertinoPicker(
+                                            itemExtent: 32,
+                                            scrollController:
+                                                FixedExtentScrollController(
+                                              initialItem:
+                                                  now.timeNeeded.inHours,
+                                            ),
+                                            onSelectedItemChanged: (value) {
+                                              now.timeNeeded = Duration(
+                                                  hours: value,
+                                                  minutes:
+                                                      now.timeNeeded.inMinutes %
+                                                          60);
+                                              if (now.timeNeeded <=
+                                                  Duration.zero) {
+                                                now.timeNeeded =
+                                                    const Duration(minutes: 1);
+                                              }
+
+                                              setState(() {});
+                                            },
+                                            children: List.generate(
+                                              1000,
+                                              (index) => Text("$index"),
+                                            ),
+                                          ),
+                                        ),
+                                        const Text('小时'),
+                                        SizedBox(
+                                          width: 150,
+                                          child: CupertinoPicker(
+                                            itemExtent: 32,
+                                            looping: true,
+                                            scrollController:
+                                                FixedExtentScrollController(
+                                              initialItem:
+                                                  now.timeNeeded.inMinutes % 60,
+                                            ),
+                                            onSelectedItemChanged: (value) {
+                                              now.timeNeeded = Duration(
+                                                hours:
+                                                    now.timeNeeded.inMinutes ~/
+                                                        60,
+                                                minutes: value,
+                                              );
+                                              if (now.timeNeeded <=
+                                                  Duration.zero) {
+                                                now.timeNeeded =
+                                                    const Duration(minutes: 1);
+                                              }
+
+                                              setState(() {});
+                                            },
+                                            children: List.generate(
+                                              60,
+                                              (index) => Text("$index"),
+                                            ),
+                                          ),
+                                        ),
+                                        const Text('分钟'),
+                                      ],
                                     ),
+                                    // CupertinoTimerPicker(
+                                    //   mode: CupertinoTimerPickerMode.hm,
+                                    //   initialTimerDuration: now.timeNeeded,
+                                    //   onTimerDurationChanged: (value) {
+                                    //     if (value > Duration.zero) {
+                                    //       setState(() {
+                                    //         now.timeNeeded = value;
+                                    //       });
+                                    //     } else {
+                                    //       setState(() {
+                                    //         now.timeNeeded =
+                                    //             const Duration(minutes: 1);
+                                    //       });
+                                    //     }
+                                    //   },
+                                    // ),
                                   ),
                                 );
                               });
@@ -319,15 +389,75 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                             .size
                                             .height /
                                         3,
-                                    child: CupertinoTimerPicker(
-                                      mode: CupertinoTimerPickerMode.hm,
-                                      initialTimerDuration: now.timeSpent,
-                                      onTimerDurationChanged: (value) {
-                                        setState(() {
-                                          now.timeSpent = value;
-                                        });
-                                      },
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.center,
+                                      children: [
+                                        SizedBox(
+                                          width: 150,
+                                          child: CupertinoPicker(
+                                            itemExtent: 32,
+                                            scrollController:
+                                                FixedExtentScrollController(
+                                              initialItem:
+                                                  now.timeSpent.inHours,
+                                            ),
+                                            onSelectedItemChanged: (value) {
+                                              now.timeSpent = Duration(
+                                                  hours: value,
+                                                  minutes:
+                                                      now.timeSpent.inMinutes %
+                                                          60);
+
+                                              setState(() {});
+                                            },
+                                            children: List.generate(
+                                              1000,
+                                              (index) => Text("$index"),
+                                            ),
+                                          ),
+                                        ),
+                                        const Text('小时'),
+                                        SizedBox(
+                                          width: 150,
+                                          child: CupertinoPicker(
+                                            itemExtent: 32,
+                                            looping: true,
+                                            scrollController:
+                                                FixedExtentScrollController(
+                                              initialItem:
+                                                  now.timeSpent.inMinutes % 60,
+                                            ),
+                                            onSelectedItemChanged: (value) {
+                                              now.timeSpent = Duration(
+                                                hours:
+                                                    now.timeSpent.inMinutes ~/
+                                                        60,
+                                                minutes: value,
+                                              );
+
+                                              setState(() {});
+                                            },
+                                            children: List.generate(
+                                              60,
+                                              (index) => Text("$index"),
+                                            ),
+                                          ),
+                                        ),
+                                        const Text('分钟'),
+                                      ],
                                     ),
+                                    // child: CupertinoTimerPicker(
+                                    //   mode: CupertinoTimerPickerMode.hm,
+                                    //   initialTimerDuration: now.timeSpent,
+                                    //   onTimerDurationChanged: (value) {
+                                    //     setState(() {
+                                    //       now.timeSpent = value;
+                                    //     });
+                                    //   },
+                                    // ),
                                   ),
                                 );
                               });
