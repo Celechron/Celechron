@@ -315,7 +315,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                             },
                                             children: List.generate(
                                               1000,
-                                              (index) => Text("$index"),
+                                              (index) =>
+                                                  Center(child: Text("$index")),
                                             ),
                                           ),
                                         ),
@@ -347,7 +348,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                             },
                                             children: List.generate(
                                               60,
-                                              (index) => Text("$index"),
+                                              (index) =>
+                                                  Center(child: Text("$index")),
                                             ),
                                           ),
                                         ),
@@ -415,7 +417,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                             },
                                             children: List.generate(
                                               1000,
-                                              (index) => Text("$index"),
+                                              (index) =>
+                                                  Center(child: Text("$index")),
                                             ),
                                           ),
                                         ),
@@ -442,7 +445,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                             },
                                             children: List.generate(
                                               60,
-                                              (index) => Text("$index"),
+                                              (index) =>
+                                                  Center(child: Text("$index")),
                                             ),
                                           ),
                                         ),
