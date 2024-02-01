@@ -3,11 +3,11 @@ import 'dart:async';
 import 'package:get/get.dart';
 
 import 'package:celechron/model/semester.dart';
-import 'package:celechron/model/user.dart';
+import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/exam.dart';
 
 class ExamListController extends GetxController {
-  final _user = Get.find<Rx<User>>(tag: 'user');
+  final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   late final RxInt semesterIndex;
   final Rx<Duration> _durationToLastUpdate = const Duration().obs;
 
@@ -15,8 +15,8 @@ class ExamListController extends GetxController {
     semesterIndex = semesters.indexWhere((e) => e.name == initialName).obs;
   }
 
-  Semester get semester => _user.value.semesters[semesterIndex.value];
-  List<Semester> get semesters => _user.value.semesters;
+  Semester get semester => _scholar.value.semesters[semesterIndex.value];
+  List<Semester> get semesters => _scholar.value.semesters;
   Duration get durationToLastUpdate => _durationToLastUpdate.value;
 
   List<List<Exam>> get exams {
@@ -44,7 +44,7 @@ class ExamListController extends GetxController {
     super.onReady();
     Timer.periodic(const Duration(seconds: 1), (timer) {
       _durationToLastUpdate.value =
-          DateTime.now().difference(_user.value.lastUpdateTime);
+          DateTime.now().difference(_scholar.value.lastUpdateTime);
     });
   }
 }

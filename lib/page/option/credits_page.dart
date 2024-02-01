@@ -1,9 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'package:celechron/utils/utils.dart';
 import 'package:celechron/design/persistent_headers.dart';
 
 class CreditsPage extends StatelessWidget {
-  const CreditsPage({super.key});
+
+  final String version;
+  const CreditsPage({required this.version, super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +40,7 @@ class CreditsPage extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '$celechronVersion 版本',
+                          '$version 版本',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             fontSize: 12,

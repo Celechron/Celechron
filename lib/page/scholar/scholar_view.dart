@@ -191,7 +191,7 @@ class ScholarPage extends StatelessWidget {
                                       child: Obx(() => TwoLineCard(
                                           title: '获得学分',
                                           content: _scholarController
-                                              .user.credit
+                                              .scholar.credit
                                               .toStringAsFixed(1),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
@@ -219,7 +219,7 @@ class ScholarPage extends StatelessWidget {
                                       child: Obx(() => TwoLineCard(
                                           title: '主修均绩',
                                           content: _scholarController
-                                              .user.majorGpaAndCredit[0]
+                                              .scholar.majorGpaAndCredit[0]
                                               .toStringAsFixed(2),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
@@ -230,7 +230,7 @@ class ScholarPage extends StatelessWidget {
                                       child: Obx(() => TwoLineCard(
                                           title: '主修学分',
                                           content: _scholarController
-                                              .user.majorGpaAndCredit[1]
+                                              .scholar.majorGpaAndCredit[1]
                                               .toStringAsFixed(1),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
@@ -564,7 +564,7 @@ class ScholarPage extends StatelessWidget {
                 const Divider(),
               ])),
         )),
-        if (_scholarController.user.isLogin)
+        if (_scholarController.scholar.isLogin)
           CupertinoSliverRefreshControl(
             onRefresh: () async {
               var error = await _scholarController.fetchData();
@@ -594,7 +594,7 @@ class ScholarPage extends StatelessWidget {
             },
           ),
         Obx(() {
-          if (_scholarController.user.semesters.isNotEmpty) {
+          if (_scholarController.scholar.semesters.isNotEmpty) {
             return SliverToBoxAdapter(
               child: Padding(
                 padding:
@@ -617,7 +617,7 @@ class ScholarPage extends StatelessWidget {
                     height: 500,
                     child: Column(children: [
                       const Spacer(),
-                      Text(_scholarController.user.isLogin ? '下拉刷新' : '未登录',
+                      Text(_scholarController.scholar.isLogin ? '下拉刷新' : '未登录',
                           style:
                               CupertinoTheme.of(context).textTheme.textStyle),
                       const Spacer()

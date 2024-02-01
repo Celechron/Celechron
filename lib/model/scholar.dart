@@ -7,9 +7,9 @@ import 'semester.dart';
 import 'package:celechron/http/spider.dart';
 import 'package:celechron/database/database_helper.dart';
 
-class User {
+class Scholar {
   // 构造用户对象
-  User();
+  Scholar();
 
   final DatabaseHelper _db = Get.find<DatabaseHelper>(tag: 'db');
   // 登录状态
@@ -72,7 +72,7 @@ class User {
     var loginErrorMessage = await _spider.login();
     if (loginErrorMessage.every((e) => e == null)) {
       isLogin = true;
-      _db.setUser(this);
+      _db.setScholar(this);
     }
     return loginErrorMessage;
   }
@@ -89,7 +89,7 @@ class User {
     isLogin = false;
     lastUpdateTime = DateTime.parse("20010101");
     _spider.logout();
-    return _db.removeUser().then((value) => true).catchError((e) => false);
+    return _db.removeScholar().then((value) => true).catchError((e) => false);
   }
 
   // 刷新数据
@@ -142,7 +142,7 @@ class User {
         credit = 0.0;
       }
 
-      await _db.setUser(this);
+      await _db.setScholar(this);
       return value.item1.every((e) => e == null) ? value.item2 : value.item1;
     }).whenComplete(() => _mutex--);
   }
@@ -163,7 +163,7 @@ class User {
     };
   }
 
-  User.fromJson(Map<String, dynamic> json) {
+  Scholar.fromJson(Map<String, dynamic> json) {
     username = json['username'];
     _password = json['password'];
     _spider = Spider(username, _password);

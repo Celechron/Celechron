@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:celechron/model/user.dart';
+import 'package:celechron/model/scholar.dart';
 
 class LoginForm extends StatelessWidget {
   final TextEditingController usernameController = TextEditingController();
@@ -67,14 +67,14 @@ class LoginForm extends StatelessWidget {
 
                   onPressed: () async {
                     buttonPressed.value = true;
-                    var user = Get.find<Rx<User>>(tag: 'user');
-                    user.update((val) {
+                    var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
+                    scholar.update((val) {
                       val!.username = usernameController.value.text;
                       val.password = passwordController.value.text;
                       val.login().then((value) async {
                         if (value.every((e) => e == null)) {
                           await val.refresh();
-                          user.refresh();
+                          scholar.refresh();
                           buttonPressed.value = false;
                           if(context.mounted) Navigator.of(context).pop();
                         } else {
