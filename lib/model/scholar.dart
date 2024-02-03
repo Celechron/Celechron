@@ -68,7 +68,11 @@ class Scholar {
 
   // 初始化以获取Cookies，并刷新数据
   Future<List<String?>> login() async {
-    _spider = Spider(username, _password);
+    if (username == 'test') {
+      _spider = MockSpider();
+    } else {
+      _spider = Spider(username, _password);
+    }
     var loginErrorMessage = await _spider.login();
     if (loginErrorMessage.every((e) => e == null)) {
       isLogin = true;
