@@ -530,16 +530,17 @@ class ScholarPage extends StatelessWidget {
                 const SizedBox(height: 12),
                 Row(children: [
                   Expanded(
-                    child: SizedBox(
-                      height: 30,
-                      child: Obx(() => ListView.builder(
+                      child: SizedBox(
+                    height: 30,
+                    child: Obx(
+                      () => ListView.builder(
                           scrollDirection: Axis.horizontal,
                           itemCount: _scholarController.semesters.length,
                           itemBuilder: (context, index) {
                             final semester =
                                 _scholarController.semesters[index];
                             return Stack(children: [
-                                  Obx(() => AnimateButton(
+                              Obx(() => AnimateButton(
                                     text:
                                         '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
                                     onTap: () {
@@ -554,8 +555,8 @@ class ScholarPage extends StatelessWidget {
                                         ? CustomCupertinoDynamicColors.cyan
                                         : CupertinoColors.systemFill,
                                   )),
-                                  const SizedBox(width: 90),
-                                ]);
+                              const SizedBox(width: 90),
+                            ]);
                           }),
                     ),
                   )),
@@ -600,14 +601,19 @@ class ScholarPage extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
-                  children: [
-                    _buildGradeBrief(context),
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 12),
-                    _buildSemester(context),
-                    //_buildHistory(context),
-                  ],
+                  children: _scholarController.scholar.username[0] == "3"
+                      ? [
+                          _buildGradeBrief(context),
+                          const SizedBox(height: 12),
+                          const Divider(),
+                          const SizedBox(height: 12),
+                          _buildSemester(context),
+                          //_buildHistory(context),
+                        ]
+                      : [
+                          const SizedBox(height: 12),
+                          _buildSemester(context),
+                        ],
                 ),
               ),
             );
