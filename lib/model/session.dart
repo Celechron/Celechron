@@ -6,7 +6,6 @@ class Session {
   bool confirmed;
   int dayOfWeek;
   late List<int> time;
-  bool? grsClass;
 
   // firstHalf : 秋/春 需要上课
   // secondHalf: 夏/冬 需要上课
@@ -25,10 +24,10 @@ class Session {
   static const String dayMap = '零一二三四五六日';
 
   Session.empty()
-    : confirmed = true,
-      oddWeek = false,
-      evenWeek = false,
-      dayOfWeek = 1;
+      : confirmed = true,
+        oddWeek = false,
+        evenWeek = false,
+        dayOfWeek = 1;
 
   Session(Map<String, dynamic> json)
       : id = RegExp(r'(.*?-){5}\d+(?=.*\d{10})')
@@ -56,12 +55,18 @@ class Session {
         evenWeek = (json['dsz'] as String) != '0' {
     //名称、教师、地点
     if (json.containsKey('kcb')) {
-      var nameTeacherPosition = RegExp(r'(.*?)<br>(.*?)<br>(.*?)<br>(.*?)zwf').firstMatch(json['kcb'] as String);
-      if(nameTeacherPosition != null) {
+      var nameTeacherPosition = RegExp(r'(.*?)<br>(.*?)<br>(.*?)<br>(.*?)zwf')
+          .firstMatch(json['kcb'] as String);
+      if (nameTeacherPosition != null) {
         // ZDBK上，课程名称中的括号有时会变成英文括号，此处统一改成中文括号
-        name = nameTeacherPosition.group(1)!.replaceAll('(', '（').replaceAll(')', '）');
+        name = nameTeacherPosition
+            .group(1)!
+            .replaceAll('(', '（')
+            .replaceAll(')', '）');
         teacher = nameTeacherPosition.group(3)!;
-        location = nameTeacherPosition.group(4) == '' ? null : nameTeacherPosition.group(4);
+        location = nameTeacherPosition.group(4) == ''
+            ? null
+            : nameTeacherPosition.group(4);
       }
     }
     // 短学期 or 长学期
@@ -74,24 +79,23 @@ class Session {
     if (json.containsKey('djj') && json.containsKey('skcd')) {
       var initial = int.parse(json['djj'] as String);
       var duration = int.parse(json['skcd'] as String);
-      time = List<int>.generate(duration, (index) => initial+index);
+      time = List<int>.generate(duration, (index) => initial + index);
     }
   }
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'name': name,
-    'teacher': teacher,
-    'confirmed': confirmed,
-    'firstHalf': firstHalf,
-    'secondHalf': secondHalf,
-    'oddWeek': oddWeek,
-    'evenWeek': evenWeek,
-    'day': dayOfWeek,
-    'time': time,
-    'location': location,
-    'grsClass': grsClass,
-  };
+        'id': id,
+        'name': name,
+        'teacher': teacher,
+        'confirmed': confirmed,
+        'firstHalf': firstHalf,
+        'secondHalf': secondHalf,
+        'oddWeek': oddWeek,
+        'evenWeek': evenWeek,
+        'day': dayOfWeek,
+        'time': time,
+        'location': location,
+      };
 
   Session.fromJson(Map<String, dynamic> json)
       : id = json['id'],
@@ -104,11 +108,11 @@ class Session {
         evenWeek = json['evenWeek'],
         dayOfWeek = json['day'],
         time = List<int>.from(json['time']),
-        location = json['location'],
-        grsClass = json['grsClass'];
+        location = json['location'];
 
   String get chineseTime {
-    var timeString = '${(oddWeek & evenWeek) ? '' : oddWeek ? '单 - ' : '双 - '}周${dayMap[dayOfWeek]}第';
+    var timeString =
+        '${(oddWeek & evenWeek) ? '' : oddWeek ? '单 - ' : '双 - '}周${dayMap[dayOfWeek]}第';
     for (var i = 0; i < time.length; i++) {
       timeString += time[i].toString();
       if (i != time.length - 1) {
@@ -118,9 +122,5 @@ class Session {
     timeString.trimRight();
     timeString += '节';
     return timeString;
-  }
-
-  bool get isGrsClass {
-    return grsClass ?? false;
   }
 }

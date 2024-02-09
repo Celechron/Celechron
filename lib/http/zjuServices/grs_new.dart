@@ -4,6 +4,11 @@ import 'dart:io';
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:celechron/model/session.dart';
+import 'package:celechron/model/exams_dto.dart';
+import 'package:celechron/model/exam.dart';
+import 'package:celechron/model/grade.dart';
+import 'package:intl/intl.dart';
+import 'package:quiver/time.dart';
 
 class GrsNew {
   String? _token;
@@ -62,6 +67,138 @@ class GrsNew {
     _token = null;
   }
 
+  Future<Tuple<Exception?, Iterable<Grade>>> getGrade(
+      HttpClient httpClient) async {
+    /*
+    不需要参数，但是注意是post
+     */
+    late HttpClientRequest req;
+    late HttpClientResponse res;
+    try {
+      if (_token == null) {
+        throw ExceptionWithMessage("not logged in");
+      }
+      req = await httpClient
+          .postUrl(Uri.parse(
+              "https://yjsy.zju.edu.cn/dataapi/py/pyXsxk/queryXsxkByXnxqXs"))
+          .timeout(const Duration(seconds: 8),
+              onTimeout: () => throw ExceptionWithMessage("request timeout"));
+      req.headers.add("X-Access-Token", _token!);
+      res = await req.close().timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("request timeout"));
+      final resultJson = await res.transform(utf8.decoder).join();
+      final result = jsonDecode(resultJson) as Map<String, dynamic>;
+      if (result["success"] != true) {
+        throw ExceptionWithMessage("Invalid login info");
+      }
+
+      final records = result["result"] as Map<String, dynamic>;
+
+      final rawGrades = records["xxjhnList"] as List<dynamic>;
+      List<Grade> grades = [];
+
+      for (var rawGradeDyn in rawGrades) {
+        var rawGrade = rawGradeDyn as Map<String, dynamic>;
+
+        var newGrade = Grade.empty();
+        //这里使用的id和其他的不一样，这里的id以年份+学期开头，例如202313指的是2023学年秋学期
+        newGrade.id = rawGrade["id"] == null ? "" : rawGrade["id"] as String;
+        newGrade.name = rawGrade["kcmc"] as String;
+        newGrade.credit = rawGrade["xf"] as double;
+        newGrade.fivePoint = 0.0;
+        newGrade.fourPoint = 0.0;
+        newGrade.fourPointLegacy = 0.0;
+        newGrade.hundredPoint =
+            rawGrade["zf"] == null ? 0 : (rawGrade["zf"] as double).toInt();
+        newGrade.major = true;
+        // 研究生应该没法算gpa吧
+        newGrade.gpaIncluded = false;
+        newGrade.creditIncluded = true;
+        grades.add(newGrade);
+      }
+      return Tuple(null, grades);
+    } catch (e) {
+      var exception =
+          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      return Tuple(exception, []);
+    }
+  }
+
+  Future<Tuple<Exception?, Iterable<ExamDto>>> getExamsDto(
+      HttpClient httpClient, int year, int semester) async {
+    /*
+    * 11 srping-summer
+    * 12 autum-winter
+     */
+    late HttpClientRequest req;
+    late HttpClientResponse res;
+    try {
+      if (_token == null) {
+        throw ExceptionWithMessage("not logged in");
+      }
+
+      req = await httpClient
+          .getUrl(Uri.parse(
+              "https://yjsy.zju.edu.cn/dataapi/py/pyKsxsxx/queryPageByXs?dm=py_grks&mode=2&role=1&column=createTime&order=desc&queryMode=1&field=id,,kcbh,kcmc,rq,ksTime,xn,xq_dictText,ksdd,zwh&pageNo=1&pageSize=100&xn=$year&pkxq=$semester"))
+          .timeout(const Duration(seconds: 8),
+              onTimeout: () => throw ExceptionWithMessage("request timeout"));
+      req.headers.add("X-Access-Token", _token!);
+      res = await req.close().timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("request timeout"));
+      final resultJson = await res.transform(utf8.decoder).join();
+      final result = jsonDecode(resultJson) as Map<String, dynamic>;
+      if (result["success"] != true) {
+        throw ExceptionWithMessage("Invalid login info");
+      }
+
+      final records = result["result"] as Map<String, dynamic>;
+
+      final rawExams = records["records"] as List<dynamic>;
+      List<ExamDto> exams = [];
+      // 这个破库不支持yyyyMMdd格式的表示，必须有分隔符
+      final formatter = DateFormat('yyyy-MM-dd');
+
+      for (var rawExamDyn in rawExams) {
+        var rawExam = rawExamDyn as Map<String, dynamic>;
+        // yjsy系统奇怪的bug，加一个特判
+        if (rawExam["xn"] as String != year.toString() ||
+            rawExam["xq"] as String != semester.toString()) {
+          continue;
+        }
+        var newExamDto = ExamDto.empty();
+        var newExam = Exam.empty();
+        newExam.id = (rawExam["kcbh"] as String).substring(0, 7);
+        newExam.name = rawExam["kcmc"] as String;
+        newExam.type = ExamType.finalExam;
+        newExam.location = rawExam["mc"] as String;
+        newExam.seat = (rawExam["zwh"] as int).toString();
+        int day = rawExam["rq"] as int;
+        int start = rawExam["kssj"] as int;
+        int end = rawExam["jssj"] as int;
+        String dayFromat =
+            '${day.toString().substring(0, 4)}-${day.toString().substring(4, 6)}-${day.toString().substring(6, 8)}';
+        DateTime dayTime = formatter.parse(dayFromat);
+        DateTime startTime =
+            dayTime.add(anHour * (start ~/ 100) + aMinute * (start % 100));
+        DateTime endTime =
+            dayTime.add(anHour * (end ~/ 100) + aMinute * (end % 100));
+        newExam.time = [startTime, endTime];
+        newExamDto.id = (rawExam["kcbh"] as String).substring(0, 7);
+        newExamDto.name = rawExam["kcmc"] as String;
+        // TODO credit
+        newExamDto.credit = 0;
+        newExamDto.exams.add(newExam);
+
+        exams.add(newExamDto);
+      }
+      return Tuple(null, exams);
+    } catch (e) {
+      var exception =
+          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      return Tuple(exception, []);
+    }
+  }
+
   Future<Tuple<Exception?, Iterable<Session>>> getTimetable(
       HttpClient httpClient, int year, int semester) async {
     /*
@@ -112,7 +249,7 @@ class GrsNew {
             try {
               var rawClass = rawClassDyn as Map<String, dynamic>;
               String classId = rawClass["bjbh"] as String;
-              String sessionId = classId.substring(0, 6);
+              String sessionId = classId.substring(0, 7);
 
               if (sessionThisDay.containsKey(classId)) {
                 sessionThisDay[classId]!.time.add(j);
@@ -122,13 +259,13 @@ class GrsNew {
               int classSemester = int.parse(rawClass["pkxq"] ?? "$semester");
               var newSession = Session.empty();
               newSession.id = sessionId;
-              newSession.grsClass = true;
               newSession.name = rawClass["kcmc"] as String;
               newSession.teacher = "";
               newSession.location = rawClass["cdmc"] as String?;
               newSession.confirmed = true;
               newSession.dayOfWeek = i;
               newSession.time = [j];
+              String weekExtra = rawClass["zc"] as String;
               if (semester == 11 || semester == 13) {
                 newSession.firstHalf = true;
               } else {
@@ -137,8 +274,13 @@ class GrsNew {
               if (classSemester == 15 || classSemester == 16) {
                 newSession.firstHalf = newSession.secondHalf = true;
               }
-              // TODO: dsz
-              newSession.oddWeek = newSession.evenWeek = true;
+              if (weekExtra.contains("1,2") || weekExtra.contains("9,10")) {
+                newSession.oddWeek = newSession.evenWeek = true;
+              } else if (weekExtra.contains("1") || weekExtra.contains("9")) {
+                newSession.oddWeek = true;
+              } else {
+                newSession.evenWeek = true;
+              }
 
               sessionThisDay[classId] = newSession;
             } finally {
@@ -149,13 +291,12 @@ class GrsNew {
 
         sessions.addAll(sessionThisDay.values);
       }
-
       return Tuple(null, sessions);
-    } catch (e, s) {
-      print(e);
-      print(s);
-      return Tuple(null, []);
-    } finally {}
+    } catch (e) {
+      var exception =
+          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      return Tuple(exception, []);
+    }
   }
 }
 

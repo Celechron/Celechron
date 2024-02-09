@@ -31,74 +31,9 @@ class Semester {
     [],
     [],
     [],
-    []
-  ];
-
-  final List<List<Duration>> _sessionToTimeGrs = [
-    [
-      const Duration(hours: 0, minutes: 0),
-      const Duration(hours: 0, minutes: 0)
-    ],
-    [
-      const Duration(hours: 8, minutes: 0),
-      const Duration(hours: 8, minutes: 45)
-    ],
-    [
-      const Duration(hours: 8, minutes: 50),
-      const Duration(hours: 9, minutes: 35)
-    ],
-    [
-      const Duration(hours: 10, minutes: 0),
-      const Duration(hours: 10, minutes: 45)
-    ],
-    [
-      const Duration(hours: 10, minutes: 50),
-      const Duration(hours: 11, minutes: 35)
-    ],
-    [
-      const Duration(hours: 11, minutes: 40),
-      const Duration(hours: 12, minutes: 25)
-    ],
-    [
-      const Duration(hours: 13, minutes: 25),
-      const Duration(hours: 14, minutes: 10)
-    ],
-    [
-      const Duration(hours: 12, minutes: 40),
-      const Duration(hours: 13, minutes: 20)
-    ],
-    [
-      const Duration(hours: 13, minutes: 30),
-      const Duration(hours: 14, minutes: 10)
-    ],
-    [
-      const Duration(hours: 14, minutes: 15),
-      const Duration(hours: 15, minutes: 00)
-    ],
-    [
-      const Duration(hours: 15, minutes: 05),
-      const Duration(hours: 15, minutes: 50)
-    ],
-    [
-      const Duration(hours: 16, minutes: 15),
-      const Duration(hours: 17, minutes: 00)
-    ],
-    [
-      const Duration(hours: 17, minutes: 05),
-      const Duration(hours: 17, minutes: 50)
-    ],
-    [
-      const Duration(hours: 18, minutes: 50),
-      const Duration(hours: 19, minutes: 35)
-    ],
-    [
-      const Duration(hours: 19, minutes: 40),
-      const Duration(hours: 20, minutes: 25)
-    ],
-    [
-      const Duration(hours: 20, minutes: 30),
-      const Duration(hours: 21, minutes: 15)
-    ]
+    [],
+    [],
+    [], //14
   ];
 
   // 星期几 => 日期，_dayOfWeekToDays.first为上半学期，_dayOfWeekToDays.last为下半学期
@@ -215,12 +150,8 @@ class Semester {
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
                 summary: session.name,
-                startTime: day.add(session.isGrsClass
-                    ? _sessionToTimeGrs[session.time.first].first
-                    : _sessionToTime[session.time.first].first),
-                endTime: day.add(session.isGrsClass
-                    ? _sessionToTimeGrs[session.time.last].last
-                    : _sessionToTime[session.time.last].last));
+                startTime: day.add(_sessionToTime[session.time.first].first),
+                endTime: day.add(_sessionToTime[session.time.last].last));
             periods.add(period);
           }
         }
@@ -233,12 +164,8 @@ class Semester {
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
                 summary: session.name,
-                startTime: day.add(session.isGrsClass
-                    ? _sessionToTimeGrs[session.time.first].first
-                    : _sessionToTime[session.time.first].first),
-                endTime: day.add(session.isGrsClass
-                    ? _sessionToTimeGrs[session.time.last].last
-                    : _sessionToTime[session.time.last].last));
+                startTime: day.add(_sessionToTime[session.time.first].first),
+                endTime: day.add(_sessionToTime[session.time.last].last));
             periods.add(period);
           }
         }
@@ -253,12 +180,8 @@ class Semester {
               description: "教师: ${session.teacher}",
               location: session.location ?? "未知",
               summary: session.name,
-              startTime: day.add(session.isGrsClass
-                  ? _sessionToTimeGrs[session.time.first].first
-                  : _sessionToTime[session.time.first].first),
-              endTime: day.add(session.isGrsClass
-                  ? _sessionToTimeGrs[session.time.last].last
-                  : _sessionToTime[session.time.last].last),
+              startTime: day.add(_sessionToTime[session.time.first].first),
+              endTime: day.add(_sessionToTime[session.time.last].last),
             );
             periods.add(period);
           }
@@ -272,12 +195,8 @@ class Semester {
               description: "教师: ${session.teacher}",
               location: session.location ?? "未知",
               summary: session.name,
-              startTime: day.add(session.isGrsClass
-                  ? _sessionToTimeGrs[session.time.first].first
-                  : _sessionToTime[session.time.first].first),
-              endTime: day.add(session.isGrsClass
-                  ? _sessionToTimeGrs[session.time.last].last
-                  : _sessionToTime[session.time.last].last),
+              startTime: day.add(_sessionToTime[session.time.first].first),
+              endTime: day.add(_sessionToTime[session.time.last].last),
             );
             periods.add(period);
           }
@@ -319,7 +238,7 @@ class Semester {
     }
   }
 
-  void addSession(Session session, String semesterId) {
+  void addSession(Session session, String semesterId, [bool isGrs = false]) {
     // 由于ZDBK不给课号，Session的id初始值为null，不能直接拿来用！
     var key = '$semesterId${session.name}';
     if (_courses.containsKey(key)) {
@@ -329,14 +248,23 @@ class Semester {
       }
     } else {
       _sessions.add(session);
-      _courses.addEntries([MapEntry(key, Course.fromSession(session))]);
+      if (isGrs) {
+        _courses.addEntries([MapEntry(key, Course.fromSession(session))]);
+      } else {
+        _courses
+            .addEntries([MapEntry(key, Course.fromSessionWithoutID(session))]);
+      }
     }
   }
 
   void addExam(ExamDto examDto) {
+    addExamWithSemester(examDto, examDto.semesterId);
+  }
+
+  void addExamWithSemester(ExamDto examDto, String semesterId) {
     // 有的课没有考试，但是能查到考试信息，其考试时间为null。
     _exams.addAll(examDto.exams);
-    var key = '${examDto.semesterId}${examDto.name}';
+    var key = '$semesterId${examDto.name}';
     if (_courses.containsKey(key)) {
       _courses[key]!.completeExam(examDto);
     } else {
@@ -345,12 +273,21 @@ class Semester {
   }
 
   void addGrade(Grade grade) {
+    addGradeWithSemester(grade, grade.semesterId);
+  }
+
+  void addGradeWithSemester(Grade grade, String semesterId,
+      [bool isGrs = false]) {
     _grades.add(grade);
-    var key = '${grade.semesterId}${grade.name}';
+    var key = '$semesterId${grade.name}';
     if (_courses.containsKey(key)) {
       _courses[key]!.completeGrade(grade);
     } else {
-      _courses.addEntries([MapEntry(key, Course.fromGrade(grade))]);
+      if (isGrs) {
+        _courses.addEntries([MapEntry(key, Course.fromGradeWithoutID(grade))]);
+      } else {
+        _courses.addEntries([MapEntry(key, Course.fromGrade(grade))]);
+      }
     }
   }
 

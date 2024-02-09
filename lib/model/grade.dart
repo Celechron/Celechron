@@ -17,7 +17,8 @@ class Grade {
   // 获得的学分（挂科、不计学分的不计）
   double get earnedCredit => (creditIncluded && fivePoint != 0) ? credit : 0.0;
 
-  String get semesterId => id.substring(1, 12);
+  // only used for ugrs
+  String get semesterId => id.length > 12 ? id.substring(1, 12) : "研究生请勿使用此函数";
 
   static final Map<double, double> _toFourPoint = {
     5.0: 4.3,
@@ -50,6 +51,13 @@ class Grade {
     "缓考": 0,
     "待录": 0,
   };
+
+  Grade.empty()
+      : id = "",
+        name = "",
+        credit = 0.0,
+        original = "",
+        fivePoint = 0.0;
 
   // 从所有成绩查询处爬取，因此不含主修标记
   Grade(Map<String, dynamic> json)
