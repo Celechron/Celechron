@@ -1,4 +1,4 @@
-import 'package:celechron/utils/timehelper.dart';
+import 'package:celechron/utils/time_helper.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
