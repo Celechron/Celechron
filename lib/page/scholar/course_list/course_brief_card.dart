@@ -79,7 +79,7 @@ class CourseBriefCard extends StatelessWidget {
                         ),
                         Expanded(
                             child: Text(
-                                ' 课号：${course.id?.substring(0, 22) ?? '未知'}',
+                                ' 课号：${course.id == null ? '未知' : (course.id!.length < 22 ? course.id! : course.id!.substring(0, 22))}',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.normal,
@@ -124,7 +124,8 @@ class CourseBriefCard extends StatelessWidget {
                                 .withOpacity(0.5),
                           ),
                           Text(
-                              ' 成绩：${course.grade!.original} / ${course.grade!.fivePoint.toStringAsFixed(1)}',
+                              // grs is 90 / 100, ugrs is 4.0 / 5.0
+                              ' 成绩：${course.grade!.original == "" ? course.grade!.hundredPoint : course.grade!.original}  / ${course.grade!.original == "" ? 100 : course.grade!.fivePoint.toStringAsFixed(1)}',
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.normal,

@@ -10,7 +10,14 @@ class Exam {
   String? location;
   String? seat;
 
-  Exam._fromAppService(this.id, this.name, Map<String, dynamic> json, this.type) {
+  Exam.empty()
+      : id = "",
+        name = "",
+        type = ExamType.finalExam,
+        time = [];
+
+  Exam._fromAppService(
+      this.id, this.name, Map<String, dynamic> json, this.type) {
     switch (type) {
       case ExamType.midterm:
         time = TimeHelper.parseExamDateTime(json['qzkssj']);

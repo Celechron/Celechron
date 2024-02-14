@@ -24,7 +24,16 @@ class Course {
     exams.addAll(examDto.exams);
   }
 
+  // used for grs
   Course.fromSession(Session session) {
+    id = session.id;
+    name = session.name;
+    confirmed = session.confirmed;
+    teacher = session.teacher;
+    sessions.add(session);
+  }
+  // used for zdbk
+  Course.fromSessionWithoutID(Session session) {
     name = session.name;
     confirmed = session.confirmed;
     teacher = session.teacher;
@@ -34,6 +43,13 @@ class Course {
   Course.fromGrade(Grade this.grade)
       : id = grade.id,
         name = grade.name,
+        confirmed = true,
+        credit = grade.credit;
+
+  // used for grs
+  // grs的获取课表接口和获取成绩接口拿到的id不同，一切id以课表接口为准
+  Course.fromGradeWithoutID(Grade this.grade)
+      : name = grade.name,
         confirmed = true,
         credit = grade.credit;
 
@@ -58,7 +74,9 @@ class Course {
     exams.addAll(examDto.exams);
     // 如果调用了这个函数，则表明该Course对象可能是基于Session创建的。因此，id可能为null，必须补全。
     id ??= examDto.id;
-    for (var e in sessions) { e.id = id; }
+    for (var e in sessions) {
+      e.id = id;
+    }
   }
 
   bool completeSession(Session session) {
@@ -114,8 +132,14 @@ class Course {
         name = json['name'] as String,
         confirmed = json['confirmed'] as bool,
         credit = json['credit'] as double,
-        grade = json['grade'] == null ? null : Grade.fromJson(json['grade'] as Map<String, dynamic>),
+        grade = json['grade'] == null
+            ? null
+            : Grade.fromJson(json['grade'] as Map<String, dynamic>),
         teacher = json['teacher'] as String?,
-        sessions = (json['sessions'] as List<dynamic>).map((e) => Session.fromJson(e as Map<String, dynamic>)).toList(),
-        exams = (json['exams'] as List<dynamic>).map((e) => Exam.fromJson(e as Map<String, dynamic>)).toList();
+        sessions = (json['sessions'] as List<dynamic>)
+            .map((e) => Session.fromJson(e as Map<String, dynamic>))
+            .toList(),
+        exams = (json['exams'] as List<dynamic>)
+            .map((e) => Exam.fromJson(e as Map<String, dynamic>))
+            .toList();
 }
