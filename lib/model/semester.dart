@@ -33,7 +33,8 @@ class Semester {
     [],
     [],
     [],
-    [], //14
+    [],
+    [],
   ];
 
   // 星期几 => 日期，_dayOfWeekToDays.first为上半学期，_dayOfWeekToDays.last为下半学期
@@ -140,68 +141,68 @@ class Semester {
   List<Period> get periods {
     List<Period> periods = [];
     for (var session in _sessions) {
-      if (session.firstHalf) {
-        if (session.oddWeek) {
-          for (var day in _dayOfWeekToDays[0][0][session.dayOfWeek]) {
-            var period = Period(
+        if (session.firstHalf) {
+          if (session.oddWeek) {
+            for (var day in _dayOfWeekToDays[0][0][session.dayOfWeek]) {
+              var period = Period(
+                  uid: '${session.id}${session.dayOfWeek}${session.time.first}',
+                  fromUid: session.id,
+                  type: PeriodType.classes,
+                  description: "教师: ${session.teacher}",
+                  location: session.location ?? "未知",
+                  summary: session.name,
+                  startTime: day.add(_sessionToTime[session.time.first].firstOrNull ?? Duration.zero),
+                  endTime: day.add(_sessionToTime[session.time.last].lastOrNull ?? Duration.zero));
+              periods.add(period);
+            }
+          }
+          if (session.evenWeek) {
+            for (var day in _dayOfWeekToDays[0][1][session.dayOfWeek]) {
+              var period = Period(
+                  uid: '${session.id}${session.dayOfWeek}${session.time.first}',
+                  fromUid: session.id,
+                  type: PeriodType.classes,
+                  description: "教师: ${session.teacher}",
+                  location: session.location ?? "未知",
+                  summary: session.name,
+                  startTime: day.add(_sessionToTime[session.time.first].firstOrNull ?? Duration.zero),
+                  endTime: day.add(_sessionToTime[session.time.last].lastOrNull ?? Duration.zero));
+              periods.add(period);
+            }
+          }
+        }
+        if (session.secondHalf) {
+          if (session.oddWeek) {
+            for (var day in _dayOfWeekToDays[1][0][session.dayOfWeek]) {
+              var period = Period(
                 uid: '${session.id}${session.dayOfWeek}${session.time.first}',
                 fromUid: session.id,
                 type: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
                 summary: session.name,
-                startTime: day.add(_sessionToTime[session.time.first].first),
-                endTime: day.add(_sessionToTime[session.time.last].last));
-            periods.add(period);
+                startTime: day.add(_sessionToTime[session.time.first].firstOrNull ?? Duration.zero),
+                endTime: day.add(_sessionToTime[session.time.last].lastOrNull ?? Duration.zero),
+              );
+              periods.add(period);
+            }
           }
-        }
-        if (session.evenWeek) {
-          for (var day in _dayOfWeekToDays[0][1][session.dayOfWeek]) {
-            var period = Period(
+          if (session.evenWeek) {
+            for (var day in _dayOfWeekToDays[1][1][session.dayOfWeek]) {
+              var period = Period(
                 uid: '${session.id}${session.dayOfWeek}${session.time.first}',
                 fromUid: session.id,
                 type: PeriodType.classes,
                 description: "教师: ${session.teacher}",
                 location: session.location ?? "未知",
                 summary: session.name,
-                startTime: day.add(_sessionToTime[session.time.first].first),
-                endTime: day.add(_sessionToTime[session.time.last].last));
-            periods.add(period);
+                startTime: day.add(_sessionToTime[session.time.first].firstOrNull ?? Duration.zero),
+                endTime: day.add(_sessionToTime[session.time.last].lastOrNull ?? Duration.zero),
+              );
+              periods.add(period);
+            }
           }
         }
-      }
-      if (session.secondHalf) {
-        if (session.oddWeek) {
-          for (var day in _dayOfWeekToDays[1][0][session.dayOfWeek]) {
-            var period = Period(
-              uid: '${session.id}${session.dayOfWeek}${session.time.first}',
-              fromUid: session.id,
-              type: PeriodType.classes,
-              description: "教师: ${session.teacher}",
-              location: session.location ?? "未知",
-              summary: session.name,
-              startTime: day.add(_sessionToTime[session.time.first].first),
-              endTime: day.add(_sessionToTime[session.time.last].last),
-            );
-            periods.add(period);
-          }
-        }
-        if (session.evenWeek) {
-          for (var day in _dayOfWeekToDays[1][1][session.dayOfWeek]) {
-            var period = Period(
-              uid: '${session.id}${session.dayOfWeek}${session.time.first}',
-              fromUid: session.id,
-              type: PeriodType.classes,
-              description: "教师: ${session.teacher}",
-              location: session.location ?? "未知",
-              summary: session.name,
-              startTime: day.add(_sessionToTime[session.time.first].first),
-              endTime: day.add(_sessionToTime[session.time.last].last),
-            );
-            periods.add(period);
-          }
-        }
-      }
     }
     periods = periods
         .where((e) => !_holidays.containsKey(
