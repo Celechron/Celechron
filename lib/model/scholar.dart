@@ -1,10 +1,12 @@
-import 'package:celechron/model/period.dart';
-import 'package:celechron/utils/gpahelper.dart';
 import 'package:get/get.dart';
 
+import 'period.dart';
 import 'grade.dart';
 import 'semester.dart';
+import 'package:celechron/utils/gpa_helper.dart';
 import 'package:celechron/http/spider.dart';
+import 'package:celechron/http/ugrs_spider.dart';
+import 'package:celechron/http/grs_spider.dart';
 import 'package:celechron/database/database_helper.dart';
 
 class Scholar {
@@ -13,13 +15,14 @@ class Scholar {
 
   final DatabaseHelper _db = Get.find<DatabaseHelper>(tag: 'db');
   // 登录状态
-  bool isLogin = false;
+  bool isLogan = false;
   DateTime lastUpdateTime = DateTime.parse("20010101");
 
   // 爬虫区
   late String username;
   late String _password;
   late Spider _spider;
+  bool get isGrs => !username.startsWith('3');
 
   // 按学期整理好的学业信息，包括该学期的所有科目、考试、课表、均绩等
   List<Semester> semesters = <Semester>[];
@@ -68,14 +71,16 @@ class Scholar {
 
   // 初始化以获取Cookies，并刷新数据
   Future<List<String?>> login() async {
-    if (username == 'test') {
+    if (username == '3200000000') {
       _spider = MockSpider();
+    } else if(username.startsWith('3')) {
+      _spider = UgrsSpider(username, _password);
     } else {
-      _spider = Spider(username, _password);
+      _spider = GrsSpider(username, _password);
     }
     var loginErrorMessage = await _spider.login();
     if (loginErrorMessage.every((e) => e == null)) {
-      isLogin = true;
+      isLogan = true;
       _db.setScholar(this);
     }
     return loginErrorMessage;
@@ -90,7 +95,7 @@ class Scholar {
     aboardGpa = [0.0, 0.0, 0.0, 0.0];
     credit = 0.0;
     majorGpaAndCredit = [0.0, 0.0];
-    isLogin = false;
+    isLogan = false;
     lastUpdateTime = DateTime.parse("20010101");
     _spider.logout();
     return _db.removeScholar().then((value) => true).catchError((e) => false);
@@ -99,7 +104,7 @@ class Scholar {
   // 刷新数据
   var _mutex = 0;
   Future<List<String?>> refresh() async {
-    if (!isLogin) {
+    if (!isLogan) {
       return ["未登录"];
     }
     if (_mutex > 0) {
@@ -170,7 +175,9 @@ class Scholar {
   Scholar.fromJson(Map<String, dynamic> json) {
     username = json['username'];
     _password = json['password'];
-    _spider = Spider(username, _password);
+    _spider = isGrs
+        ? GrsSpider(username, _password)
+        : UgrsSpider(username, _password);
     semesters =
         (json['semesters'] as List).map((e) => Semester.fromJson(e)).toList();
     grades = (json['grades'] as Map<String, dynamic>).map((key, value) {
@@ -184,7 +191,7 @@ class Scholar {
     specialDates = ((json['specialDates'] ?? {}) as Map)
         .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
     lastUpdateTime = DateTime.parse(json['lastUpdateTime']);
-    isLogin = true;
+    isLogan = true;
     if (gpa.length == 3) {
       gpa.insert(2, 0);
     }

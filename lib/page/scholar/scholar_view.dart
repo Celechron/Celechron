@@ -565,7 +565,7 @@ class ScholarPage extends StatelessWidget {
                 const Divider(),
               ])),
         )),
-        if (_scholarController.scholar.isLogin)
+        if (_scholarController.scholar.isLogan)
           CupertinoSliverRefreshControl(
             onRefresh: () async {
               var error = await _scholarController.fetchData();
@@ -601,16 +601,15 @@ class ScholarPage extends StatelessWidget {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Column(
-                  children: _scholarController.scholar.username[0] == "3"
+                  children: _scholarController.scholar.isGrs
                       ? [
+                          const SizedBox(height: 12),
+                          _buildSemester(context),
+                        ]
+                      : [
                           _buildGradeBrief(context),
                           const SizedBox(height: 12),
                           const Divider(),
-                          const SizedBox(height: 12),
-                          _buildSemester(context),
-                          //_buildHistory(context),
-                        ]
-                      : [
                           const SizedBox(height: 12),
                           _buildSemester(context),
                         ],
@@ -623,7 +622,7 @@ class ScholarPage extends StatelessWidget {
                     height: 500,
                     child: Column(children: [
                       const Spacer(),
-                      Text(_scholarController.scholar.isLogin ? '下拉刷新' : '未登录',
+                      Text(_scholarController.scholar.isLogan ? '下拉刷新' : '未登录',
                           style:
                               CupertinoTheme.of(context).textTheme.textStyle),
                       const Spacer()

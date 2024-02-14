@@ -61,7 +61,7 @@ class _CelechronAppState extends State<CelechronApp> {
 
   Future<void> initUser() async {
     var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
-    if (scholar.value.isLogin) {
+    if (scholar.value.isLogan) {
       // ignore: avoid_print
       print("数据加载成功");
       await scholar.value.login();

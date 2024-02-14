@@ -3,7 +3,7 @@ import 'dart:math';
 import 'dart:ui';
 import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/design/custom_decoration.dart';
-import 'package:celechron/utils/timehelper.dart';
+import 'package:celechron/utils/time_helper.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:flutter/material.dart';
