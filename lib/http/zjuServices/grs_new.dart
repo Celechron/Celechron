@@ -89,7 +89,7 @@ class GrsNew {
       final resultJson = await res.transform(utf8.decoder).join();
       final result = jsonDecode(resultJson) as Map<String, dynamic>;
       if (result["success"] != true) {
-        throw ExceptionWithMessage("Invalid login info");
+        throw ExceptionWithMessage('获取成绩api错误，错误信息为 ${result["message"]}');
       }
 
       final records = result["result"] as Map<String, dynamic>;
@@ -148,7 +148,7 @@ class GrsNew {
       final resultJson = await res.transform(utf8.decoder).join();
       final result = jsonDecode(resultJson) as Map<String, dynamic>;
       if (result["success"] != true) {
-        throw ExceptionWithMessage("Invalid login info");
+        throw ExceptionWithMessage("获取考试api错误，错误信息为 ${result["message"]}");
       }
 
       final records = result["result"] as Map<String, dynamic>;
@@ -229,7 +229,7 @@ class GrsNew {
 
       final result = jsonDecode(resultJson) as Map<String, dynamic>;
       if (result["success"] != true) {
-        throw ExceptionWithMessage("Invalid login info");
+        throw ExceptionWithMessage("获取课程api错误，错误信息为 ${result["message"]}");
       }
 
       Map<String, dynamic> defaultMap = {};
@@ -260,7 +260,8 @@ class GrsNew {
               var newSession = Session.empty();
               newSession.id = sessionId;
               newSession.name = rawClass["kcmc"] as String;
-              newSession.teacher = "";
+              // TODO teacher name
+              newSession.teacher = "未知";
               newSession.location = rawClass["cdmc"] as String?;
               newSession.confirmed = true;
               newSession.dayOfWeek = i;
