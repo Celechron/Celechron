@@ -1,4 +1,4 @@
-import 'package:celechron/utils/timehelper.dart';
+import 'package:celechron/utils/time_helper.dart';
 
 class Exam {
   String id;

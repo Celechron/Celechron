@@ -1,6 +1,6 @@
 import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/model/period.dart';
-import 'package:celechron/utils/gpahelper.dart';
+import 'package:celechron/utils/gpa_helper.dart';
 import 'package:celechron/utils/utils.dart';
 import 'course.dart';
 import 'exam.dart';
@@ -249,10 +249,10 @@ class Semester {
     } else {
       _sessions.add(session);
       if (isGrs) {
-        _courses.addEntries([MapEntry(key, Course.fromSession(session))]);
+        _courses.addEntries([MapEntry(key, Course.fromGrsSession(session))]);
       } else {
         _courses
-            .addEntries([MapEntry(key, Course.fromSessionWithoutID(session))]);
+            .addEntries([MapEntry(key, Course.fromUgrsSessionWithoutID(session))]);
       }
     }
   }
@@ -284,9 +284,9 @@ class Semester {
       _courses[key]!.completeGrade(grade);
     } else {
       if (isGrs) {
-        _courses.addEntries([MapEntry(key, Course.fromGradeWithoutID(grade))]);
+        _courses.addEntries([MapEntry(key, Course.fromGrsGradeWithoutID(grade))]);
       } else {
-        _courses.addEntries([MapEntry(key, Course.fromGrade(grade))]);
+        _courses.addEntries([MapEntry(key, Course.fromUgrsGrade(grade))]);
       }
     }
   }

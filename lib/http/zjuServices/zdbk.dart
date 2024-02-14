@@ -5,7 +5,7 @@ import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:get/get.dart';
-import 'package:celechron/utils/gpahelper.dart';
+import 'package:celechron/utils/gpa_helper.dart';
 import 'package:celechron/model/session.dart';
 import '../../model/exams_dto.dart';
 import 'exceptions.dart';
