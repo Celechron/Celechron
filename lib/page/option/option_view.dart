@@ -46,7 +46,7 @@ class OptionPage extends StatelessWidget {
                 children: <CupertinoListTile>[
                   CupertinoListTile(
                     title: Obx(() {
-                      if (_optionController.scholar.value.isLogin) {
+                      if (_optionController.scholar.value.isLogan) {
                         return Text(
                             '已登录: ${_optionController.scholar.value.username}');
                       } else {
@@ -56,7 +56,7 @@ class OptionPage extends StatelessWidget {
                       }
                     }),
                     trailing: BackChervonRow(child: Obx(() {
-                      if (_optionController.scholar.value.isLogin) {
+                      if (_optionController.scholar.value.isLogan) {
                         return Text('退出',
                             style: TextStyle(
                                 color: CupertinoDynamicColor.resolve(
@@ -67,7 +67,7 @@ class OptionPage extends StatelessWidget {
                       }
                     })),
                     onTap: () {
-                      if (_optionController.scholar.value.isLogin) {
+                      if (_optionController.scholar.value.isLogan) {
                         _optionController.logout();
                       } else {
                         // Pop up a login widget from the bottom of the screen

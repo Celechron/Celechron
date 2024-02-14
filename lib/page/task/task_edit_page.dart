@@ -1,7 +1,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:celechron/model/deadline.dart';
 import 'package:celechron/utils/utils.dart';
-import 'package:celechron/utils/timehelper.dart';
+import 'package:celechron/utils/time_helper.dart';
 
 class TaskEditPage extends StatefulWidget {
   final Deadline deadline;

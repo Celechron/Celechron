@@ -25,7 +25,7 @@ class Course {
   }
 
   // used for grs
-  Course.fromSession(Session session) {
+  Course.fromGrsSession(Session session) {
     id = session.id;
     name = session.name;
     confirmed = session.confirmed;
@@ -33,14 +33,14 @@ class Course {
     sessions.add(session);
   }
   // used for zdbk
-  Course.fromSessionWithoutID(Session session) {
+  Course.fromUgrsSessionWithoutID(Session session) {
     name = session.name;
     confirmed = session.confirmed;
     teacher = session.teacher;
     sessions.add(session);
   }
 
-  Course.fromGrade(Grade this.grade)
+  Course.fromUgrsGrade(Grade this.grade)
       : id = grade.id,
         name = grade.name,
         confirmed = true,
@@ -48,7 +48,7 @@ class Course {
 
   // used for grs
   // grs的获取课表接口和获取成绩接口拿到的id不同，一切id以课表接口为准
-  Course.fromGradeWithoutID(Grade this.grade)
+  Course.fromGrsGradeWithoutID(Grade this.grade)
       : name = grade.name,
         confirmed = true,
         credit = grade.credit;
