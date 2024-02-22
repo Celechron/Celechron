@@ -24,6 +24,7 @@ class UgrsSpider implements Spider {
   late TimeConfigService _timeConfigService;
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
+  bool fetchGrs = false;
 
   UgrsSpider(String username, String password) {
     _httpClient = HttpClient();
@@ -51,12 +52,12 @@ class UgrsSpider implements Spider {
     loginErrorMessages.addAll(await Future.wait(
         // 本科生需要登录钉钉工作台、教务网、研究生院网（为了看研究生课）
         [
-          _appService
+          /*_appService
               .login(_httpClient, _iPlanetDirectoryPro)
               // ignore: unnecessary_cast
               .then((value) => null as String?)
               .timeout(const Duration(seconds: 8))
-              .catchError((e) => "无法登录钉钉工作台，$e"),
+              .catchError((e) => "无法登录钉钉工作台，$e"),*/
           _zdbk
               .login(_httpClient, _iPlanetDirectoryPro)
               // ignore: unnecessary_cast
@@ -65,10 +66,15 @@ class UgrsSpider implements Spider {
               .catchError((e) => "无法登录教务网，$e"),
           _grsNew
               .login(_httpClient, _iPlanetDirectoryPro)
-              // ignore: unnecessary_cast
-              .then((value) => null as String?)
+              .then((value) {
+                fetchGrs = true;
+                // ignore: unnecessary_cast
+                return null as String?;
+              })
               .timeout(const Duration(seconds: 8))
-              .catchError((e) => "无法登录研究生院网，$e"),
+              // 本科生一般不需要登录研究生院，所以不管登录成功与否都不会报错
+              // ignore: unnecessary_cast
+              .catchError((e) => null as String?),
         ]).then((value) {
       if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
       return value;
@@ -227,38 +233,44 @@ class UgrsSpider implements Spider {
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
       // 研究生课
-      timetableFetches
-          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addSession(e, '$yearStr-1');
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      timetableFetches
-          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 12).then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addSession(e, '$yearStr-1');
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      timetableFetches
-          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addSession(e, '$yearStr-2');
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      timetableFetches
-          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addSession(e, '$yearStr-2');
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      if(fetchGrs) {
+        timetableFetches
+            .add(
+            _grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
+              for (var e in value.item2) {
+                outSemesters[semesterIndexMap['$yearStr-1']!]
+                    .addSession(e, '$yearStr-1');
+              }
+              return value.item1?.toString();
+            }).catchError((e) => e.toString()));
+        timetableFetches
+            .add(
+            _grsNew.getTimetable(_httpClient, yearEnroll, 12).then((value) {
+              for (var e in value.item2) {
+                outSemesters[semesterIndexMap['$yearStr-1']!]
+                    .addSession(e, '$yearStr-1');
+              }
+              return value.item1?.toString();
+            }).catchError((e) => e.toString()));
+        timetableFetches
+            .add(
+            _grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
+              for (var e in value.item2) {
+                outSemesters[semesterIndexMap['$yearStr-2']!]
+                    .addSession(e, '$yearStr-2');
+              }
+              return value.item1?.toString();
+            }).catchError((e) => e.toString()));
+        timetableFetches
+            .add(
+            _grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
+              for (var e in value.item2) {
+                outSemesters[semesterIndexMap['$yearStr-2']!]
+                    .addSession(e, '$yearStr-2');
+              }
+              return value.item1?.toString();
+            }).catchError((e) => e.toString()));
+      }
       yearEnroll++;
     }
 
@@ -341,6 +353,7 @@ class MockSpider extends UgrsSpider {
 
   @override
   Future<List<String?>> login() async {
+    await Future.delayed(const Duration(seconds: 4));
     return [null, null];
   }
 
@@ -356,6 +369,7 @@ class MockSpider extends UgrsSpider {
           Map<String, List<Grade>>,
           List<double>,
           Map<DateTime, String>>> getEverything() async {
+    await Future.delayed(const Duration(seconds: 2));
     return Tuple6(
         [null, null],
         [null, null, null, null, null, null],
