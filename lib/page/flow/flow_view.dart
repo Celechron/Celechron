@@ -93,7 +93,7 @@ class FlowPage extends StatelessWidget {
                                     color: themeColor,
                                   ),
                                   const SizedBox(width: 6),
-                                  Text(period.location,
+                                  Expanded(child:                                   Text(period.location,
                                       style: TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
@@ -105,7 +105,7 @@ class FlowPage extends StatelessWidget {
                                             .textStyle
                                             .color!,
                                         overflow: TextOverflow.ellipsis,
-                                      ))
+                                      ))),
                                 ]),
                               ])),
                         ],
