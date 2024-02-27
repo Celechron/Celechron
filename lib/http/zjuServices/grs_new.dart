@@ -233,7 +233,9 @@ class GrsNew {
       }
 
       Map<String, dynamic> defaultMap = {};
-      final dayWithClasses = result["result"] as Map<String, dynamic>;
+      final kcbMap = result["result"] as Map<String, dynamic>;
+      final dayWithClasses = kcbMap["kcbMap"] as Map<String, dynamic>;
+
       List<Session> sessions = [];
       for (int i = 1; i <= 7; ++i) {
         var classesThisDay =
