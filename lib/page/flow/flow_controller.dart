@@ -244,29 +244,33 @@ class FlowController extends GetxController {
   void refreshFlowList() {
     refreshBasePeriodList();
 
-    Map<String, Deadline> existingUid = {};
+    Map<String, Deadline> existingDeadlineUid = {};
     for (var x in deadlineList) {
       if (x.deadlineType == DeadlineType.normal) {
-        existingUid[x.uid] = x;
+        existingDeadlineUid[x.uid] = x;
       }
     }
 
     for (var i = 0; i < flowList.length; i++) {
-      if (flowList[i].type == PeriodType.user) {
+      if (flowList[i].type == PeriodType.user ||
+          flowList[i].type == PeriodType.classes ||
+          flowList[i].type == PeriodType.test) {
         flowList.removeAt(i);
         i--;
         continue;
       }
 
       if (flowList[i].type == PeriodType.flow) {
-        if (!existingUid.containsKey(flowList[i].fromUid)) {
+        if (!existingDeadlineUid.containsKey(flowList[i].fromUid)) {
           flowList.removeAt(i);
           i--;
         } else {
-          flowList[i].summary = existingUid[flowList[i].fromUid]!.summary;
-          flowList[i].location = existingUid[flowList[i].fromUid]!.location;
+          flowList[i].summary =
+              existingDeadlineUid[flowList[i].fromUid]!.summary;
+          flowList[i].location =
+              existingDeadlineUid[flowList[i].fromUid]!.location;
           flowList[i].description =
-              existingUid[flowList[i].fromUid]!.description;
+              existingDeadlineUid[flowList[i].fromUid]!.description;
         }
       }
     }
