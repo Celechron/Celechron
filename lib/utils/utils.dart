@@ -16,7 +16,7 @@ const Map<DeadlineStatus, String> deadlineStatusName = {
   DeadlineStatus.running: '进行中',
   DeadlineStatus.suspended: '已暂停',
   DeadlineStatus.completed: '完成',
-  DeadlineStatus.failed: '失败',
+  DeadlineStatus.failed: '已过期', // DDL 失败
   DeadlineStatus.deleted: '已删除',
   DeadlineStatus.outdated: '已过期',
 };
