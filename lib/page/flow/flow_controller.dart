@@ -311,6 +311,16 @@ class FlowController extends GetxController {
       }
     }
 
+    for (var i = _currentBasePeriodCursor - 1; i >= 0; i--) {
+      if (_basePeriodList[i].isRunning()) {
+        flowList.add(_basePeriodList[i].copyWith());
+      }
+      if (_basePeriodList[i].startTime.difference(DateTime.now()).inMinutes <
+          -24 * 60) {
+        break;
+      }
+    }
+
     if (flowList.length <= 5 && _currentBasePeriodCursor != -1) {
       for (var i = 0;
           i < 5 && i + _currentBasePeriodCursor < _basePeriodList.length;

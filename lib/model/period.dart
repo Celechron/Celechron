@@ -83,6 +83,14 @@ class Period {
   bool hasStarted() {
     return !startTime.isAfter(DateTime.now());
   }
+
+  bool hasEnded() {
+    return endTime.isBefore(DateTime.now());
+  }
+
+  bool isRunning() {
+    return hasStarted() && !hasEnded();
+  }
 }
 
 int comparePeriod(Period a, Period b) {
