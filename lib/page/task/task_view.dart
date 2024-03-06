@@ -153,6 +153,13 @@ class TaskPage extends StatelessWidget {
       deadlineRepeatEndsTime: time,
     );
     deadline.reset();
+    // default value for end time (end of today, suitable for most small tasks)
+    deadline.endTime = DateTime(time.year, time.month, 0).add(Duration(days: 1));
+    // default value for repeat until (2 week)
+    deadline.deadlineRepeatEndsTime = DateTime(time.year, time.month, 0).add(Duration(days: 14));
+    // default value for time needed
+    deadline.timeNeeded = const Duration(hours: 2);
+
     Deadline? res = await showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) {
