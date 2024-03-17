@@ -139,7 +139,7 @@ class GrsNew {
 
       req = await httpClient
           .getUrl(Uri.parse(
-              "https://yjsy.zju.edu.cn/dataapi/py/pyKsxsxx/queryPageByXs?dm=py_grks&mode=2&role=1&column=createTime&order=desc&queryMode=1&field=id,,kcbh,kcmc,rq,ksTime,xn,xq_dictText,ksdd,zwh&pageNo=1&pageSize=100&xn=$year&pkxq=$semester"))
+              "https://yjsy.zju.edu.cn/dataapi/py/pyKsxsxx/queryPageByXs?dm=py_grks&mode=2&role=1&column=createTime&order=desc&queryMode=1&field=id,,kcbh,kcmc,rq,ksTime,xn,xq_dictText,ksdd,zwh&pageNo=1&pageSize=100&xn=$year&xq=$semester"))
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("request timeout"));
       req.headers.add("X-Access-Token", _token!);
@@ -151,9 +151,7 @@ class GrsNew {
         throw ExceptionWithMessage("获取考试api错误，错误信息为 ${result["message"]}");
       }
 
-      final records = result["result"] as Map<String, dynamic>;
-
-      final rawExams = records["records"] as List<dynamic>;
+      final rawExams = result["result"] as List<dynamic>;
       List<ExamDto> exams = [];
       // 这个破库不支持yyyyMMdd格式的表示，必须有分隔符
       final formatter = DateFormat('yyyy-MM-dd');
@@ -161,8 +159,7 @@ class GrsNew {
       for (var rawExamDyn in rawExams) {
         var rawExam = rawExamDyn as Map<String, dynamic>;
         // yjsy系统奇怪的bug，加一个特判
-        if (rawExam["xn"] as String != year.toString() ||
-            rawExam["xq"] as String != semester.toString()) {
+        if (rawExam["xn"] as String != year.toString()) {
           continue;
         }
         var newExamDto = ExamDto.empty();
