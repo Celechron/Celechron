@@ -101,8 +101,10 @@ class GrsNew {
         var rawGrade = rawGradeDyn as Map<String, dynamic>;
 
         var newGrade = Grade.empty();
-        //这里使用的id和其他的不一样，这里的id以年份+学期开头，例如202313指的是2023学年秋学期
-        newGrade.id = rawGrade["id"] == null ? "" : rawGrade["id"] as String;
+        //这里使用的id和其他的不一样，直接使用sjddBz字段，
+        // e.g.: 2023-2024学年冬学期<br/>班级编号xxxxx
+        newGrade.id =
+            rawGrade["sjddBz"] == null ? "" : rawGrade["sjddBz"] as String;
         newGrade.name = rawGrade["kcmc"] as String;
         newGrade.credit = rawGrade["xf"] as double;
         newGrade.fivePoint = 0.0;
