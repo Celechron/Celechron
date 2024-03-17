@@ -260,7 +260,7 @@ class GrsNew {
               newSession.id = sessionId;
               newSession.name = rawClass["kcmc"] as String;
               // TODO teacher name
-              newSession.teacher = "未知";
+              newSession.teacher = rawClass["xm"] as String;
               newSession.location = rawClass["cdmc"] as String?;
               newSession.confirmed = true;
               newSession.dayOfWeek = i;
