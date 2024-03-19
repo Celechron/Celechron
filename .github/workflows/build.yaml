@@ -1,0 +1,105 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - opened
+  release:
+    types:
+      - published
+
+permissions: write-all
+
+jobs:
+  macos:
+    name: macOS
+    runs-on: macos-14
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.9'
+          channel: 'stable'
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+          cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
+
+      - name: Install Dependencies
+        run: |
+          flutter pub get
+
+      - name: Build
+        run: |
+          flutter config --enable-macos-desktop
+          FLUTTER_XCODE_CODE_SIGN_IDENTITY="" FLUTTER_XCODE_CODE_SIGNING_REQUIRED=NO flutter build macos --release
+
+      - name: Package
+        run: |
+          ditto -c -k --keepParent "build/macos/Build/Products/Release/Celechron.app" "build/macos/Build/Products/Release/celechron-macos-universal.zip"
+
+      - name: Upload Artifacts (PR)
+        if: ${{ github.event_name != 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: celechon-macos-universal
+          path: build/macos/Build/Products/Release/celechron-macos-universal.zip
+          if-no-files-found: error
+
+      - name: Upload Artifacts (Release)
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} build/macos/Build/Products/Release/celechron-macos-universal.zip
+  windows:
+    name: Windows
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.16.9'
+          channel: 'stable'
+          cache: true
+          cache-key: 'flutter-:os:-:channel:-:version:-:arch:-:hash:'
+          cache-path: '${{ runner.tool_cache }}/flutter/:channel:-:version:-:arch:'
+
+      - name: Install Dependencies
+        run: |
+          flutter pub get
+      - name: Build
+        run: |
+          flutter config --enable-windows-desktop
+          flutter build windows --release
+      - name: Package
+        run: |
+          flutter pub run msix:create --install-certificate false --output-path build --output-name celechron
+          cd build
+          7z a -tzip celechron-windows-x86_64.zip celechron.msix
+      - name: Upload Artifacts (PR)
+        if: ${{ github.event_name != 'release' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: celechron-windows-x86_64
+          path: build/celechron-windows-x86_64.zip
+          if-no-files-found: error
+
+      - name: Upload Artifacts (Release)
+        if: ${{ github.event_name == 'release' }}
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload ${{ github.event.release.tag_name }} build/celechron-windows-x86_64.zip
