@@ -387,7 +387,7 @@ class CalendarPage extends StatelessWidget {
                       const SizedBox(width: 6.0),
                       Expanded(
                         child: Text(
-                          '时间：${period.getTimePeriodHumanReadable()}',
+                          '时间：${period.friendlyTimeStartDayBased}',
                           style: TextStyle(
                             fontSize: 14,
                             fontWeight: FontWeight.normal,

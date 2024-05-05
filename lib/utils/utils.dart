@@ -1,6 +1,16 @@
-enum PeriodType { classes, test, user, virtual, flow }
+enum PeriodType {
+  classes, // 课程
+  test,    // 考试
+  user,    // 日程
+  virtual, // 虚拟的占位符
+  flow,    // 用Celechron安排的（一个DDL被分解成若干个flow来完成）
+}
 
-enum DeadlineType { normal, fixed, fixedlegacy }
+enum DeadlineType {
+  normal,     // 只有结束时间固定的《真DDL》
+  fixed,      // 开始和结束时间都固定的《日程》
+  fixedlegacy // 已过的《日程》
+}
 
 enum DeadlineStatus { running, suspended, completed, failed, deleted, outdated }
 
