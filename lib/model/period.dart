@@ -72,24 +72,24 @@ class Period {
     uid = const Uuid().v4();
   }
 
-  String getTimePeriodHumanReadable() {
+  String get friendlyTimeStartDayBased {
     return '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')} - ${TimeHelper.chineseDayAfterRelation(startTime, endTime)}${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
   }
 
-  String getTimePeriodHumanReadableTodayBased() {
-    return '${TimeHelper.chineseDayAfterRelation(DateTime.now(), startTime)}${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')} - ${TimeHelper.chineseDayAfterRelation(DateTime.now(), endTime)}${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+  String get friendlyTimeTodayBased {
+    return '${TimeHelper.chineseDayRelation(startTime)}$friendlyTimeStartDayBased';
   }
 
-  bool hasStarted() {
+  bool get hasStarted {
     return !startTime.isAfter(DateTime.now());
   }
 
-  bool hasEnded() {
+  bool get hasEnded {
     return endTime.isBefore(DateTime.now());
   }
 
-  bool isRunning() {
-    return hasStarted() && !hasEnded();
+  bool get isRunning {
+    return hasStarted && !hasEnded;
   }
 }
 

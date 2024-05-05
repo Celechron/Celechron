@@ -123,7 +123,7 @@ class FlowPage extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              period.getTimePeriodHumanReadableTodayBased(),
+                              period.friendlyTimeTodayBased,
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.normal,
@@ -335,7 +335,7 @@ class FlowPage extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                                 child: Text(
-                              '${TimeHelper.chineseDayRelation(period.startTime)}${period.getTimePeriodHumanReadable()}',
+                              period.friendlyTimeTodayBased,
                               style: TextStyle(
                                 fontSize: 14,
                                 fontWeight: FontWeight.normal,
@@ -653,7 +653,7 @@ class FlowPage extends StatelessWidget {
 
                 int? lastWaitingFlowIndex;
                 for (int i = 0; i < _flowController.flowList.length; i++) {
-                  if (!_flowController.flowList[i].hasStarted()) {
+                  if (!_flowController.flowList[i].hasStarted) {
                     lastWaitingFlowIndex = i;
                     break;
                   }
@@ -667,14 +667,14 @@ class FlowPage extends StatelessWidget {
                             bottom: 5,
                             left: 16,
                             right: 16),
-                        child: (_flowController.flowList[index].hasStarted() ||
+                        child: (_flowController.flowList[index].hasStarted ||
                                 index == 0)
                             ? createFirst(
                                 context,
                                 _flowController.flowList[index],
                                 index == 0
                                     ? (_flowController.flowList[index]
-                                            .hasStarted()
+                                            .hasStarted
                                         ? '正在进行'
                                         : '即将开始')
                                     : null,
@@ -686,29 +686,6 @@ class FlowPage extends StatelessWidget {
                       );
 
                       return container;
-                      // return index == 0
-                      //     ? Container(
-                      //         padding: EdgeInsets.only(
-                      //             top: index == 0 ? 0 : 5,
-                      //             bottom: 5,
-                      //             left: 16,
-                      //             right: 16),
-                      //         child: createFirst(
-                      //             context,
-                      //             _flowController.flowList[index],
-                      //             _flowController.isDuringFlow
-                      //                 ? '正在进行'
-                      //                 : '即将开始'))
-                      //     : Container(
-                      //         padding: EdgeInsets.only(
-                      //             top: index == 0 ? 0 : 5,
-                      //             bottom: 5,
-                      //             left: 16,
-                      //             right: 16),
-                      //         child: createCard(
-                      //             context,
-                      //             _flowController.flowList[index],
-                      //             index == 1 ? '之后的安排' : null));
                     },
                     childCount: _flowController.flowList.length,
                   ),

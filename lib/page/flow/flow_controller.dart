@@ -15,27 +15,35 @@ class FlowController extends GetxController {
   final deadlineListLastUpdate =
       Get.find<Rx<DateTime>>(tag: 'deadlineListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
-  late var _basePeriodList = scholar.value.periods;
-  var _currentBasePeriodCursor = -1;
+  late var _scholarFlowList = scholar.value.periods;
+  var _currentScholarFlowCursor = -1;
   var timeNow = DateTime.now().obs;
 
   bool get isDuringFlow => flowList.first.startTime.isBefore(DateTime.now());
 
   @override
   void onInit() {
-    refreshFlowList();
+    // 按表走，把应用关闭期间的事务项清理掉
+    walkFlowList();
+
+    // 每秒刷新，不断更新当前事务的结束时间。当某个事务结束，就把它清理掉。
     Timer.periodic(const Duration(seconds: 1), (Timer t) {
       timeNow.value = DateTime.now();
-      refreshFlowList();
+      walkFlowList();
     });
-    _basePeriodList.sort((a, b) => a.startTime.compareTo(b.startTime));
-    _currentBasePeriodCursor = _basePeriodList
-        .indexWhere((element) => element.startTime.isAfter(DateTime.now()));
-    ever(scholar, (callback) => refreshBasePeriodList());
+
+    // 把基本事项给排序好，看目前在上哪节课（和排序有关系）
+    _scholarFlowList.sort((a, b) => a.startTime.compareTo(b.startTime));
+    _currentScholarFlowCursor = _scholarFlowList
+        .indexWhere((element) => element.endTime.isAfter(DateTime.now()));
+
+    // 当“学业”页面有更新（例如出现新课程），更新基本Flow列表
+    ever(scholar, (callback) => refreshScholarFlowList());
+
     super.onInit();
   }
 
-  Future<void> saveToDb() async {
+  Future<void> saveFlowListToDb() async {
     await _db.setFlowList(flowList);
     await _db.setFlowListUpdateTime(flowListLastUpdate.value);
   }
@@ -56,6 +64,7 @@ class FlowController extends GetxController {
     flowList.removeWhere((element) => element.type == PeriodType.flow);
   }
 
+  // 生成新的安排
   int updateFlowList(DateTime startsAt) {
     Duration workTime = _db.getWorkTime();
     Duration restTime = _db.getRestTime();
@@ -134,7 +143,7 @@ class FlowController extends GetxController {
       }
     }
 
-    for (var x in _basePeriodList) {
+    for (var x in _scholarFlowList) {
       if (!x.startTime.isAfter(lastDeadlineEndsAt)) {
         mappedList.add(x.startTime.copyWith());
       }
@@ -188,7 +197,7 @@ class FlowController extends GetxController {
       }
     }
 
-    for (var x in _basePeriodList) {
+    for (var x in _scholarFlowList) {
       DateTime tmpl = x.startTime.copyWith();
       DateTime tmpr = x.endTime.copyWith();
 
@@ -235,22 +244,25 @@ class FlowController extends GetxController {
     });
     updateDeadlineListTime();
     flowList.refresh();
-    _currentBasePeriodCursor =
-        _basePeriodList.indexWhere((e) => e.startTime.isAfter(DateTime.now()));
-    refreshFlowList();
+    _currentScholarFlowCursor =
+        _scholarFlowList.indexWhere((e) => e.endTime.isAfter(DateTime.now()));
+    walkFlowList();
     return ans.restTime.inMinutes;
   }
 
-  void refreshFlowList() {
-    refreshBasePeriodList();
+  // 根据安排走，已完成的就剔除
+  void walkFlowList() {
+    refreshScholarFlowList();
 
     Map<String, Deadline> existingDeadlineUid = {};
+    // 把《真DDL》记录下来（详见utils.dart）
     for (var x in deadlineList) {
       if (x.deadlineType == DeadlineType.normal) {
         existingDeadlineUid[x.uid] = x;
       }
     }
 
+    // 移除所有固定日程，只保留Celechron安排的DDL
     for (var i = 0; i < flowList.length; i++) {
       if (flowList[i].type == PeriodType.user ||
           flowList[i].type == PeriodType.classes ||
@@ -259,7 +271,6 @@ class FlowController extends GetxController {
         i--;
         continue;
       }
-
       if (flowList[i].type == PeriodType.flow) {
         if (!existingDeadlineUid.containsKey(flowList[i].fromUid)) {
           flowList.removeAt(i);
@@ -275,14 +286,14 @@ class FlowController extends GetxController {
       }
     }
 
+    // 不知道为什么要重新排，就让他排吧
     flowList.sort((a, b) {
       return a.startTime.compareTo(b.startTime);
     });
 
+    // 把任务进度同步到Task页面
     for (var i = 0; i < flowList.length; i++) {
-      if (flowList[i].startTime.isAfter(DateTime.now())) {
-        break;
-      }
+      if (flowList[i].startTime.isAfter(DateTime.now())) break;
       if (flowList[i].type == PeriodType.flow) {
         Duration prevProgress =
             (flowList[i].lastUpdateTime ?? flowList[i].startTime)
@@ -311,29 +322,32 @@ class FlowController extends GetxController {
       }
     }
 
-    for (var i = _currentBasePeriodCursor - 1; i >= 0; i--) {
-      if (_basePeriodList[i].isRunning()) {
-        flowList.add(_basePeriodList[i].copyWith());
+
+    /* for (var i = _currentScholarFlowCursor - 1; i >= 0; i--) {
+      if (_scholarFlowList[i].isRunning()) {
+        flowList.add(_scholarFlowList[i].copyWith());
       }
-      if (_basePeriodList[i].startTime.difference(DateTime.now()).inMinutes <
+      if (_scholarFlowList[i].startTime.difference(DateTime.now()).inMinutes <
           -24 * 60) {
         break;
       }
-    }
+    } */
 
-    if (flowList.length <= 5 && _currentBasePeriodCursor != -1) {
+    // 添加最近48h内的至多6节课（防止Flow页面太乱）
+    if (flowList.length <= 12 && _currentScholarFlowCursor != -1) {
       for (var i = 0;
-          i < 5 && i + _currentBasePeriodCursor < _basePeriodList.length;
+          i < 6 && i + _currentScholarFlowCursor < _scholarFlowList.length;
           i++) {
+        // 防止重复添加
         if (!flowList.any((e) =>
-                e.uid == _basePeriodList[i + _currentBasePeriodCursor].uid) &&
-            _basePeriodList[i + _currentBasePeriodCursor]
+                e.uid == _scholarFlowList[i + _currentScholarFlowCursor].uid) &&
+            _scholarFlowList[i + _currentScholarFlowCursor]
                     .endTime
                     .difference(DateTime.now())
                     .inMinutes <
                 2880) {
           flowList
-              .add(_basePeriodList[i + _currentBasePeriodCursor].copyWith());
+              .add(_scholarFlowList[i + _currentScholarFlowCursor].copyWith());
         }
       }
     }
@@ -341,8 +355,7 @@ class FlowController extends GetxController {
     for (var x in deadlineList) {
       if (x.deadlineType == DeadlineType.fixed) {
         DateTime time = DateTime.now();
-        // ignore: avoid_init_to_null
-        DateTime? last = null;
+        DateTime? last;
         for (int i = 0; i < 5; i++) {
           Period? period = x.deadlineOfTime(time, predicting: true);
           if (period != null) {
@@ -359,15 +372,15 @@ class FlowController extends GetxController {
       return a.startTime.compareTo(b.startTime);
     });
 
-    saveToDb();
+    saveFlowListToDb();
   }
 
-  void refreshBasePeriodList() {
-    _basePeriodList = scholar.value.periods;
-    _basePeriodList.sort((a, b) {
+  void refreshScholarFlowList() {
+    _scholarFlowList = scholar.value.periods;
+    _scholarFlowList.sort((a, b) {
       return a.startTime.compareTo(b.startTime);
     });
-    _currentBasePeriodCursor =
-        _basePeriodList.indexWhere((e) => e.startTime.isAfter(DateTime.now()));
+    _currentScholarFlowCursor =
+        _scholarFlowList.indexWhere((e) => e.endTime.isAfter(DateTime.now()));
   }
 }
