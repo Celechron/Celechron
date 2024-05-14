@@ -76,6 +76,7 @@ class FlowPage extends StatelessWidget {
                         ),
                       ]),
                       Divider(
+                        thickness: 0,
                         color: CupertinoDynamicColor.resolve(
                             CupertinoColors.separator, context),
                         height: 14,
