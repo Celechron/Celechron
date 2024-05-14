@@ -1,4 +1,4 @@
-import 'package:celechron/model/deadline.dart';
+import 'package:celechron/model/task.dart';
 import 'package:celechron/model/fuse.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
@@ -14,7 +14,7 @@ import 'adapters/fuse_adapter.dart';
 class DatabaseHelper {
   late final Box optionsBox;
   late final Box scholarBox;
-  late final Box deadlineBox;
+  late final Box taskBox;
   late final Box flowBox;
   late final Box originalWebPageBox;
   late final Box fuseBox;
@@ -31,7 +31,7 @@ class DatabaseHelper {
     Hive.registerAdapter(FuseAdapter());
     optionsBox = await Hive.openBox(dbOptions);
     scholarBox = await Hive.openBox(dbScholar);
-    deadlineBox = await Hive.openBox(dbDeadline);
+    taskBox = await Hive.openBox(dbTask);
     flowBox = await Hive.openBox(dbFlow);
     originalWebPageBox = await Hive.openBox(dbOriginalWebPage);
     fuseBox = await Hive.openBox(dbFuse);
@@ -122,27 +122,27 @@ class DatabaseHelper {
     await flowBox.put(kFlowListUpdateTime, flowListUpdateTime);
   }
 
-  // Deadline
-  final String dbDeadline = 'dbDeadline';
-  final String kDeadlineList = 'deadlineList';
-  final String kDeadlineListUpdateTime = 'deadlineListUpdateTime';
+  // Task
+  final String dbTask = 'dbDeadline';
+  final String kTaskList = 'deadlineList';
+  final String kTaskListUpdateTime = 'deadlineListUpdateTime';
 
-  List<Deadline> getDeadlineList() {
-    return List<Deadline>.from(deadlineBox.get(kDeadlineList) ?? <Deadline>[]);
+  List<Task> getTaskList() {
+    return List<Task>.from(taskBox.get(kTaskList) ?? <Task>[]);
   }
 
-  Future<void> setDeadlineList(List<Deadline> deadlineList) async {
-    await deadlineBox.put(kDeadlineList, deadlineList);
+  Future<void> setTaskList(List<Task> deadlineList) async {
+    await taskBox.put(kTaskList, deadlineList);
   }
 
-  DateTime getDeadlineListUpdateTime() {
-    return deadlineBox.get(kDeadlineListUpdateTime) ??
+  DateTime getTaskListUpdateTime() {
+    return taskBox.get(kTaskListUpdateTime) ??
         DateTime.fromMicrosecondsSinceEpoch(0);
   }
 
-  Future<void> setDeadlineListUpdateTime(
+  Future<void> setTaskListUpdateTime(
       DateTime deadlineListUpdateTime) async {
-    await deadlineBox.put(kDeadlineListUpdateTime, deadlineListUpdateTime);
+    await taskBox.put(kTaskListUpdateTime, deadlineListUpdateTime);
   }
 
   // Scholar

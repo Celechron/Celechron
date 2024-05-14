@@ -1,6 +1,6 @@
 import 'package:celechron/design/custom_decoration.dart';
 import 'package:celechron/design/sub_title.dart';
-import 'package:celechron/model/deadline.dart';
+import 'package:celechron/model/task.dart';
 import 'package:celechron/page/task/task_controller.dart';
 import 'package:celechron/page/task/task_edit_page.dart';
 import 'package:flutter/cupertino.dart';
@@ -19,7 +19,7 @@ class CalendarPage extends StatelessWidget {
   CalendarPage({Key? key}) : super(key: key);
   final _calendarController = Get.put(CalendarController());
   final _taskController = Get.put(TaskController());
-  final deadlineList = Get.find<RxList<Deadline>>(tag: 'deadlineList');
+  final deadlineList = Get.find<RxList<Task>>(tag: 'taskList');
 
   @override
   Widget build(BuildContext context) {
@@ -201,18 +201,18 @@ class CalendarPage extends StatelessWidget {
   }
 
   Future<void> newDeadline(context, {required DateTime time}) async {
-    Deadline? deadline = Deadline(
+    Task? deadline = Task(
       endTime: time,
       startTime: time,
-      deadlineRepeatEndsTime: time,
+      repeatEndsTime: time,
     );
     deadline.reset();
     deadline.startTime = time.copyWith();
     deadline.endTime = time.copyWith();
-    deadline.deadlineRepeatEndsTime = time.copyWith();
-    deadline.deadlineType = DeadlineType.fixed;
-    deadline.deadlineStatus = DeadlineStatus.running;
-    Deadline? res = await showCupertinoModalPopup(
+    deadline.repeatEndsTime = time.copyWith();
+    deadline.type = TaskType.fixed;
+    deadline.status = TaskStatus.running;
+    Task? res = await showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) {
         return TaskEditPage(deadline);
@@ -220,14 +220,14 @@ class CalendarPage extends StatelessWidget {
     );
     if (res != null &&
         res.checkTimeValid() &&
-        res.deadlineStatus != DeadlineStatus.deleted) {
+        res.status != TaskStatus.deleted) {
       _taskController.deadlineList.add(res);
       _taskController.updateDeadlineListTime();
       _taskController.deadlineList.refresh();
     }
   }
 
-  Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
+  Future<void> showCardDialog(BuildContext context, Task deadline) async {
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
@@ -240,8 +240,8 @@ class CalendarPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (deadline.deadlineRepeatType !=
-                    DeadlineRepeatType.norepeat) ...[
+                if (deadline.repeatType !=
+                    TaskRepeatType.norepeat) ...[
                   const Text(
                     '重复日程，接下来的时段：',
                   ),
@@ -270,11 +270,11 @@ class CalendarPage extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('返回'),
             ),
-            if (deadline.deadlineType == DeadlineType.fixed)
+            if (deadline.type == TaskType.fixed)
               CupertinoDialogAction(
                 onPressed: () async {
                   Navigator.of(context).pop();
-                  Deadline res = await showCupertinoModalPopup(
+                  Task res = await showCupertinoModalPopup(
                         context: context,
                         builder: (BuildContext context) {
                           return TaskEditPage(deadline);
@@ -291,11 +291,11 @@ class CalendarPage extends StatelessWidget {
                 },
                 child: const Text('编辑'),
               ),
-            if (deadline.deadlineType == DeadlineType.fixedlegacy)
+            if (deadline.type == TaskType.fixedlegacy)
               CupertinoDialogAction(
                 onPressed: () async {
                   Navigator.of(context).pop();
-                  deadline.deadlineStatus = DeadlineStatus.deleted;
+                  deadline.status = TaskStatus.deleted;
                   _taskController.updateDeadlineList();
                   _taskController.deadlineList.refresh();
                 },
@@ -317,7 +317,7 @@ class CalendarPage extends StatelessWidget {
                           CourseDetailPage(courseId: period.fromUid)))
               : (period.type == PeriodType.user
                   ? (() async {
-                      Deadline? deadline;
+                      Task? deadline;
                       for (var x in deadlineList) {
                         if (x.uid == period.fromUid) {
                           deadline = x;
