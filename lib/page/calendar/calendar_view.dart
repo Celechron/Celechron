@@ -52,7 +52,7 @@ class CalendarPage extends StatelessWidget {
                           ),
                         );
                         _taskController.updateDeadlineList();
-                        _taskController.deadlineList.refresh();
+                        _taskController.taskList.refresh();
                       },
                     ),
                     CupertinoButton(
@@ -221,9 +221,9 @@ class CalendarPage extends StatelessWidget {
     if (res != null &&
         res.checkTimeValid() &&
         res.status != TaskStatus.deleted) {
-      _taskController.deadlineList.add(res);
+      _taskController.taskList.add(res);
       _taskController.updateDeadlineListTime();
-      _taskController.deadlineList.refresh();
+      _taskController.taskList.refresh();
     }
   }
 
@@ -287,7 +287,7 @@ class CalendarPage extends StatelessWidget {
                   if (needUpdate) {
                     _taskController.updateDeadlineListTime();
                   }
-                  _taskController.deadlineList.refresh();
+                  _taskController.taskList.refresh();
                 },
                 child: const Text('编辑'),
               ),
@@ -297,7 +297,7 @@ class CalendarPage extends StatelessWidget {
                   Navigator.of(context).pop();
                   deadline.status = TaskStatus.deleted;
                   _taskController.updateDeadlineList();
-                  _taskController.deadlineList.refresh();
+                  _taskController.taskList.refresh();
                 },
                 child: const Text('删除'),
               ),

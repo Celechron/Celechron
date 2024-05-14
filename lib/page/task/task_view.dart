@@ -83,7 +83,7 @@ class TaskPage extends StatelessWidget {
                     deadline.forceRefreshStatus();
                   }
                   _taskController.updateDeadlineListTime();
-                  _taskController.deadlineList.refresh();
+                  _taskController.taskList.refresh();
                   Navigator.of(context).pop();
                 },
                 child: Text(
@@ -100,7 +100,7 @@ class TaskPage extends StatelessWidget {
                     deadline.status = TaskStatus.running;
                   }
                   _taskController.updateDeadlineListTime();
-                  _taskController.deadlineList.refresh();
+                  _taskController.taskList.refresh();
                   Navigator.of(context).pop();
                 },
                 child: Text(deadline.status == TaskStatus.running
@@ -125,7 +125,7 @@ class TaskPage extends StatelessWidget {
                   if (needUpdate) {
                     _taskController.updateDeadlineListTime();
                   }
-                  _taskController.deadlineList.refresh();
+                  _taskController.taskList.refresh();
                 },
                 child: const Text('编辑'),
               ),
@@ -135,7 +135,7 @@ class TaskPage extends StatelessWidget {
                   Navigator.of(context).pop();
                   deadline.status = TaskStatus.deleted;
                   _taskController.updateDeadlineList();
-                  _taskController.deadlineList.refresh();
+                  _taskController.taskList.refresh();
                 },
                 child: const Text('删除'),
               ),
@@ -160,9 +160,9 @@ class TaskPage extends StatelessWidget {
       },
     );
     if (res != null && res.status != TaskStatus.deleted) {
-      _taskController.deadlineList.add(res);
+      _taskController.taskList.add(res);
       _taskController.updateDeadlineListTime();
-      _taskController.deadlineList.refresh();
+      _taskController.taskList.refresh();
     }
   }
 
@@ -403,7 +403,7 @@ class TaskPage extends StatelessWidget {
                     onPressed: () async {
                       await newDeadline(context);
                       _taskController.updateDeadlineList();
-                      _taskController.deadlineList.refresh();
+                      _taskController.taskList.refresh();
                     },
                   ),
                   CupertinoButton(
@@ -423,7 +423,7 @@ class TaskPage extends StatelessWidget {
                                 _taskController
                                     .removeCompletedDeadline(context);
                                 _taskController.updateDeadlineList();
-                                _taskController.deadlineList.refresh();
+                                _taskController.taskList.refresh();
                                 Navigator.of(context).pop();
                               },
                             ),
@@ -432,7 +432,7 @@ class TaskPage extends StatelessWidget {
                               onPressed: () async {
                                 _taskController.removeFailedDeadline(context);
                                 _taskController.updateDeadlineList();
-                                _taskController.deadlineList.refresh();
+                                _taskController.taskList.refresh();
                                 Navigator.of(context).pop();
                               },
                             ),
@@ -444,7 +444,7 @@ class TaskPage extends StatelessWidget {
                                     0) {
                                   _flowController.removeFlowInFlowList();
                                   _taskController.updateDeadlineListTime();
-                                  _taskController.deadlineList.refresh();
+                                  _taskController.taskList.refresh();
                                 }
                                 Navigator.of(context).pop();
                               },
@@ -457,7 +457,7 @@ class TaskPage extends StatelessWidget {
                                     0) {
                                   _flowController.removeFlowInFlowList();
                                   _taskController.updateDeadlineListTime();
-                                  _taskController.deadlineList.refresh();
+                                  _taskController.taskList.refresh();
                                 }
                                 Navigator.of(context).pop();
                               },
