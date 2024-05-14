@@ -32,11 +32,11 @@ DateTimePair? chopDatePeriod(
 }
 
 @HiveType(typeId: 6)
-class Deadline {
+class Task {
   @HiveField(0)
   String uid;
   @HiveField(1)
-  DeadlineStatus deadlineStatus;
+  TaskStatus status;
   @HiveField(2)
   String description;
   @HiveField(3)
@@ -53,23 +53,23 @@ class Deadline {
   bool isBreakable;
 
   @HiveField(9)
-  DeadlineType deadlineType;
+  TaskType type;
   @HiveField(10)
   DateTime startTime;
   @HiveField(11)
-  DeadlineRepeatType deadlineRepeatType;
+  TaskRepeatType repeatType;
   @HiveField(12)
-  int deadlineRepeatPeriod; // 固定日程重复的周期（单位为天）。
+  int repeatPeriod; // 固定日程重复的周期（单位为天）。
   @HiveField(13)
-  DateTime deadlineRepeatEndsTime; // 固定日程重复的截止日期（没有时间）。晚于这个日期的话就不再重复。
+  DateTime repeatEndsTime; // 固定日程重复的截止日期（没有时间）。晚于这个日期的话就不再重复。
   @HiveField(14)
   bool blockArrangements;
   @HiveField(15)
   String? fromUid;
 
-  Deadline({
+  Task({
     this.uid = '114514',
-    this.deadlineStatus = DeadlineStatus.running,
+    this.status = TaskStatus.running,
     this.description = "1. 到变隐龙商店购买一个苹果\n2. 把苹果存到袋兽阿姨仓库里",
     this.timeSpent = const Duration(minutes: 0),
     this.timeNeeded = const Duration(days: 0, hours: 2, minutes: 30),
@@ -77,18 +77,18 @@ class Deadline {
     this.location = "宝藏镇",
     this.summary = "作业：不可思议迷宫导论",
     this.isBreakable = false,
-    this.deadlineType = DeadlineType.normal,
+    this.type = TaskType.deadline,
     required this.startTime,
-    this.deadlineRepeatType = DeadlineRepeatType.norepeat,
-    this.deadlineRepeatPeriod = 1,
-    required this.deadlineRepeatEndsTime,
+    this.repeatType = TaskRepeatType.norepeat,
+    this.repeatPeriod = 1,
+    required this.repeatEndsTime,
     this.blockArrangements = true,
     this.fromUid,
   });
 
   void reset() {
     genUid();
-    deadlineStatus = DeadlineStatus.deleted;
+    status = TaskStatus.deleted;
     description = "";
     timeSpent = const Duration(minutes: 0);
     timeNeeded = const Duration(hours: 1);
@@ -99,19 +99,19 @@ class Deadline {
     summary = "";
     isBreakable = true;
 
-    deadlineType = DeadlineType.normal;
+    type = TaskType.deadline;
     startTime = endTime;
-    deadlineRepeatType = DeadlineRepeatType.norepeat;
-    deadlineRepeatPeriod = 1;
-    deadlineRepeatEndsTime =
+    repeatType = TaskRepeatType.norepeat;
+    repeatPeriod = 1;
+    repeatEndsTime =
         DateTime(startTime.year, startTime.month, startTime.day);
     blockArrangements = true;
     fromUid = null;
   }
 
-  void copy(Deadline another) {
+  void copy(Task another) {
     uid = another.uid;
-    deadlineStatus = another.deadlineStatus;
+    status = another.status;
     description = another.description;
     timeSpent = another.timeSpent;
     timeNeeded = another.timeNeeded;
@@ -119,18 +119,18 @@ class Deadline {
     location = another.location;
     summary = another.summary;
     isBreakable = another.isBreakable;
-    deadlineType = another.deadlineType;
+    type = another.type;
     startTime = another.startTime;
-    deadlineRepeatType = another.deadlineRepeatType;
-    deadlineRepeatPeriod = another.deadlineRepeatPeriod;
-    deadlineRepeatEndsTime = another.deadlineRepeatEndsTime;
+    repeatType = another.repeatType;
+    repeatPeriod = another.repeatPeriod;
+    repeatEndsTime = another.repeatEndsTime;
     blockArrangements = another.blockArrangements;
     fromUid = another.fromUid;
   }
 
-  Deadline copyWith({
+  Task copyWith({
     String? uid,
-    DeadlineStatus? deadlineStatus,
+    TaskStatus? status,
     String? description,
     Duration? timeSpent,
     Duration? timeNeeded,
@@ -138,17 +138,17 @@ class Deadline {
     String? location,
     String? summary,
     bool? isBreakable,
-    DeadlineType? deadlineType,
+    TaskType? type,
     DateTime? startTime,
-    DeadlineRepeatType? deadlineRepeatType,
-    int? deadlineRepeatPeriod,
-    DateTime? deadlineRepeatEndsTime,
+    TaskRepeatType? repeatType,
+    int? repeatPeriod,
+    DateTime? repeatEndsTime,
     bool? blockArrangements,
     String? fromUid,
   }) {
-    return Deadline(
+    return Task(
       uid: uid ?? this.uid,
-      deadlineStatus: deadlineStatus ?? this.deadlineStatus,
+      status: status ?? this.status,
       description: description ?? this.description,
       timeSpent: timeSpent ?? this.timeSpent,
       timeNeeded: timeNeeded ?? this.timeNeeded,
@@ -156,12 +156,12 @@ class Deadline {
       location: location ?? this.location,
       summary: summary ?? this.summary,
       isBreakable: isBreakable ?? this.isBreakable,
-      deadlineType: deadlineType ?? this.deadlineType,
+      type: type ?? this.type,
       startTime: startTime ?? this.startTime,
-      deadlineRepeatType: deadlineRepeatType ?? this.deadlineRepeatType,
-      deadlineRepeatPeriod: deadlineRepeatPeriod ?? this.deadlineRepeatPeriod,
-      deadlineRepeatEndsTime:
-          deadlineRepeatEndsTime ?? this.deadlineRepeatEndsTime,
+      repeatType: repeatType ?? this.repeatType,
+      repeatPeriod: repeatPeriod ?? this.repeatPeriod,
+      repeatEndsTime:
+          repeatEndsTime ?? this.repeatEndsTime,
       blockArrangements: blockArrangements ?? this.blockArrangements,
       fromUid: fromUid ?? this.fromUid,
     );
@@ -184,7 +184,7 @@ class Deadline {
 
   double getProgress() {
     double progress = 0;
-    if (deadlineType == DeadlineType.fixed) {
+    if (type == TaskType.fixed) {
       if (DateTime.now().isBefore(startTime)) {
         progress = 0;
       } else if (DateTime.now().isAfter(endTime)) {
@@ -193,7 +193,7 @@ class Deadline {
         progress = (DateTime.now().difference(startTime).inSeconds) /
             (endTime.difference(startTime).inSeconds);
       }
-    } else if (deadlineType == DeadlineType.normal) {
+    } else if (type == TaskType.deadline) {
       progress = timeSpent.inSeconds / timeNeeded.inSeconds;
     }
     if (progress > 1) {
@@ -206,7 +206,7 @@ class Deadline {
   }
 
   void updateTimeSpent(Duration length) {
-    if (deadlineType != DeadlineType.normal) {
+    if (type != TaskType.deadline) {
       return;
     }
     timeSpent = length;
@@ -217,54 +217,54 @@ class Deadline {
   }
 
   void refreshStatus() {
-    if (deadlineType == DeadlineType.normal) {
+    if (type == TaskType.deadline) {
       if (timeSpent >= timeNeeded) {
-        deadlineStatus = DeadlineStatus.completed;
+        status = TaskStatus.completed;
       } else if (endTime.isBefore(DateTime.now())) {
-        deadlineStatus = DeadlineStatus.failed;
+        status = TaskStatus.failed;
       }
-    } else if (deadlineType == DeadlineType.fixed) {
-      if (dateOnly(startTime).isAfter(deadlineRepeatEndsTime)) {
-        deadlineStatus = DeadlineStatus.outdated;
+    } else if (type == TaskType.fixed) {
+      if (dateOnly(startTime).isAfter(repeatEndsTime)) {
+        status = TaskStatus.outdated;
       } else {
-        deadlineStatus = DeadlineStatus.running;
+        status = TaskStatus.running;
       }
     }
   }
 
   void forceRefreshStatus() {
-    if (deadlineType == DeadlineType.normal) {
+    if (type == TaskType.deadline) {
       if (timeSpent >= timeNeeded) {
-        deadlineStatus = DeadlineStatus.completed;
+        status = TaskStatus.completed;
       } else if (endTime.isBefore(DateTime.now())) {
-        deadlineStatus = DeadlineStatus.failed;
+        status = TaskStatus.failed;
       } else {
-        deadlineStatus = DeadlineStatus.running;
+        status = TaskStatus.running;
       }
-    } else if (deadlineType == DeadlineType.fixed) {
-      if (dateOnly(startTime).isAfter(deadlineRepeatEndsTime)) {
-        deadlineStatus = DeadlineStatus.outdated;
+    } else if (type == TaskType.fixed) {
+      if (dateOnly(startTime).isAfter(repeatEndsTime)) {
+        status = TaskStatus.outdated;
       } else {
-        deadlineStatus = DeadlineStatus.running;
+        status = TaskStatus.running;
       }
     }
   }
 
   bool setToNextPeriod() {
-    if (deadlineType != DeadlineType.fixed ||
-        deadlineStatus == DeadlineStatus.outdated) {
+    if (type != TaskType.fixed ||
+        status == TaskStatus.outdated) {
       return false;
     }
-    if (deadlineRepeatType == DeadlineRepeatType.norepeat) {
-      deadlineStatus = DeadlineStatus.outdated;
+    if (repeatType == TaskRepeatType.norepeat) {
+      status = TaskStatus.outdated;
       return false;
-    } else if (deadlineRepeatType == DeadlineRepeatType.days) {
-      if (deadlineRepeatPeriod < 1) {
-        deadlineRepeatPeriod = 1;
+    } else if (repeatType == TaskRepeatType.days) {
+      if (repeatPeriod < 1) {
+        repeatPeriod = 1;
       }
-      startTime = startTime.add(Duration(days: deadlineRepeatPeriod));
-      endTime = endTime.add(Duration(days: deadlineRepeatPeriod));
-    } else if (deadlineRepeatType == DeadlineRepeatType.month) {
+      startTime = startTime.add(Duration(days: repeatPeriod));
+      endTime = endTime.add(Duration(days: repeatPeriod));
+    } else if (repeatType == TaskRepeatType.month) {
       DateTime nex = DateTime(startTime.year, startTime.month + 1, 1);
       while (daysInMonth(nex.year, nex.month) < startTime.day) {
         nex = DateTime(nex.year, nex.month + 1, 1);
@@ -273,7 +273,7 @@ class Deadline {
       int difference = nex.difference(startTime).inDays;
       startTime = startTime.add(Duration(days: difference));
       endTime = endTime.add(Duration(days: difference));
-    } else if (deadlineRepeatType == DeadlineRepeatType.year) {
+    } else if (repeatType == TaskRepeatType.year) {
       DateTime nex = DateTime(startTime.year + 1, startTime.month, 1);
       while (daysInMonth(nex.year, nex.month) < startTime.day) {
         nex = DateTime(nex.year + 1, nex.month, 1);
@@ -283,14 +283,14 @@ class Deadline {
       startTime = startTime.add(Duration(days: difference));
       endTime = endTime.add(Duration(days: difference));
     }
-    if (dateOnly(startTime).isAfter(dateOnly(deadlineRepeatEndsTime))) {
-      deadlineStatus = DeadlineStatus.outdated;
+    if (dateOnly(startTime).isAfter(dateOnly(repeatEndsTime))) {
+      status = TaskStatus.outdated;
     }
     return true;
   }
 
-  Period? deadlineOfTime(DateTime dateTime, {bool predicting = false}) {
-    if (deadlineType != DeadlineType.fixed) {
+  Period? deadlineOfTime(DateTime refTime, {bool predicting = false}) {
+    if (type != TaskType.fixed) {
       return null;
     }
 
@@ -305,7 +305,7 @@ class Deadline {
       summary: summary,
     );
 
-    if (dateTime.isBefore(startTime)) {
+    if (refTime.isBefore(startTime)) {
       if (predicting) {
         return period.copyWith(
           startTime: startTime.copyWith(),
@@ -315,9 +315,9 @@ class Deadline {
       return null;
     }
 
-    if (deadlineRepeatType == DeadlineRepeatType.norepeat) {
-      if ((predicting || !startTime.isAfter(dateTime)) &&
-          !endTime.isBefore(dateTime)) {
+    if (repeatType == TaskRepeatType.norepeat) {
+      if ((predicting || !startTime.isAfter(refTime)) &&
+          !endTime.isBefore(refTime)) {
         return period.copyWith(
           startTime: startTime.copyWith(),
           endTime: endTime.copyWith(),
@@ -325,10 +325,10 @@ class Deadline {
       }
       return null;
     } else {
-      Deadline dummy = copyWith();
-      while ((predicting || !dummy.startTime.isAfter(dateTime)) &&
-          dummy.deadlineStatus != DeadlineStatus.outdated) {
-        if (!dummy.endTime.isBefore(dateTime)) {
+      Task dummy = copyWith();
+      while ((predicting || !dummy.startTime.isAfter(refTime)) &&
+          dummy.status != TaskStatus.outdated) {
+        if (!dummy.endTime.isBefore(refTime)) {
           return period.copyWith(
               startTime: dummy.startTime.copyWith(),
               endTime: dummy.endTime.copyWith());
@@ -340,8 +340,8 @@ class Deadline {
   }
 
   List<Period> getPeriodOfDay(DateTime date) {
-    if (deadlineType != DeadlineType.fixed &&
-        deadlineType != DeadlineType.fixedlegacy) {
+    if (type != TaskType.fixed &&
+        type != TaskType.fixedlegacy) {
       return [];
     }
 
@@ -360,12 +360,12 @@ class Deadline {
       location: location,
       lastUpdateTime: DateTime.now(),
       summary: summary,
-      fromFromUid: deadlineType == DeadlineType.fixed ? null : fromUid,
+      fromFromUid: type == TaskType.fixed ? null : fromUid,
     );
     List<Period> ans = <Period>[];
 
     DateTimePair? pair;
-    if (deadlineRepeatType == DeadlineRepeatType.norepeat) {
+    if (repeatType == TaskRepeatType.norepeat) {
       pair = chopDatePeriod(startTime, endTime, date);
       if (pair != null) {
         ans.add(period.copyWith(
@@ -374,9 +374,9 @@ class Deadline {
         ));
       }
     } else {
-      Deadline dummy = copyWith();
+      Task dummy = copyWith();
       while (!dateOnly(dummy.startTime).isAfter(date) &&
-          dummy.deadlineStatus != DeadlineStatus.outdated) {
+          dummy.status != TaskStatus.outdated) {
         if (!dateOnly(dummy.endTime).isBefore(date)) {
           pair = chopDatePeriod(dummy.startTime, dummy.endTime, date);
           if (pair != null) {
@@ -393,18 +393,18 @@ class Deadline {
     return ans;
   }
 
-  bool differentForFlow(Deadline another) {
-    if (deadlineType != another.deadlineType ||
+  bool differentForFlow(Task another) {
+    if (type != another.type ||
         timeSpent != another.timeSpent ||
         timeNeeded != another.timeNeeded ||
-        (deadlineType == DeadlineType.fixed && endTime != another.endTime) ||
+        (type == TaskType.fixed && endTime != another.endTime) ||
         endTime != another.endTime ||
-        deadlineStatus != another.deadlineStatus ||
+        status != another.status ||
         isBreakable != another.isBreakable ||
-        deadlineRepeatType != another.deadlineRepeatType ||
-        deadlineRepeatPeriod != another.deadlineRepeatPeriod ||
-        deadlineRepeatEndsTime != another.deadlineRepeatEndsTime ||
-        (deadlineType == DeadlineType.fixed &&
+        repeatType != another.repeatType ||
+        repeatPeriod != another.repeatPeriod ||
+        repeatEndsTime != another.repeatEndsTime ||
+        (type == TaskType.fixed &&
             blockArrangements != another.blockArrangements)) {
       return true;
     }

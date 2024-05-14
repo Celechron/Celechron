@@ -1,5 +1,5 @@
 import 'package:celechron/utils/utils.dart';
-import 'package:celechron/model/deadline.dart';
+import 'package:celechron/model/task.dart';
 import 'package:celechron/model/period.dart';
 
 class TimeAssignSet {
@@ -15,8 +15,8 @@ class TimeAssignSet {
 }
 
 TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
-    List<Deadline> deadlineList_, List<Period> ableList_) {
-  List<Deadline> deadlineList = [];
+    List<Task> deadlineList_, List<Period> ableList_) {
+  List<Task> deadlineList = [];
   List<Period> ableList = [];
 
   for (var x in deadlineList_) {
@@ -44,7 +44,7 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
     assignSet: [],
   );
 
-  for (Deadline cur in deadlineList) {
+  for (Task cur in deadlineList) {
     if (targetRestTime <= Duration.zero) cur.isBreakable = false;
     bool isStarting = cur.isBreakable;
 
@@ -102,7 +102,7 @@ TimeAssignSet findSolution(Duration workTime, Duration targetRestTime,
 }
 
 TimeAssignSet getTimeAssignSet(Duration workTime, Duration restTime,
-    List<Deadline> deadlineList, List<Period> ableList) {
+    List<Task> deadlineList, List<Period> ableList) {
   TimeAssignSet ans = findSolution(workTime, restTime, deadlineList, ableList);
   if (ans.isValid) return ans;
 

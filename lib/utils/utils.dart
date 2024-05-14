@@ -6,36 +6,36 @@ enum PeriodType {
   flow,    // 用Celechron安排的（一个DDL被分解成若干个flow来完成）
 }
 
-enum DeadlineType {
-  normal,     // 只有结束时间固定的《真DDL》
+enum TaskType {
+  deadline,     // 只有结束时间固定的《真DDL》
   fixed,      // 开始和结束时间都固定的《日程》
   fixedlegacy // 已过的《日程》
 }
 
-enum DeadlineStatus { running, suspended, completed, failed, deleted, outdated }
+enum TaskStatus { running, suspended, completed, failed, deleted, outdated }
 
-enum DeadlineRepeatType { norepeat, days, month, year }
+enum TaskRepeatType { norepeat, days, month, year }
 
-const Map<DeadlineType, String> deadlineTypeName = {
-  DeadlineType.normal: 'DDL',
-  DeadlineType.fixed: '日程',
-  DeadlineType.fixedlegacy: '过去日程',
+const Map<TaskType, String> deadlineTypeName = {
+  TaskType.deadline: 'DDL',
+  TaskType.fixed: '日程',
+  TaskType.fixedlegacy: '过去日程',
 };
 
-const Map<DeadlineStatus, String> deadlineStatusName = {
-  DeadlineStatus.running: '进行中',
-  DeadlineStatus.suspended: '已暂停',
-  DeadlineStatus.completed: '完成',
-  DeadlineStatus.failed: '已过期', // DDL 失败
-  DeadlineStatus.deleted: '已删除',
-  DeadlineStatus.outdated: '已过期',
+const Map<TaskStatus, String> deadlineStatusName = {
+  TaskStatus.running: '进行中',
+  TaskStatus.suspended: '已暂停',
+  TaskStatus.completed: '完成',
+  TaskStatus.failed: '已过期', // DDL 失败
+  TaskStatus.deleted: '已删除',
+  TaskStatus.outdated: '已过期',
 };
 
-const Map<DeadlineRepeatType, String> deadlineRepeatTypeName = {
-  DeadlineRepeatType.norepeat: '不重复',
-  DeadlineRepeatType.days: '每隔几天',
-  DeadlineRepeatType.month: '每月的这一天',
-  DeadlineRepeatType.year: '每年的这一天',
+const Map<TaskRepeatType, String> deadlineRepeatTypeName = {
+  TaskRepeatType.norepeat: '不重复',
+  TaskRepeatType.days: '每隔几天',
+  TaskRepeatType.month: '每月的这一天',
+  TaskRepeatType.year: '每年的这一天',
 };
 
 DateTime dateOnly(DateTime date, {int? hour, int? minute}) {

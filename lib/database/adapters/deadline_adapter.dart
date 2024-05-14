@@ -1,58 +1,58 @@
 import 'package:celechron/utils/utils.dart';
 import 'package:hive/hive.dart';
-import 'package:celechron/model/deadline.dart';
+import 'package:celechron/model/task.dart';
 
-class DeadlineStatusAdapter extends TypeAdapter<DeadlineStatus> {
+class DeadlineStatusAdapter extends TypeAdapter<TaskStatus> {
   @override
   final typeId = 7;
 
   @override
-  void write(BinaryWriter writer, DeadlineStatus obj) =>
+  void write(BinaryWriter writer, TaskStatus obj) =>
       writer.writeInt(obj.index);
 
   @override
-  DeadlineStatus read(BinaryReader reader) =>
-      DeadlineStatus.values[reader.readInt()];
+  TaskStatus read(BinaryReader reader) =>
+      TaskStatus.values[reader.readInt()];
 }
 
-class DeadlineTypeAdapter extends TypeAdapter<DeadlineType> {
+class DeadlineTypeAdapter extends TypeAdapter<TaskType> {
   @override
   final typeId = 10;
 
   @override
-  void write(BinaryWriter writer, DeadlineType obj) =>
+  void write(BinaryWriter writer, TaskType obj) =>
       writer.writeInt(obj.index);
 
   @override
-  DeadlineType read(BinaryReader reader) =>
-      DeadlineType.values[reader.readInt()];
+  TaskType read(BinaryReader reader) =>
+      TaskType.values[reader.readInt()];
 }
 
-class DeadlineRepeatTypeAdapter extends TypeAdapter<DeadlineRepeatType> {
+class DeadlineRepeatTypeAdapter extends TypeAdapter<TaskRepeatType> {
   @override
   final typeId = 11;
 
   @override
-  void write(BinaryWriter writer, DeadlineRepeatType obj) =>
+  void write(BinaryWriter writer, TaskRepeatType obj) =>
       writer.writeInt(obj.index);
 
   @override
-  DeadlineRepeatType read(BinaryReader reader) =>
-      DeadlineRepeatType.values[reader.readInt()];
+  TaskRepeatType read(BinaryReader reader) =>
+      TaskRepeatType.values[reader.readInt()];
 }
 
-class DeadlineAdapter extends TypeAdapter<Deadline> {
+class DeadlineAdapter extends TypeAdapter<Task> {
   @override
   final typeId = 6;
 
   @override
-  void write(BinaryWriter writer, Deadline obj) {
+  void write(BinaryWriter writer, Task obj) {
     writer
       ..writeByte(16)
       ..writeByte(0)
       ..write(obj.uid)
       ..writeByte(1)
-      ..write(obj.deadlineStatus)
+      ..write(obj.status)
       ..writeByte(2)
       ..write(obj.description)
       ..writeByte(3)
@@ -68,15 +68,15 @@ class DeadlineAdapter extends TypeAdapter<Deadline> {
       ..writeByte(8)
       ..write(obj.isBreakable)
       ..writeByte(9)
-      ..write(obj.deadlineType)
+      ..write(obj.type)
       ..writeByte(10)
       ..write(obj.startTime)
       ..writeByte(11)
-      ..write(obj.deadlineRepeatType)
+      ..write(obj.repeatType)
       ..writeByte(12)
-      ..write(obj.deadlineRepeatPeriod)
+      ..write(obj.repeatPeriod)
       ..writeByte(13)
-      ..write(obj.deadlineRepeatEndsTime)
+      ..write(obj.repeatEndsTime)
       ..writeByte(14)
       ..write(obj.blockArrangements)
       ..writeByte(15)
@@ -84,18 +84,18 @@ class DeadlineAdapter extends TypeAdapter<Deadline> {
   }
 
   @override
-  Deadline read(BinaryReader reader) {
+  Task read(BinaryReader reader) {
     var numOfFields = reader.readByte();
     var fields = <int, dynamic>{
       for (var i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Deadline(
+    return Task(
       endTime: DateTime.now(),
       startTime: DateTime.now(),
-      deadlineRepeatEndsTime: DateTime.now(),
+      repeatEndsTime: DateTime.now(),
     )
       ..uid = fields[0] as String
-      ..deadlineStatus = fields[1] as DeadlineStatus
+      ..status = fields[1] as TaskStatus
       ..description = fields[2] as String
       ..timeSpent = fields[3] as Duration
       ..timeNeeded = fields[4] as Duration
@@ -103,12 +103,12 @@ class DeadlineAdapter extends TypeAdapter<Deadline> {
       ..location = fields[6] as String
       ..summary = fields[7] as String
       ..isBreakable = fields[8] as bool
-      ..deadlineType = fields[9] as DeadlineType? ?? DeadlineType.normal
+      ..type = fields[9] as TaskType? ?? TaskType.deadline
       ..startTime = fields[10] as DateTime? ?? (fields[5] as DateTime)
-      ..deadlineRepeatType =
-          fields[11] as DeadlineRepeatType? ?? DeadlineRepeatType.norepeat
-      ..deadlineRepeatPeriod = fields[12] as int? ?? 1
-      ..deadlineRepeatEndsTime =
+      ..repeatType =
+          fields[11] as TaskRepeatType? ?? TaskRepeatType.norepeat
+      ..repeatPeriod = fields[12] as int? ?? 1
+      ..repeatEndsTime =
           fields[13] as DateTime? ?? (fields[5] as DateTime)
       ..blockArrangements = fields[14] as bool? ?? true
       ..fromUid = fields[15] as String?;

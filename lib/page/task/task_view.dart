@@ -7,7 +7,7 @@ import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:celechron/design/custom_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:celechron/model/deadline.dart';
+import 'package:celechron/model/task.dart';
 import 'task_edit_page.dart';
 import 'dart:async';
 import 'package:get/get.dart';
@@ -18,17 +18,17 @@ class TaskPage extends StatelessWidget {
   final _taskController = Get.put(TaskController());
   final _flowController = Get.put(FlowController());
 
-  String deadlineProgress(Deadline deadline) {
+  String deadlineProgress(Task deadline) {
     return '${(deadline.getProgress() * 100).toInt()}% 已完成：预期 ${durationToString(deadline.timeNeeded)}，还要 ${durationToString(deadline.timeNeeded <= deadline.timeSpent ? Duration.zero : (deadline.timeNeeded - deadline.timeSpent))}';
   }
 
-  Future<void> showCardDialog(BuildContext context, Deadline deadline) async {
+  Future<void> showCardDialog(BuildContext context, Task deadline) async {
     return showDialog<void>(
       context: context,
       builder: (BuildContext context) {
         return CupertinoAlertDialog(
           title: Text(
-            '${deadline.summary}：${deadline.deadlineType == DeadlineType.normal ? deadlineStatusName[deadline.deadlineStatus]! : deadline.deadlineType == DeadlineType.fixed ? deadlineTypeName[DeadlineType.fixed] : ''}',
+            '${deadline.summary}：${deadline.type == TaskType.deadline ? deadlineStatusName[deadline.status]! : deadline.type == TaskType.fixed ? deadlineTypeName[TaskType.fixed] : ''}',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           content: SizedBox(
@@ -38,7 +38,7 @@ class TaskPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  if (deadline.deadlineType == DeadlineType.fixed) ...[
+                  if (deadline.type == TaskType.fixed) ...[
                     Text(
                       '开始于 ${toStringHumanReadable(deadline.startTime)}',
                     ),
@@ -46,7 +46,7 @@ class TaskPage extends StatelessWidget {
                       '结束于 ${toStringHumanReadable(deadline.endTime)}',
                     ),
                   ],
-                  if (deadline.deadlineType == DeadlineType.normal) ...[
+                  if (deadline.type == TaskType.deadline) ...[
                     Text(
                       '截止于 ${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
                     ),
@@ -73,12 +73,12 @@ class TaskPage extends StatelessWidget {
               onPressed: () => Navigator.of(context).pop(),
               child: const Text('返回'),
             ),
-            if (deadline.deadlineType == DeadlineType.normal &&
+            if (deadline.type == TaskType.deadline &&
                 deadline.timeSpent < deadline.timeNeeded)
               CupertinoDialogAction(
                 onPressed: () {
-                  if (deadline.deadlineStatus != DeadlineStatus.completed) {
-                    deadline.deadlineStatus = DeadlineStatus.completed;
+                  if (deadline.status != TaskStatus.completed) {
+                    deadline.status = TaskStatus.completed;
                   } else {
                     deadline.forceRefreshStatus();
                   }
@@ -87,32 +87,32 @@ class TaskPage extends StatelessWidget {
                   Navigator.of(context).pop();
                 },
                 child: Text(
-                    '标记为${deadline.deadlineStatus == DeadlineStatus.completed ? '未' : ''}完成'),
+                    '标记为${deadline.status == TaskStatus.completed ? '未' : ''}完成'),
               ),
-            if (deadline.deadlineType == DeadlineType.normal &&
-                (deadline.deadlineStatus == DeadlineStatus.running ||
-                    deadline.deadlineStatus == DeadlineStatus.suspended))
+            if (deadline.type == TaskType.deadline &&
+                (deadline.status == TaskStatus.running ||
+                    deadline.status == TaskStatus.suspended))
               CupertinoDialogAction(
                 onPressed: () {
-                  if (deadline.deadlineStatus == DeadlineStatus.running) {
-                    deadline.deadlineStatus = DeadlineStatus.suspended;
+                  if (deadline.status == TaskStatus.running) {
+                    deadline.status = TaskStatus.suspended;
                   } else {
-                    deadline.deadlineStatus = DeadlineStatus.running;
+                    deadline.status = TaskStatus.running;
                   }
                   _taskController.updateDeadlineListTime();
                   _taskController.deadlineList.refresh();
                   Navigator.of(context).pop();
                 },
-                child: Text(deadline.deadlineStatus == DeadlineStatus.running
+                child: Text(deadline.status == TaskStatus.running
                     ? '暂停'
                     : '继续'),
               ),
-            if (deadline.deadlineType == DeadlineType.normal ||
-                deadline.deadlineType == DeadlineType.fixed)
+            if (deadline.type == TaskType.deadline ||
+                deadline.type == TaskType.fixed)
               CupertinoDialogAction(
                 onPressed: () async {
                   Navigator.of(context).pop();
-                  Deadline res = await showCupertinoModalPopup(
+                  Task res = await showCupertinoModalPopup(
                         context: context,
                         builder: (BuildContext context) {
                           return TaskEditPage(deadline);
@@ -129,11 +129,11 @@ class TaskPage extends StatelessWidget {
                 },
                 child: const Text('编辑'),
               ),
-            if (deadline.deadlineType == DeadlineType.fixedlegacy)
+            if (deadline.type == TaskType.fixedlegacy)
               CupertinoDialogAction(
                 onPressed: () async {
                   Navigator.of(context).pop();
-                  deadline.deadlineStatus = DeadlineStatus.deleted;
+                  deadline.status = TaskStatus.deleted;
                   _taskController.updateDeadlineList();
                   _taskController.deadlineList.refresh();
                 },
@@ -147,26 +147,26 @@ class TaskPage extends StatelessWidget {
 
   Future<void> newDeadline(context) async {
     DateTime time = DateTime.now();
-    Deadline? deadline = Deadline(
+    Task? deadline = Task(
       endTime: time,
       startTime: time,
-      deadlineRepeatEndsTime: time,
+      repeatEndsTime: time,
     );
     deadline.reset();
-    Deadline? res = await showCupertinoModalPopup(
+    Task? res = await showCupertinoModalPopup(
       context: context,
       builder: (BuildContext context) {
         return TaskEditPage(deadline);
       },
     );
-    if (res != null && res.deadlineStatus != DeadlineStatus.deleted) {
+    if (res != null && res.status != TaskStatus.deleted) {
       _taskController.deadlineList.add(res);
       _taskController.updateDeadlineListTime();
       _taskController.deadlineList.refresh();
     }
   }
 
-  Widget createCard(context, Deadline deadline, Color color, String? title) {
+  Widget createCard(context, Task deadline, Color color, String? title) {
     double progress = deadline.getProgress();
 
     return Column(
@@ -205,8 +205,8 @@ class TaskPage extends StatelessWidget {
                                 ))),
                     const Spacer(),
                     Text(
-                        deadline.deadlineType == DeadlineType.normal
-                            ? deadlineStatusName[deadline.deadlineStatus]!
+                        deadline.type == TaskType.deadline
+                            ? deadlineStatusName[deadline.status]!
                             : (DateTime.now().isBefore(deadline.startTime)
                                 ? '未开始'
                                 : (!DateTime.now().isBefore(deadline.endTime)
@@ -236,7 +236,7 @@ class TaskPage extends StatelessWidget {
                     ),
                     Expanded(
                       child: Text(
-                        deadline.deadlineType == DeadlineType.fixed
+                        deadline.type == TaskType.fixed
                             ? ' 开始于：${toStringHumanReadable(deadline.startTime)}'
                             : ' 截止于：${toStringHumanReadable(deadline.endTime)}${deadline.endTime.isBefore(DateTime.now()) ? ' - 已过期' : ''}',
                         style: TextStyle(
@@ -253,7 +253,7 @@ class TaskPage extends StatelessWidget {
                     ),
                   ],
                 ),
-                if (deadline.deadlineType == DeadlineType.fixed) ...[
+                if (deadline.type == TaskType.fixed) ...[
                   Row(
                     children: [
                       Icon(
@@ -308,7 +308,7 @@ class TaskPage extends StatelessWidget {
                             )))
                   ]),
                 ],
-                if (deadline.deadlineType == DeadlineType.normal)
+                if (deadline.type == TaskType.deadline)
                   Row(children: [
                     Icon(
                       CupertinoIcons.play_fill,
@@ -332,8 +332,8 @@ class TaskPage extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ))),
                   ]),
-                if (deadline.deadlineType == DeadlineType.fixed ||
-                    deadline.deadlineStatus == DeadlineStatus.running) ...[
+                if (deadline.type == TaskType.fixed ||
+                    deadline.status == TaskStatus.running) ...[
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
                     value: progress,
@@ -342,8 +342,8 @@ class TaskPage extends StatelessWidget {
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
-                if (deadline.deadlineType == DeadlineType.normal &&
-                    deadline.deadlineStatus == DeadlineStatus.suspended) ...[
+                if (deadline.type == TaskType.deadline &&
+                    deadline.status == TaskStatus.suspended) ...[
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
                     value: progress,
@@ -352,8 +352,8 @@ class TaskPage extends StatelessWidget {
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
-                if (deadline.deadlineType == DeadlineType.normal &&
-                    deadline.deadlineStatus == DeadlineStatus.completed) ...[
+                if (deadline.type == TaskType.deadline &&
+                    deadline.status == TaskStatus.completed) ...[
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
                     value: 1,
@@ -362,8 +362,8 @@ class TaskPage extends StatelessWidget {
                     valueColor: AlwaysStoppedAnimation<Color>(color),
                   ),
                 ],
-                if (deadline.deadlineType == DeadlineType.normal &&
-                    deadline.deadlineStatus == DeadlineStatus.failed) ...[
+                if (deadline.type == TaskType.deadline &&
+                    deadline.status == TaskStatus.failed) ...[
                   const SizedBox(height: 8.0),
                   LinearProgressIndicator(
                     value: 0,

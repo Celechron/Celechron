@@ -1,10 +1,10 @@
 import 'package:flutter/cupertino.dart';
-import 'package:celechron/model/deadline.dart';
+import 'package:celechron/model/task.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:celechron/utils/time_helper.dart';
 
 class TaskEditPage extends StatefulWidget {
-  final Deadline deadline;
+  final Task deadline;
   const TaskEditPage(this.deadline, {super.key});
 
   @override
@@ -12,11 +12,11 @@ class TaskEditPage extends StatefulWidget {
 }
 
 class _TaskEditPageState extends State<TaskEditPage> {
-  late Deadline now;
+  late Task now;
   int __got = 0;
 
   void saveAndExit() {
-    if (now.deadlineType == DeadlineType.fixed &&
+    if (now.type == TaskType.fixed &&
         !now.startTime.isBefore(now.endTime)) {
       showCupertinoDialog(
         context: context,
@@ -39,9 +39,9 @@ class _TaskEditPageState extends State<TaskEditPage> {
       return;
     }
 
-    if (now.deadlineType == DeadlineType.fixed &&
-        now.deadlineRepeatType != DeadlineRepeatType.norepeat &&
-        dateOnly(now.startTime).isAfter(dateOnly(now.deadlineRepeatEndsTime))) {
+    if (now.type == TaskType.fixed &&
+        now.repeatType != TaskRepeatType.norepeat &&
+        dateOnly(now.startTime).isAfter(dateOnly(now.repeatEndsTime))) {
       showCupertinoDialog(
         context: context,
         builder: (BuildContext context) {
@@ -63,14 +63,14 @@ class _TaskEditPageState extends State<TaskEditPage> {
       return;
     }
 
-    if (now.deadlineType == DeadlineType.fixed &&
-        now.deadlineRepeatType != DeadlineRepeatType.norepeat) {
+    if (now.type == TaskType.fixed &&
+        now.repeatType != TaskRepeatType.norepeat) {
       int length = now.endTime.difference(now.startTime).inMinutes;
-      if ((now.deadlineRepeatType == DeadlineRepeatType.days &&
-              length > now.deadlineRepeatPeriod * 24 * 60) ||
-          (now.deadlineRepeatType == DeadlineRepeatType.month &&
+      if ((now.repeatType == TaskRepeatType.days &&
+              length > now.repeatPeriod * 24 * 60) ||
+          (now.repeatType == TaskRepeatType.month &&
               length > 28 * 24 * 60) ||
-          (now.deadlineRepeatType == DeadlineRepeatType.year &&
+          (now.repeatType == TaskRepeatType.year &&
               length > 365 * 24 * 60)) {
         showCupertinoDialog(
           context: context,
@@ -102,7 +102,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
   void removeAndExit() {
     FormState().save();
     now.forceRefreshStatus();
-    now.deadlineStatus = DeadlineStatus.deleted;
+    now.status = TaskStatus.deleted;
     Navigator.of(context).pop(now);
   }
 
@@ -118,16 +118,16 @@ class _TaskEditPageState extends State<TaskEditPage> {
       if (now.startTime.isAfter(now.endTime)) {
         now.startTime = now.endTime.add(const Duration(minutes: -1));
       }
-      if (now.deadlineRepeatEndsTime.isAfter(DateTime(2099, 1, 1)) ||
-          dateOnly(now.deadlineRepeatEndsTime)
+      if (now.repeatEndsTime.isAfter(DateTime(2099, 1, 1)) ||
+          dateOnly(now.repeatEndsTime)
               .isBefore(dateOnly(now.startTime))) {
-        now.deadlineRepeatEndsTime = dateOnly(now.startTime);
+        now.repeatEndsTime = dateOnly(now.startTime);
       }
       __got = 1;
     }
 
     List<String> deadlineRepeatTypeNameList = [];
-    for (var i in DeadlineRepeatType.values) {
+    for (var i in TaskRepeatType.values) {
       deadlineRepeatTypeNameList.add(deadlineRepeatTypeName[i]!);
     }
 
@@ -161,24 +161,24 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     top: 20.0,
                     bottom: 8.0,
                   ),
-                  child: CupertinoSlidingSegmentedControl<DeadlineType>(
-                    groupValue: now.deadlineType,
-                    children: <DeadlineType, Widget>{
-                      DeadlineType.normal: Padding(
+                  child: CupertinoSlidingSegmentedControl<TaskType>(
+                    groupValue: now.type,
+                    children: <TaskType, Widget>{
+                      TaskType.deadline: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text('${deadlineTypeName[DeadlineType.normal]}'),
+                        child: Text('${deadlineTypeName[TaskType.deadline]}'),
                       ),
-                      DeadlineType.fixed: Padding(
+                      TaskType.fixed: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
-                        child: Text('${deadlineTypeName[DeadlineType.fixed]}'),
+                        child: Text('${deadlineTypeName[TaskType.fixed]}'),
                       ),
                     },
-                    onValueChanged: (DeadlineType? value) {
+                    onValueChanged: (TaskType? value) {
                       if (value != null) {
                         setState(() {
-                          now.deadlineType = value;
-                          if (now.deadlineType == DeadlineType.fixed) {
-                            now.deadlineStatus = DeadlineStatus.running;
+                          now.type = value;
+                          if (now.type == TaskType.fixed) {
+                            now.status = TaskStatus.running;
                           }
                         });
                       }
@@ -195,7 +195,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                         now.summary = value;
                       },
                     ),
-                    if (now.deadlineType == DeadlineType.fixed)
+                    if (now.type == TaskType.fixed)
                       CupertinoTextFormFieldRow(
                         placeholder: '结束时间',
                         textAlign: TextAlign.left,
@@ -235,7 +235,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                       textAlign: TextAlign.left,
                       controller: TextEditingController(
                           text:
-                              '${now.deadlineType == DeadlineType.normal ? '截止于' : '结束于'} ${TimeHelper.chineseDateTime(now.endTime)}'),
+                              '${now.type == TaskType.deadline ? '截止于' : '结束于'} ${TimeHelper.chineseDateTime(now.endTime)}'),
                       readOnly: true,
                       onTap: () async {
                         await showCupertinoModalPopup(
@@ -266,7 +266,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     ),
                   ],
                 ),
-                if (now.deadlineType == DeadlineType.normal)
+                if (now.type == TaskType.deadline)
                   CupertinoListSection.insetGrouped(
                     header: const Text('时间安排'),
                     children: [
@@ -480,14 +480,14 @@ class _TaskEditPageState extends State<TaskEditPage> {
                       ),
                     ],
                   ),
-                if (now.deadlineType == DeadlineType.fixed) ...[
+                if (now.type == TaskType.fixed) ...[
                   CupertinoListSection.insetGrouped(
                     header: const Text('日程设置'),
                     children: [
                       CupertinoListTile(
                         title: const Text('重复'),
                         trailing: Text(
-                            deadlineRepeatTypeName[now.deadlineRepeatType]!),
+                            deadlineRepeatTypeName[now.repeatType]!),
                         onTap: () async {
                           await showCupertinoModalPopup(
                               context: context,
@@ -504,20 +504,20 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                       scrollController:
                                           FixedExtentScrollController(
                                         initialItem:
-                                            now.deadlineRepeatType.index,
+                                            now.repeatType.index,
                                       ),
                                       onSelectedItemChanged: (int value) {
                                         setState(() {
-                                          now.deadlineRepeatType =
-                                              DeadlineRepeatType.values[value];
+                                          now.repeatType =
+                                              TaskRepeatType.values[value];
 
-                                          if (now.deadlineRepeatType !=
-                                                  DeadlineRepeatType.norepeat &&
+                                          if (now.repeatType !=
+                                                  TaskRepeatType.norepeat &&
                                               dateOnly(now
-                                                      .deadlineRepeatEndsTime)
+                                                      .repeatEndsTime)
                                                   .isBefore(dateOnly(
                                                       now.startTime))) {
-                                            now.deadlineRepeatEndsTime =
+                                            now.repeatEndsTime =
                                                 dateOnly(now.startTime);
                                           }
                                         });
@@ -538,10 +538,10 @@ class _TaskEditPageState extends State<TaskEditPage> {
                               });
                         },
                       ),
-                      if (now.deadlineRepeatType == DeadlineRepeatType.days)
+                      if (now.repeatType == TaskRepeatType.days)
                         CupertinoListTile(
                           title: const Text('重复周期'),
-                          trailing: Text('${now.deadlineRepeatPeriod} 天'),
+                          trailing: Text('${now.repeatPeriod} 天'),
                           onTap: () async {
                             await showCupertinoModalPopup(
                                 context: context,
@@ -558,11 +558,11 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                         scrollController:
                                             FixedExtentScrollController(
                                           initialItem:
-                                              now.deadlineRepeatPeriod - 1,
+                                              now.repeatPeriod - 1,
                                         ),
                                         onSelectedItemChanged: (int value) {
                                           setState(() {
-                                            now.deadlineRepeatPeriod =
+                                            now.repeatPeriod =
                                                 value + 1;
                                           });
                                         },
@@ -581,11 +581,11 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                 });
                           },
                         ),
-                      if (now.deadlineRepeatType != DeadlineRepeatType.norepeat)
+                      if (now.repeatType != TaskRepeatType.norepeat)
                         CupertinoListTile(
                           title: const Text('重复截止日期'),
                           trailing: Text(TimeHelper.chineseDate(
-                              now.deadlineRepeatEndsTime)),
+                              now.repeatEndsTime)),
                           onTap: () async {
                             await showCupertinoModalPopup(
                                 context: context,
@@ -600,10 +600,10 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                       child: CupertinoDatePicker(
                                         mode: CupertinoDatePickerMode.date,
                                         initialDateTime:
-                                            now.deadlineRepeatEndsTime,
+                                            now.repeatEndsTime,
                                         onDateTimeChanged: (value) {
                                           setState(() {
-                                            now.deadlineRepeatEndsTime = value;
+                                            now.repeatEndsTime = value;
                                           });
                                         },
                                       ),
