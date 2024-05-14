@@ -10,19 +10,19 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  get: any
-  cupertino_icons: any
-  table_calendar: any
-  hive: any
-  hive_flutter: any
-  uuid: any
-  fast_gbk: any
-  flutter_svg: any
-  intl: any
-  extended_sliver: any
-  flutter_launcher_icons: any
-  rename_app: any
-  url_launcher: any
+  get:
+  cupertino_icons:
+  table_calendar:
+  hive:
+  hive_flutter:
+  uuid:
+  fast_gbk:
+  flutter_svg:
+  intl:
+  extended_sliver:
+  flutter_launcher_icons:
+  rename_app:
+  url_launcher:
   quiver: ^3.2.1
 
 dev_dependencies:

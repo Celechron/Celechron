@@ -562,7 +562,12 @@ class ScholarPage extends StatelessWidget {
                   )),
                 ]),
                 const SizedBox(height: 4),
-                const Divider(),
+                Divider(
+                  thickness: 0,
+                  color: CupertinoDynamicColor.resolve(
+                      CupertinoColors.separator, context),
+                  height: 14,
+                ),
               ])),
         )),
         if (_scholarController.scholar.isLogan)
@@ -609,7 +614,12 @@ class ScholarPage extends StatelessWidget {
                       : [
                           _buildGradeBrief(context),
                           const SizedBox(height: 12),
-                          const Divider(),
+                          Divider(
+                            thickness: 0,
+                            color: CupertinoDynamicColor.resolve(
+                                CupertinoColors.separator, context),
+                            height: 14,
+                          ),
                           const SizedBox(height: 12),
                           _buildSemester(context),
                         ],
