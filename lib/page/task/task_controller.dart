@@ -5,24 +5,24 @@ import 'package:celechron/model/task.dart';
 import 'package:celechron/utils/utils.dart';
 
 class TaskController extends GetxController {
-  final deadlineList = Get.find<RxList<Task>>(tag: 'taskList');
-  final deadlineListLastUpdate =
+  final taskList = Get.find<RxList<Task>>(tag: 'taskList');
+  final taskListLastUpdate =
       Get.find<Rx<DateTime>>(tag: 'taskListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
 
-  List<Task> get todoDeadlineList => deadlineList
+  List<Task> get todoDeadlineList => taskList
       .where((element) => (element.type == TaskType.deadline &&
           (element.status == TaskStatus.running ||
               element.status == TaskStatus.suspended)))
       .toList();
 
-  List<Task> get doneDeadlineList => deadlineList
+  List<Task> get doneDeadlineList => taskList
       .where((element) => (element.type == TaskType.deadline &&
           (element.status == TaskStatus.completed ||
               element.status == TaskStatus.failed)))
       .toList();
 
-  List<Task> get fixedDeadlineList => deadlineList
+  List<Task> get fixedDeadlineList => taskList
       .where((element) => (element.type == TaskType.fixed))
       .toList();
 
@@ -42,25 +42,25 @@ class TaskController extends GetxController {
   }
 
   Future<void> saveDeadlineListToDb() async {
-    await _db.setTaskList(deadlineList);
-    await _db.setTaskListUpdateTime(deadlineListLastUpdate.value);
+    await _db.setTaskList(taskList);
+    await _db.setTaskListUpdateTime(taskListLastUpdate.value);
   }
 
   void loadDeadlineListLastUpdate() {
-    deadlineListLastUpdate.value = _db.getTaskListUpdateTime();
+    taskListLastUpdate.value = _db.getTaskListUpdateTime();
   }
 
   void updateDeadlineListTime() {
-    deadlineListLastUpdate.value = DateTime.now();
+    taskListLastUpdate.value = DateTime.now();
   }
 
   void updateDeadlineList() {
-    deadlineList.removeWhere(
+    taskList.removeWhere(
         (element) => element.status == TaskStatus.deleted);
 
     Set<String> existingUid = {};
     List<Task> newDeadlineList = [];
-    for (var deadline in deadlineList) {
+    for (var deadline in taskList) {
       deadline.refreshStatus();
       if (deadline.type == TaskType.deadline) {
         if (deadline.timeSpent >= deadline.timeNeeded) {
@@ -88,29 +88,29 @@ class TaskController extends GetxController {
         }
       }
     }
-    deadlineList.addAll(newDeadlineList);
-    deadlineList.removeWhere((element) =>
+    taskList.addAll(newDeadlineList);
+    taskList.removeWhere((element) =>
         element.type == TaskType.fixedlegacy &&
         !existingUid.contains(element.fromUid));
 
-    deadlineList.sort((a, b) => a.endTime.compareTo(b.endTime));
+    taskList.sort((a, b) => a.endTime.compareTo(b.endTime));
   }
 
   void removeCompletedDeadline(context) {
-    deadlineList.removeWhere((element) =>
+    taskList.removeWhere((element) =>
         element.type == TaskType.deadline &&
         element.status == TaskStatus.completed);
   }
 
   void removeFailedDeadline(context) {
-    deadlineList.removeWhere((element) =>
+    taskList.removeWhere((element) =>
         element.type == TaskType.deadline &&
         element.status == TaskStatus.failed);
   }
 
   int suspendAllDeadline(context) {
     int count = 0;
-    for (var x in deadlineList) {
+    for (var x in taskList) {
       if (x.type == TaskType.deadline &&
           x.status == TaskStatus.running) {
         x.status = TaskStatus.suspended;
@@ -122,7 +122,7 @@ class TaskController extends GetxController {
 
   int continueAllDeadline(context) {
     int count = 0;
-    for (var x in deadlineList) {
+    for (var x in taskList) {
       if (x.type == TaskType.deadline &&
           x.status == TaskStatus.suspended) {
         x.status = TaskStatus.running;

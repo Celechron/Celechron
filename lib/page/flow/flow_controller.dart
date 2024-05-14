@@ -41,7 +41,13 @@ class FlowController extends GetxController {
         .indexWhere((element) => element.endTime.isAfter(DateTime.now()));
 
     // 当“学业”页面有更新（例如出现新课程），更新基本Flow列表
-    ever(scholar, (callback) => refreshScholarFlowList());
+    ever(scholar, (callback) {
+      refreshScholarFlowList();
+      refreshWidget();
+    });
+    ever(taskList, (callback) {
+      refreshWidget();
+    });
 
     super.onInit();
   }
