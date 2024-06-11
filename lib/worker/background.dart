@@ -53,8 +53,10 @@ Future<void> refreshScholar() async {
   var pushOnGradeChangeFuse = await secureStorage.read(key: 'pushOnGradeChangeFuse', iOptions: iOSOptions);
 
   try {
-    await scholar.login();
-    await scholar.refresh();
+    var error = await scholar.login();
+    if (error.any((e) => e != null)) return;
+    error = await scholar.refresh();
+    if (error.any((e) => e != null)) return;
 
     if (pushOnGradeChangeFuse == null) {
       await flutterLocalNotificationsPlugin.show(
@@ -64,8 +66,8 @@ Future<void> refreshScholar() async {
           notificationDetails
       );
       await secureStorage.write(key: 'pushOnGradeChangeFuse', value: '1', iOptions: iOSOptions);
-    } else if (scholar.gpa[0] != double.parse(oldGpa) ||
-        scholar.gradedCourseCount != int.parse(gradedCourseCount)) {
+    } else if (scholar.gpa[0] != double.tryParse(oldGpa) ||
+        scholar.gradedCourseCount != int.tryParse(gradedCourseCount)) {
       await flutterLocalNotificationsPlugin.show(
           0,
           '成绩变动提醒',
