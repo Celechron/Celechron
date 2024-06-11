@@ -1,51 +1,14 @@
 //
-//  WidgetExtensions.swift
+//  GradeWidget.swift
 //  WidgetExtensions
 //
-//  Created by 施子捷 on 2024/5/1.
+//  Created by 施子捷 on 2024/6/4.
 //
 
 import WidgetKit
 import SwiftUI
 
-enum PeriodTypeDto: Int, Codable {
-  case classes = 0
-  case test = 1
-  case user = 2
-  case flow = 3
-}
-
-struct PeriodDto: Codable {
-  var uid: String
-  var type: PeriodTypeDto
-  var name: String? = nil
-  var startTime: Int64
-  var endTime: Int64
-  var location: String? = nil
-}
-
-struct Flow {
-    let location: String?
-    let name: String?
-    let startTime: Date?
-    let endTime: Date?
-    
-    init(location: String?, name: String?, startTime: Date?, endTime: Date?) {
-        self.location = location
-        self.name = name
-        self.startTime = startTime
-        self.endTime = endTime
-    }
-    
-    init(from dto: PeriodDto) {
-        self.location = dto.location
-        self.name = dto.name
-        self.startTime = Date(timeIntervalSince1970: TimeInterval(dto.startTime))
-        self.endTime = Date(timeIntervalSince1970: TimeInterval(dto.endTime))
-    }
-}
-
-struct FlowEntry: TimelineEntry {
+struct GradeEntry: TimelineEntry {
     let date: Date
     let flows: [Flow]
     let remaining: Int
@@ -63,13 +26,13 @@ struct FlowEntry: TimelineEntry {
     }
 }
 
-struct FlowWidgetProvider: TimelineProvider {
-    func placeholder(in context: Context) -> FlowEntry {
-        FlowEntry(refreshAt: Date(), location: nil, name: nil, startTime: Date(timeIntervalSinceNow: 3600), endTime: nil)
+struct GradeWidgetProvider: TimelineProvider {
+    func placeholder(in context: Context) -> GradeEntry {
+        GradeEntry(refreshAt: Date(), location: nil, name: nil, startTime: Date(timeIntervalSinceNow: 3600), endTime: nil)
     }
 
-    func getSnapshot(in context: Context, completion: @escaping (FlowEntry) -> Void) {
-        completion(FlowEntry(refreshAt: Date(), location: nil, name: nil, startTime: Date(timeIntervalSinceNow: 3600), endTime: nil))
+    func getSnapshot(in context: Context, completion: @escaping (GradeEntry) -> Void) {
+        completion(GradeEntry(refreshAt: Date(), location: nil, name: nil, startTime: Date(timeIntervalSinceNow: 3600), endTime: nil))
     }
     
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
@@ -96,7 +59,7 @@ struct FlowWidgetProvider: TimelineProvider {
         })
         upComingFlows.sort { a, b in a.startTime! < b.startTime! }
         
-        var entries: [FlowEntry] = []
+        var entries: [GradeEntry] = []
         for minuteOffset in 0 ..< 1440 {
             let refreshTime = Calendar.current.date(byAdding: .minute, value: minuteOffset, to: currentTime)!
             // 移除已经结束的事项
@@ -105,7 +68,7 @@ struct FlowWidgetProvider: TimelineProvider {
             }
             if(onGoingFlows.isEmpty && upComingFlows.isEmpty) {
                 // 无事可做
-                entries.append(FlowEntry(refreshAt: Date(), toDisplay: [], stillToDoToday: 0))
+                entries.append(GradeEntry(refreshAt: Date(), toDisplay: [], stillToDoToday: 0))
                 break
             }
             
@@ -137,33 +100,19 @@ struct FlowWidgetProvider: TimelineProvider {
             }
             
             let remaining = upComingFlows.firstIndex(where: { e in !Calendar.current.isDate(e.startTime!, inSameDayAs: refreshTime)}) ?? upComingFlows.count
-            entries.append(FlowEntry(refreshAt: refreshTime, toDisplay: nearestFlows, stillToDoToday: remaining))
+            entries.append(GradeEntry(refreshAt: refreshTime, toDisplay: nearestFlows, stillToDoToday: remaining))
         }
         completion(Timeline(entries: entries, policy: .after(Date(timeIntervalSinceNow: 86400))))
     }
 }
 
-struct FlowWidget: Widget {
-    let kind: String = "FlowWidget"
+struct GradeWidget: Widget {
+    let kind: String = "GradeWidget"
 
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: FlowWidgetProvider()) { entry in
-            FlowWidgetView(entry: entry)
+        StaticConfiguration(kind: kind, provider: GradeWidgetProvider()) { entry in
+            GradeWidgetView(entry: entry)
                 .widgetBackground(Color(UIColor.tertiarySystemFill))
         }.supportedFamilies([.systemSmall])
     }
 }
-
-extension View {
-    func widgetBackground(_ backgroundView: some View) -> some View {
-        if #available(iOSApplicationExtension 17.0, *) {
-            return containerBackground(for: .widget) {
-                backgroundView
-            }
-        } else {
-            return background(backgroundView)
-        }
-    }
-}
-
-

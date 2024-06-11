@@ -491,7 +491,7 @@ class FlowPage extends StatelessWidget {
             CupertinoDialogAction(
               onPressed: () {
                 if (newTime.isAfter(DateTime.now())) {
-                  int ret = _flowController.updateFlowList(newTime);
+                  int ret = _flowController.generateNewFlowList(newTime);
                   if (ret < 0) {
                     showCupertinoDialog(
                       context: context,

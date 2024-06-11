@@ -1,22 +1,26 @@
-import 'package:celechron/page/scholar/scholar_view.dart';
-import 'package:celechron/page/search/search_view.dart';
+import 'dart:async';
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Colors, Icons;
 import 'package:flutter/scheduler.dart';
-import 'package:get/get.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:url_launcher/url_launcher_string.dart';
-import 'model/fuse.dart';
-import 'page/calendar/calendar_view.dart';
-import 'model/scholar.dart';
-import 'page/flow/flow_view.dart';
-import 'page/task/task_view.dart';
-import 'database/database_helper.dart';
-import 'page/option/option_view.dart';
-import 'package:hive_flutter/hive_flutter.dart';
-import 'dart:async';
-import 'dart:io';
 import 'package:flutter/services.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:get/get.dart';
+import 'package:url_launcher/url_launcher_string.dart';
+import 'package:hive_flutter/hive_flutter.dart';
+
+import 'package:celechron/page/scholar/scholar_view.dart';
+import 'package:celechron/page/search/search_view.dart';
+import 'package:celechron/page/flow/flow_view.dart';
+import 'package:celechron/page/task/task_view.dart';
+import 'package:celechron/page/calendar/calendar_view.dart';
+import 'package:celechron/page/option/option_view.dart';
+
+import 'package:celechron/model/scholar.dart';
+import 'package:celechron/worker/fuse.dart';
+import 'package:celechron/database/database_helper.dart';
 
 void main() async {
   // 从数据库读取数据
@@ -27,7 +31,7 @@ void main() async {
   await db.init();
 
   // 注入数据观察项（相当于事件总线，更新这些变量将导致Widget重绘
-  Get.put(db.getScholar().obs, tag: 'scholar');
+  Get.put((await db.getScholar()).obs, tag: 'scholar');
   Get.put(db.getTaskList().obs, tag: 'taskList');
   Get.put(db.getTaskListUpdateTime().obs, tag: 'taskListLastUpdate');
   Get.put(db.getFlowList().obs, tag: 'flowList');
@@ -36,6 +40,7 @@ void main() async {
   Get.put(db.getFuse().obs, tag: 'fuse');
 
   runApp(const CelechronApp());
+
   if (Platform.isAndroid) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
@@ -47,6 +52,33 @@ void main() async {
       systemNavigationBarColor: Colors.transparent,
     ));
   }
+
+  Future<void> initTimezone() async {}
+
+  Future<void> initScholar() async {
+    var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
+    if (scholar.value.isLogan) {
+      await scholar.value.login();
+      await scholar.value.refresh();
+      scholar.refresh();
+    }
+  }
+
+  initTimezone();
+  initScholar();
+
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+  const initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
+  const initializationSettingsDarwin = DarwinInitializationSettings(
+    requestSoundPermission: true,
+    requestBadgePermission: true,
+    requestAlertPermission: true,
+  );
+  const initializationSettings = InitializationSettings(
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin
+  );
+  flutterLocalNotificationsPlugin.initialize(initializationSettings);
 }
 
 class CelechronApp extends StatefulWidget {
@@ -57,28 +89,6 @@ class CelechronApp extends StatefulWidget {
 }
 
 class _CelechronAppState extends State<CelechronApp> {
-  Future<void> initTimezone() async {}
-
-  Future<void> initUser() async {
-    var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
-    if (scholar.value.isLogan) {
-      // ignore: avoid_print
-      print("数据加载成功");
-      await scholar.value.login();
-      await scholar.value.refresh();
-      scholar.refresh();
-    } else {
-      // ignore: avoid_print
-      print("数据加载失败");
-    }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    initTimezone();
-    initUser();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -102,21 +112,21 @@ class _CelechronAppState extends State<CelechronApp> {
         child: child!,
       ),
       title: 'Celechron',
-      home: const MyHomePage(title: 'Celechron'),
+      home: const HomePage(title: 'Celechron'),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
+class HomePage extends StatefulWidget {
+  const HomePage({super.key, required this.title});
 
   final String title;
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<HomePage> createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _HomePageState extends State<HomePage> {
   int _indexNum = 0;
   final CupertinoTabController _controller = CupertinoTabController();
 

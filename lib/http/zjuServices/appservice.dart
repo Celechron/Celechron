@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'package:get/get.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:celechron/model/exams_dto.dart';
@@ -10,7 +9,15 @@ import 'exceptions.dart';
 
 class AppService {
   Cookie? _wisportalId;
-  final DatabaseHelper _db = Get.find<DatabaseHelper>(tag: 'db');
+  DatabaseHelper? _db;
+
+  AppService({DatabaseHelper? db}) {
+    _db = db;
+  }
+
+  set db(DatabaseHelper? db) {
+    _db = db;
+  }
 
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
     late HttpClientRequest request;
@@ -112,14 +119,14 @@ class AppService {
       var examDtos =
           (jsonDecode(examJson) as List<dynamic>).map((e) => ExamDto(e));
 
-      _db.setCachedWebPage('appService_examDto_$xn-$xq', examJson);
+      _db?.setCachedWebPage('appService_examDto_$xn-$xq', examJson);
       return Tuple(null, examDtos);
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(
           exception,
-          (jsonDecode((_db.getCachedWebPage('appService_examDto_$xn-$xq') ??
+          (jsonDecode((_db?.getCachedWebPage('appService_examDto_$xn-$xq') ??
                   '[]')) as List<dynamic>)
               .map((e) => ExamDto(e)));
     }
@@ -155,14 +162,14 @@ class AppService {
       var sessions = (jsonDecode(courseJson) as List<dynamic>)
           .where((e) => e['kcid'] != null)
           .map((e) => Session(e));
-      _db.setCachedWebPage('appService_Timetable', courseJson);
+      _db?.setCachedWebPage('appService_Timetable', courseJson);
       return Tuple(null, sessions);
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(
           exception,
-          (jsonDecode((_db.getCachedWebPage('appService_Timetable') ?? '[]'))
+          (jsonDecode((_db?.getCachedWebPage('appService_Timetable') ?? '[]'))
                   as List<dynamic>)
               .where((e) => e['kcid'] != null)
               .map((e) => Session(e)));

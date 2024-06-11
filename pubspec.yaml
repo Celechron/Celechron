@@ -1,7 +1,7 @@
 name: celechron
 description: Time scheduler for zjuers.
 publish_to: "none"
-version: 0.2.6
+version: 0.2.8
 environment:
   sdk: ">=3.0.0"
 
@@ -24,6 +24,14 @@ dependencies:
   rename_app:
   url_launcher:
   quiver: ^3.2.1
+  workmanager:
+    git:
+      url: https://github.com/Celechron/flutter_workmanager.git
+      ref: main
+      path: workmanager
+  flutter_local_notifications:
+  flutter_secure_storage:
+
 
 dev_dependencies:
   flutter_test:

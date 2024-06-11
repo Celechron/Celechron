@@ -9,7 +9,7 @@ import WidgetKit
 import SwiftUI
 
 struct FlowWidgetView : View {
-    var entry: Provider.Entry
+    var entry: FlowWidgetProvider.Entry
 
     @ViewBuilder
     var body: some View {
@@ -28,7 +28,7 @@ struct FlowWidgetView : View {
 }
 
 struct SingleFlowView: View {
-    let entry: Provider.Entry
+    let entry: FlowWidgetProvider.Entry
     
     var body: some View {
         let flow = entry.flows.first!
@@ -79,7 +79,7 @@ struct SingleFlowView: View {
 }
 
 struct MultiFlowView: View {
-    let entry: Provider.Entry
+    let entry: FlowWidgetProvider.Entry
     
     var body: some View {
         VStack {

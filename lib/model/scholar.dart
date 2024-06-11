@@ -1,5 +1,3 @@
-import 'package:get/get.dart';
-
 import 'period.dart';
 import 'grade.dart';
 import 'semester.dart';
@@ -10,19 +8,24 @@ import 'package:celechron/http/grs_spider.dart';
 import 'package:celechron/database/database_helper.dart';
 
 class Scholar {
-  // 构造用户对象
   Scholar();
 
-  final DatabaseHelper _db = Get.find<DatabaseHelper>(tag: 'db');
+  // 构造用户对象
+  DatabaseHelper? _db;
+
+  set db(DatabaseHelper? db) {
+    _db = db;
+  }
+
   // 登录状态
   bool isLogan = false;
   DateTime lastUpdateTime = DateTime.parse("20010101");
 
   // 爬虫区
-  late String username;
-  late String _password;
+  String? username;
+  String? password;
   late Spider _spider;
-  bool get isGrs => !username.startsWith('3');
+  bool get isGrs => !username!.startsWith('3');
 
   // 按学期整理好的学业信息，包括该学期的所有科目、考试、课表、均绩等
   List<Semester> semesters = <Semester>[];
@@ -45,8 +48,8 @@ class Scholar {
   // 特殊日期
   Map<DateTime, String> specialDates = {};
 
-  set password(String password) {
-    _password = password;
+  int get gradedCourseCount {
+    return grades.values.fold(0, (p, e) => p + e.length);
   }
 
   List<Period> get periods {
@@ -73,22 +76,22 @@ class Scholar {
   Future<List<String?>> login() async {
     if (username == '3200000000') {
       _spider = MockSpider();
-    } else if(username.startsWith('3')) {
-      _spider = UgrsSpider(username, _password);
+    } else if(!isGrs) {
+      _spider = UgrsSpider(username!, password!);
     } else {
-      _spider = GrsSpider(username, _password);
+      _spider = GrsSpider(username!, password!);
     }
     var loginErrorMessage = await _spider.login();
     if (loginErrorMessage.every((e) => e == null)) {
       isLogan = true;
-      _db.setScholar(this);
+      _db?.setScholar(this);
     }
     return loginErrorMessage;
   }
 
   Future<bool> logout() async {
     username = "";
-    _password = "";
+    password = "";
     semesters = [];
     grades = {};
     gpa = [0.0, 0.0, 0.0, 0.0];
@@ -98,7 +101,9 @@ class Scholar {
     isLogan = false;
     lastUpdateTime = DateTime.parse("20010101");
     _spider.logout();
-    return _db.removeScholar().then((value) => true).catchError((e) => false);
+    await _db?.removeScholar();
+    await _db?.removeAllCachedWebPage();
+    return true;
   }
 
   // 刷新数据
@@ -151,15 +156,13 @@ class Scholar {
         credit = 0.0;
       }
 
-      await _db.setScholar(this);
+      await _db?.setScholar(this);
       return value.item1.every((e) => e == null) ? value.item2 : value.item1;
     }).whenComplete(() => _mutex--);
   }
 
   Map<String, dynamic> toJson() {
     return {
-      'username': username,
-      'password': _password,
       'semesters': semesters,
       'grades': grades,
       'gpa': gpa,
@@ -173,11 +176,8 @@ class Scholar {
   }
 
   Scholar.fromJson(Map<String, dynamic> json) {
-    username = json['username'];
-    _password = json['password'];
-    _spider = isGrs
-        ? GrsSpider(username, _password)
-        : UgrsSpider(username, _password);
+    username = json.containsKey('username') ? json['username'] : null;    // <=0.2.6 Compatibility
+    password = json.containsKey('password') ? json['password'] : null;   // <=0.2.6 Compatibility
     semesters =
         (json['semesters'] as List).map((e) => Semester.fromJson(e)).toList();
     grades = (json['grades'] as Map<String, dynamic>).map((key, value) {
