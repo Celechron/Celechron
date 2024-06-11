@@ -4,7 +4,6 @@ import 'package:celechron/http/zjuServices/tuple.dart';
 
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
-import 'package:get/get.dart';
 import 'package:celechron/utils/gpa_helper.dart';
 import 'package:celechron/model/session.dart';
 import '../../model/exams_dto.dart';
@@ -13,7 +12,11 @@ import 'exceptions.dart';
 class Zdbk {
   Cookie? _jSessionId;
   Cookie? _route;
-  final DatabaseHelper _db = Get.find<DatabaseHelper>(tag: 'db');
+  DatabaseHelper? _db;
+
+  set db(DatabaseHelper? db) {
+    _db = db;
+  }
 
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
     late HttpClientRequest request;
@@ -94,12 +97,12 @@ class Zdbk {
           .where((e) => e['xkkh'] != null)
           .map((e) => Grade(e));
       var majorGpa = GpaHelper.calculateGpa(grades);
-      _db.setCachedWebPage('zdbk_MajorGrade', transcriptJson);
+      _db?.setCachedWebPage('zdbk_MajorGrade', transcriptJson);
       return Tuple(null, [majorGpa.item1[0], majorGpa.item2]);
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      var grades = (jsonDecode(_db.getCachedWebPage('zdbk_MajorGrade') ?? '[]')
+      var grades = (jsonDecode(_db?.getCachedWebPage('zdbk_MajorGrade') ?? '[]')
               as List<dynamic>)
           .where((e) => e['xkkh'] != null)
           .map((e) => Grade(e));
@@ -136,14 +139,14 @@ class Zdbk {
       var grades = (jsonDecode(transcriptJson) as List<dynamic>)
           .where((e) => e['xkkh'] != null)
           .map((e) => Grade(e));
-      _db.setCachedWebPage('zdbk_Transcript', transcriptJson);
+      _db?.setCachedWebPage('zdbk_Transcript', transcriptJson);
       return Tuple(null, grades);
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(
           exception,
-          (jsonDecode((_db.getCachedWebPage('zdbk_Transcript') ?? '[]'))
+          (jsonDecode((_db?.getCachedWebPage('zdbk_Transcript') ?? '[]'))
                   as List<dynamic>)
               .where((e) => e['xkkh'] != null)
               .map((e) => Grade(e)));
@@ -181,14 +184,14 @@ class Zdbk {
       var sessions = (jsonDecode(timetableJson) as List<dynamic>)
           .where((e) => e['kcb'] != null)
           .map((e) => Session.fromZdbk(e));
-      _db.setCachedWebPage('zdbk_Timetable$year$semester', timetableJson);
+      _db?.setCachedWebPage('zdbk_Timetable$year$semester', timetableJson);
       return Tuple(null, sessions);
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(
           exception,
-          (jsonDecode((_db.getCachedWebPage('zdbk_Timetable$year$semester') ?? '[]'))
+          (jsonDecode((_db?.getCachedWebPage('zdbk_Timetable$year$semester') ?? '[]'))
                   as List<dynamic>)
               .where((e) => e['kcb'] != null)
               .map((e) => Session.fromZdbk(e)));
@@ -223,14 +226,14 @@ class Zdbk {
       var exams = (jsonDecode(transcriptJson) as List<dynamic>)
           .where((e) => e['xkkh'] != null)
           .map((e) => ExamDto.fromZdbk(e));
-      _db.setCachedWebPage('zdbk_exams', transcriptJson);
+      _db?.setCachedWebPage('zdbk_exams', transcriptJson);
       return Tuple(null, exams);
     } catch (e) {
       var exception =
       e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(
           exception,
-          (jsonDecode((_db.getCachedWebPage('zdbk_exams') ?? '[]'))
+          (jsonDecode((_db?.getCachedWebPage('zdbk_exams') ?? '[]'))
           as List<dynamic>)
               .where((e) => e['xkkh'] != null)
               .map((e) => ExamDto.fromZdbk(e)));

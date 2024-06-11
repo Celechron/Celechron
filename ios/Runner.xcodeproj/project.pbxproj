@@ -24,6 +24,8 @@
 		E08278D82BF2085100F840B8 /* FlowMessenger.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08278D72BF2085100F840B8 /* FlowMessenger.swift */; };
 		E08278DA2BF20ECD00F840B8 /* FlowWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08278D92BF20ECD00F840B8 /* FlowWidgetView.swift */; };
 		E08E9F932BF247830089E6D4 /* RunnerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08E9F922BF247830089E6D4 /* RunnerTests.swift */; };
+		E0A4C7F82C0EF66700EB334C /* GradeWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A4C7F72C0EF66700EB334C /* GradeWidget.swift */; };
+		E0A4C7FA2C0EF74400EB334C /* GradeWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E0A4C7F92C0EF74400EB334C /* GradeWidgetView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -99,6 +101,8 @@
 		E08278D92BF20ECD00F840B8 /* FlowWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FlowWidgetView.swift; sourceTree = "<group>"; };
 		E08E9F902BF247830089E6D4 /* RunnerTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = RunnerTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		E08E9F922BF247830089E6D4 /* RunnerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunnerTests.swift; sourceTree = "<group>"; };
+		E0A4C7F72C0EF66700EB334C /* GradeWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeWidget.swift; sourceTree = "<group>"; };
+		E0A4C7F92C0EF74400EB334C /* GradeWidgetView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GradeWidgetView.swift; sourceTree = "<group>"; };
 		E0AB0B742BEBB8150061D38B /* RunnerDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = RunnerDebug.entitlements; sourceTree = "<group>"; };
 		E0AB0B752BED2F6F0061D38B /* WidgetExtensions.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WidgetExtensions.entitlements; sourceTree = "<group>"; };
 		E0AB0B762BED2F770061D38B /* WidgetExtensionsDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WidgetExtensionsDebug.entitlements; sourceTree = "<group>"; };
@@ -221,6 +225,7 @@
 				E0AB0B762BED2F770061D38B /* WidgetExtensionsDebug.entitlements */,
 				E0AB0B752BED2F6F0061D38B /* WidgetExtensions.entitlements */,
 				E0AB0B712BE8E68E0061D38B /* FlowWidget */,
+				E0A4C7F62C0EF5DF00EB334C /* GradeWidget */,
 				E052FFA92BE287E600031D98 /* WidgetExtensionsBundle.swift */,
 				E052FFB12BE287E800031D98 /* Assets.xcassets */,
 				E052FFB32BE287E800031D98 /* Info.plist */,
@@ -234,6 +239,15 @@
 				E08E9F922BF247830089E6D4 /* RunnerTests.swift */,
 			);
 			path = RunnerTests;
+			sourceTree = "<group>";
+		};
+		E0A4C7F62C0EF5DF00EB334C /* GradeWidget */ = {
+			isa = PBXGroup;
+			children = (
+				E0A4C7F72C0EF66700EB334C /* GradeWidget.swift */,
+				E0A4C7F92C0EF74400EB334C /* GradeWidgetView.swift */,
+			);
+			path = GradeWidget;
 			sourceTree = "<group>";
 		};
 		E0AB0B712BE8E68E0061D38B /* FlowWidget */ = {
@@ -493,7 +507,9 @@
 			files = (
 				E052FFAE2BE287E600031D98 /* FlowWidget.swift in Sources */,
 				E08278DA2BF20ECD00F840B8 /* FlowWidgetView.swift in Sources */,
+				E0A4C7FA2C0EF74400EB334C /* GradeWidgetView.swift in Sources */,
 				E052FFAA2BE287E600031D98 /* WidgetExtensionsBundle.swift in Sources */,
+				E0A4C7F82C0EF66700EB334C /* GradeWidget.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -581,7 +597,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -603,6 +619,7 @@
 				ENABLE_BITCODE = NO;
 				FLUTTER_BUILD_MODE = profile;
 				INFOPLIST_FILE = Runner/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -663,7 +680,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
@@ -712,7 +729,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 12.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = iphoneos;
 				SUPPORTED_PLATFORMS = iphoneos;
@@ -736,6 +753,7 @@
 				ENABLE_BITCODE = NO;
 				FLUTTER_BUILD_MODE = debug;
 				INFOPLIST_FILE = Runner/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -763,6 +781,7 @@
 				ENABLE_BITCODE = NO;
 				FLUTTER_BUILD_MODE = release;
 				INFOPLIST_FILE = Runner/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 13.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

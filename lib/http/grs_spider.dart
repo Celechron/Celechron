@@ -10,7 +10,7 @@ import 'package:get/get.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/semester.dart';
-import 'zjuServices/appservice.dart';
+// import 'zjuServices/appservice.dart';
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
 
@@ -18,7 +18,7 @@ class GrsSpider implements Spider {
   late HttpClient _httpClient;
   late String _username;
   late String _password;
-  late AppService _appService;
+  // late AppService _appService;
   late Zdbk _zdbk;
   late GrsNew _grsNew;
   late bool _isGrs;
@@ -32,7 +32,7 @@ class GrsSpider implements Spider {
     _httpClient = HttpClient();
     _httpClient.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
-    _appService = AppService();
+    // _appService = AppService();
     _zdbk = Zdbk();
     _grsNew = GrsNew();
     _timeConfigService = TimeConfigService();
@@ -40,6 +40,15 @@ class GrsSpider implements Spider {
     _password = password;
   }
 
+  @override
+  set db(DatabaseHelper? db) {
+    // _appService.db = db;
+    _zdbk.db = db;
+    _grsNew.db = db;
+    _timeConfigService.db = db;
+  }
+
+  @override
   Future<List<String?>> login() async {
     var loginErrorMessages = <String?>[null];
     _iPlanetDirectoryPro =
@@ -65,12 +74,12 @@ class GrsSpider implements Spider {
                     .catchError((e) => "无法登录研究生院网，$e"),
               ]
             : [
-                _appService
+                /* _appService
                     .login(_httpClient, _iPlanetDirectoryPro)
                     // ignore: unnecessary_cast
                     .then((value) => null as String?)
                     .timeout(const Duration(seconds: 8))
-                    .catchError((e) => "无法登录钉钉工作台，$e"),
+                    .catchError((e) => "无法登录钉钉工作台，$e"), */
                 _zdbk
                     .login(_httpClient, _iPlanetDirectoryPro)
                     // ignore: unnecessary_cast
@@ -85,14 +94,14 @@ class GrsSpider implements Spider {
     return loginErrorMessages;
   }
 
+  @override
   void logout() {
     _username = "";
     _password = "";
     _iPlanetDirectoryPro = null;
-    _appService.logout();
+    // _appService.logout();
     _zdbk.logout();
     _grsNew.logout();
-    Get.find<DatabaseHelper>(tag: 'db').removeAllCachedWebPage();
   }
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。

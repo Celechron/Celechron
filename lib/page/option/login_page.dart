@@ -2,9 +2,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:celechron/model/scholar.dart';
 
+import 'option_controller.dart';
+
 class LoginForm extends StatelessWidget {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
+  final _optionController = Get.put(OptionController());
   final buttonPressed = false.obs;
 
   LoginForm({super.key});
@@ -76,6 +79,7 @@ class LoginForm extends StatelessWidget {
                           await val.refresh();
                           scholar.refresh();
                           buttonPressed.value = false;
+                          _optionController.pushOnGradeChange = true;
                           if(context.mounted) Navigator.of(context).pop();
                         } else {
                           buttonPressed.value = false;

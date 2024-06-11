@@ -19,7 +19,7 @@ class FlowController extends GetxController {
   late var _scholarFlowList = scholar.value.periods;
   var _currentScholarFlowCursor = -1;
   var timeNow = DateTime.now().obs;
-  final _celechronMessenger = FlowMessenger();
+  final _flowMessenger = FlowMessenger();
 
   bool get isDuringFlow => flowList.first.startTime.isBefore(DateTime.now());
 
@@ -74,7 +74,7 @@ class FlowController extends GetxController {
   }
 
   // 生成新的安排
-  int updateFlowList(DateTime startsAt) {
+  int generateNewFlowList(DateTime startsAt) {
     Duration workTime = _db.getWorkTime();
     Duration restTime = _db.getRestTime();
 
@@ -422,6 +422,6 @@ class FlowController extends GetxController {
         time = time.add(Duration(days: task.repeatPeriod));
       }
     }
-    _celechronMessenger.transfer(FlowMessage(flowListDto: flowListDto));
+    _flowMessenger.transfer(FlowMessage(flowListDto: flowListDto));
   }
 }

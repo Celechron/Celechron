@@ -10,6 +10,17 @@ import 'package:get/get.dart';
 import 'login_page.dart';
 import 'option_controller.dart';
 
+const Color _kHeaderFooterColor = CupertinoDynamicColor(
+  color: Color.fromRGBO(108, 108, 108, 1.0),
+  darkColor: Color.fromRGBO(142, 142, 146, 1.0),
+  highContrastColor: Color.fromRGBO(74, 74, 77, 1.0),
+  darkHighContrastColor: Color.fromRGBO(176, 176, 183, 1.0),
+  elevatedColor: Color.fromRGBO(108, 108, 108, 1.0),
+  darkElevatedColor: Color.fromRGBO(142, 142, 146, 1.0),
+  highContrastElevatedColor: Color.fromRGBO(108, 108, 108, 1.0),
+  darkHighContrastElevatedColor: Color.fromRGBO(142, 142, 146, 1.0),
+);
+
 class OptionPage extends StatelessWidget {
   final _optionController = Get.put(OptionController());
 
@@ -22,6 +33,14 @@ class OptionPage extends StatelessWidget {
             CupertinoColors.secondaryLabel, context),
         fontSize: 16);
 
+    var headerFooterTextStyle = CupertinoTheme.of(context)
+        .textTheme
+        .textStyle
+        .merge(TextStyle(
+            fontSize: 13.0,
+            color:
+                CupertinoDynamicColor.resolve(_kHeaderFooterColor, context)));
+
     return CupertinoPageScaffold(
         backgroundColor: CupertinoColors.systemGroupedBackground,
         child: SafeArea(
@@ -32,88 +51,99 @@ class OptionPage extends StatelessWidget {
               backgroundColor: CupertinoColors.systemGroupedBackground,
               border: null,
             ),
-            SliverToBoxAdapter(
-              child: CupertinoListSection.insetGrouped(
-                margin: _defaultMargin,
-                additionalDividerMargin: 2,
-                header: Container(
-                    padding: const EdgeInsets.only(left: 16),
-                    child: Text('教务',
-                        style: TextStyle(
-                            color: CupertinoDynamicColor.resolve(
-                                CupertinoColors.secondaryLabel, context),
-                            fontSize: 14))),
-                children: <CupertinoListTile>[
-                  CupertinoListTile(
-                    title: Obx(() {
-                      if (_optionController.scholar.value.isLogan) {
-                        return Text(
-                            '已登录: ${_optionController.scholar.value.username}');
-                      } else {
-                        return const Text('点击登录',
-                            style:
-                                TextStyle(color: CupertinoColors.activeBlue));
+            // 教务
+            Obx(() => SliverToBoxAdapter(
+                  child: CupertinoListSection.insetGrouped(
+                    margin: _defaultMargin,
+                    additionalDividerMargin: 2,
+                    header: Container(
+                        padding: const EdgeInsets.only(left: 16),
+                        child: Text('教务', style: headerFooterTextStyle)),
+                    footer: _optionController.pushOnGradeChange && _optionController.scholar.value.isLogan
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: Text('Celechron 将不定期自动运行以刷新成绩。请不要将Celechron从后台中移除，并记得开启通知权限。',
+                                style: headerFooterTextStyle))
+                        : null,
+                    children: <CupertinoListTile>[
+                      if( _optionController.scholar.value.isLogan) ...{
+                        CupertinoListTile(
+                          title: Text(
+                              '已登录: ${_optionController.scholar.value
+                                  .username}'),
+                          trailing: BackChervonRow(
+                            child: Text('退出',
+                                style: TextStyle(
+                                    color: CupertinoDynamicColor.resolve(
+                                        CupertinoColors.secondaryLabel,
+                                        context),
+                                    fontSize: 16))
+                          ),
+                          onTap: () async {
+                              await _optionController.logout();
+                            }
+                        ),
+                        CupertinoListTile(
+                          title: const Text('重修绩点计算'),
+                          trailing: CupertinoSlidingSegmentedControl(
+                            children: {
+                              0: Text('取首次',
+                                  style: CupertinoTheme
+                                      .of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .copyWith(fontSize: 16)),
+                              1: Text('取最高',
+                                  style: CupertinoTheme
+                                      .of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .copyWith(fontSize: 16)),
+                            },
+                            groupValue: _optionController.gpaStrategy,
+                            onValueChanged: (value) {
+                              _optionController.gpaStrategy = value!;
+                            },
+                          ),
+                        ),
+                        CupertinoListTile(
+                            title: const Text('推送成绩变动'),
+                            trailing: CupertinoSwitch(
+                              value: _optionController.pushOnGradeChange,
+                              onChanged: (value) async {
+                                _optionController.pushOnGradeChange = value;
+                              },
+                            )),
+                      } else ...{
+                        CupertinoListTile(
+                          title: const Text('点击登录',
+                              style: TextStyle(
+                                  color: CupertinoColors.activeBlue)),
+                          trailing: const BackChervonRow(
+                            child: Text(''),
+                          ),
+                          onTap: () async {
+                              // Pop up a login widget from the bottom of the screen
+                              showCupertinoModalPopup(
+                                  context: context,
+                                  builder: (BuildContext context) {
+                                    return LoginForm();
+                                  });
+                            },
+                        ),
                       }
-                    }),
-                    trailing: BackChervonRow(child: Obx(() {
-                      if (_optionController.scholar.value.isLogan) {
-                        return Text('退出',
-                            style: TextStyle(
-                                color: CupertinoDynamicColor.resolve(
-                                    CupertinoColors.secondaryLabel, context),
-                                fontSize: 16));
-                      } else {
-                        return const Text('');
-                      }
-                    })),
-                    onTap: () {
-                      if (_optionController.scholar.value.isLogan) {
-                        _optionController.logout();
-                      } else {
-                        // Pop up a login widget from the bottom of the screen
-                        showCupertinoModalPopup(
-                            context: context,
-                            builder: (BuildContext context) {
-                              return LoginForm();
-                            });
-                      }
-                    },
+                      //
+                    ],
                   ),
-                  CupertinoListTile(
-                    title: const Text('重修绩点计算'),
-                    trailing: Obx(() => CupertinoSlidingSegmentedControl(
-                          children: {
-                            0: Text('取首次',
-                                style: CupertinoTheme.of(context)
-                                    .textTheme
-                                    .textStyle
-                                    .copyWith(fontSize: 16)),
-                            1: Text('取最高',
-                                style: CupertinoTheme.of(context)
-                                    .textTheme
-                                    .textStyle
-                                    .copyWith(fontSize: 16)),
-                          },
-                          groupValue: _optionController.gpaStrategy,
-                          onValueChanged: (value) {
-                            _optionController.gpaStrategy = value!;
-                          },
-                        )),
-                  ),
-                ],
-              ),
-            ),
+                )),
+            // 时间规划
             SliverToBoxAdapter(
                 child: CupertinoListSection.insetGrouped(
                     additionalDividerMargin: 2,
                     margin: _defaultMargin,
                     header: Container(
                         padding: const EdgeInsets.only(left: 16),
-                        child: Text('时间规划',
-                            style: TextStyle(
-                                color: CupertinoDynamicColor.resolve(
-                                    CupertinoColors.secondaryLabel, context),
-                                fontSize: 14))),
+                        child: Text('时间规划', style: headerFooterTextStyle)),
                     children: <CupertinoListTile>[
                   CupertinoListTile(
                     title: const Text('工作段时间长度'),
@@ -229,18 +259,14 @@ class OptionPage extends StatelessWidget {
                     },
                   ),
                 ])),
-            //关于
+            // 关于
             SliverToBoxAdapter(
               child: CupertinoListSection.insetGrouped(
                   additionalDividerMargin: 2,
                   margin: _defaultMargin,
                   header: Container(
                       padding: const EdgeInsets.only(left: 16),
-                      child: Text('关于',
-                          style: TextStyle(
-                              color: CupertinoDynamicColor.resolve(
-                                  CupertinoColors.secondaryLabel, context),
-                              fontSize: 14))),
+                      child: Text('关于', style: headerFooterTextStyle)),
                   children: <CupertinoListTile>[
                     CupertinoListTile(
                       title: const Text('关于 Celechron'),

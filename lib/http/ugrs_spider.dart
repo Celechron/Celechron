@@ -10,7 +10,7 @@ import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/semester.dart';
 
-import 'zjuServices/appservice.dart';
+// import 'zjuServices/appservice.dart';
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
 
@@ -18,7 +18,7 @@ class UgrsSpider implements Spider {
   late HttpClient _httpClient;
   late String _username;
   late String _password;
-  late AppService _appService;
+  // late AppService _appService;
   late Zdbk _zdbk;
   late GrsNew _grsNew;
   late TimeConfigService _timeConfigService;
@@ -30,12 +30,20 @@ class UgrsSpider implements Spider {
     _httpClient = HttpClient();
     _httpClient.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
-    _appService = AppService();
+    // _appService = AppService(db: _db);
     _zdbk = Zdbk();
     _grsNew = GrsNew();
     _timeConfigService = TimeConfigService();
     _username = username;
     _password = password;
+  }
+
+  @override
+  set db(DatabaseHelper? db) {
+    // _appService.db = db;
+    _zdbk.db = db;
+    _grsNew.db = db;
+    _timeConfigService.db = db;
   }
 
   @override
@@ -87,10 +95,9 @@ class UgrsSpider implements Spider {
     _username = "";
     _password = "";
     _iPlanetDirectoryPro = null;
-    _appService.logout();
+    // _appService.logout();
     _zdbk.logout();
     _grsNew.logout();
-    Get.find<DatabaseHelper>(tag: 'db').removeAllCachedWebPage();
   }
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
@@ -312,7 +319,7 @@ class UgrsSpider implements Spider {
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
+    // 等待所有请求完成。然后，删除不包含考试、成绩、课程的全空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
       outSemesters.removeWhere((e) =>
           e.grades.isEmpty &&
@@ -342,8 +349,6 @@ class UgrsSpider implements Spider {
         semester.courses.remove(key);
       }
     }
-
-    print(jsonEncode(outSemesters.first));
 
     return Tuple6(loginErrorMessages, fetchErrorMessages, outSemesters,
         outGrades, outMajorGrade, outSpecialDates);

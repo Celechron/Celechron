@@ -5,11 +5,13 @@ class Option {
   Rx<Duration> restTime;
   RxMap<DateTime, DateTime> allowTime;
   RxInt gpaStrategy;
+  RxBool pushOnGradeChange;
 
   Option({
     required this.workTime,
     required this.restTime,
     required this.allowTime,
-    required this.gpaStrategy
+    required this.gpaStrategy,
+    required this.pushOnGradeChange,
   });
 }

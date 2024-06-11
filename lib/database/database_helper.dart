@@ -1,7 +1,9 @@
-import 'package:celechron/model/task.dart';
-import 'package:celechron/model/fuse.dart';
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
+import 'package:celechron/model/task.dart';
+import 'package:celechron/worker/fuse.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/option.dart';
@@ -18,6 +20,7 @@ class DatabaseHelper {
   late final Box flowBox;
   late final Box originalWebPageBox;
   late final Box fuseBox;
+  late final FlutterSecureStorage secureStorage;
 
   Future<void> init() async {
     Hive.registerAdapter(DurationAdapter());
@@ -35,6 +38,7 @@ class DatabaseHelper {
     flowBox = await Hive.openBox(dbFlow);
     originalWebPageBox = await Hive.openBox(dbOriginalWebPage);
     fuseBox = await Hive.openBox(dbFuse);
+    secureStorage = const FlutterSecureStorage();
   }
 
   // Options
@@ -43,6 +47,7 @@ class DatabaseHelper {
   final String kRestTime = 'restTime';
   final String kAllowTime = 'allowTime';
   final String kGpaStrategy = 'gpaStrategy';
+  final String kPushOnGradeChange = 'pushOnGradeChange';
 
   Option getOption() {
     return Option(
@@ -50,6 +55,7 @@ class DatabaseHelper {
       restTime: getRestTime().obs,
       allowTime: getAllowTime().obs,
       gpaStrategy: getGpaStrategy().obs,
+      pushOnGradeChange: getPushOnGradeChange().obs,
     );
   }
 
@@ -100,6 +106,17 @@ class DatabaseHelper {
     await optionsBox.put(kGpaStrategy, gpaStrategy);
   }
 
+  bool getPushOnGradeChange() {
+    if (optionsBox.get(kPushOnGradeChange) == null) {
+      optionsBox.put(kPushOnGradeChange, true);
+    }
+    return optionsBox.get(kPushOnGradeChange);
+  }
+
+  Future<void> setPushOnGradeChange(bool pushOnGradeChange) async {
+    await optionsBox.put(kPushOnGradeChange, pushOnGradeChange);
+  }
+
   // Flow
   final String dbFlow = 'dbFlow';
   final String kFlowList = 'flowList';
@@ -140,24 +157,45 @@ class DatabaseHelper {
         DateTime.fromMicrosecondsSinceEpoch(0);
   }
 
-  Future<void> setTaskListUpdateTime(
-      DateTime deadlineListUpdateTime) async {
+  Future<void> setTaskListUpdateTime(DateTime deadlineListUpdateTime) async {
     await taskBox.put(kTaskListUpdateTime, deadlineListUpdateTime);
   }
 
   // Scholar
   final String dbScholar = 'dbUser';
+  final String kUsername = 'username';
+  final String kPassword = 'password';
 
-  Scholar getScholar() {
-    return scholarBox.get('user') ?? Scholar();
+  static const iOSOptions = IOSOptions(accessibility: KeychainAccessibility.first_unlock, accountName: 'Celechron');
+
+  Future<Scholar> getScholar() async {
+    var scholar = scholarBox.get('user', defaultValue: Scholar());
+    await Future.wait([
+      secureStorage.read(key: kUsername, iOptions: iOSOptions).then((value) {
+        if (value != null) scholar.username = value;
+      }),
+      secureStorage.read(key: kPassword, iOptions: iOSOptions).then((value) {
+        if (value != null) scholar.password = value;
+      })
+    ]);
+    scholar.db = this;
+    return scholar;
   }
 
   Future<void> setScholar(Scholar scholar) async {
-    await scholarBox.put('user', scholar);
+    await Future.wait([
+      scholarBox.put('user', scholar),
+      secureStorage.write(key: kUsername, value: scholar.username, iOptions: iOSOptions),
+      secureStorage.write(key: kPassword, value: scholar.password, iOptions: iOSOptions)
+    ]);
   }
 
   Future<void> removeScholar() async {
-    await scholarBox.delete('user');
+    await Future.wait([
+      scholarBox.delete('user'),
+      secureStorage.delete(key: kUsername, iOptions: iOSOptions),
+      secureStorage.delete(key: kPassword, iOptions: iOSOptions)
+    ]);
   }
 
   // Original Web Page

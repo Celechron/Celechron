@@ -3,12 +3,15 @@ import 'dart:io';
 
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
-import 'package:get/get.dart';
 
 import 'package:celechron/database/database_helper.dart';
 
 class TimeConfigService {
-  final _db = Get.find<DatabaseHelper>(tag: 'db');
+  DatabaseHelper? _db;
+
+  set db(DatabaseHelper? db) {
+    _db = db;
+  }
 
   Future<Tuple<Exception?, String?>> getConfig(
       HttpClient httpClient, String semesterId) async {
@@ -22,7 +25,7 @@ class TimeConfigService {
 
       if (response.statusCode == 200) {
         var config = await response.transform(utf8.decoder).join();
-        _db.setCachedWebPage('timeConfig_$semesterId', config);
+        _db?.setCachedWebPage('timeConfig_$semesterId', config);
         return Tuple(null, config);
       } else {
         return Tuple(null, null);
@@ -30,7 +33,7 @@ class TimeConfigService {
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      return Tuple(exception, _db.getCachedWebPage('timeConfig_$semesterId'));
+      return Tuple(exception, _db?.getCachedWebPage('timeConfig_$semesterId'));
     }
   }
 }
