@@ -65,11 +65,11 @@ struct FlowEntry: TimelineEntry {
 
 struct FlowWidgetProvider: TimelineProvider {
     func placeholder(in context: Context) -> FlowEntry {
-        FlowEntry(refreshAt: Date(), location: nil, name: nil, startTime: Date(timeIntervalSinceNow: 3600), endTime: nil)
+        FlowEntry(refreshAt: Date(), toDisplay: [Flow(location: "紫金港西1-216", name: "信号与系统", startTime: Date().addingTimeInterval(-3600), endTime: Date().addingTimeInterval(1500))], stillToDoToday: 0)
     }
 
     func getSnapshot(in context: Context, completion: @escaping (FlowEntry) -> Void) {
-        completion(FlowEntry(refreshAt: Date(), location: nil, name: nil, startTime: Date(timeIntervalSinceNow: 3600), endTime: nil))
+        completion(FlowEntry(refreshAt: Date(), toDisplay: [Flow(location: "紫金港西1-216", name: "信号与系统", startTime: Date().addingTimeInterval(-3600), endTime: Date().addingTimeInterval(1500))], stillToDoToday: 0))
     }
     
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
@@ -105,7 +105,7 @@ struct FlowWidgetProvider: TimelineProvider {
             }
             if(onGoingFlows.isEmpty && upComingFlows.isEmpty) {
                 // 无事可做
-                entries.append(FlowEntry(refreshAt: Date(), toDisplay: [], stillToDoToday: 0))
+                entries.append(FlowEntry(refreshAt: refreshTime, toDisplay: [], stillToDoToday: 0))
                 break
             }
             
