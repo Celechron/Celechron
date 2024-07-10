@@ -71,7 +71,7 @@ class Grade {
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
     fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
     creditIncluded = original != "弃修" && original != "待录" && original != "缓考";
-    gpaIncluded = creditIncluded && original != "合格" && original != "不合格";
+    gpaIncluded = creditIncluded && original != "合格" && original != "不合格" && !id.contains('xtwkc');
   }
 
   // 从主修成绩查询处爬取，因此打上主修标记
