@@ -109,7 +109,8 @@ class CreditsPage extends StatelessWidget {
                 const SizedBox(
                   height: 8,
                 ),
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 32), child: Row(
+              const Padding(padding: EdgeInsets.symmetric(horizontal: 32), child: Column(children: [
+                Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   mainAxisSize: MainAxisSize.max,
                   crossAxisAlignment: CrossAxisAlignment.center,
@@ -128,7 +129,32 @@ class CreditsPage extends StatelessWidget {
                       ),
                     ),
                   ],
-                )),
+                ),
+                const SizedBox(
+                  height: 12,
+                ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  verticalDirection: VerticalDirection.down,
+                  children: <Widget>[
+                    Expanded(
+                      child: Text(
+                        'cxz66666',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'Azuk 443',
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
+                ),
+              ],)
+),
               ]),
             ),
             SliverFillRemaining(
