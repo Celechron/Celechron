@@ -12,14 +12,20 @@ class GradeDetailController extends GetxController {
   final RxMap<String, bool> customGpaSelected = RxMap();
   late RxList<Semester> semestersWithGrades;
 
-  @override
-  void onInit() {
+  void init() {
     semestersWithGrades = scholar.value.semesters
         .where((element) => element.grades.isNotEmpty)
         .toList()
         .obs;
     ever(scholar, (callback) => refreshSemesters());
     customGpaSelected.value = _db.getCustomGpa();
+    semesterIndex.value = 0;
+    customGpaMode.value = false;
+  }
+
+  @override
+  void onInit() {
+    init();
     super.onInit();
   }
 

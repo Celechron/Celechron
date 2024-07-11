@@ -240,8 +240,7 @@ class CalendarPage extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if (deadline.repeatType !=
-                    TaskRepeatType.norepeat) ...[
+                if (deadline.repeatType != TaskRepeatType.norepeat) ...[
                   const Text(
                     '重复日程，接下来的时段：',
                   ),

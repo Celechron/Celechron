@@ -76,7 +76,9 @@ class OptionController extends GetxController {
     _db.setPushOnGradeChange(value);
     Workmanager()
         .cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch')
-        .then((value) => Workmanager().printScheduledTasks());
+        .then((value) {
+      if (Platform.isIOS) return Workmanager().printScheduledTasks();
+    });
     if (value) {
       FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
           FlutterLocalNotificationsPlugin();
@@ -101,7 +103,9 @@ class OptionController extends GetxController {
                   networkType: NetworkType.connected,
                 ),
               ))
-          .then((value) => Workmanager().printScheduledTasks());
+          .then((value) {
+        if (Platform.isIOS) return Workmanager().printScheduledTasks();
+      });
     }
   }
 

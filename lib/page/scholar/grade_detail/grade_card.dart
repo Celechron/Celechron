@@ -68,9 +68,16 @@ class _GradeCardState extends State<GradeCard>
         await Future.delayed(const Duration(milliseconds: 125));
         isDown = false;
         if (isCancel) {
-          navigator!.push(CupertinoPageRoute(
-              builder: (context) =>
-                  CourseDetailPage(courseId: widget.grade.id)));
+          if (!_gradeDetailController.customGpaMode.value) {
+            navigator!.push(CupertinoPageRoute(
+                builder: (context) =>
+                    CourseDetailPage(courseId: widget.grade.id)));
+          } else {
+            var cur =
+                _gradeDetailController.customGpaSelected[widget.grade.id] ??
+                    false;
+            _gradeDetailController.customGpaSelected[widget.grade.id] = !cur;
+          }
           _animationController.reverse();
           isCancel = false;
         }
@@ -80,6 +87,16 @@ class _GradeCardState extends State<GradeCard>
         if (!isDown) _animationController.reverse();
       },
       onTapCancel: () async => _animationController.reverse(),
+      onLongPress: () async {
+        isDown = true;
+        isCancel = false;
+        _animationController.forward();
+        await Future.delayed(const Duration(milliseconds: 125));
+        isDown = false;
+        navigator!.push(CupertinoPageRoute(
+            builder: (context) => CourseDetailPage(courseId: widget.grade.id)));
+        _animationController.reverse();
+      },
       child: Obx(
         () => ScaleTransition(
           scale: _scaleAnimation,
@@ -109,20 +126,23 @@ class _GradeCardState extends State<GradeCard>
                 Row(
                   children: [
                     if (_gradeDetailController.customGpaMode.value)
-                      SizedBox(
-                        height: 24.0,
-                        width: 40.0,
-                        child: CupertinoCheckbox(
-                          value: _gradeDetailController
-                                  .customGpaSelected[widget.grade.id] ??
-                              false,
-                          onChanged: (bool? value) {
-                            if (value != null) {
-                              _gradeDetailController
-                                  .customGpaSelected[widget.grade.id] = value;
-                              _gradeDetailController.refreshCustomGpa();
-                            }
-                          },
+                      GestureDetector(
+                        behavior: HitTestBehavior.translucent,
+                        child: SizedBox(
+                          height: 32.0,
+                          width: 32.0,
+                          child: CupertinoCheckbox(
+                            value: _gradeDetailController
+                                    .customGpaSelected[widget.grade.id] ??
+                                false,
+                            onChanged: (bool? value) {
+                              if (value != null) {
+                                _gradeDetailController
+                                    .customGpaSelected[widget.grade.id] = value;
+                                _gradeDetailController.refreshCustomGpa();
+                              }
+                            },
+                          ),
                         ),
                       ),
                     Expanded(

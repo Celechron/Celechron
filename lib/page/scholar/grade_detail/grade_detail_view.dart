@@ -12,11 +12,10 @@ import 'package:celechron/utils/gpa_helper.dart';
 
 class GradeDetailPage extends StatelessWidget {
   final _scholarController = Get.find<ScholarController>();
-  late final GradeDetailController _gradeDetailController;
+  final _gradeDetailController = Get.put(GradeDetailController());
 
   GradeDetailPage({super.key}) {
-    Get.delete<GradeDetailController>();
-    _gradeDetailController = Get.put(GradeDetailController());
+    _gradeDetailController.init();
   }
 
   Widget _buildGradeBrief(BuildContext context) {
@@ -138,7 +137,7 @@ class GradeDetailPage extends StatelessWidget {
                                 title: '已选五分制',
                                 content: inGpa.item1[0].toStringAsFixed(2),
                                 backgroundColor:
-                                    CustomCupertinoDynamicColors.cyan)),
+                                    CustomCupertinoDynamicColors.sakura)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -147,7 +146,7 @@ class GradeDetailPage extends StatelessWidget {
                                 content: inGpa.item1[1].toStringAsFixed(2),
                                 extraContent: inGpa.item1[2].toStringAsFixed(2),
                                 backgroundColor:
-                                    CustomCupertinoDynamicColors.peach)),
+                                    CustomCupertinoDynamicColors.magenta)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -155,7 +154,7 @@ class GradeDetailPage extends StatelessWidget {
                                 title: '已选学分',
                                 content: inGpa.item2.toStringAsFixed(1),
                                 backgroundColor:
-                                    CustomCupertinoDynamicColors.spring)),
+                                    CustomCupertinoDynamicColors.sand)),
                           ),
                         ],
                       ),
@@ -167,7 +166,7 @@ class GradeDetailPage extends StatelessWidget {
                                 title: '未选五分制',
                                 content: notGpa.item1[0].toStringAsFixed(2),
                                 backgroundColor:
-                                    CustomCupertinoDynamicColors.sakura)),
+                                    CustomCupertinoDynamicColors.cyan)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -177,7 +176,7 @@ class GradeDetailPage extends StatelessWidget {
                                 extraContent:
                                     notGpa.item1[2].toStringAsFixed(2),
                                 backgroundColor:
-                                    CustomCupertinoDynamicColors.sand)),
+                                    CustomCupertinoDynamicColors.spring)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -185,7 +184,7 @@ class GradeDetailPage extends StatelessWidget {
                                 title: '未选学分',
                                 content: notGpa.item2.toStringAsFixed(1),
                                 backgroundColor:
-                                    CustomCupertinoDynamicColors.magenta)),
+                                    CustomCupertinoDynamicColors.peach)),
                           ),
                         ],
                       ),
@@ -272,14 +271,20 @@ class GradeDetailPage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
                   if (_gradeDetailController.customGpaMode.value)
-                    CupertinoButton(
-                      padding: EdgeInsets.zero,
-                      child: const Text('清空'),
-                      onPressed: () {
+                    GestureDetector(
+                      child: CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: const Text('长按清空'),
+                        onPressed: () {},
+                      ),
+                      onLongPress: () {
                         _gradeDetailController.customGpaSelected.value = {};
                         _gradeDetailController.refreshCustomGpa();
                       },
                     ),
+                  const SizedBox(
+                    width: 16,
+                  ),
                   CupertinoButton(
                     padding: EdgeInsets.zero,
                     child: Icon(

@@ -103,9 +103,8 @@ class TaskPage extends StatelessWidget {
                   _taskController.taskList.refresh();
                   Navigator.of(context).pop();
                 },
-                child: Text(deadline.status == TaskStatus.running
-                    ? '暂停'
-                    : '继续'),
+                child:
+                    Text(deadline.status == TaskStatus.running ? '暂停' : '继续'),
               ),
             if (deadline.type == TaskType.deadline ||
                 deadline.type == TaskType.fixed)
@@ -477,6 +476,25 @@ class TaskPage extends StatelessWidget {
                 ],
               ),
             ),
+            if (_taskController.todoDeadlineList.isEmpty &&
+                _taskController.doneDeadlineList.isEmpty &&
+                _taskController.fixedDeadlineList.isEmpty)
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 500,
+                  child: Column(
+                    children: [
+                      const Spacer(),
+                      Text(
+                        '没有任务',
+                        style: CupertinoTheme.of(context).textTheme.textStyle,
+                        textAlign: TextAlign.center,
+                      ),
+                      const Spacer(),
+                    ],
+                  ),
+                ),
+              ),
             Obx(
               () => SliverList(
                 delegate: SliverChildBuilderDelegate(
