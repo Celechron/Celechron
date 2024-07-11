@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:celechron/model/scholar.dart';
@@ -26,11 +28,15 @@ class OptionController extends GetxController {
                 initialDelay: const Duration(seconds: 10),
                 frequency: const Duration(minutes: 15),
               ))
-          .then((value) => Workmanager().printScheduledTasks());
+          .then((value) {
+        if (Platform.isIOS) return Workmanager().printScheduledTasks();
+      });
     } else {
       Workmanager()
           .cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch')
-          .then((value) => Workmanager().printScheduledTasks());
+          .then((value) {
+        if (Platform.isIOS) return Workmanager().printScheduledTasks();
+      });
     }
   }
 

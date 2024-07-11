@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:get/get.dart';
 import 'package:celechron/algorithm/arrange.dart';
 import 'package:celechron/database/database_helper.dart';
@@ -13,8 +14,7 @@ class FlowController extends GetxController {
   final flowList = Get.find<RxList<Period>>(tag: 'flowList');
   final flowListLastUpdate = Get.find<Rx<DateTime>>(tag: 'flowListLastUpdate');
   final taskList = Get.find<RxList<Task>>(tag: 'taskList');
-  final taskListLastUpdate =
-      Get.find<Rx<DateTime>>(tag: 'taskListLastUpdate');
+  final taskListLastUpdate = Get.find<Rx<DateTime>>(tag: 'taskListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
   late var _scholarFlowList = scholar.value.periods;
   var _currentScholarFlowCursor = -1;
@@ -383,7 +383,8 @@ class FlowController extends GetxController {
   }
 
   void refreshWidget() {
-    List<PeriodDto?>? flowListDto = flowList.where((e) => e.type == PeriodType.flow).map((e) {
+    List<PeriodDto?>? flowListDto =
+        flowList.where((e) => e.type == PeriodType.flow).map((e) {
       return PeriodDto(
         uid: e.uid,
         type: PeriodTypeDto.flow,
@@ -393,14 +394,20 @@ class FlowController extends GetxController {
         location: e.location,
       );
     }).toList();
-    flowListDto.addAll(_scholarFlowList.map((e) => PeriodDto(
-      uid: e.uid,
-      type: e.type == PeriodType.classes ? PeriodTypeDto.classes : PeriodTypeDto.test,
-      name: e.summary,
-      startTime: e.startTime.millisecondsSinceEpoch ~/ 1000,
-      endTime: e.endTime.millisecondsSinceEpoch ~/ 1000,
-      location: e.type == PeriodType.classes ? e.location.replaceAll(RegExp(r'[(（].*录播.*[)）]'), '') : e.location,
-    )).toList());
+    flowListDto.addAll(_scholarFlowList
+        .map((e) => PeriodDto(
+              uid: e.uid,
+              type: e.type == PeriodType.classes
+                  ? PeriodTypeDto.classes
+                  : PeriodTypeDto.test,
+              name: e.summary,
+              startTime: e.startTime.millisecondsSinceEpoch ~/ 1000,
+              endTime: e.endTime.millisecondsSinceEpoch ~/ 1000,
+              location: e.type == PeriodType.classes
+                  ? e.location.replaceAll(RegExp(r'[(（].*录播.*[)）]'), '')
+                  : e.location,
+            ))
+        .toList());
     for (var task in taskList.where((e) => e.type == TaskType.fixed)) {
       DateTime time = DateTime.now();
       DateTime? last;
@@ -422,6 +429,9 @@ class FlowController extends GetxController {
         time = time.add(Duration(days: task.repeatPeriod));
       }
     }
-    _flowMessenger.transfer(FlowMessage(flowListDto: flowListDto));
+
+    if (Platform.isIOS || Platform.isMacOS) {
+      _flowMessenger.transfer(FlowMessage(flowListDto: flowListDto));
+    }
   }
 }
