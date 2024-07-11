@@ -20,6 +20,7 @@ class DatabaseHelper {
   late final Box flowBox;
   late final Box originalWebPageBox;
   late final Box fuseBox;
+  late final Box customGpaBox;
   late final FlutterSecureStorage secureStorage;
 
   Future<void> init() async {
@@ -38,6 +39,7 @@ class DatabaseHelper {
     flowBox = await Hive.openBox(dbFlow);
     originalWebPageBox = await Hive.openBox(dbOriginalWebPage);
     fuseBox = await Hive.openBox(dbFuse);
+    customGpaBox = await Hive.openBox(dbCustomGpa);
     secureStorage = const FlutterSecureStorage();
   }
 
@@ -166,7 +168,9 @@ class DatabaseHelper {
   final String kUsername = 'username';
   final String kPassword = 'password';
 
-  static const iOSOptions = IOSOptions(accessibility: KeychainAccessibility.first_unlock, accountName: 'Celechron');
+  static const iOSOptions = IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock,
+      accountName: 'Celechron');
 
   Future<Scholar> getScholar() async {
     var scholar = scholarBox.get('user', defaultValue: Scholar());
@@ -185,8 +189,10 @@ class DatabaseHelper {
   Future<void> setScholar(Scholar scholar) async {
     await Future.wait([
       scholarBox.put('user', scholar),
-      secureStorage.write(key: kUsername, value: scholar.username, iOptions: iOSOptions),
-      secureStorage.write(key: kPassword, value: scholar.password, iOptions: iOSOptions)
+      secureStorage.write(
+          key: kUsername, value: scholar.username, iOptions: iOSOptions),
+      secureStorage.write(
+          key: kPassword, value: scholar.password, iOptions: iOSOptions)
     ]);
   }
 
@@ -226,5 +232,15 @@ class DatabaseHelper {
 
   Future<void> setFuse(Fuse fuse) async {
     await fuseBox.put('fuse', fuse);
+  }
+
+  final String dbCustomGpa = 'dbCustomGpa';
+
+  Map<String, bool> getCustomGpa() {
+    return Map<String, bool>.from(customGpaBox.get('selectList') ?? {});
+  }
+
+  Future<void> setCustomGpa(Map<String, bool> selectList) async {
+    await customGpaBox.put('selectList', selectList);
   }
 }

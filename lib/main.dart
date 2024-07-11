@@ -67,8 +67,10 @@ void main() async {
   initTimezone();
   initScholar();
 
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  const initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
+  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  const initializationSettingsAndroid =
+      AndroidInitializationSettings('@mipmap/ic_launcher');
   const initializationSettingsDarwin = DarwinInitializationSettings(
     requestSoundPermission: true,
     requestBadgePermission: true,
@@ -76,8 +78,7 @@ void main() async {
   );
   const initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin
-  );
+      iOS: initializationSettingsDarwin);
   flutterLocalNotificationsPlugin.initialize(initializationSettings);
 }
 
@@ -89,7 +90,6 @@ class CelechronApp extends StatefulWidget {
 }
 
 class _CelechronAppState extends State<CelechronApp> {
-
   @override
   Widget build(BuildContext context) {
     return GetCupertinoApp(
@@ -255,8 +255,9 @@ class _HomePageState extends State<HomePage> {
   Future<void> initFuse() async {
     await Future.delayed(const Duration(seconds: 1));
     var fuse = Get.find<Rx<Fuse>>(tag: 'fuse');
-    var response = await fuse.value.checkUpdate().whenComplete(() => fuse.refresh());
-    if(response != null) {
+    var response =
+        await fuse.value.checkUpdate().whenComplete(() => fuse.refresh());
+    if (response != null) {
       if (context.mounted) {
         showCupertinoDialog(
             context: context,

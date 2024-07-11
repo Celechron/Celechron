@@ -8,14 +8,12 @@ class Fuse {
   late DateTime lastUpdateTime;
 
   final bool isBeta = true;
-  final version = [0, 2, 8];
+  final version = [0, 2, 9];
   List<int>? remoteVersion;
   bool hasNewVersion = false;
 
   final HttpClient _httpClient = HttpClient();
   final DatabaseHelper _db = Get.find<DatabaseHelper>(tag: 'db');
-
-
 
   String get displayVersion => version.join('.') + (isBeta ? ' beta' : '');
 
@@ -76,7 +74,6 @@ class Fuse {
 
   Map<String, dynamic> toJson() => {
         'lastUpdateTime': lastUpdateTime.toIso8601String(),
-
       };
 
   Fuse.fromJson(Map<String, dynamic> json) {

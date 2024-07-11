@@ -1,7 +1,7 @@
 name: celechron
 description: Time scheduler for zjuers.
 publish_to: "none"
-version: 0.2.8
+version: 0.2.9
 environment:
   sdk: ">=3.0.0"
 
@@ -32,7 +32,6 @@ dependencies:
   flutter_local_notifications:
   flutter_secure_storage:
 
-
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -42,7 +41,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^2.0.0
+  flutter_lints: ^4.0.0
   pigeon: any
 
 # For information on the generic Dart part of this file, see the

@@ -1,3 +1,4 @@
+import 'package:celechron/design/persistent_headers.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 
@@ -272,13 +273,10 @@ class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
 
     return CupertinoPageScaffold(
       backgroundColor: CupertinoColors.systemGroupedBackground,
-      navigationBar: const CupertinoNavigationBar(
-        middle: Text('编辑可用工作时段'),
-        border: null,
-      ),
       child: SafeArea(
         child: CustomScrollView(
           slivers: [
+            const CelechronSliverTextHeader(subtitle: '编辑可用工作时段'),
             SliverList(
               delegate: SliverChildListDelegate([
                 CupertinoListSection.insetGrouped(

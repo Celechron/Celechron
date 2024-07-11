@@ -59,43 +59,40 @@ class OptionPage extends StatelessWidget {
                     header: Container(
                         padding: const EdgeInsets.only(left: 16),
                         child: Text('教务', style: headerFooterTextStyle)),
-                    footer: _optionController.pushOnGradeChange && _optionController.scholar.value.isLogan
+                    footer: _optionController.pushOnGradeChange &&
+                            _optionController.scholar.value.isLogan
                         ? Padding(
                             padding: const EdgeInsets.only(left: 16),
-                            child: Text('Celechron 将不定期自动运行以刷新成绩。请不要将Celechron从后台中移除，并记得开启通知权限。',
+                            child: Text(
+                                'Celechron 将不定期自动运行以刷新成绩。请开启通知权限，且不要将 Celechron 从后台中移除。',
                                 style: headerFooterTextStyle))
                         : null,
                     children: <CupertinoListTile>[
-                      if( _optionController.scholar.value.isLogan) ...{
+                      if (_optionController.scholar.value.isLogan) ...{
                         CupertinoListTile(
-                          title: Text(
-                              '已登录: ${_optionController.scholar.value
-                                  .username}'),
-                          trailing: BackChervonRow(
-                            child: Text('退出',
-                                style: TextStyle(
-                                    color: CupertinoDynamicColor.resolve(
-                                        CupertinoColors.secondaryLabel,
-                                        context),
-                                    fontSize: 16))
-                          ),
-                          onTap: () async {
+                            title: Text(
+                                '已登录: ${_optionController.scholar.value.username}'),
+                            trailing: BackChervonRow(
+                                child: Text('退出',
+                                    style: TextStyle(
+                                        color: CupertinoDynamicColor.resolve(
+                                            CupertinoColors.secondaryLabel,
+                                            context),
+                                        fontSize: 16))),
+                            onTap: () async {
                               await _optionController.logout();
-                            }
-                        ),
+                            }),
                         CupertinoListTile(
                           title: const Text('重修绩点计算'),
                           trailing: CupertinoSlidingSegmentedControl(
                             children: {
                               0: Text('取首次',
-                                  style: CupertinoTheme
-                                      .of(context)
+                                  style: CupertinoTheme.of(context)
                                       .textTheme
                                       .textStyle
                                       .copyWith(fontSize: 16)),
                               1: Text('取最高',
-                                  style: CupertinoTheme
-                                      .of(context)
+                                  style: CupertinoTheme.of(context)
                                       .textTheme
                                       .textStyle
                                       .copyWith(fontSize: 16)),
@@ -117,19 +114,19 @@ class OptionPage extends StatelessWidget {
                       } else ...{
                         CupertinoListTile(
                           title: const Text('点击登录',
-                              style: TextStyle(
-                                  color: CupertinoColors.activeBlue)),
+                              style:
+                                  TextStyle(color: CupertinoColors.activeBlue)),
                           trailing: const BackChervonRow(
                             child: Text(''),
                           ),
                           onTap: () async {
-                              // Pop up a login widget from the bottom of the screen
-                              showCupertinoModalPopup(
-                                  context: context,
-                                  builder: (BuildContext context) {
-                                    return LoginForm();
-                                  });
-                            },
+                            // Pop up a login widget from the bottom of the screen
+                            showCupertinoModalPopup(
+                                context: context,
+                                builder: (BuildContext context) {
+                                  return LoginForm();
+                                });
+                          },
                         ),
                       }
                       //

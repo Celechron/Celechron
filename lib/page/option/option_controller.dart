@@ -17,18 +17,20 @@ class OptionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    if(option.pushOnGradeChange.value) {
+    if (option.pushOnGradeChange.value) {
       Workmanager()
           .initialize(callbackDispatcher)
-          .then((value) =>
-          Workmanager().registerPeriodicTask(
-            'top.celechron.celechron.backgroundScholarFetch',
-            'top.celechron.celechron.backgroundScholarFetch',
-            initialDelay: const Duration(seconds: 10),
-            frequency: const Duration(minutes: 15),
-          )).then((value) => Workmanager().printScheduledTasks());
+          .then((value) => Workmanager().registerPeriodicTask(
+                'top.celechron.celechron.backgroundScholarFetch',
+                'top.celechron.celechron.backgroundScholarFetch',
+                initialDelay: const Duration(seconds: 10),
+                frequency: const Duration(minutes: 15),
+              ))
+          .then((value) => Workmanager().printScheduledTasks());
     } else {
-      Workmanager().cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch').then((value) => Workmanager().printScheduledTasks());
+      Workmanager()
+          .cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch')
+          .then((value) => Workmanager().printScheduledTasks());
     }
   }
 
@@ -66,10 +68,14 @@ class OptionController extends GetxController {
   set pushOnGradeChange(bool value) {
     option.pushOnGradeChange.value = value;
     _db.setPushOnGradeChange(value);
-    Workmanager().cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch').then((value) => Workmanager().printScheduledTasks());
-    if(value) {
-      FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-      const initializationSettingsAndroid = AndroidInitializationSettings('app_icon');
+    Workmanager()
+        .cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch')
+        .then((value) => Workmanager().printScheduledTasks());
+    if (value) {
+      FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+          FlutterLocalNotificationsPlugin();
+      const initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
       const initializationSettingsDarwin = DarwinInitializationSettings(
         requestSoundPermission: true,
         requestBadgePermission: true,
@@ -77,20 +83,19 @@ class OptionController extends GetxController {
       );
       const initializationSettings = InitializationSettings(
           android: initializationSettingsAndroid,
-          iOS: initializationSettingsDarwin
-      );
+          iOS: initializationSettingsDarwin);
       flutterLocalNotificationsPlugin.initialize(initializationSettings);
       Workmanager()
           .initialize(callbackDispatcher)
-          .then((value) =>
-          Workmanager().registerPeriodicTask(
-            'top.celechron.celechron.backgroundScholarFetch',
-            'top.celechron.celechron.backgroundScholarFetch',
-            frequency: const Duration(minutes: 15),
-            constraints: Constraints(
-              networkType: NetworkType.connected,
-            ),
-          )).then((value) => Workmanager().printScheduledTasks());
+          .then((value) => Workmanager().registerPeriodicTask(
+                'top.celechron.celechron.backgroundScholarFetch',
+                'top.celechron.celechron.backgroundScholarFetch',
+                frequency: const Duration(minutes: 15),
+                constraints: Constraints(
+                  networkType: NetworkType.connected,
+                ),
+              ))
+          .then((value) => Workmanager().printScheduledTasks());
     }
   }
 
