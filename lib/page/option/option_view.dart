@@ -330,7 +330,7 @@ class OptionPage extends StatelessWidget {
 class BackChervonRow extends StatelessWidget {
   final Widget? child;
 
-  const BackChervonRow({Key? key, this.child}) : super(key: key);
+  const BackChervonRow({super.key, this.child});
 
   @override
   Widget build(BuildContext context) {

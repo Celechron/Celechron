@@ -269,6 +269,7 @@ class GradeDetailPage extends StatelessWidget {
             right: Obx(
               () => Row(
                 mainAxisAlignment: MainAxisAlignment.end,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   if (_gradeDetailController.customGpaMode.value)
                     GestureDetector(

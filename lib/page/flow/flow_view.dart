@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:math';
-import 'dart:ui';
 import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/design/custom_decoration.dart';
 import 'package:celechron/utils/time_helper.dart';
@@ -94,19 +93,20 @@ class FlowPage extends StatelessWidget {
                                     color: themeColor,
                                   ),
                                   const SizedBox(width: 6),
-                                  Expanded(child:                                   Text(period.location,
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        fontFeatures: const [
-                                          FontFeature.tabularFigures()
-                                        ],
-                                        color: CupertinoTheme.of(context)
-                                            .textTheme
-                                            .textStyle
-                                            .color!,
-                                        overflow: TextOverflow.ellipsis,
-                                      ))),
+                                  Expanded(
+                                      child: Text(period.location,
+                                          style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            fontFeatures: const [
+                                              FontFeature.tabularFigures()
+                                            ],
+                                            color: CupertinoTheme.of(context)
+                                                .textTheme
+                                                .textStyle
+                                                .color!,
+                                            overflow: TextOverflow.ellipsis,
+                                          ))),
                                 ]),
                               ])),
                         ],
@@ -674,8 +674,8 @@ class FlowPage extends StatelessWidget {
                                 context,
                                 _flowController.flowList[index],
                                 index == 0
-                                    ? (_flowController.flowList[index]
-                                            .hasStarted
+                                    ? (_flowController
+                                            .flowList[index].hasStarted
                                         ? '正在进行'
                                         : '即将开始')
                                     : null,

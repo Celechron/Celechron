@@ -7,12 +7,12 @@ class MultipleColumns extends StatelessWidget {
   final Color color;
 
   const MultipleColumns({
-    Key? key,
+    super.key,
     required this.contents,
     required this.titles,
     required this.onTaps,
     this.color = CupertinoColors.white,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -46,12 +46,11 @@ class _ColumnWidget extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _ColumnWidget({
-    Key? key,
     required this.content,
     required this.title,
     required this.color,
     required this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +72,7 @@ class _ColumnWidget extends StatelessWidget {
 class _VerticalLine extends StatelessWidget {
   final Color color;
 
-  const _VerticalLine({Key? key, required this.color}) : super(key: key);
+  const _VerticalLine({required this.color});
 
   @override
   Widget build(BuildContext context) {

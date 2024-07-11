@@ -1,3 +1,4 @@
+// ignore: depend_on_referenced_packages
 import 'package:pigeon/pigeon.dart';
 
 @ConfigurePigeon(PigeonOptions(
@@ -6,12 +7,11 @@ import 'package:pigeon/pigeon.dart';
   swiftOut: 'ios/Runner/FlowMessenger.swift',
   swiftOptions: SwiftOptions(),
 ))
-
 enum PeriodTypeDto {
   classes, // 课程
-  test,    // 考试
-  user,    // 日程
-  flow,    // 用Celechron安排的（一个DDL被分解成若干个flow来完成）
+  test, // 考试
+  user, // 日程
+  flow, // 用Celechron安排的（一个DDL被分解成若干个flow来完成）
 }
 
 class PeriodDto {
@@ -33,9 +33,7 @@ class PeriodDto {
 }
 
 class FlowMessage {
-  FlowMessage({
-    required this.flowListDto
-  });
+  FlowMessage({required this.flowListDto});
 
   List<PeriodDto?> flowListDto;
 }

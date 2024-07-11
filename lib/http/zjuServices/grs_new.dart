@@ -309,7 +309,7 @@ class GrsNew {
 }
 
 void main() async {
-  const str = "https://yjsy.zju.edu.cn/?ticket=ST-399";
-  int ticketLoc = str.indexOf("ticket=");
-  print(str.substring(ticketLoc + 7, 2));
+  // const str = "https://yjsy.zju.edu.cn/?ticket=ST-399";
+  // int ticketLoc = str.indexOf("ticket=");
+  // print(str.substring(ticketLoc + 7, 2));
 }

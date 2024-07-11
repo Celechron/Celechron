@@ -11,7 +11,7 @@ class RoundRectangleCard extends StatefulWidget {
   final EdgeInsets padding;
 
   const RoundRectangleCard({
-    Key? key,
+    super.key,
     required this.child,
     this.onTap,
     this.animate = true,
@@ -24,7 +24,7 @@ class RoundRectangleCard extends StatefulWidget {
         offset: Offset(0, 6),
       ),
     ],
-  }) : super(key: key);
+  });
 
   @override
   State<RoundRectangleCard> createState() => _RoundRectangleCardState();
@@ -66,23 +66,22 @@ class _RoundRectangleCardState extends State<RoundRectangleCard>
     var isDown = false;
     var isCancel = false;
     var core = Container(
-      padding: widget.padding,
-      decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          // In light mode, color is white; in dark mode, color is black
-          color: SchedulerBinding
-                      .instance.platformDispatcher.platformBrightness ==
-                  Brightness.dark
-              ? CupertinoDynamicColor.resolve(
-                  CupertinoColors.secondarySystemBackground, context)
-              : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
-          boxShadow:
-              SchedulerBinding.instance.platformDispatcher.platformBrightness ==
-                      Brightness.dark
-                  ? null
-                  : widget.boxShadow),
-      child: widget.child
-    );
+        padding: widget.padding,
+        decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            // In light mode, color is white; in dark mode, color is black
+            color: SchedulerBinding
+                        .instance.platformDispatcher.platformBrightness ==
+                    Brightness.dark
+                ? CupertinoDynamicColor.resolve(
+                    CupertinoColors.secondarySystemBackground, context)
+                : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
+            boxShadow: SchedulerBinding
+                        .instance.platformDispatcher.platformBrightness ==
+                    Brightness.dark
+                ? null
+                : widget.boxShadow),
+        child: widget.child);
     return widget.animate
         ? GestureDetector(
             onTapDown: (_) async {
@@ -118,13 +117,13 @@ class RoundRectangleCardWithForehead extends StatelessWidget {
   final bool animate;
 
   const RoundRectangleCardWithForehead({
-    Key? key,
+    super.key,
     required this.child,
     required this.forehead,
     this.foreheadColor = CupertinoColors.systemFill,
     this.onTap,
     this.animate = true,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -16,7 +16,7 @@ class CourseDetailPage extends StatelessWidget {
   final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   late final Course course;
 
-  CourseDetailPage({required courseId, Key? key}) : super(key: key) {
+  CourseDetailPage({required courseId, super.key}) {
     course = _scholar.value.semesters
         .firstWhere((e) => e.courses.containsKey(courseId))
         .courses[courseId]!;

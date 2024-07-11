@@ -16,7 +16,7 @@ import 'package:celechron/page/scholar/course_detail/course_detail_view.dart';
 import 'calendar_controller.dart';
 
 class CalendarPage extends StatelessWidget {
-  CalendarPage({Key? key}) : super(key: key);
+  CalendarPage({super.key});
   final _calendarController = Get.put(CalendarController());
   final _taskController = Get.put(TaskController());
   final deadlineList = Get.find<RxList<Task>>(tag: 'taskList');

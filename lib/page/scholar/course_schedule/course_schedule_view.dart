@@ -12,7 +12,7 @@ import 'package:flutter/cupertino.dart';
 class CourseSchedulePage extends StatelessWidget {
   late final CourseScheduleController _courseScheduleController;
 
-  CourseSchedulePage(String name, bool first, {Key? key}) : super(key: key) {
+  CourseSchedulePage(String name, bool first, {super.key}) {
     Get.delete<CourseScheduleController>();
     _courseScheduleController = Get.put(CourseScheduleController(
         initialName: name, initialFirstOrSecondSemester: first));
@@ -295,31 +295,31 @@ class CourseSchedulePage extends StatelessWidget {
         backgroundColor: CupertinoDynamicColor.resolve(
             CupertinoColors.systemGroupedBackground, context),
         child: CustomScrollView(
-      slivers: [
-        const CelechronSliverTextHeader(subtitle: '课表'),
-        SliverToBoxAdapter(
-            child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  children: [
-                    _semesterPicker(context),
-                    const SizedBox(height: 8),
-                    Container(
-                      padding: const EdgeInsets.only(left: 16, right: 16),
-                      child: Text(
-                        '请前往教务网查看冲突选课课表',
-                        style: TextStyle(
-                            color: CupertinoDynamicColor.resolve(
-                                CupertinoColors.secondaryLabel, context),
-                            fontSize: 14),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    _courseSchedule(context),
-                    const SizedBox(height: 20),
-                  ],
-                ))),
-      ],
-    ));
+          slivers: [
+            const CelechronSliverTextHeader(subtitle: '课表'),
+            SliverToBoxAdapter(
+                child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: Column(
+                      children: [
+                        _semesterPicker(context),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.only(left: 16, right: 16),
+                          child: Text(
+                            '请前往教务网查看冲突选课课表',
+                            style: TextStyle(
+                                color: CupertinoDynamicColor.resolve(
+                                    CupertinoColors.secondaryLabel, context),
+                                fontSize: 14),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        _courseSchedule(context),
+                        const SizedBox(height: 20),
+                      ],
+                    ))),
+          ],
+        ));
   }
 }
