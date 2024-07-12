@@ -1,5 +1,7 @@
 import 'package:celechron/design/custom_colors.dart';
+import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:celechron/model/grade.dart';
+import 'package:celechron/model/semester.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
@@ -16,6 +18,39 @@ class GradeDetailPage extends StatelessWidget {
 
   GradeDetailPage({super.key}) {
     _gradeDetailController.init();
+  }
+
+  int getPairedSemesterIndex(int idx) {
+    for (var i = 0;
+        i < _gradeDetailController.semestersWithGrades.length;
+        i++) {
+      if (i != idx &&
+          _gradeDetailController.semestersWithGrades[i].name.substring(2, 5) ==
+              _gradeDetailController.semestersWithGrades[idx].name
+                  .substring(2, 5)) {
+        return i;
+      }
+    }
+    return idx;
+  }
+
+  Tuple<List<double>, double> getYearStats(int semesterIndex) {
+    var s1 = _gradeDetailController.semestersWithGrades[semesterIndex];
+    int another = getPairedSemesterIndex(semesterIndex);
+    if (another == semesterIndex) {
+      return Tuple([s1.gpa[0], s1.gpa[1], s1.gpa[2]], s1.credits);
+    }
+    var s2 = _gradeDetailController.semestersWithGrades[another];
+    double credits = s1.credits + s2.credits;
+    if (credits == 0) {
+      return Tuple([0, 0, 0], 0);
+    }
+    return Tuple(
+        List.generate(
+            3,
+            (int i) =>
+                (s1.credits * s1.gpa[i] + s2.credits * s2.gpa[i]) / credits),
+        credits);
   }
 
   Widget _buildGradeBrief(BuildContext context) {
@@ -66,9 +101,10 @@ class GradeDetailPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Obx(() => TwoLineCard(
-                                title: '主修均绩',
-                                content: _scholarController
-                                    .scholar.majorGpaAndCredit[0]
+                                title: '学年均绩',
+                                content: getYearStats(_gradeDetailController
+                                        .semesterIndex.value)
+                                    .item1[0]
                                     .toStringAsFixed(2),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.sakura)),
@@ -76,9 +112,10 @@ class GradeDetailPage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Obx(() => TwoLineCard(
-                                title: '主修学分',
-                                content: _scholarController
-                                    .scholar.majorGpaAndCredit[1]
+                                title: '学年学分',
+                                content: getYearStats(_gradeDetailController
+                                        .semesterIndex.value)
+                                    .item2
                                     .toStringAsFixed(1),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.sand)),
@@ -86,8 +123,15 @@ class GradeDetailPage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Obx(() => TwoLineCard(
-                                title: '百分制',
-                                content: _scholarController.gpa[3]
+                                title: '学年四分制',
+                                content: getYearStats(_gradeDetailController
+                                        .semesterIndex.value)
+                                    .item1[1]
+                                    .toStringAsFixed(2),
+                                extraContent: getYearStats(
+                                        _gradeDetailController
+                                            .semesterIndex.value)
+                                    .item1[2]
                                     .toStringAsFixed(2),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.magenta)),
@@ -142,19 +186,19 @@ class GradeDetailPage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Obx(() => TwoLineCard(
+                                title: '已选学分',
+                                content: inGpa.item2.toStringAsFixed(1),
+                                backgroundColor:
+                                    CustomCupertinoDynamicColors.sand)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Obx(() => TwoLineCard(
                                 title: '已选四分制',
                                 content: inGpa.item1[1].toStringAsFixed(2),
                                 extraContent: inGpa.item1[2].toStringAsFixed(2),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.magenta)),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Obx(() => TwoLineCard(
-                                title: '已选学分',
-                                content: inGpa.item2.toStringAsFixed(1),
-                                backgroundColor:
-                                    CustomCupertinoDynamicColors.sand)),
                           ),
                         ],
                       ),
@@ -171,20 +215,20 @@ class GradeDetailPage extends StatelessWidget {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Obx(() => TwoLineCard(
+                                title: '未选学分',
+                                content: notGpa.item2.toStringAsFixed(1),
+                                backgroundColor:
+                                    CustomCupertinoDynamicColors.peach)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Obx(() => TwoLineCard(
                                 title: '未选四分制',
                                 content: notGpa.item1[1].toStringAsFixed(2),
                                 extraContent:
                                     notGpa.item1[2].toStringAsFixed(2),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.spring)),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Obx(() => TwoLineCard(
-                                title: '未选学分',
-                                content: notGpa.item2.toStringAsFixed(1),
-                                backgroundColor:
-                                    CustomCupertinoDynamicColors.peach)),
                           ),
                         ],
                       ),
@@ -200,56 +244,81 @@ class GradeDetailPage extends StatelessWidget {
     );
   }
 
+  int getSelectedGradeCount(Semester semester) {
+    int selectedCount = 0;
+    for (var i in semester.grades) {
+      if (_gradeDetailController.customGpaSelected[i.id] ?? false) {
+        selectedCount++;
+      }
+    }
+    return selectedCount;
+  }
+
   Widget _buildHistory(BuildContext context) {
     return Column(
       children: [
         Row(
           children: [
             Expanded(
-                child: RoundRectangleCard(
-              animate: false,
-              child: Column(children: [
-                // Horizontal scrollable list to list all semesters
-                SizedBox(
-                  height: 81,
-                  child: Obx(() => ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount:
-                          _gradeDetailController.semestersWithGrades.length,
-                      itemBuilder: (context, index) {
-                        final semester =
-                            _gradeDetailController.semestersWithGrades[index];
-                        return Obx(() => Row(children: [
-                              TwoLineCard(
-                                animate: true,
-                                withColoredFont: true,
-                                width: 120,
-                                title:
-                                    '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
-                                content:
-                                    '${semester.gpa[0].toStringAsFixed(2)}/${semester.credits.toStringAsFixed(1)}',
-                                onTap: () {
-                                  _gradeDetailController.semesterIndex.value =
-                                      index;
-                                  _gradeDetailController.semesterIndex
-                                      .refresh();
-                                },
-                                backgroundColor: _gradeDetailController
-                                            .semesterIndex.value ==
-                                        index
-                                    ? CustomCupertinoDynamicColors.cyan
-                                    : CupertinoColors.systemFill,
+              child: RoundRectangleCard(
+                animate: false,
+                child: Column(
+                  children: [
+                    // Horizontal scrollable list to list all semesters
+                    SizedBox(
+                      height: 81,
+                      child: Obx(
+                        () => ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount:
+                              _gradeDetailController.semestersWithGrades.length,
+                          itemBuilder: (context, index) {
+                            final semester = _gradeDetailController
+                                .semestersWithGrades[index];
+
+                            return Obx(
+                              () => Row(
+                                children: [
+                                  Obx(
+                                    () => TwoLineCard(
+                                      animate: true,
+                                      withColoredFont: true,
+                                      width: 120,
+                                      title:
+                                          '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
+                                      content: _gradeDetailController
+                                              .customGpaMode.value
+                                          ? '${getSelectedGradeCount(semester)} / ${semester.grades.length}'
+                                          : '${semester.gpa[0].toStringAsFixed(2)}/${semester.credits.toStringAsFixed(1)}',
+                                      onTap: () {
+                                        _gradeDetailController
+                                            .semesterIndex.value = index;
+                                        _gradeDetailController.semesterIndex
+                                            .refresh();
+                                      },
+                                      backgroundColor: _gradeDetailController
+                                                  .semesterIndex.value ==
+                                              index
+                                          ? CustomCupertinoDynamicColors.cyan
+                                          : CupertinoColors.systemFill,
+                                    ),
+                                  ),
+                                  if (index !=
+                                      _gradeDetailController
+                                              .semestersWithGrades.length -
+                                          1)
+                                    const SizedBox(width: 6),
+                                ],
                               ),
-                              if (index !=
-                                  _gradeDetailController
-                                          .semestersWithGrades.length -
-                                      1)
-                                const SizedBox(width: 6),
-                            ]));
-                      })),
+                            );
+                          },
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ]),
-            )),
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 20),
