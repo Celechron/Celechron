@@ -11,8 +11,8 @@ class SessionCard extends StatefulWidget {
     super.key,
     required this.session,
     this.backgroundColor = const CupertinoDynamicColor.withBrightness(
-      color: Color.fromRGBO(109, 204, 255, 1.0),
-      darkColor: Color.fromRGBO(44, 116, 162, 1.0),
+      color: Color.fromRGBO(0, 141, 236, 1.0),
+      darkColor: Color.fromRGBO(0, 108, 180, 1.0),
     ),
   });
 
@@ -69,38 +69,47 @@ class _SessionCardState extends State<SessionCard>
         if (!isDown) _animationController.reverse();
       },
       onTapCancel: () => _animationController.reverse(),
-      onTap: () async => Navigator.of(context).push(CupertinoPageRoute(
+      onTap: () async => Navigator.of(context).push(
+        CupertinoPageRoute(
           builder: (context) => CourseDetailPage(courseId: widget.session.id),
-          title: widget.session.name)),
+          title: widget.session.name,
+        ),
+      ),
       child: ScaleTransition(
-          scale: _scaleAnimation,
+        scale: _scaleAnimation,
+        child: Container(
+          padding: const EdgeInsets.only(
+            top: 1.4,
+            bottom: 1.4,
+            left: 1.4,
+            right: 1.4,
+          ),
           child: Container(
-            padding:
-                const EdgeInsets.only(top: 0, bottom: 1, left: 0, right: 1),
-            child: Container(
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: CupertinoDynamicColor.resolve(
-                    widget.backgroundColor, context),
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(widget.session.name,
-                      textAlign: TextAlign.center,
-                      maxLines: 5,
-                      overflow: TextOverflow.ellipsis,
-                      style: CupertinoTheme.of(context)
-                          .textTheme
-                          .textStyle
-                          .copyWith(
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(4),
+              color: CupertinoDynamicColor.resolve(
+                  widget.backgroundColor, context),
+            ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const SizedBox(height: 4),
+                Text(
+                  widget.session.name,
+                  textAlign: TextAlign.center,
+                  maxLines: 5,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      CupertinoTheme.of(context).textTheme.textStyle.copyWith(
                             fontSize: 10,
                             fontWeight: FontWeight.bold,
-                          )),
-                  const SizedBox(height: 8),
-                  Flexible(
-                      child: Text(
+                            color: const Color.fromRGBO(255, 255, 255, 1.0),
+                          ),
+                ),
+                const SizedBox(height: 8),
+                Flexible(
+                  child: Text(
                     widget.session.location ?? '未知地点',
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
@@ -108,12 +117,15 @@ class _SessionCardState extends State<SessionCard>
                     style:
                         CupertinoTheme.of(context).textTheme.textStyle.copyWith(
                               fontSize: 10,
+                              color: const Color.fromRGBO(255, 255, 255, 1.0),
                             ),
-                  )),
-                ],
-              ),
+                  ),
+                ),
+              ],
             ),
-          )),
+          ),
+        ),
+      ),
     );
   }
 }

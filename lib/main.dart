@@ -172,7 +172,7 @@ class _HomePageState extends State<HomePage> {
             label: '任务',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.school_outlined),
+            icon: Icon(Icons.school_rounded),
             label: '学业',
           ),
           BottomNavigationBarItem(

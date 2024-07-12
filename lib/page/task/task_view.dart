@@ -597,7 +597,7 @@ class TaskPageColors {
 
   static const CupertinoDynamicColor summer =
       CupertinoDynamicColor.withBrightness(
-    color: Color.fromRGBO(255, 226, 226, 1.0),
+    color: Color.fromRGBO(255, 218, 238, 1.0),
     darkColor: Color.fromRGBO(255, 25, 69, 1.0),
   );
 

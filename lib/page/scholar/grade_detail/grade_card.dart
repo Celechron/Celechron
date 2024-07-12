@@ -64,6 +64,11 @@ class _GradeCardState extends State<GradeCard>
       onTapDown: (_) async {
         isDown = true;
         isCancel = false;
+        if (_gradeDetailController.customGpaMode.value) {
+          var cur = _gradeDetailController.customGpaSelected[widget.grade.id] ??
+              false;
+          _gradeDetailController.customGpaSelected[widget.grade.id] = !cur;
+        }
         _animationController.forward();
         await Future.delayed(const Duration(milliseconds: 125));
         isDown = false;
@@ -72,11 +77,6 @@ class _GradeCardState extends State<GradeCard>
             navigator!.push(CupertinoPageRoute(
                 builder: (context) =>
                     CourseDetailPage(courseId: widget.grade.id)));
-          } else {
-            var cur =
-                _gradeDetailController.customGpaSelected[widget.grade.id] ??
-                    false;
-            _gradeDetailController.customGpaSelected[widget.grade.id] = !cur;
           }
           _animationController.reverse();
           isCancel = false;
