@@ -2,7 +2,6 @@ import 'package:flutter/cupertino.dart';
 import 'package:celechron/design/persistent_headers.dart';
 
 class CreditsPage extends StatelessWidget {
-
   final String version;
   const CreditsPage({required this.version, super.key});
 
@@ -16,159 +15,168 @@ class CreditsPage extends StatelessWidget {
             SliverToBoxAdapter(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                const SizedBox(
-                  height: 64,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Image.asset(
-                      "assets/logo.png",
-                      height: 108,
+                children: [
+                  const SizedBox(
+                    height: 64,
+                  ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Image.asset(
+                        "assets/logo.png",
+                        height: 108,
+                      ),
+                      const SizedBox(
+                        width: 8,
+                      ),
+                      Column(
+                        children: [
+                          const Text(
+                            'Celechron',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 32,
+                            ),
+                          ),
+                          Text(
+                            '$version 版本',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      )
+                    ],
+                  ),
+                  const SizedBox(
+                    height: 24,
+                  ),
+                  const Text(
+                    '制作人员',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
                     ),
-                    const SizedBox(
-                      width: 8,
+                  ),
+                  const SizedBox(
+                    height: 24,
+                  ),
+                  const Text(
+                    '🎨设计',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                    Column(
-                      children: [
-                        const Text(
-                          'Celechron',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 32,
+                  ),
+                  const SizedBox(
+                    height: 16,
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 32),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      mainAxisSize: MainAxisSize.max,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      verticalDirection: VerticalDirection.down,
+                      children: <Widget>[
+                        Expanded(
+                          child: Text(
+                            'nosig',
+                            textAlign: TextAlign.center,
                           ),
                         ),
-                        Text(
-                          '$version 版本',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            fontSize: 12,
+                        Expanded(
+                          child: Text(
+                            '空之探险队的 Kate',
+                            textAlign: TextAlign.center,
                           ),
                         ),
                       ],
-                    )
-                  ],
-                ),
-                const SizedBox(
-                  height: 24,
-                ),
-                const Text(
-                  '制作人员',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
+                    ),
                   ),
-                ),
-                const SizedBox(
-                  height: 24,
-                ),
-                const Text(
-                  '🎨设计',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
+                  const SizedBox(
+                    height: 24,
                   ),
-                ),
-                const SizedBox(
-                  height: 8,
-                ),
-                const Padding(padding: EdgeInsets.symmetric(horizontal: 32), child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  verticalDirection: VerticalDirection.down,
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        'nosig',
-                        textAlign: TextAlign.center,
-                      ),
+                  const Text(
+                    '🧑‍💻开发',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
                     ),
-                    Expanded(
-                      child: Text(
-                        '空之探险队的 Kate',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                )),
-                const SizedBox(
-                  height: 24,
-                ),
-                const Text(
-                  '🧑‍💻开发',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
                   ),
-                ),
-                const SizedBox(
-                  height: 8,
-                ),
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 32), child: Column(children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  verticalDirection: VerticalDirection.down,
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        'nosig',
-                        textAlign: TextAlign.center,
-                      ),
+                  const SizedBox(
+                    height: 16,
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 32),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisSize: MainAxisSize.max,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          verticalDirection: VerticalDirection.down,
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                'nosig',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                'iotang',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(
+                          height: 12,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisSize: MainAxisSize.max,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          verticalDirection: VerticalDirection.down,
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                'cxz66666',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                            Expanded(
+                              child: Text(
+                                'Azuk 443',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      child: Text(
-                        'iotang',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(
-                  height: 12,
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  mainAxisSize: MainAxisSize.max,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  verticalDirection: VerticalDirection.down,
-                  children: <Widget>[
-                    Expanded(
-                      child: Text(
-                        'cxz66666',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'Azuk 443',
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                  ],
-                ),
-              ],)
-),
-              ]),
+                  ),
+                ],
+              ),
             ),
             SliverFillRemaining(
               hasScrollBody: false,
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: [Text(
-                  '本程序采用 GPLv3 协议开源',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: CupertinoDynamicColor.resolve(CupertinoColors.secondaryLabel, context)
+                children: [
+                  Text(
+                    '本程序采用 GPLv3 协议开源',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: CupertinoDynamicColor.resolve(
+                            CupertinoColors.secondaryLabel, context)),
                   ),
-                ),
                   const SizedBox(
                     height: 4,
                   ),
@@ -177,11 +185,13 @@ class CreditsPage extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 12,
-                      color: CupertinoDynamicColor.resolve(CupertinoColors.secondaryLabel, context),
+                      color: CupertinoDynamicColor.resolve(
+                          CupertinoColors.secondaryLabel, context),
                     ),
-                  ),],
-              )
-            )
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

@@ -4,12 +4,12 @@ import 'package:flutter/cupertino.dart';
 import 'package:celechron/model/session.dart';
 
 class SessionCard extends StatefulWidget {
-  final Session session;
+  final List<Session> sessionList;
   final CupertinoDynamicColor backgroundColor;
 
   const SessionCard({
     super.key,
-    required this.session,
+    required this.sessionList,
     this.backgroundColor = const CupertinoDynamicColor.withBrightness(
       color: Color.fromRGBO(0, 141, 236, 1.0),
       darkColor: Color.fromRGBO(0, 108, 180, 1.0),
@@ -52,6 +52,18 @@ class _SessionCardState extends State<SessionCard>
     var isDown = false;
     var isCancel = false;
 
+    String sessionName = "";
+    String sessionLocation = "";
+    if (widget.sessionList.length == 1) {
+      sessionName = widget.sessionList[0].name;
+      sessionLocation = widget.sessionList[0].location ?? '未知地点';
+    } else {
+      sessionName = "冲突课程\n";
+      for (var i in widget.sessionList) {
+        sessionName = '$sessionName\n${i.time.first}-${i.time.last}: ${i.name}';
+      }
+    }
+
     return GestureDetector(
       onTapDown: (_) async {
         isDown = true;
@@ -69,12 +81,62 @@ class _SessionCardState extends State<SessionCard>
         if (!isDown) _animationController.reverse();
       },
       onTapCancel: () => _animationController.reverse(),
-      onTap: () async => Navigator.of(context).push(
-        CupertinoPageRoute(
-          builder: (context) => CourseDetailPage(courseId: widget.session.id),
-          title: widget.session.name,
-        ),
-      ),
+      onTap: () async {
+        if (widget.sessionList.length == 1) {
+          Navigator.of(context).push(
+            CupertinoPageRoute(
+              builder: (context) =>
+                  CourseDetailPage(courseId: widget.sessionList[0].id),
+              title: widget.sessionList[0].name,
+            ),
+          );
+        } else {
+          await showCupertinoDialog(
+            context: context,
+            builder: (BuildContext context) {
+              return CupertinoAlertDialog(
+                title: const Text(
+                  '要查看哪一个？',
+                ),
+                content: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var s in widget.sessionList)
+                      CupertinoButton(
+                        minSize: 22.0,
+                        padding:
+                            const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
+                        child: Text(
+                          s.name,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            CupertinoPageRoute(
+                              builder: (context) =>
+                                  CourseDetailPage(courseId: s.id),
+                              title: s.name,
+                            ),
+                          );
+                        },
+                      ),
+                  ],
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('返回'),
+                    onPressed: () async {
+                      Navigator.of(context).pop();
+                    },
+                  )
+                ],
+              );
+            },
+          );
+        }
+      },
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
@@ -96,9 +158,9 @@ class _SessionCardState extends State<SessionCard>
               children: [
                 const SizedBox(height: 4),
                 Text(
-                  widget.session.name,
+                  sessionName,
                   textAlign: TextAlign.center,
-                  maxLines: 5,
+                  maxLines: widget.sessionList.length * 5,
                   overflow: TextOverflow.ellipsis,
                   style:
                       CupertinoTheme.of(context).textTheme.textStyle.copyWith(
@@ -110,7 +172,7 @@ class _SessionCardState extends State<SessionCard>
                 const SizedBox(height: 8),
                 Flexible(
                   child: Text(
-                    widget.session.location ?? '未知地点',
+                    sessionLocation,
                     maxLines: 4,
                     overflow: TextOverflow.ellipsis,
                     textAlign: TextAlign.center,

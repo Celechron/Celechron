@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:celechron/design/custom_colors.dart';
+import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:celechron/model/session.dart';
 import 'package:celechron/design/persistent_headers.dart';
 import 'course_schedule_controller.dart';
@@ -117,6 +120,21 @@ class CourseSchedulePage extends StatelessWidget {
   }
 
   Widget _courseSchedule(BuildContext context) {
+    const List<String> courseStartTime = [
+      "08:00",
+      "08:50",
+      "10:00",
+      "10:50",
+      "11:40",
+      "13:25",
+      "14:15",
+      "15:05",
+      "16:15",
+      "17:05",
+      "18:50",
+      "19:40",
+      "20:30"
+    ];
     return RoundRectangleCard(
       child: Column(
         children: [
@@ -211,7 +229,7 @@ class CourseSchedulePage extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           SizedBox(
-            height: 550,
+            height: 560,
             child: Obx(
               () {
                 var sessionsByDayOfWeek =
@@ -225,14 +243,35 @@ class CourseSchedulePage extends StatelessWidget {
                           for (var i = 1; i <= 13; i++)
                             Expanded(
                               child: Center(
-                                child: Text(
-                                  i.toString(),
-                                  style: CupertinoTheme.of(context)
-                                      .textTheme
-                                      .textStyle
-                                      .copyWith(
-                                        fontSize: 14,
+                                child: Column(
+                                  // mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    FittedBox(
+                                      fit: BoxFit.fitWidth,
+                                      child: Text(
+                                        courseStartTime[i - 1],
+                                        style: CupertinoTheme.of(context)
+                                            .textTheme
+                                            .textStyle
+                                            .copyWith(
+                                              fontSize: 10,
+                                            ),
                                       ),
+                                    ),
+                                    const SizedBox(
+                                      height: 2,
+                                    ),
+                                    Text(
+                                      i.toString(),
+                                      style: CupertinoTheme.of(context)
+                                          .textTheme
+                                          .textStyle
+                                          .copyWith(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                          ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
@@ -336,17 +375,65 @@ class CourseSchedulePage extends StatelessWidget {
       List<List<Session>> sessionsByDayOfWeek,
       int day,
       BoxConstraints constraints) {
-    return sessionsByDayOfWeek[day]
-        .map((e) => Positioned.fromRelativeRect(
-              rect: RelativeRect.fromLTRB(
-                0,
-                (e.time.first - 1) * constraints.maxHeight / 13,
-                0,
-                (13 - e.time.last) * constraints.maxHeight / 13,
-              ),
-              child: SessionCard(session: e),
-            ))
-        .toList();
+    List<Tuple<int, int>> period = [];
+    for (var i = 1; i <= 13; i++) {
+      period.add(Tuple(i, i));
+    }
+    for (var s in sessionsByDayOfWeek[day]) {
+      int sl = s.time.first, sr = s.time.last;
+      int xl = sl, xr = sr;
+      for (var i in period) {
+        if (!(i.item2 < sl || sr < i.item1)) {
+          xl = min(xl, i.item1);
+          xr = max(xr, i.item2);
+        }
+      }
+      period.removeWhere((x) => xl <= x.item1 && x.item2 <= xr);
+      period.add(Tuple(xl, xr));
+    }
+    List<List<Session>> sessionList = [];
+    for (var _ in period) {
+      sessionList.add([]);
+    }
+    for (var s in sessionsByDayOfWeek[day]) {
+      int sl = s.time.first, sr = s.time.last;
+      for (int i = 0; i < period.length; i++) {
+        if (!(period[i].item2 < sl || sr < period[i].item1)) {
+          sessionList[i].add(s);
+        }
+      }
+    }
+
+    List<Widget> cardList = [];
+    for (int i = 0; i < period.length; i++) {
+      if (sessionList[i].isNotEmpty) {
+        cardList.add(
+          Positioned.fromRelativeRect(
+            rect: RelativeRect.fromLTRB(
+              0,
+              (period[i].item1 - 1) * constraints.maxHeight / 13,
+              0,
+              (13 - period[i].item2) * constraints.maxHeight / 13,
+            ),
+            child: SessionCard(sessionList: sessionList[i]),
+          ),
+        );
+      }
+    }
+
+    return cardList;
+
+    // return sessionsByDayOfWeek[day]
+    //     .map((e) => Positioned.fromRelativeRect(
+    //           rect: RelativeRect.fromLTRB(
+    //             0,
+    //             (e.time.first - 1) * constraints.maxHeight / 13,
+    //             0,
+    //             (13 - e.time.last) * constraints.maxHeight / 13,
+    //           ),
+    //           child: SessionCard(sessionList: [e]),
+    //         ))
+    //     .toList();
   }
 
   @override
@@ -364,17 +451,17 @@ class CourseSchedulePage extends StatelessWidget {
                 children: [
                   _semesterPicker(context),
                   const SizedBox(height: 8),
-                  Container(
-                    padding: const EdgeInsets.only(left: 16, right: 16),
-                    child: Text(
-                      '请前往教务网查看冲突选课课表',
-                      style: TextStyle(
-                          color: CupertinoDynamicColor.resolve(
-                              CupertinoColors.secondaryLabel, context),
-                          fontSize: 14),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
+                  // Container(
+                  //   padding: const EdgeInsets.only(left: 16, right: 16),
+                  //   child: Text(
+                  //     '请前往教务网查看冲突选课课表',
+                  //     style: TextStyle(
+                  //         color: CupertinoDynamicColor.resolve(
+                  //             CupertinoColors.secondaryLabel, context),
+                  //         fontSize: 14),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 8),
                   _courseSchedule(context),
                   const SizedBox(height: 20),
                 ],
