@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:celechron/page/option/ecard_pay_page.dart';
+import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Colors, Icons;
 import 'package:flutter/scheduler.dart';
@@ -10,6 +12,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:app_links/app_links.dart';
 
 import 'package:celechron/page/scholar/scholar_view.dart';
 import 'package:celechron/page/search/search_view.dart';
@@ -41,6 +44,16 @@ void main() async {
 
   runApp(const CelechronApp());
 
+  final appLinks = AppLinks();
+  appLinks.uriLinkStream.listen((uri) {
+    if(uri.toString() == 'celechron://ecardpaypage') {
+      navigator?.push(CupertinoPageRoute(
+          builder: (context) =>
+              ECardPayPage()));
+    }
+  });
+
+
   if (Platform.isAndroid) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
@@ -63,9 +76,10 @@ void main() async {
       scholar.refresh();
     }
   }
-
+  
   initTimezone();
   initScholar();
+  ECardWidgetMessenger.update();
 
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
@@ -113,6 +127,7 @@ class _CelechronAppState extends State<CelechronApp> {
       ),
       title: 'Celechron',
       home: const HomePage(title: 'Celechron'),
+      initialRoute: '/',
     );
   }
 }

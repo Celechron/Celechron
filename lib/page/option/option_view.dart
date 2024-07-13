@@ -1,4 +1,5 @@
 import 'package:celechron/page/option/custom_license_page.dart';
+import 'package:celechron/page/option/ecard_pay_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:celechron/utils/utils.dart';
@@ -287,6 +288,16 @@ class OptionPage extends StatelessWidget {
                             CupertinoPageRoute(
                                 builder: (context) =>
                                     const CustomLicensePage()));
+                      },
+                    ),
+                    CupertinoListTile(
+                      title: const Text('付款码'),
+                      trailing: const BackChervonRow(),
+                      onTap: () async {
+                        Navigator.of(context, rootNavigator: true).push(
+                            CupertinoPageRoute(
+                                builder: (context) =>
+                                ECardPayPage()));
                       },
                     ),
                     CupertinoListTile(

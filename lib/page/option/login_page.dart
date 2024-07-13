@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:celechron/model/scholar.dart';
 
+import '../../worker/ecard_widget_messenger.dart';
 import 'option_controller.dart';
 
 class LoginForm extends StatelessWidget {
@@ -98,6 +99,7 @@ class LoginForm extends StatelessWidget {
                             );
                           });
                         }
+                        ECardWidgetMessenger.update();
                       });
                     });
                   },

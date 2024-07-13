@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
 import 'package:celechron/model/scholar.dart';
@@ -117,5 +118,6 @@ class OptionController extends GetxController {
     await scholar.value.logout();
     scholar.refresh();
     pushOnGradeChange = false;
+    ECardWidgetMessenger.logout();
   }
 }

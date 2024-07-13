@@ -9,7 +9,7 @@ import WidgetKit
 import SwiftUI
 
 struct FlowWidgetView : View {
-    var entry: FlowWidgetProvider.Entry
+    let entry: FlowWidgetProvider.Entry
 
     @ViewBuilder
     var body: some View {

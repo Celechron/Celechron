@@ -12,5 +12,6 @@ import SwiftUI
 struct WidgetExtensionsBundle: WidgetBundle {
     var body: some Widget {
         FlowWidget()
+        ECardWidget()
     }
 }

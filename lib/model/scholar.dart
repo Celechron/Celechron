@@ -24,7 +24,7 @@ class Scholar {
   // 爬虫区
   String? username;
   String? password;
-  late Spider _spider;
+  Spider? _spider;
   bool get isGrs => !username!.startsWith('3');
 
   // 按学期整理好的学业信息，包括该学期的所有科目、考试、课表、均绩等
@@ -74,6 +74,9 @@ class Scholar {
 
   // 初始化以获取Cookies，并刷新数据
   Future<List<String?>> login() async {
+    if(username == null || password == null) {
+      return ["未登录"];
+    }
     if (username == '3200000000') {
       _spider = MockSpider();
     } else if(!isGrs) {
@@ -81,7 +84,7 @@ class Scholar {
     } else {
       _spider = GrsSpider(username!, password!);
     }
-    var loginErrorMessage = await _spider.login();
+    var loginErrorMessage = await _spider!.login();
     if (loginErrorMessage.every((e) => e == null)) {
       isLogan = true;
       _db?.setScholar(this);
@@ -100,7 +103,7 @@ class Scholar {
     majorGpaAndCredit = [0.0, 0.0];
     isLogan = false;
     lastUpdateTime = DateTime.parse("20010101");
-    _spider.logout();
+    _spider?.logout();
     await _db?.removeScholar();
     await _db?.removeAllCachedWebPage();
     return true;
@@ -120,7 +123,7 @@ class Scholar {
       return [];
     }
     _mutex++;
-    return await _spider.getEverything().then((value) async {
+    return await _spider?.getEverything().then((value) async {
       for (var e in value.item1) {
         // ignore: avoid_print
         if (e != null) print(e);
@@ -158,7 +161,7 @@ class Scholar {
 
       await _db?.setScholar(this);
       return value.item1.every((e) => e == null) ? value.item2 : value.item1;
-    }).whenComplete(() => _mutex--);
+    }).whenComplete(() => _mutex--) ?? ['未登录'];
   }
 
   Map<String, dynamic> toJson() {

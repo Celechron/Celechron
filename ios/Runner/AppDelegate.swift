@@ -14,7 +14,7 @@ private class FlowMessengerImplementation: FlowMessenger {
 #endif
         userDefaults?.set(try? JSONEncoder().encode(data.flowListDto), forKey: "flowList")
         if #available(iOS 14.0, *) {
-            WidgetCenter.shared.reloadAllTimelines()
+            WidgetCenter.shared.reloadTimelines(ofKind: "FlowWidget")
         }
     }
 }
@@ -26,17 +26,31 @@ private class FlowMessengerImplementation: FlowMessenger {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
     ) -> Bool {
         
+        // Flow widget MethodChannel
         let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
         FlowMessengerSetup.setUp(binaryMessenger: controller.binaryMessenger, api: FlowMessengerImplementation())
-        WorkmanagerPlugin.registerPeriodicTask(withIdentifier: "top.celechron.celechron.backgroundScholarFetch", frequency: NSNumber(value: 15 * 60))
-        UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
         
-        FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in
-            GeneratedPluginRegistrant.register(with: registry)
-        }
+        // Background AppRefresh MethodChannel
+        WorkmanagerPlugin.registerPeriodicTask(withIdentifier: "top.celechron.celechron.backgroundScholarFetch", frequency: NSNumber(value: 15 * 60))
         WorkmanagerPlugin.setPluginRegistrantCallback { registry in
             GeneratedPluginRegistrant.register(with: registry)
         }
+        
+        // Notification MethodChannel
+        UNUserNotificationCenter.current().delegate = self as UNUserNotificationCenterDelegate
+        FlutterLocalNotificationsPlugin.setPluginRegistrantCallback { (registry) in
+            GeneratedPluginRegistrant.register(with: registry)
+        }
+        
+        // ECard widget MethodChannel
+        let ecardWidgetChannel = FlutterMethodChannel(name: "top.celechron.celechron/ecardWidget", binaryMessenger: controller.binaryMessenger)
+        ecardWidgetChannel.setMethodCallHandler({
+          (call: FlutterMethodCall, result: @escaping FlutterResult) -> Void in
+            if #available(iOS 14.0, *) {
+                WidgetCenter.shared.reloadTimelines(ofKind: "ECardWidget")
+            }
+        })
+
         
         GeneratedPluginRegistrant.register(with: self)
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)

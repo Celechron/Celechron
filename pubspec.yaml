@@ -16,7 +16,6 @@ dependencies:
   hive:
   hive_flutter:
   uuid:
-  fast_gbk:
   flutter_svg:
   intl:
   extended_sliver:
@@ -31,6 +30,8 @@ dependencies:
       path: workmanager
   flutter_local_notifications:
   flutter_secure_storage:
+  qr_flutter:
+  app_links:
 
 dev_dependencies:
   flutter_test:

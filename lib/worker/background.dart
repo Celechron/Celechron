@@ -3,6 +3,8 @@ import 'package:workmanager/workmanager.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+import '../utils/utils.dart';
+
 @pragma('vm:entry-point')
 void callbackDispatcher() {
   Workmanager().executeTask((task, inputData) async {
@@ -45,20 +47,17 @@ Future<void> refreshScholar() async {
 
   var scholar = Scholar();
   var secureStorage = const FlutterSecureStorage();
-  const iOSOptions = IOSOptions(
-      accessibility: KeychainAccessibility.first_unlock,
-      accountName: 'Celechron');
   scholar.username =
-      await secureStorage.read(key: 'username', iOptions: iOSOptions);
+      await secureStorage.read(key: 'username', iOptions: secureStorageIOSOptions);
   scholar.password =
-      await secureStorage.read(key: 'password', iOptions: iOSOptions);
+      await secureStorage.read(key: 'password', iOptions: secureStorageIOSOptions);
   var oldGpa =
-      await secureStorage.read(key: 'gpa', iOptions: iOSOptions) ?? '0.0';
+      await secureStorage.read(key: 'gpa', iOptions: secureStorageIOSOptions) ?? '0.0';
   var gradedCourseCount = await secureStorage.read(
-          key: 'gradedCourseCount', iOptions: iOSOptions) ??
+          key: 'gradedCourseCount', iOptions: secureStorageIOSOptions) ??
       '0';
   var pushOnGradeChangeFuse = await secureStorage.read(
-      key: 'pushOnGradeChangeFuse', iOptions: iOSOptions);
+      key: 'pushOnGradeChangeFuse', iOptions: secureStorageIOSOptions);
 
   try {
     var error = await scholar.login();
@@ -73,18 +72,18 @@ Future<void> refreshScholar() async {
           '若有新出分的课程，Celechron 将会通知您。若不需要此功能，可在 Celechron 的设置页面中关闭。',
           notificationDetails);
       await secureStorage.write(
-          key: 'pushOnGradeChangeFuse', value: '1', iOptions: iOSOptions);
+          key: 'pushOnGradeChangeFuse', value: '1', iOptions: secureStorageIOSOptions);
     } else if (scholar.gpa[0] != double.tryParse(oldGpa) ||
         scholar.gradedCourseCount != int.tryParse(gradedCourseCount)) {
       await flutterLocalNotificationsPlugin.show(
           0, '成绩变动提醒', '有新出分的课程，可在 Celechron 的学业页面中刷新查看。', notificationDetails);
     }
     await secureStorage.write(
-        key: 'gpa', value: scholar.gpa[0].toString(), iOptions: iOSOptions);
+        key: 'gpa', value: scholar.gpa[0].toString(), iOptions: secureStorageIOSOptions);
     await secureStorage.write(
         key: 'gradedCourseCount',
         value: scholar.gradedCourseCount.toString(),
-        iOptions: iOSOptions);
+        iOptions: secureStorageIOSOptions);
   } catch (e) {
     return;
   }

@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 enum PeriodType {
   classes, // 课程
   test,    // 考试
@@ -59,3 +62,13 @@ String toStringHumanReadable(DateTime dateTime) {
   str = str.substring(0, str.length - 7);
   return str;
 }
+
+const secureStorageIOSOptions = kDebugMode
+    ? IOSOptions(
+        accessibility: KeychainAccessibility.first_unlock,
+        accountName: 'Celechron',
+        groupId: 'group.top.celechron.celechron.debug')
+    : IOSOptions(
+        accessibility: KeychainAccessibility.first_unlock,
+        accountName: 'Celechron',
+        groupId: 'group.top.celechron.celechron');
