@@ -6,10 +6,12 @@ import 'package:celechron/model/session.dart';
 class SessionCard extends StatefulWidget {
   final List<Session> sessionList;
   final CupertinoDynamicColor backgroundColor;
+  final bool hideInfomation;
 
   const SessionCard({
     super.key,
     required this.sessionList,
+    this.hideInfomation = false,
     this.backgroundColor = const CupertinoDynamicColor.withBrightness(
       color: Color.fromRGBO(0, 141, 236, 1.0),
       darkColor: Color.fromRGBO(0, 108, 180, 1.0),
@@ -54,13 +56,16 @@ class _SessionCardState extends State<SessionCard>
 
     String sessionName = "";
     String sessionLocation = "";
-    if (widget.sessionList.length == 1) {
-      sessionName = widget.sessionList[0].name;
-      sessionLocation = widget.sessionList[0].location ?? '未知地点';
-    } else {
-      sessionName = "冲突课程\n";
-      for (var i in widget.sessionList) {
-        sessionName = '$sessionName\n${i.time.first}-${i.time.last}: ${i.name}';
+    if (!widget.hideInfomation) {
+      if (widget.sessionList.length == 1) {
+        sessionName = widget.sessionList[0].name;
+        sessionLocation = widget.sessionList[0].location ?? '未知地点';
+      } else {
+        sessionName = "冲突课程\n";
+        for (var i in widget.sessionList) {
+          sessionName =
+              '$sessionName\n${i.time.first}-${i.time.last}: ${i.name}';
+        }
       }
     }
 

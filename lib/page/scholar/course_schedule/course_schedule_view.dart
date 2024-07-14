@@ -16,9 +16,19 @@ class CourseSchedulePage extends StatelessWidget {
   late final CourseScheduleController _courseScheduleController;
 
   CourseSchedulePage(String name, bool first, {super.key}) {
+    bool initialHideCourseInfomation = false;
+    try {
+      initialHideCourseInfomation =
+          Get.find<CourseScheduleController>().hideCourseInfomation.value;
+    } catch (e) {
+      // not initialized
+    }
     Get.delete<CourseScheduleController>();
     _courseScheduleController = Get.put(CourseScheduleController(
-        initialName: name, initialFirstOrSecondSemester: first));
+      initialName: name,
+      initialFirstOrSecondSemester: first,
+      initialHideCourseInfomation: initialHideCourseInfomation,
+    ));
   }
 
   Widget _semesterPicker(BuildContext context) {
@@ -415,7 +425,13 @@ class CourseSchedulePage extends StatelessWidget {
               0,
               (13 - period[i].item2) * constraints.maxHeight / 13,
             ),
-            child: SessionCard(sessionList: sessionList[i]),
+            child: Obx(
+              () => SessionCard(
+                sessionList: sessionList[i],
+                hideInfomation:
+                    _courseScheduleController.hideCourseInfomation.value,
+              ),
+            ),
           ),
         );
       }
@@ -464,6 +480,25 @@ class CourseSchedulePage extends StatelessWidget {
                   // const SizedBox(height: 8),
                   _courseSchedule(context),
                   const SizedBox(height: 20),
+                  Obx(
+                    () => CupertinoListSection.insetGrouped(
+                      margin: const EdgeInsetsDirectional.fromSTEB(
+                          0.0, 0.0, 0.0, 10.0),
+                      additionalDividerMargin: 2,
+                      children: <CupertinoListTile>[
+                        CupertinoListTile(
+                            title: const Text('隐藏课程信息'),
+                            trailing: CupertinoSwitch(
+                              value: _courseScheduleController
+                                  .hideCourseInfomation.value,
+                              onChanged: (value) async {
+                                _courseScheduleController
+                                    .hideCourseInfomation.value = value;
+                              },
+                            )),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
