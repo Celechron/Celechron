@@ -70,6 +70,7 @@ class _AnimateButtonState extends State<AnimateButton>
       child: ScaleTransition(
         scale: _scaleAnimation,
         child: Container(
+          alignment: Alignment.center,
           padding: const EdgeInsets.only(left: 8, right: 8, top: 4, bottom: 4),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(10),
@@ -87,6 +88,7 @@ class _AnimateButtonState extends State<AnimateButton>
             ],
           ),
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.center,
             // add a colored edge
             children: [
