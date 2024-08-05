@@ -215,7 +215,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                   onPressed: () {
                                     Navigator.of(context).pop();
                                   },
-                                  child: const Icon(CupertinoIcons.clear_fill, size: 18, color: CupertinoColors.systemRed) // 取消图标
+                                  child: const Icon(CupertinoIcons.clear, size: 18, color: CupertinoColors.systemBlue) // 取消图标
                                 )
                               ],
                               content: Column(
