@@ -99,7 +99,7 @@ class CalendarPage extends StatelessWidget {
                     CalendarFormat.month: '显示整月',
                     CalendarFormat.week: '显示一周',
                   },
-                  headerVisible: false,
+                  headerVisible: true, //头部显示，可切换月份
                   focusedDay: _calendarController.focusedDay.value,
                   selectedDayPredicate: (day) {
                     return isSameDay(
