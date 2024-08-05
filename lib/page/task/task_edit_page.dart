@@ -38,7 +38,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
       );
       return;
     }
-
+  
     if (now.type == TaskType.fixed &&
         now.repeatType != TaskRepeatType.norepeat &&
         dateOnly(now.startTime).isAfter(dateOnly(now.repeatEndsTime))) {
@@ -200,34 +200,100 @@ class _TaskEditPageState extends State<TaskEditPage> {
                         placeholder: '结束时间',
                         textAlign: TextAlign.left,
                         controller: TextEditingController(
-                            text:
-                                '开始于 ${TimeHelper.chineseDateTime(now.startTime)}'),
+                            text:'开始于 ${TimeHelper.chineseDateTime(now.startTime)}',
+                        ),
                         readOnly: true,
                         onTap: () async {
-                          await showCupertinoModalPopup(
-                              context: context,
-                              builder: (BuildContext context) {
-                                return CupertinoPageScaffold(
-                                  child: SizedBox(
-                                    height: MediaQuery.of(context)
-                                            .copyWith()
-                                            .size
-                                            .height /
-                                        3,
-                                    child: CupertinoDatePicker(
-                                      initialDateTime: now.startTime,
-                                      use24hFormat: true,
-                                      minuteInterval: 1,
-                                      mode: CupertinoDatePickerMode.dateAndTime,
-                                      onDateTimeChanged: (DateTime newTime) {
-                                        setState(() {
-                                          now.startTime = newTime;
-                                        });
-                                      },
+                          await showCupertinoDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return CupertinoAlertDialog(
+                              title: const Text('输入日期,按回车确认'),
+                              actions: [
+                                CupertinoButton(//返回按钮
+                                  alignment: Alignment.bottomRight,
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: const Icon(CupertinoIcons.clear_fill, size: 18, color: CupertinoColors.systemRed) // 取消图标
+                                )
+                              ],
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  CupertinoTextField(
+                                    controller: TextEditingController(//以当前时间为默认时间
+                                        text: TimeHelper.time2editstr(now.startTime)),
+                                    //autofillHints: [TimeHelper.time2editstr(now.startTime)],
+                                    padding: EdgeInsets.zero,
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: CupertinoColors.inactiveGray,
+                                          width: 1,
+                                        ),
+                                      ),
                                     ),
+                                    onSubmitted:(String text){
+                                      try{
+                                        setState(() {//更新状态
+                                          now.startTime = TimeHelper.editstr2time(text);
+                                        });
+                                        Navigator.of(context).pop();
+                                      }catch(e){
+                                        //弹出提示框
+                                        showCupertinoDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return CupertinoAlertDialog(
+                                              title: Text('输入日期${text}格式错误'),
+                                              content: const Text('请按照yy/mm/dd hh:mm的格式输入日期'),
+                                              actions: <Widget>[
+                                                CupertinoDialogAction(
+                                                  child: const Text('确定'),
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      }
+                                    },
                                   ),
-                                );
-                              });
+                                ],
+                              ),
+                              
+                            );
+                          },
+                        );
+                          
+                          // await showCupertinoModalPopup(
+                          //     context: context,
+                          //     builder: (BuildContext context) {
+                          //       //改成用弹出日历界面选择日期，而不是滚轮
+                          //       return CupertinoPageScaffold(
+                          //         child: SizedBox(
+                          //           height: MediaQuery.of(context)
+                          //                   .copyWith()
+                          //                   .size
+                          //                   .height /
+                          //               3,
+                          //           child: CupertinoDatePicker(
+                          //             initialDateTime: now.startTime,
+                          //             use24hFormat: true,
+                          //             minuteInterval: 1,
+                          //             mode: CupertinoDatePickerMode.dateAndTime,
+                          //             onDateTimeChanged: (DateTime newTime) {
+                          //               setState(() {
+                          //                 now.startTime = newTime;
+                          //               });
+                          //             },
+                          //           ),
+                          //         ),
+                          //       );
+                          //     });
                         },
                       ),
                     CupertinoTextFormFieldRow(
@@ -241,25 +307,64 @@ class _TaskEditPageState extends State<TaskEditPage> {
                         await showCupertinoModalPopup(
                             context: context,
                             builder: (BuildContext context) {
-                              return CupertinoPageScaffold(
-                                child: SizedBox(
-                                  height: MediaQuery.of(context)
-                                          .copyWith()
-                                          .size
-                                          .height /
-                                      3,
-                                  child: CupertinoDatePicker(
-                                    initialDateTime: now.endTime,
-                                    use24hFormat: true,
-                                    minuteInterval: 1,
-                                    mode: CupertinoDatePickerMode.dateAndTime,
-                                    onDateTimeChanged: (DateTime newTime) {
-                                      setState(() {
-                                        now.endTime = newTime;
-                                      });
+                              return CupertinoAlertDialog(
+                              title: const Text('输入日期,按回车确认'),
+                              actions: [
+                                CupertinoButton(//返回按钮
+                                  alignment: Alignment.bottomRight,
+                                  onPressed: () {
+                                    Navigator.of(context).pop();
+                                  },
+                                  child: const Icon(CupertinoIcons.clear_fill, size: 18, color: CupertinoColors.systemRed) // 取消图标
+                                )
+                              ],
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: <Widget>[
+                                  CupertinoTextField(
+                                    controller: TextEditingController(//以当前时间为默认时间
+                                        text: TimeHelper.time2editstr(now.endTime)),
+                                    //autofillHints: [TimeHelper.time2editstr(now.startTime)],
+                                    padding: EdgeInsets.zero,
+                                    decoration: BoxDecoration(
+                                      border: Border(
+                                        bottom: BorderSide(
+                                          color: CupertinoColors.inactiveGray,
+                                          width: 1,
+                                        ),
+                                      ),
+                                    ),
+                                    onSubmitted:(String text){
+                                      try{
+                                        setState(() {//更新状态
+                                          now.endTime = TimeHelper.editstr2time(text);
+                                        });
+                                        Navigator.of(context).pop();
+                                      }catch(e){
+                                        //弹出提示框
+                                        showCupertinoDialog(
+                                          context: context,
+                                          builder: (BuildContext context) {
+                                            return CupertinoAlertDialog(
+                                              title: Text('输入日期${text}格式错误'),
+                                              content: const Text('请按照yy/mm/dd hh:mm的格式输入日期'),
+                                              actions: <Widget>[
+                                                CupertinoDialogAction(
+                                                  child: const Text('确定'),
+                                                  onPressed: () {
+                                                    Navigator.of(context).pop();
+                                                  },
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      }
                                     },
                                   ),
-                                ),
+                                ],
+                              ),
+                              
                               );
                             });
                       },
