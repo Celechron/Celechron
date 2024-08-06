@@ -13,13 +13,14 @@ import 'package:celechron/model/semester.dart';
 // import 'zjuServices/appservice.dart';
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
-
+import 'zjuServices/xzzd.dart';
 class UgrsSpider implements Spider {
   late HttpClient _httpClient;
   late String _username;
   late String _password;
   // late AppService _appService;
   late Zdbk _zdbk;
+  late Xzzd _xzzd;//同步学在浙大待办事项
   late GrsNew _grsNew;
   late TimeConfigService _timeConfigService;
   Cookie? _iPlanetDirectoryPro;
@@ -32,6 +33,7 @@ class UgrsSpider implements Spider {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     // _appService = AppService(db: _db);
     _zdbk = Zdbk();
+    _xzzd = Xzzd();
     _grsNew = GrsNew();
     _timeConfigService = TimeConfigService();
     _username = username;
@@ -72,6 +74,12 @@ class UgrsSpider implements Spider {
               .then((value) => null as String?)
               .timeout(const Duration(seconds: 8))
               .catchError((e) => "无法登录教务网，$e"),
+          _xzzd
+              .login(_httpClient, _iPlanetDirectoryPro)
+              // ignore: unnecessary_cast
+              .then((value) => null as String?)
+              .timeout(const Duration(seconds: 8))
+              .catchError((e) => "无法登录学在浙大，$e"),
           _grsNew
               .login(_httpClient, _iPlanetDirectoryPro)
               .then((value) {
@@ -97,6 +105,7 @@ class UgrsSpider implements Spider {
     _iPlanetDirectoryPro = null;
     // _appService.logout();
     _zdbk.logout();
+    _xzzd.logout();
     _grsNew.logout();
   }
 
@@ -349,7 +358,7 @@ class UgrsSpider implements Spider {
         semester.courses.remove(key);
       }
     }
-
+    
     return Tuple6(loginErrorMessages, fetchErrorMessages, outSemesters,
         outGrades, outMajorGrade, outSpecialDates);
   }
