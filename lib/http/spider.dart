@@ -3,7 +3,6 @@ import 'package:celechron/http/zjuServices/tuple.dart';
 
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/semester.dart';
-
 abstract class Spider {
 
   set db(DatabaseHelper? db);
@@ -26,4 +25,5 @@ abstract class Spider {
           Map<DateTime, String>>> getEverything() async {
     throw UnimplementedError();
   }
+
 }

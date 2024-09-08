@@ -9,11 +9,12 @@ import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/semester.dart';
-
+import 'package:celechron/model/task.dart';
 // import 'zjuServices/appservice.dart';
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
 import 'zjuServices/xzzd.dart';
+
 class UgrsSpider implements Spider {
   late HttpClient _httpClient;
   late String _username;
@@ -107,6 +108,17 @@ class UgrsSpider implements Spider {
     _zdbk.logout();
     _xzzd.logout();
     _grsNew.logout();
+  }
+
+  //获取学在浙大task
+  Future<List<Task>> getXzzdTask() async {
+    var result= await _xzzd.getXzzdTask(_httpClient);
+    //根据是否有异常来处理
+    if(result.item1!=null) {
+      return [];
+    }else{
+      return result.item2;
+    }
   }
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
@@ -215,11 +227,6 @@ class UgrsSpider implements Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));*/
-         _xzzd.getXzzdTask(_httpClient).then((value){
-            for (var e in value.item2) {
-              print(e);
-            }
-         }).catchError((e)=>print(e));
       // 本科生课
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {

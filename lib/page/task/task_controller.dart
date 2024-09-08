@@ -3,18 +3,21 @@ import 'package:get/get.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/task.dart';
 import 'package:celechron/utils/utils.dart';
-
+import 'package:celechron/model/scholar.dart';
 class TaskController extends GetxController {
+  final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final taskList = Get.find<RxList<Task>>(tag: 'taskList');
   final taskListLastUpdate =
       Get.find<Rx<DateTime>>(tag: 'taskListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
 
+   List<Task> get xzzdDeadlineList => _scholar.value.xzzdTask;
+
   List<Task> get todoDeadlineList => taskList
       .where((element) => (element.type == TaskType.deadline &&
           (element.status == TaskStatus.running ||
               element.status == TaskStatus.suspended)))
-      .toList();
+      .toList()+xzzdDeadlineList;
 
   List<Task> get doneDeadlineList => taskList
       .where((element) => (element.type == TaskType.deadline &&
