@@ -215,6 +215,11 @@ class UgrsSpider implements Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));*/
+         _xzzd.getXzzdTask(_httpClient).then((value){
+            for (var e in value.item2) {
+              print(e);
+            }
+         }).catchError((e)=>print(e));
       // 本科生课
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {

@@ -4,14 +4,15 @@ import 'package:celechron/http/zjuServices/tuple.dart';
 
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/utils/utils.dart';
-import 'package:get/get_connect/http/src/utils/utils.dart';
+//import 'package:get/get_connect/http/src/utils/utils.dart';
 // import 'package:celechron/model/session.dart';
 import '../../model/task.dart';
 import 'exceptions.dart';
 
 class Xzzd {
-  Cookie? _jSessionId;
-  Cookie? _route;
+  String? _taskurl;
+  List<Cookie>? _tasksession;
+  Cookie? _iPlanetDirectoryPro;
   DatabaseHelper? _db;
 
   set db(DatabaseHelper? db) {
@@ -19,55 +20,73 @@ class Xzzd {
   }
 
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
-    late HttpClientRequest request;
-    late HttpClientResponse response;
-
-    if (iPlanetDirectoryPro == null) {
-      throw ExceptionWithMessage("iPlanetDirectoryPro无效");
-    }
-    request = await httpClient
-        .getUrl(Uri.parse(
-            "https://zjuam.zju.edu.cn/cas/login?service=http%3A%2F%2Fzjuam.zju.edu.cn%2Fcas%2Foauth2.0%2FcallbackAuthorize"))
+    _iPlanetDirectoryPro=iPlanetDirectoryPro;
+    final request=await httpClient
+        .getUrl(Uri.parse('https://courses.zju.edu.cn/api/todos'))
         .timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("请求超时"));
-    request.followRedirects = false;
-    request.cookies.add(iPlanetDirectoryPro);
-    response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
-    response.drain();
-
-    request = await httpClient
-        .getUrl(Uri.parse(response.headers.value('location') ??
-            (throw ExceptionWithMessage("iPlanetDirectoryPro无效"))))
-        .timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    request.cookies.add(_iPlanetDirectoryPro!);
     request.followRedirects = false;
-    response = await request.close().timeout(const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("请求超时"));
-    response.drain();
+    final response = await request.close();
+    await response.drain();
+    // 检查响应状态码
+    if (response.statusCode == 302) {
+      final locationHeader = response.headers['location'];
+      //print(locationHeader);
+      final request2=await httpClient
+          .getUrl(Uri.parse(locationHeader!.first))
+          .timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      request2.cookies.addAll(response.cookies);
+      request2.followRedirects = false;
+      final response2 = await request2.close();
+      await response2.drain();
 
-    if (response.cookies.any((element) => element.name == 'JSESSIONID')) {
-      _jSessionId = response.cookies
-          .firstWhere((element) => element.name == 'JSESSIONID');
-    } else {
-      throw ExceptionWithMessage("无法获取JSESSIONID");
-    }
-    if (response.cookies.any((element) => element.name == 'route')) {
-      _route =
-          response.cookies.firstWhere((element) => element.name == 'route');
-    } else {
-      throw ExceptionWithMessage("无法获取route");
-    }
-    var p=getXzzdTask(httpClient);//for debug
-    print(p);
-    
+      final request3=await httpClient
+          .getUrl(Uri.parse(response2.headers['location']!.first))
+          .timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      request3.followRedirects=false;
+      request3.cookies.addAll(response2.cookies);
+      final response3 = await request3.close();
+      
+      final request4=await httpClient
+          .getUrl(Uri.parse(response3.headers['location']!.first))
+          .timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      request4.followRedirects=false;
+      request4.cookies.add(_iPlanetDirectoryPro!);
+      // request4.cookies.addAll(response3.cookies);
+      final response4 = await request4.close();
 
-    return true;
+      final request5=await httpClient
+          .getUrl(Uri.parse(response4.headers['location']!.first))
+          .timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      request5.followRedirects=false;
+      request5.cookies.add(_iPlanetDirectoryPro!);
+      request5.cookies.addAll(response2.cookies);
+      request5.cookies.addAll(response4.cookies);
+      final response5 = await request5.close();
+
+      final request6=await httpClient
+          .getUrl(Uri.parse(response5.headers['location']!.first))
+          .timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      request6.followRedirects=false;
+      request6.cookies.addAll(response5.cookies);
+      final response6 = await request6.close();
+      _tasksession=response6.cookies;
+      _taskurl=response6.headers['location']!.first;
+      return true;
+    }
+    return false;
   }
 
   void logout() {
-    _jSessionId = null;
-    _route = null;
+    _iPlanetDirectoryPro = null;
+    _tasksession = null;
+    _taskurl = null;
   }
   
   Future<Tuple<Exception?, List<Task>>> getXzzdTask(
@@ -76,20 +95,14 @@ class Xzzd {
     late HttpClientResponse response;
 
     try {
-      if (_jSessionId == null) {
-        throw ExceptionWithMessage("未登录");
-      }
-      request = await httpClient
-          .getUrl(Uri.parse(
-              "https://courses.zju.edu.cn/api/todos?no-intercept=true"))
+      request=await httpClient
+          .getUrl(Uri.parse(_taskurl!))
           .timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("请求超时"));
-      request.cookies.add(_jSessionId!);
-      request.cookies.add(_route!);
-      request.followRedirects = false;
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      request.cookies.addAll(_tasksession!);
+      request.followRedirects=false;
       response = await request.close().timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
-
       final taskJson=await response.transform(utf8.decoder).join();
       print(taskJson);
       final jsondecode = jsonDecode(taskJson) ;
