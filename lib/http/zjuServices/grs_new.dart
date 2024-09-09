@@ -105,7 +105,10 @@ class GrsNew {
 
       for (var rawGradeDyn in rawGrades) {
         var rawGrade = rawGradeDyn as Map<String, dynamic>;
-
+        // TODO: 增加额外的需要跳过的课程
+        if (rawGrade["xkztMc"] == "未处理") {
+          continue;
+        }
         var newGrade = Grade.empty();
         //这里使用的id和其他的不一样，直接使用sjddBz字段，
         // e.g.: 2023-2024学年冬学期<br/>班级编号xxxxx
@@ -273,6 +276,10 @@ class GrsNew {
 
               if (sessionThisDay.containsKey(classId)) {
                 sessionThisDay[classId]!.time.add(j);
+                continue;
+              }
+              // TODO: 增加还需要跳过的课程，"12"=未处理
+              if (rawClass["xkzt"] == "12") {
                 continue;
               }
 
