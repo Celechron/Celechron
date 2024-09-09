@@ -80,7 +80,9 @@ class Course {
   }
 
   bool completeSession(Session session) {
-    // 如果调用了这个函数，则表明该Course对象不是基于Session创建的。因此，其id不可能为null。
+    // 如果调用了这个函数，则表明该Course对象不是基于Session创建的。
+    // 然而，通过成绩创建的Course可能没有id，因此我们这里判断下id是否为空，为空则使用sessioin中带的id
+    id ??= session.id;
     session.id = id;
     teacher ??= session.teacher;
     if (sessions.any((e) =>
