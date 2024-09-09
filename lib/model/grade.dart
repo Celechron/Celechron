@@ -8,7 +8,7 @@ class Grade {
   late double fourPointLegacy; // 原始的四分制成绩
   late int hundredPoint; // 百分制成绩
   bool major = false; // 计入主修
-
+  bool? isOnline = false; // grs成绩使用这个字段标志是不是线上上课(hack)
   // 计入GPA（弃修、待录、缓考、二级制的不计）
   late bool gpaIncluded;
   // 计入学分（弃修、待录、缓考的不计）
@@ -71,7 +71,10 @@ class Grade {
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
     fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
     creditIncluded = original != "弃修" && original != "待录" && original != "缓考";
-    gpaIncluded = creditIncluded && original != "合格" && original != "不合格" && !id.contains('xtwkc');
+    gpaIncluded = creditIncluded &&
+        original != "合格" &&
+        original != "不合格" &&
+        !id.contains('xtwkc');
   }
 
   // 从主修成绩查询处爬取，因此打上主修标记

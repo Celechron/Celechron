@@ -16,6 +16,8 @@ class Course {
   List<Session> sessions = [];
   List<Exam> exams = [];
 
+  bool? online = false; // only used for grs
+
   Course.fromExam(ExamDto examDto) {
     id = examDto.id;
     name = examDto.name;
@@ -51,6 +53,7 @@ class Course {
   Course.fromGrsGradeWithoutID(Grade this.grade)
       : name = grade.name,
         confirmed = true,
+        online = grade.isOnline,
         credit = grade.credit;
 
   /*Course.fromDingtalkTranscript(Map<String ,dynamic> transcript)
@@ -106,6 +109,10 @@ class Course {
       incompleteSession.time.addAll(session.time);
       return false;
     } else {
+      //used for grs
+      if (online == true && session.location == null) {
+        session.location = "线上";
+      }
       sessions.add(session);
       return true;
     }
@@ -114,6 +121,13 @@ class Course {
   void completeGrade(Grade grade) {
     credit = grade.credit;
     this.grade = grade;
+    // used for grs online course
+    if (grade.isOnline == true && sessions.every((e) => e.location == null)) {
+      for (var e in sessions) {
+        e.location = "线上";
+      }
+      online = true;
+    }
   }
 
   Map<String, dynamic> toJson() {

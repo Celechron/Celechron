@@ -113,6 +113,19 @@ class GrsNew {
             rawGrade["sjddBz"] == null ? "" : rawGrade["sjddBz"] as String;
         newGrade.name = rawGrade["kcmc"] as String;
         newGrade.credit = rawGrade["xf"] as double;
+
+        if (rawGrade["bz"] != null) {
+          var comments = rawGrade["bz"] as String;
+          if (comments.contains("线上") ||
+              comments.contains("录播") ||
+              comments.contains("直播")) {
+            newGrade.isOnline = true;
+          } else {
+            newGrade.isOnline = false;
+          }
+        } else {
+          newGrade.isOnline = false;
+        }
         newGrade.fivePoint = 0.0;
         newGrade.fourPoint = 0.0;
         newGrade.fourPointLegacy = 0.0;
