@@ -109,8 +109,10 @@ class Xzzd {
       if(jsondecode==null) throw ExceptionWithMessage("解析json失败");
       List<Task> tasklist=[];
       for(var task in jsondecode['todo_list']){
+        if(task['end_time']==null) continue;
         tasklist.add(Task(
           status:TaskStatus.running,
+          location: "xzzd",
           description: (
            task['type']=='exam'?
            'https://courses.zju.edu.cn/course/${task['course_id']}/learning-activity#/exam/${task['id']}':
