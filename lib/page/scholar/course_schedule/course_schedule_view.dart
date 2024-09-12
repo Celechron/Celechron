@@ -409,7 +409,19 @@ class CourseSchedulePage extends StatelessWidget {
       int sl = s.time.first, sr = s.time.last;
       for (int i = 0; i < period.length; i++) {
         if (!(period[i].item2 < sl || sr < period[i].item1)) {
-          sessionList[i].add(s);
+          bool added = false;
+          for (var t in sessionList[i]) {
+            if (t.id == s.id) {
+              added = true;
+              Set<int> timeSet = Set.from(t.time);
+              timeSet.addAll(s.time);
+              t.time = List.from(timeSet);
+              break;
+            }
+          }
+          if (!added) {
+            sessionList[i].add(s);
+          }
         }
       }
     }

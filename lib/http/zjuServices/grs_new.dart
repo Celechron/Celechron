@@ -105,7 +105,10 @@ class GrsNew {
 
       for (var rawGradeDyn in rawGrades) {
         var rawGrade = rawGradeDyn as Map<String, dynamic>;
-
+        // TODO: 增加额外的需要跳过的课程
+        if (rawGrade["xkztMc"] == "未处理") {
+          continue;
+        }
         var newGrade = Grade.empty();
         //这里使用的id和其他的不一样，直接使用sjddBz字段，
         // e.g.: 2023-2024学年冬学期<br/>班级编号xxxxx
@@ -113,6 +116,19 @@ class GrsNew {
             rawGrade["sjddBz"] == null ? "" : rawGrade["sjddBz"] as String;
         newGrade.name = rawGrade["kcmc"] as String;
         newGrade.credit = rawGrade["xf"] as double;
+
+        if (rawGrade["bz"] != null) {
+          var comments = rawGrade["bz"] as String;
+          if (comments.contains("线上") ||
+              comments.contains("录播") ||
+              comments.contains("直播")) {
+            newGrade.isOnline = true;
+          } else {
+            newGrade.isOnline = false;
+          }
+        } else {
+          newGrade.isOnline = false;
+        }
         newGrade.fivePoint = 0.0;
         newGrade.fourPoint = 0.0;
         newGrade.fourPointLegacy = 0.0;
@@ -260,6 +276,10 @@ class GrsNew {
 
               if (sessionThisDay.containsKey(classId)) {
                 sessionThisDay[classId]!.time.add(j);
+                continue;
+              }
+              // TODO: 增加还需要跳过的课程，"12"=未处理
+              if (rawClass["xkzt"] == "12") {
                 continue;
               }
 

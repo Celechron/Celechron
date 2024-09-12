@@ -16,6 +16,8 @@ class Course {
   List<Session> sessions = [];
   List<Exam> exams = [];
 
+  bool? online = false; // only used for grs
+
   Course.fromExam(ExamDto examDto) {
     id = examDto.id;
     name = examDto.name;
@@ -51,6 +53,7 @@ class Course {
   Course.fromGrsGradeWithoutID(Grade this.grade)
       : name = grade.name,
         confirmed = true,
+        online = grade.isOnline,
         credit = grade.credit;
 
   /*Course.fromDingtalkTranscript(Map<String ,dynamic> transcript)
@@ -80,7 +83,9 @@ class Course {
   }
 
   bool completeSession(Session session) {
-    // 如果调用了这个函数，则表明该Course对象不是基于Session创建的。因此，其id不可能为null。
+    // 如果调用了这个函数，则表明该Course对象不是基于Session创建的。
+    // 然而，通过成绩创建的Course可能没有id，因此我们这里判断下id是否为空，为空则使用sessioin中带的id
+    id ??= session.id;
     session.id = id;
     teacher ??= session.teacher;
     if (sessions.any((e) =>
@@ -104,6 +109,10 @@ class Course {
       incompleteSession.time.addAll(session.time);
       return false;
     } else {
+      //used for grs
+      if (online == true && session.location == null) {
+        session.location = "线上";
+      }
       sessions.add(session);
       return true;
     }
@@ -112,6 +121,13 @@ class Course {
   void completeGrade(Grade grade) {
     credit = grade.credit;
     this.grade = grade;
+    // used for grs online course
+    if (grade.isOnline == true && sessions.every((e) => e.location == null)) {
+      for (var e in sessions) {
+        e.location = "线上";
+      }
+      online = true;
+    }
   }
 
   Map<String, dynamic> toJson() {
