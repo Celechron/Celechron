@@ -84,8 +84,11 @@ struct ECardWidgetProvider: TimelineProvider {
             do {
                 if let jsonDict = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                     let data = jsonDict["data"] as? [String: Any]
+                    if(data == nil) { return }
                     let card = data!["card"] as? [[String: Any]]
+                    if(card == nil) { return }
                     let balance = card![0]["db_balance"] as? Int
+                    if(balance == nil) { return }
                     completion(Timeline(entries: [ECardEntry(date: Date(), balance: balance!)], policy: .after(Date(timeIntervalSinceNow: 1800))))
                 } else {
                     return
@@ -103,7 +106,7 @@ struct ECardWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: ECardWidgetProvider()) { entry in
             ECardWidgetView(entry: entry)
-                .widgetBackground(LinearGradient(gradient: Gradient(colors: [.blue.opacity(0.2), .blue.opacity(0.4)]), startPoint: .top, endPoint: .bottom))
+                .widgetBackground(Color(UIColor.tertiarySystemFill))
         }.supportedFamilies([.systemSmall])
     }
 }
@@ -112,7 +115,11 @@ struct ECardWidgetView: View {
     let entry: ECardWidgetProvider.Entry
     
     var body: some View {
-        let balanceString = entry.balance > 0 ? String(format: "%d.%d元", arguments: [entry.balance / 100, entry.balance % 100]) : "待刷新"
+        let balanceString = entry.balance > 0 ? 
+                                entry.balance < 10000 ?
+                                    String(format: "%d.%d元", arguments: [entry.balance / 100, entry.balance % 100])
+                                  : String(format: "%d.%d元", arguments: [entry.balance / 100, entry.balance % 100 / 10])
+                            : "待刷新"
         VStack(alignment: .leading) {
             HStack {
                 Image(systemName: "creditcard")
@@ -124,7 +131,7 @@ struct ECardWidgetView: View {
             Spacer().frame(height: 8)
             
             if #available(iOSApplicationExtension 16.1, *) {
-                Text(balanceString).font(.title.bold())
+                Text(balanceString).font(.title).bold()
                     .fontDesign(.rounded)
             } else {
                 Text(balanceString).font(.title.bold())
@@ -154,5 +161,5 @@ extension Date {
 #Preview(as: .systemSmall) {
     ECardWidget()
 } timeline: {
-    ECardEntry(date: Date(), balance: 29817)
+    ECardEntry(date: Date(), balance: 18776)
 }
