@@ -75,74 +75,77 @@ class CalendarPage extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(bottom: 5, left: 12, right: 12),
               child: Obx(
-                () => TableCalendar(
-                  locale: 'zh_CN',
-                  firstDay: DateTime.utc(2022, 9, 1),
-                  lastDay: DateTime.utc(2030, 12, 31),
-                  rowHeight: 48.0,
-                  daysOfWeekHeight: 20.0,
-                  startingDayOfWeek: StartingDayOfWeek.monday,
-                  daysOfWeekStyle: DaysOfWeekStyle(
-                    dowTextFormatter: (date, locale) => <String>[
-                      '',
-                      '一',
-                      '二',
-                      '三',
-                      '四',
-                      '五',
-                      '六',
-                      '日'
-                    ][date.weekday],
-                  ),
-                  availableGestures: AvailableGestures.all,
-                  availableCalendarFormats: const {
-                    CalendarFormat.month: '显示整月',
-                    CalendarFormat.week: '显示一周',
-                  },
-                  headerVisible: true, //头部显示，可切换月份
-                  focusedDay: _calendarController.focusedDay.value,
-                  selectedDayPredicate: (day) {
-                    return isSameDay(
-                        _calendarController.selectedDay.value, day);
-                  },
-                  calendarFormat: _calendarController.calendarFormat.value,
-                  onPageChanged: (focusedDay) {
-                    _calendarController.focusedDay.value = focusedDay;
-                  },
-                  onDaySelected: (selectedDay, focusedDay) {
-                    _calendarController.focusedDay.value = focusedDay;
-                    _calendarController.selectedDay.value = selectedDay;
-                    _calendarController.focusedDay.refresh();
-                  },
-                  onFormatChanged: (format) {
-                    _calendarController.calendarFormat.value = format;
-                  },
-                  eventLoader: (day) {
-                    return _calendarController.getEventsForDay(day);
-                  },
-                  calendarStyle: CalendarStyle(
-                    markersAnchor: -0.1,
-                    markersMaxCount: 10,
-                    selectedDecoration: BoxDecoration(
-                      color: CupertinoDynamicColor.resolve(
-                          CupertinoColors.activeBlue.withOpacity(0.5), context),
-                      shape: BoxShape.circle,
+                () => Material(//需要一个Material包裹，否则会报错
+                  type: MaterialType.transparency,
+                  child: TableCalendar(
+                    locale: 'zh_CN',
+                    firstDay: DateTime.utc(2022, 9, 1),
+                    lastDay: DateTime.utc(2030, 12, 31),
+                    rowHeight: 48.0,
+                    daysOfWeekHeight: 20.0,
+                    startingDayOfWeek: StartingDayOfWeek.monday,
+                    daysOfWeekStyle: DaysOfWeekStyle(
+                      dowTextFormatter: (date, locale) => <String>[
+                        '',
+                        '一',
+                        '二',
+                        '三',
+                        '四',
+                        '五',
+                        '六',
+                        '日'
+                      ][date.weekday],
                     ),
-                    selectedTextStyle:
-                        CupertinoTheme.of(context).textTheme.textStyle,
-                    todayDecoration: BoxDecoration(
-                      color: CupertinoDynamicColor.resolve(
-                          CupertinoColors.inactiveGray.withOpacity(0.5),
-                          context),
-                      shape: BoxShape.circle,
+                    availableGestures: AvailableGestures.all,
+                    availableCalendarFormats: const {
+                      CalendarFormat.month: '显示整月',
+                      CalendarFormat.week: '显示一周',
+                    },
+                    headerVisible: true, //头部显示，可切换月份
+                    focusedDay: _calendarController.focusedDay.value,
+                    selectedDayPredicate: (day) {
+                      return isSameDay(
+                          _calendarController.selectedDay.value, day);
+                    },
+                    calendarFormat: _calendarController.calendarFormat.value,
+                    onPageChanged: (focusedDay) {
+                      _calendarController.focusedDay.value = focusedDay;
+                    },
+                    onDaySelected: (selectedDay, focusedDay) {
+                      _calendarController.focusedDay.value = focusedDay;
+                      _calendarController.selectedDay.value = selectedDay;
+                      _calendarController.focusedDay.refresh();
+                    },
+                    onFormatChanged: (format) {
+                      _calendarController.calendarFormat.value = format;
+                    },
+                    eventLoader: (day) {
+                      return _calendarController.getEventsForDay(day);
+                    },
+                    calendarStyle: CalendarStyle(
+                      markersAnchor: -0.1,
+                      markersMaxCount: 10,
+                      selectedDecoration: BoxDecoration(
+                        color: CupertinoDynamicColor.resolve(
+                            CupertinoColors.activeBlue.withOpacity(0.5), context),
+                        shape: BoxShape.circle,
+                      ),
+                      selectedTextStyle:
+                          CupertinoTheme.of(context).textTheme.textStyle,
+                      todayDecoration: BoxDecoration(
+                        color: CupertinoDynamicColor.resolve(
+                            CupertinoColors.inactiveGray.withOpacity(0.5),
+                            context),
+                        shape: BoxShape.circle,
+                      ),
+                      todayTextStyle:
+                          CupertinoTheme.of(context).textTheme.textStyle,
+                      defaultTextStyle:
+                          CupertinoTheme.of(context).textTheme.textStyle,
                     ),
-                    todayTextStyle:
-                        CupertinoTheme.of(context).textTheme.textStyle,
-                    defaultTextStyle:
-                        CupertinoTheme.of(context).textTheme.textStyle,
-                  ),
-                  calendarBuilders: const CalendarBuilders(
-                    singleMarkerBuilder: singleMarkerBuilder,
+                    calendarBuilders: const CalendarBuilders(
+                      singleMarkerBuilder: singleMarkerBuilder,
+                    ),
                   ),
                 ),
               ),

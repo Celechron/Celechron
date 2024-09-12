@@ -104,7 +104,7 @@ class Xzzd {
       response = await request.close().timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
       final taskJson=await response.transform(utf8.decoder).join();
-      print(taskJson);
+      //print(taskJson);
       final jsondecode = jsonDecode(taskJson) ;
       if(jsondecode==null) throw ExceptionWithMessage("解析json失败");
       List<Task> tasklist=[];
