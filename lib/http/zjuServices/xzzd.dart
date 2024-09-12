@@ -112,8 +112,8 @@ class Xzzd {
         if(task['end_time']==null) continue;
         tasklist.add(Task(
           status:TaskStatus.running,
-          location: "xzzd",
-          description: (
+          description: "xzzd",
+          location: (
            task['type']=='exam'?
            'https://courses.zju.edu.cn/course/${task['course_id']}/learning-activity#/exam/${task['id']}':
            'https://courses.zju.edu.cn/course/${task['course_id']}/learning-activity#/${task['id']}' 

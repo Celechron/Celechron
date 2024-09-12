@@ -11,7 +11,7 @@ import 'package:celechron/model/task.dart';
 import 'task_edit_page.dart';
 import 'dart:async';
 import 'package:get/get.dart';
-
+import 'package:url_launcher/url_launcher_string.dart';
 class TaskPage extends StatelessWidget {
   TaskPage({super.key});
 
@@ -137,6 +137,16 @@ class TaskPage extends StatelessWidget {
                   _taskController.taskList.refresh();
                 },
                 child: const Text('删除'),
+              ),
+            if(deadline.description == "xzzd")
+              CupertinoDialogAction(
+                onPressed: () async {
+                  await launchUrlString(
+                    deadline.location,
+                    mode: LaunchMode.externalApplication,
+                  );
+                },
+                child: const Text('打开学在浙大网页'),
               ),
           ],
         );

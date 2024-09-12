@@ -69,7 +69,7 @@ class TaskController extends GetxController {
     if(updateXzzd){
       //删除原有的xzzd任务
       taskList.removeWhere(
-        (element) => element.location=="xzzd" //这里应该给Task增加一个属性，但是要改的地方太多了，所以就这样了
+        (element) => element.description=="xzzd" //这里应该给Task增加一个属性，但是要改的地方太多了，所以就这样了
       );
       newDeadlineList=_scholar.value.xzzdTask;
     }

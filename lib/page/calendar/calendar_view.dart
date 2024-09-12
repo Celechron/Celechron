@@ -76,7 +76,7 @@ class CalendarPage extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 5, left: 12, right: 12),
               child: Obx(
                 () => Material(//需要一个Material包裹，否则会报错
-                  type: MaterialType.transparency,
+                  type: MaterialType.transparency,//透明材质,不影响原有的颜色
                   child: TableCalendar(
                     locale: 'zh_CN',
                     firstDay: DateTime.utc(2022, 9, 1),
