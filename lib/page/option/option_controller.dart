@@ -21,7 +21,7 @@ class OptionController extends GetxController {
   void onInit() {
     super.onInit();
     if (option.pushOnGradeChange.value) {
-      try{
+      //try{
         Workmanager()
             .initialize(callbackDispatcher)
             .then((value) => Workmanager().registerPeriodicTask(
@@ -33,9 +33,9 @@ class OptionController extends GetxController {
             .then((value) {
           if (Platform.isIOS) return Workmanager().printScheduledTasks();
         });
-      } catch (e) {
-        // ignore on windows :.MissingPluginException (MissingPluginException(No implementation found for method initialize on channel be.tramckrijte.workmanager/foreground_channel_work_manager))
-      }
+      // } catch (e) {
+      //   // ignore on windows :.MissingPluginException (MissingPluginException(No implementation found for method initialize on channel be.tramckrijte.workmanager/foreground_channel_work_manager))
+      // }
     } else {
       Workmanager()
           .cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch')

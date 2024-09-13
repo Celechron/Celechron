@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/cupertino.dart';
 import 'package:celechron/model/task.dart';
 import 'package:celechron/utils/utils.dart';
@@ -204,6 +206,35 @@ class _TaskEditPageState extends State<TaskEditPage> {
                         ),
                         readOnly: true,
                         onTap: () async {
+                          //如果是Windows,就用输入框选择日期，否则用滚轮
+                          if(!Platform.isWindows){
+                            await showCupertinoModalPopup(
+                              context: context,
+                              builder: (BuildContext context) {
+                                //用滚轮
+                                return CupertinoPageScaffold(
+                                  child: SizedBox(
+                                    height: MediaQuery.of(context)
+                                            .copyWith()
+                                            .size
+                                            .height /
+                                        3,
+                                    child: CupertinoDatePicker(
+                                      initialDateTime: now.startTime,
+                                      use24hFormat: true,
+                                      minuteInterval: 1,
+                                      mode: CupertinoDatePickerMode.dateAndTime,
+                                      onDateTimeChanged: (DateTime newTime) {
+                                        setState(() {
+                                          now.startTime = newTime;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                );
+                              });
+                            return;
+                          }
                           await showCupertinoDialog(
                           context: context,
                           builder: (BuildContext context) {
@@ -269,31 +300,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                           },
                         );
                           
-                          // await showCupertinoModalPopup(
-                          //     context: context,
-                          //     builder: (BuildContext context) {
-                          //       //改成用弹出日历界面选择日期，而不是滚轮
-                          //       return CupertinoPageScaffold(
-                          //         child: SizedBox(
-                          //           height: MediaQuery.of(context)
-                          //                   .copyWith()
-                          //                   .size
-                          //                   .height /
-                          //               3,
-                          //           child: CupertinoDatePicker(
-                          //             initialDateTime: now.startTime,
-                          //             use24hFormat: true,
-                          //             minuteInterval: 1,
-                          //             mode: CupertinoDatePickerMode.dateAndTime,
-                          //             onDateTimeChanged: (DateTime newTime) {
-                          //               setState(() {
-                          //                 now.startTime = newTime;
-                          //               });
-                          //             },
-                          //           ),
-                          //         ),
-                          //       );
-                          //     });
+                          
                         },
                       ),
                     CupertinoTextFormFieldRow(
@@ -304,6 +311,33 @@ class _TaskEditPageState extends State<TaskEditPage> {
                               '${now.type == TaskType.deadline ? '截止于' : '结束于'} ${TimeHelper.chineseDateTime(now.endTime)}'),
                       readOnly: true,
                       onTap: () async {
+                        if(!Platform.isWindows){
+                            await showCupertinoModalPopup(
+                              context: context,
+                              builder: (BuildContext context) {
+                                //用滚轮
+                                return CupertinoPageScaffold(
+                                  child: SizedBox(
+                                    height: MediaQuery.of(context)
+                                            .copyWith()
+                                            .size
+                                            .height /3,
+                                    child: CupertinoDatePicker(
+                                      initialDateTime: now.startTime,
+                                      use24hFormat: true,
+                                      minuteInterval: 1,
+                                      mode: CupertinoDatePickerMode.dateAndTime,
+                                      onDateTimeChanged: (DateTime newTime) {
+                                        setState(() {
+                                          now.startTime = newTime;
+                                        });
+                                      },
+                                    ),
+                                  ),
+                                );
+                              });
+                            return;
+                          }
                         await showCupertinoModalPopup(
                             context: context,
                             builder: (BuildContext context) {

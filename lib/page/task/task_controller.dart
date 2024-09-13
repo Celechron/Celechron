@@ -30,13 +30,13 @@ class TaskController extends GetxController {
   void onInit() {
     updateDeadlineList(updateXzzd: true);
     Timer.periodic(const Duration(seconds: 1), (Timer t) {
-      updateDeadlineList(updateXzzd: false);
-      refreshDeadlineList();
-    });
-    Timer.periodic(const Duration(seconds: 10), (Timer t) {
       updateDeadlineList(updateXzzd: true);
       refreshDeadlineList();
     });
+    // Timer.periodic(const Duration(seconds: 10), (Timer t) {
+    //   updateDeadlineList(updateXzzd: true);
+    //   refreshDeadlineList();
+    // });
     super.onInit();
   }
 
