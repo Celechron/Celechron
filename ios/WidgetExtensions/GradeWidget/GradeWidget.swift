@@ -35,7 +35,7 @@ struct GradeWidgetProvider: TimelineProvider {
         completion(GradeEntry(refreshAt: Date(), location: nil, name: nil, startTime: Date(timeIntervalSinceNow: 3600), endTime: nil))
     }
     
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
+    func getTimeline(in context: Context, completion: @escaping (Timeline<GradeEntry>) -> Void) {
         // 读取UserDefaults中的flowList项
         #if DEBUG
         let userDefaults = UserDefaults(suiteName: "group.top.celechron.celechron.debug")

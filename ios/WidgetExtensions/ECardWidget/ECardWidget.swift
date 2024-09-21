@@ -18,7 +18,7 @@ struct ECardWidgetProvider: TimelineProvider {
         ECardEntry(date: Date(), balance: 1897)
     }
     
-    func getSnapshot(in context: Context, completion: @escaping (Entry) -> Void) {
+    func getSnapshot(in context: Context, completion: @escaping (ECardEntry) -> Void) {
         completion(ECardEntry(date: Date(), balance: 1897))
     }
     
@@ -157,7 +157,7 @@ extension Date {
     }
 }
 
-@available(iOS 17.0, *)
+@available(iOS 18.0, *)
 #Preview(as: .systemSmall) {
     ECardWidget()
 } timeline: {

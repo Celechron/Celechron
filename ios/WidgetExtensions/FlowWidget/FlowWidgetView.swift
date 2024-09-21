@@ -140,7 +140,7 @@ struct MultiFlowView: View {
     }
 }
 
-@available(iOS 17.0, *)
+@available(iOS 18.0, *)
 #Preview(as: .systemSmall) {
     FlowWidget()
 } timeline: {

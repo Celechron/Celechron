@@ -72,7 +72,7 @@ struct FlowWidgetProvider: TimelineProvider {
         completion(FlowEntry(refreshAt: Date(), toDisplay: [Flow(location: "紫金港西1-216", name: "信号与系统", startTime: Date().addingTimeInterval(-3600), endTime: Date().addingTimeInterval(1500))], stillToDoToday: 0))
     }
     
-    func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
+    func getTimeline(in context: Context, completion: @escaping (Timeline<FlowEntry>) -> Void) {
         // 读取UserDefaults中的flowList项
         #if DEBUG
         let userDefaults = UserDefaults(suiteName: "group.top.celechron.celechron.debug")
