@@ -283,6 +283,15 @@ class GrsNew {
                 continue;
               }
 
+              // 研究生教务系统的课表在改版之后就是依托答辩，哪个没脑子的能想出来把调休的课单独列出来？
+              // 课表和狗皮膏药一样完全读不懂，“秋冬1,2,4,5,6,7,8,9,10,11,12,13,14,15,16周上课”这玩意儿是给人看的？
+              String weekExtra = rawClass["zc"] as String;
+              weekExtra = weekExtra.replaceAll(RegExp(r"[^\d,]"), "");
+              List<int> weekExtraList = weekExtra.split(",").map(int.parse).toList();
+              if(weekExtraList.length <= 2) {
+                continue;
+              }
+
               int classSemester = int.parse(rawClass["pkxq"] ?? "$semester");
               var newSession = Session.empty();
               newSession.id = sessionId;
@@ -293,7 +302,7 @@ class GrsNew {
               newSession.confirmed = true;
               newSession.dayOfWeek = i;
               newSession.time = [j];
-              String weekExtra = rawClass["zc"] as String;
+
               if (semester == 11 || semester == 13) {
                 newSession.firstHalf = true;
               } else {
@@ -302,12 +311,17 @@ class GrsNew {
               if (classSemester == 15 || classSemester == 16) {
                 newSession.firstHalf = newSession.secondHalf = true;
               }
-              if (weekExtra.contains("1,2") || weekExtra.contains("9,10")) {
+
+              var threshold = (newSession.firstHalf && newSession.secondHalf) ? 8 : 4;
+              if(weekExtraList.length > threshold) {
                 newSession.oddWeek = newSession.evenWeek = true;
-              } else if (weekExtra.contains("1") || weekExtra.contains("9")) {
-                newSession.oddWeek = true;
               } else {
-                newSession.evenWeek = true;
+                int oddWeekCount = weekExtraList.where((e) => e % 2 == 1).length;
+                if (oddWeekCount > weekExtraList.length / 2) {
+                  newSession.oddWeek = true;
+                } else {
+                  newSession.evenWeek = true;
+                }
               }
 
               sessionThisDay[classId] = newSession;
