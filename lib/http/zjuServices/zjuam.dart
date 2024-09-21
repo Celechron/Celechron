@@ -74,7 +74,6 @@ class ZjuAm {
       response = await request.close().timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
       response.drain();
-
       if (response.cookies.any((element) =>
       element.name == 'iPlanetDirectoryPro')) {
         return response.cookies

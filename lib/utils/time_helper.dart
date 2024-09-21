@@ -75,4 +75,18 @@ class TimeHelper {
       return chineseDay(date);
     }
   }
+  static String pad0(int number){
+    return number.toString().padLeft(2,'0');
+  }
+  static String time2editstr(DateTime dateTime) {
+    return '${dateTime.year}-${pad0(dateTime.month)}-${pad0(dateTime.day)} ${pad0(dateTime.hour)}:${pad0(dateTime.minute)}';
+  }
+  static DateTime editstr2time(String string){
+    try{
+      var dateTime = DateTime.parse(string);
+      return dateTime;
+    }catch(e){
+      rethrow;
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import 'period.dart';
 import 'grade.dart';
 import 'semester.dart';
+import 'task.dart'; //引入和xzzd task有关
 import 'package:celechron/utils/gpa_helper.dart';
 import 'package:celechron/http/spider.dart';
 import 'package:celechron/http/ugrs_spider.dart';
@@ -47,6 +48,9 @@ class Scholar {
 
   // 特殊日期
   Map<DateTime, String> specialDates = {};
+
+  //学在浙大的任务
+  List<Task> xzzdTask= <Task>[];
 
   int get gradedCourseCount {
     return grades.values.fold(0, (p, e) => p + e.length);
@@ -123,6 +127,13 @@ class Scholar {
       return [];
     }
     _mutex++;
+    
+    if(!isGrs){ //如果spider是ugrsSpider，则调用getXzzdTask
+      //把spider特化为ugrsSpider，并调用getXzzdTask
+      var ugrsSpider = _spider as UgrsSpider;
+      var result = await ugrsSpider.getXzzdTask();
+      xzzdTask = result; //todo:异常处理
+    }
     return await _spider?.getEverything().then((value) async {
       for (var e in value.item1) {
         // ignore: avoid_print

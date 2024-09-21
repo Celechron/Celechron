@@ -267,7 +267,7 @@ class OptionPage extends StatelessWidget {
                       child: Text('关于', style: headerFooterTextStyle)),
                   children: <CupertinoListTile>[
                     CupertinoListTile(
-                      title: const Text('关于 Celechron'),
+                      title: const Text('关于 Celechron(For Windows)'),
                       trailing: BackChervonRow(
                         child: Text(_optionController.celechronVersion,
                             style: trailingTextStyle),
@@ -301,7 +301,7 @@ class OptionPage extends StatelessWidget {
                       },
                     ),
                     CupertinoListTile(
-                      title: const Text('前往项目网站'),
+                      title: const Text('前往Celechron原项目网站'),
                       trailing: BackChervonRow(
                         child: Obx(() {
                           if (_optionController.hasNewVersion) {
@@ -328,6 +328,34 @@ class OptionPage extends StatelessWidget {
                         );
                       },
                     ),
+                    CupertinoListTile(
+                      title: const Text('前往Celechron For Windows项目网站'),
+                      trailing: BackChervonRow(
+                        child: Obx(() {
+                          if (_optionController.hasNewVersion) {
+                            return Row(children: [
+                              Container(
+                                margin: const EdgeInsets.only(right: 4),
+                                width: 8,
+                                height: 8,
+                                decoration: BoxDecoration(
+                                    color: CupertinoColors.systemRed,
+                                    borderRadius: BorderRadius.circular(4)),
+                              ),
+                              Text('有新版本可用', style: trailingTextStyle)
+                            ]);
+                          } else {
+                            return const Text('');
+                          }
+                        }),
+                      ),
+                      onTap: () async {
+                        await launchUrlString(
+                          'https://github.com/birchtree2/Celechron-for-windows',
+                          mode: LaunchMode.externalApplication,
+                        );
+                      },
+                    )
                   ]),
             )
           ],

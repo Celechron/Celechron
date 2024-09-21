@@ -22,17 +22,23 @@ class ECardWidgetMessenger {
     if(iPlanetDirectoryPro == null) return;
 
     var synjonesAuth = await ECard.getSynjonesAuth(httpClient, iPlanetDirectoryPro);
+    var eCardAccount = await ECard.getAccount(httpClient, synjonesAuth);
     await secureStorage.write(key: 'synjonesAuth', value: synjonesAuth, iOptions: secureStorageIOSOptions);
+    await secureStorage.write(key: 'eCardAccount', value: eCardAccount, iOptions: secureStorageIOSOptions);
 
-    const platform = MethodChannel('top.celechron.celechron/ecardWidget');
-    await platform.invokeMethod('update');
+    if(Platform.isIOS) {
+      const platform = MethodChannel('top.celechron.celechron/ecardWidget');
+      await platform.invokeMethod('update');
+    }
   }
 
   static Future<void> logout() async {
     var secureStorage = const FlutterSecureStorage();
     await secureStorage.delete(key: 'synjonesAuth', iOptions: secureStorageIOSOptions);
 
-    const platform = MethodChannel('top.celechron.celechron/ecardWidget');
-    await platform.invokeMethod('logout');
+    if(Platform.isIOS) {
+      const platform = MethodChannel('top.celechron.celechron/ecardWidget');
+      await platform.invokeMethod('logout');
+    }
   }
 }

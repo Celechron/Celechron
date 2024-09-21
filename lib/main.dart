@@ -233,9 +233,11 @@ class _HomePageState extends State<HomePage> {
       offstage: _indexNum != index,
       child: TickerMode(
         enabled: _indexNum == index,
-        child: GestureDetector(
+        // child: null
+        child: GestureDetector( 
+          //禁用主界面的手势前后滑动，因为会跟calendar冲突
           onPanUpdate: (details) {
-            int sensitivity = 4;
+            int sensitivity = 4; 
             if (details.delta.dy > sensitivity / 2 ||
                 details.delta.dy < -sensitivity / 2) {
               return;

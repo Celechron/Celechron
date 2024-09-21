@@ -525,6 +525,38 @@ class ScholarPage extends StatelessWidget {
                         // Do not popup the keyboard
                       ),
                     ),
+                    CupertinoButton(
+                      onPressed: () async{
+                        var error = await _scholarController.fetchData();
+                        if (error.any((e) => e != null)) {
+                          if (context.mounted) {
+                            showCupertinoDialog(
+                                context: context,
+                                builder: (context) {
+                                  return CupertinoAlertDialog(
+                                    title: const Text('刷新失败'),
+                                    content: Text(error
+                                        .where((e) => e != null)
+                                        .fold('', (p, v) => '$p\n$v')
+                                        .trim()),
+                                    actions: [
+                                      CupertinoDialogAction(
+                                        child: const Text('确定'),
+                                        onPressed: () async {
+                                          Navigator.of(context).pop();
+                                        },
+                                      )
+                                    ],
+                                  );
+                                });
+                          }
+                        }
+                      },
+                      child: const Icon(
+                        CupertinoIcons.refresh_circled,
+                        size: 20,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),

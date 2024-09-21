@@ -3,13 +3,13 @@ import 'package:get/get.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/task.dart';
 import 'package:celechron/utils/utils.dart';
-
+import 'package:celechron/model/scholar.dart';
 class TaskController extends GetxController {
   final taskList = Get.find<RxList<Task>>(tag: 'taskList');
   final taskListLastUpdate =
       Get.find<Rx<DateTime>>(tag: 'taskListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
-
+  final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   List<Task> get todoDeadlineList => taskList
       .where((element) => (element.type == TaskType.deadline &&
           (element.status == TaskStatus.running ||
@@ -28,11 +28,15 @@ class TaskController extends GetxController {
 
   @override
   void onInit() {
-    updateDeadlineList();
+    updateDeadlineList(updateXzzd: true);
     Timer.periodic(const Duration(seconds: 1), (Timer t) {
-      updateDeadlineList();
+      updateDeadlineList(updateXzzd: true);
       refreshDeadlineList();
     });
+    // Timer.periodic(const Duration(seconds: 10), (Timer t) {
+    //   updateDeadlineList(updateXzzd: true);
+    //   refreshDeadlineList();
+    // });
     super.onInit();
   }
 
@@ -54,12 +58,21 @@ class TaskController extends GetxController {
     taskListLastUpdate.value = DateTime.now();
   }
 
-  void updateDeadlineList() {
+  void updateDeadlineList({bool updateXzzd=false}) {
     taskList.removeWhere(
         (element) => element.status == TaskStatus.deleted);
-
+    // taskList.removeWhere(
+    //   (element) => element.timeNeeded==const Duration(days: 0, hours: 2, minutes: 30)
+    // );
     Set<String> existingUid = {};
     List<Task> newDeadlineList = [];
+    if(updateXzzd){
+      //删除原有的xzzd任务
+      taskList.removeWhere(
+        (element) => element.description=="xzzd" //这里应该给Task增加一个属性，但是要改的地方太多了，所以就这样了
+      );
+      newDeadlineList=_scholar.value.xzzdTask;
+    }
     for (var deadline in taskList) {
       deadline.refreshStatus();
       if (deadline.type == TaskType.deadline) {

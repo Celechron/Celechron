@@ -430,7 +430,7 @@ class FlowController extends GetxController {
       }
     }
 
-    if (Platform.isIOS || Platform.isMacOS) {
+    if (Platform.isIOS) {
       _flowMessenger.transfer(FlowMessage(flowListDto: flowListDto));
     }
   }

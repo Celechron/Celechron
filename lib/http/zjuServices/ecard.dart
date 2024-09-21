@@ -5,8 +5,7 @@ import 'dart:convert';
 import 'exceptions.dart';
 
 class ECard {
-  static Future<String> getSynjonesAuth(
-      HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
+  static Future<String> getSynjonesAuth(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
 
     late HttpClientRequest request;
     late HttpClientResponse response;
@@ -53,14 +52,30 @@ class ECard {
     }
   }
 
-  static Future<String> getBarcode(
-      HttpClient httpClient, String synjonesAuth) async {
+  static Future<String> getAccount(HttpClient httpClient, String synjonesAuth) async {
 
     late HttpClientRequest request;
     late HttpClientResponse response;
 
     request = await httpClient
-        .getUrl(Uri.parse("https://ecard.zju.edu.cn/berserker-app/ykt/tsm/getBarCode?payacc=001&paytype=1&synAccessSource=app"))
+        .getUrl(Uri.parse("https://ecard.zju.edu.cn/berserker-app/ykt/tsm/getCampusCards"))
+        .timeout(const Duration(seconds: 8),
+        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    request.headers.add("Synjones-Auth", "Bearer $synjonesAuth");
+    response = await request.close().timeout(const Duration(seconds: 8),
+        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+
+    var accountJson = await response.transform(utf8.decoder).join();
+    var account = jsonDecode(accountJson)['data']['card'][0]['account'];
+    return account;
+  }
+
+  static Future<String> getBarcode(HttpClient httpClient, String synjonesAuth, String eCardAccount) async {
+    late HttpClientRequest request;
+    late HttpClientResponse response;
+
+    request = await httpClient
+        .getUrl(Uri.parse("https://ecard.zju.edu.cn/berserker-app/ykt/tsm/getBarCode?account=$eCardAccount&payacc=001&paytype=1&synAccessSource=app"))
         .timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时1"));
     request.headers.add("synjones-auth", "bearer $synjonesAuth");

@@ -9,10 +9,11 @@ import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/semester.dart';
-
+import 'package:celechron/model/task.dart';
 // import 'zjuServices/appservice.dart';
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
+import 'zjuServices/xzzd.dart';
 
 class UgrsSpider implements Spider {
   late HttpClient _httpClient;
@@ -20,6 +21,7 @@ class UgrsSpider implements Spider {
   late String _password;
   // late AppService _appService;
   late Zdbk _zdbk;
+  late Xzzd _xzzd;//同步学在浙大待办事项
   late GrsNew _grsNew;
   late TimeConfigService _timeConfigService;
   Cookie? _iPlanetDirectoryPro;
@@ -32,6 +34,7 @@ class UgrsSpider implements Spider {
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     // _appService = AppService(db: _db);
     _zdbk = Zdbk();
+    _xzzd = Xzzd();
     _grsNew = GrsNew();
     _timeConfigService = TimeConfigService();
     _username = username;
@@ -72,6 +75,12 @@ class UgrsSpider implements Spider {
               .then((value) => null as String?)
               .timeout(const Duration(seconds: 8))
               .catchError((e) => "无法登录教务网，$e"),
+          _xzzd
+              .login(_httpClient, _iPlanetDirectoryPro)
+              // ignore: unnecessary_cast
+              .then((value) => null as String?)
+              .timeout(const Duration(seconds: 8))
+              .catchError((e) => "无法登录学在浙大，$e"),
           _grsNew
               .login(_httpClient, _iPlanetDirectoryPro)
               .then((value) {
@@ -97,7 +106,19 @@ class UgrsSpider implements Spider {
     _iPlanetDirectoryPro = null;
     // _appService.logout();
     _zdbk.logout();
+    _xzzd.logout();
     _grsNew.logout();
+  }
+
+  //获取学在浙大task
+  Future<List<Task>> getXzzdTask() async {
+    var result= await _xzzd.getXzzdTask(_httpClient);
+    //根据是否有异常来处理
+    if(result.item1!=null) {
+      return [];
+    }else{
+      return result.item2;
+    }
   }
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
@@ -349,7 +370,7 @@ class UgrsSpider implements Spider {
         semester.courses.remove(key);
       }
     }
-
+    
     return Tuple6(loginErrorMessages, fetchErrorMessages, outSemesters,
         outGrades, outMajorGrade, outSpecialDates);
   }

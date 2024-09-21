@@ -18,10 +18,12 @@ class ECardPayPage extends StatelessWidget {
   Future<String?> _requestNewCode() async {
     const secureStorage = FlutterSecureStorage();
     var synjonesAuth = await secureStorage.read(key: 'synjonesAuth', iOptions: secureStorageIOSOptions);
+    var eCardAccount = await secureStorage.read(key: 'eCardAccount', iOptions: secureStorageIOSOptions);
     if(synjonesAuth == null) return '';
+    eCardAccount ??= await ECard.getAccount(_httpClient, synjonesAuth);
     try {
       _httpClient.userAgent = "E-CampusZJU/2.3.20 (iPhone; iOS 17.5.1; Scale/3.00)";
-      return await ECard.getBarcode(_httpClient, synjonesAuth);
+      return await ECard.getBarcode(_httpClient, synjonesAuth, eCardAccount);
     } catch (e) {
       return null;
     }
