@@ -97,7 +97,7 @@ struct FlowWidgetProvider: TimelineProvider {
         upComingFlows.sort { a, b in a.startTime! < b.startTime! }
         
         var entries: [FlowEntry] = []
-        for minuteOffset in 0 ..< 150 {
+        for minuteOffset in 0 ..< 90 {
             let refreshTime = Calendar.current.date(byAdding: .minute, value: minuteOffset, to: currentTime)!
             // 移除已经结束的事项
             onGoingFlows.removeAll {
@@ -139,7 +139,7 @@ struct FlowWidgetProvider: TimelineProvider {
             let remaining = upComingFlows.firstIndex(where: { e in !Calendar.current.isDate(e.startTime!, inSameDayAs: refreshTime)}) ?? upComingFlows.count
             entries.append(FlowEntry(refreshAt: refreshTime, toDisplay: nearestFlows, stillToDoToday: remaining))
         }
-        completion(Timeline(entries: entries, policy: .after(Date(timeIntervalSinceNow: 120))))
+        completion(Timeline(entries: entries, policy: .after(Date(timeIntervalSinceNow: 3600))))
     }
 }
 
