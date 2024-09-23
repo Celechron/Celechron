@@ -8,7 +8,7 @@ class Fuse {
   late DateTime lastUpdateTime;
 
   final bool isBeta = true;
-  final version = [0, 3, 0];
+  final version = [0, 3, 1];
   List<int>? remoteVersion;
   bool hasNewVersion = false;
 

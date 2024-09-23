@@ -67,7 +67,8 @@ class Grade {
         credit = double.parse(json['xf'] as String),
         original = json['cj'] as String,
         fivePoint = double.parse(json['jd'] as String) {
-    hundredPoint = _toHundredPoint[original] ?? int.parse(original);
+    // 匹配第一组连续的数字，如果没有则返回-100000
+    hundredPoint = _toHundredPoint[original] ?? int.tryParse(RegExp(r'\d+').firstMatch(original)!.group(0) ?? "-100000")!;
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
     fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
     creditIncluded = original != "弃修" && original != "待录" && original != "缓考";

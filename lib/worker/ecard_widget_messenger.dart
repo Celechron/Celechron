@@ -18,7 +18,7 @@ class ECardWidgetMessenger {
     var httpClient = HttpClient();
     httpClient.userAgent = "E-CampusZJU/2.3.20 (iPhone; iOS 17.5.1; Scale/3.00)";
 
-    var iPlanetDirectoryPro = await ZjuAm.getSsoCookie(httpClient, username, password);
+    var iPlanetDirectoryPro = await ZjuAm.getSsoCookie(httpClient, username, password).catchError((e) => null);
     if(iPlanetDirectoryPro == null) return;
 
     var synjonesAuth = await ECard.getSynjonesAuth(httpClient, iPlanetDirectoryPro);
