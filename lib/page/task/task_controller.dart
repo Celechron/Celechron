@@ -6,8 +6,7 @@ import 'package:celechron/utils/utils.dart';
 
 class TaskController extends GetxController {
   final taskList = Get.find<RxList<Task>>(tag: 'taskList');
-  final taskListLastUpdate =
-      Get.find<Rx<DateTime>>(tag: 'taskListLastUpdate');
+  final taskListLastUpdate = Get.find<Rx<DateTime>>(tag: 'taskListLastUpdate');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
 
   List<Task> get todoDeadlineList => taskList
@@ -22,9 +21,8 @@ class TaskController extends GetxController {
               element.status == TaskStatus.failed)))
       .toList();
 
-  List<Task> get fixedDeadlineList => taskList
-      .where((element) => (element.type == TaskType.fixed))
-      .toList();
+  List<Task> get fixedDeadlineList =>
+      taskList.where((element) => (element.type == TaskType.fixed)).toList();
 
   @override
   void onInit() {
@@ -55,8 +53,7 @@ class TaskController extends GetxController {
   }
 
   void updateDeadlineList() {
-    taskList.removeWhere(
-        (element) => element.status == TaskStatus.deleted);
+    taskList.removeWhere((element) => element.status == TaskStatus.deleted);
 
     Set<String> existingUid = {};
     List<Task> newDeadlineList = [];
@@ -65,7 +62,8 @@ class TaskController extends GetxController {
       if (deadline.type == TaskType.deadline) {
         if (deadline.timeSpent >= deadline.timeNeeded) {
           deadline.status = TaskStatus.completed;
-        } else if (deadline.endTime.isBefore(DateTime.now())) {
+        } else if (deadline.status != TaskStatus.completed &&
+            deadline.endTime.isBefore(DateTime.now())) {
           deadline.status = TaskStatus.failed;
         }
       } else if (deadline.type == TaskType.fixed) {
@@ -111,8 +109,7 @@ class TaskController extends GetxController {
   int suspendAllDeadline(context) {
     int count = 0;
     for (var x in taskList) {
-      if (x.type == TaskType.deadline &&
-          x.status == TaskStatus.running) {
+      if (x.type == TaskType.deadline && x.status == TaskStatus.running) {
         x.status = TaskStatus.suspended;
         count++;
       }
@@ -123,8 +120,7 @@ class TaskController extends GetxController {
   int continueAllDeadline(context) {
     int count = 0;
     for (var x in taskList) {
-      if (x.type == TaskType.deadline &&
-          x.status == TaskStatus.suspended) {
+      if (x.type == TaskType.deadline && x.status == TaskStatus.suspended) {
         x.status = TaskStatus.running;
         count++;
       }

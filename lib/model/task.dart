@@ -103,8 +103,7 @@ class Task {
     startTime = endTime;
     repeatType = TaskRepeatType.norepeat;
     repeatPeriod = 1;
-    repeatEndsTime =
-        DateTime(startTime.year, startTime.month, startTime.day);
+    repeatEndsTime = DateTime(startTime.year, startTime.month, startTime.day);
     blockArrangements = true;
     fromUid = null;
   }
@@ -160,8 +159,7 @@ class Task {
       startTime: startTime ?? this.startTime,
       repeatType: repeatType ?? this.repeatType,
       repeatPeriod: repeatPeriod ?? this.repeatPeriod,
-      repeatEndsTime:
-          repeatEndsTime ?? this.repeatEndsTime,
+      repeatEndsTime: repeatEndsTime ?? this.repeatEndsTime,
       blockArrangements: blockArrangements ?? this.blockArrangements,
       fromUid: fromUid ?? this.fromUid,
     );
@@ -220,7 +218,8 @@ class Task {
     if (type == TaskType.deadline) {
       if (timeSpent >= timeNeeded) {
         status = TaskStatus.completed;
-      } else if (endTime.isBefore(DateTime.now())) {
+      } else if (status != TaskStatus.completed &&
+          endTime.isBefore(DateTime.now())) {
         status = TaskStatus.failed;
       }
     } else if (type == TaskType.fixed) {
@@ -236,7 +235,8 @@ class Task {
     if (type == TaskType.deadline) {
       if (timeSpent >= timeNeeded) {
         status = TaskStatus.completed;
-      } else if (endTime.isBefore(DateTime.now())) {
+      } else if (status != TaskStatus.completed &&
+          endTime.isBefore(DateTime.now())) {
         status = TaskStatus.failed;
       } else {
         status = TaskStatus.running;
@@ -251,8 +251,7 @@ class Task {
   }
 
   bool setToNextPeriod() {
-    if (type != TaskType.fixed ||
-        status == TaskStatus.outdated) {
+    if (type != TaskType.fixed || status == TaskStatus.outdated) {
       return false;
     }
     if (repeatType == TaskRepeatType.norepeat) {
@@ -340,8 +339,7 @@ class Task {
   }
 
   List<Period> getPeriodOfDay(DateTime date) {
-    if (type != TaskType.fixed &&
-        type != TaskType.fixedlegacy) {
+    if (type != TaskType.fixed && type != TaskType.fixedlegacy) {
       return [];
     }
 
