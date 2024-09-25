@@ -416,11 +416,12 @@ class CourseSchedulePage extends StatelessWidget {
               Set<int> timeSet = Set.from(t.time);
               timeSet.addAll(s.time);
               t.time = List.from(timeSet);
+              t.time.sort();
               break;
             }
           }
           if (!added) {
-            sessionList[i].add(s);
+            sessionList[i].add(Session.fromJson(s.toJson()));
           }
         }
       }
