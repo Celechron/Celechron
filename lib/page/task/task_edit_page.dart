@@ -329,15 +329,15 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                       mode: CupertinoDatePickerMode.dateAndTime,
                                       onDateTimeChanged: (DateTime newTime) {
                                         setState(() {
-                                          now.startTime = newTime;
+                                          now.endTime = newTime;
                                         });
                                       },
                                     ),
                                   ),
                                 );
                               });
-                            return;
-                          }
+                            // return;
+                      }else{
                         await showCupertinoModalPopup(
                             context: context,
                             builder: (BuildContext context) {
@@ -401,6 +401,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                               
                               );
                             });
+                        }
                       },
                     ),
                   ],
