@@ -117,7 +117,7 @@ struct ECardWidgetView: View {
     var body: some View {
         let balanceString = entry.balance > 0 ? 
                                 entry.balance < 10000 ?
-                                    String(format: "%d.%d元", arguments: [entry.balance / 100, entry.balance % 100])
+        String(format: "%d.%d%d元", arguments: [entry.balance / 100, entry.balance % 100 / 10, entry.balance % 10])
                                   : String(format: "%d.%d元", arguments: [entry.balance / 100, entry.balance % 100 / 10])
                             : "待刷新"
         VStack(alignment: .leading) {
@@ -161,5 +161,5 @@ extension Date {
 #Preview(as: .systemSmall) {
     ECardWidget()
 } timeline: {
-    ECardEntry(date: Date(), balance: 18776)
+    ECardEntry(date: Date(), balance: 1888)
 }
