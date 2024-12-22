@@ -47,12 +47,10 @@ void main() async {
   final appLinks = AppLinks();
   appLinks.uriLinkStream.listen((uri) {
     if(uri.toString() == 'celechron://ecardpaypage') {
-      navigator?.push(CupertinoPageRoute(
-          builder: (context) =>
-              ECardPayPage()));
+      navigator?.popUntil((route) => !(route.settings.name?.endsWith('ecardpaypage') ?? false));
+      navigator?.pushNamed('/ecardpaypage');
     }
   });
-
 
   if (Platform.isAndroid) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
@@ -128,6 +126,9 @@ class _CelechronAppState extends State<CelechronApp> {
       title: 'Celechron',
       home: const HomePage(title: 'Celechron'),
       initialRoute: '/',
+      routes: {
+        '/ecardpaypage': (context) => ECardPayPage(),
+      },
     );
   }
 }
@@ -172,7 +173,7 @@ class _HomePageState extends State<HomePage> {
         iconSize: 26,
         backgroundColor: CupertinoDynamicColor.resolve(
                 CupertinoColors.secondarySystemBackground, context)
-            .withOpacity(0.5),
+            .withValues(alpha: 0.5),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.time),
