@@ -6,6 +6,7 @@ class Option {
   RxMap<DateTime, DateTime> allowTime;
   RxInt gpaStrategy;
   RxBool pushOnGradeChange;
+  RxInt brightnessMode;
 
   Option({
     required this.workTime,
@@ -13,5 +14,6 @@ class Option {
     required this.allowTime,
     required this.gpaStrategy,
     required this.pushOnGradeChange,
+    required this.brightnessMode,
   });
 }
