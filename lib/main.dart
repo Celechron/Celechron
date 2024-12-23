@@ -50,21 +50,33 @@ class CelechronApp extends StatefulWidget {
   State<CelechronApp> createState() => _CelechronAppState();
 }
 
-class _CelechronAppState extends State<CelechronApp> {
+class _CelechronAppState extends State<CelechronApp> with WidgetsBindingObserver {
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     // 监听AppLinks，用于跳转至付款码页面
     _initAppLinks();
-
     // 初始化通知
     _initNotification();
-
     // 设置Android状态栏和导航栏样式
     if (Platform.isAndroid) {
       _initStatusBar();
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused) {
+      ECardWidgetMessenger.update();
     }
   }
 

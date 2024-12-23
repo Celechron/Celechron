@@ -18,17 +18,25 @@ class ECardWidgetMessenger {
     var httpClient = HttpClient();
     httpClient.userAgent = "E-CampusZJU/2.3.20 (iPhone; iOS 17.5.1; Scale/3.00)";
 
-    var iPlanetDirectoryPro = await ZjuAm.getSsoCookie(httpClient, username, password).catchError((e) => null);
-    if(iPlanetDirectoryPro == null) return;
+    try {
+      var iPlanetDirectoryPro = await ZjuAm.getSsoCookie(
+          httpClient, username, password).catchError((e) => null);
+      var synjonesAuth = await ECard.getSynjonesAuth(
+          httpClient, iPlanetDirectoryPro);
+      var eCardAccount = await ECard.getAccount(httpClient, synjonesAuth);
+      await secureStorage.write(key: 'synjonesAuth',
+          value: synjonesAuth,
+          iOptions: secureStorageIOSOptions);
+      await secureStorage.write(key: 'eCardAccount',
+          value: eCardAccount,
+          iOptions: secureStorageIOSOptions);
 
-    var synjonesAuth = await ECard.getSynjonesAuth(httpClient, iPlanetDirectoryPro);
-    var eCardAccount = await ECard.getAccount(httpClient, synjonesAuth);
-    await secureStorage.write(key: 'synjonesAuth', value: synjonesAuth, iOptions: secureStorageIOSOptions);
-    await secureStorage.write(key: 'eCardAccount', value: eCardAccount, iOptions: secureStorageIOSOptions);
-
-    if(Platform.isIOS) {
-      const platform = MethodChannel('top.celechron.celechron/ecardWidget');
-      await platform.invokeMethod('update');
+      if (Platform.isIOS || Platform.isAndroid) {
+        const platform = MethodChannel('top.celechron.celechron/ecardWidget');
+        await platform.invokeMethod('update');
+      }
+    } catch(e) {
+      return;
     }
   }
 
@@ -36,7 +44,7 @@ class ECardWidgetMessenger {
     var secureStorage = const FlutterSecureStorage();
     await secureStorage.delete(key: 'synjonesAuth', iOptions: secureStorageIOSOptions);
 
-    if(Platform.isIOS) {
+    if(Platform.isIOS || Platform.isAndroid) {
       const platform = MethodChannel('top.celechron.celechron/ecardWidget');
       await platform.invokeMethod('logout');
     }
