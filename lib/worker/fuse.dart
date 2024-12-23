@@ -27,8 +27,18 @@ class Fuse {
           .isAfter(DateTime.now().subtract(const Duration(days: 1)))) {
         return null;
       }
+
+      late String checkUpdateUrl;
+      if (Platform.isAndroid) {
+        checkUpdateUrl = "https://api.celechron.top/checkUpdate?platform=android";
+      } else if (Platform.isIOS) {
+        checkUpdateUrl = "https://api.celechron.top/checkUpdate?platform=ios";
+      } else {
+        return "https://api.celechron.top/checkUpdate?platform=others";
+      }
+
       var request = await _httpClient
-          .getUrl(Uri.parse("https://api.celechron.top/checkUpdate"))
+          .getUrl(Uri.parse(checkUpdateUrl))
           .timeout(const Duration(seconds: 8));
       var response = await request.close().timeout(const Duration(seconds: 8));
       var html = await response.transform(utf8.decoder).join();
