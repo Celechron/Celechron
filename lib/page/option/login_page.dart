@@ -16,7 +16,7 @@ class LoginForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    var brightness = MediaQuery.of(context).platformBrightness;
+    var brightness = CupertinoTheme.of(context).brightness;
 
     return Container(
       decoration: BoxDecoration(
