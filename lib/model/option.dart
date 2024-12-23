@@ -1,12 +1,13 @@
 import 'package:get/get.dart';
+import 'package:celechron/utils/utils.dart';
 
 class Option {
   Rx<Duration> workTime;
   Rx<Duration> restTime;
   RxMap<DateTime, DateTime> allowTime;
-  RxInt gpaStrategy;
+  Rx<GpaStrategy> gpaStrategy;
   RxBool pushOnGradeChange;
-  RxInt brightnessMode;
+  Rx<BrightnessMode> brightnessMode;
 
   Option({
     required this.workTime,

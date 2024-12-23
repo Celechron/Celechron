@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:celechron/utils/utils.dart';
 import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
@@ -10,18 +11,12 @@ import 'package:celechron/worker/background.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:workmanager/workmanager.dart';
 
-import 'package:flutter/cupertino.dart';
-
 class OptionController extends GetxController {
   final option = Get.find<Option>(tag: 'option');
   final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final _fuse = Get.find<Rx<Fuse>>(tag: 'fuse');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
   late final RxInt allowTimeLength = option.allowTime.length.obs;
-
-  static const int BRIGHTNESS_MODE_SYSTEM = 0;
-  static const int BRIGHTNESS_MODE_LIGHT = 1;
-  static const int BRIGHTNESS_MODE_DARK = 2;
 
   @override
   void onInit() {
@@ -34,16 +29,9 @@ class OptionController extends GetxController {
                 'top.celechron.celechron.backgroundScholarFetch',
                 initialDelay: const Duration(seconds: 10),
                 frequency: const Duration(minutes: 15),
-              ))
-          .then((value) {
-        if (Platform.isIOS) return Workmanager().printScheduledTasks();
-      });
+              ));
     } else {
-      Workmanager()
-          .cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch')
-          .then((value) {
-        if (Platform.isIOS) return Workmanager().printScheduledTasks();
-      });
+      Workmanager().cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch');
     }
   }
 
@@ -69,9 +57,9 @@ class OptionController extends GetxController {
     allowTimeLength.value = value.length;
   }
 
-  int get gpaStrategy => option.gpaStrategy.value;
+  GpaStrategy get gpaStrategy => option.gpaStrategy.value;
 
-  set gpaStrategy(int value) {
+  set gpaStrategy(GpaStrategy value) {
     option.gpaStrategy.value = value;
     _db.setGpaStrategy(value);
   }
@@ -109,10 +97,7 @@ class OptionController extends GetxController {
                 constraints: Constraints(
                   networkType: NetworkType.connected,
                 ),
-              ))
-          .then((value) {
-        if (Platform.isIOS) return Workmanager().printScheduledTasks();
-      });
+              ));
     }
   }
 
@@ -127,22 +112,7 @@ class OptionController extends GetxController {
     ECardWidgetMessenger.logout();
   }
 
-  Brightness matcher(int v){
-    switch (v) {
-      case BRIGHTNESS_MODE_SYSTEM:
-        return WidgetsBinding.instance.platformDispatcher.platformBrightness;
-      case BRIGHTNESS_MODE_LIGHT:
-        return Brightness.light;
-      case BRIGHTNESS_MODE_DARK:
-        return Brightness.dark;
-      default:
-        return WidgetsBinding.instance.platformDispatcher.platformBrightness;
-    }
-  }
-
-  Brightness get brightness => matcher(option.brightnessMode.value);
-
-  void toggleBrightness(int value) {
+  set brightnessMode(BrightnessMode value) {
     option.brightnessMode.value = value;
     _db.setBrightnessMode(value);
   }

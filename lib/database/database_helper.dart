@@ -110,15 +110,15 @@ class DatabaseHelper {
     await optionsBox.put(kAllowTime, allowTime);
   }
 
-  int getGpaStrategy() {
+  GpaStrategy getGpaStrategy() {
     if (optionsBox.get(kGpaStrategy) == null) {
       optionsBox.put(kGpaStrategy, 0);
     }
-    return optionsBox.get(kGpaStrategy);
+    return GpaStrategy.values[optionsBox.get(kGpaStrategy)];
   }
 
-  Future<void> setGpaStrategy(int gpaStrategy) async {
-    await optionsBox.put(kGpaStrategy, gpaStrategy);
+  Future<void> setGpaStrategy(GpaStrategy gpaStrategy) async {
+    await optionsBox.put(kGpaStrategy, gpaStrategy.index);
   }
 
   bool getPushOnGradeChange() {
@@ -133,16 +133,16 @@ class DatabaseHelper {
   }
 
   // 保存亮度设置
-  Future<void> setBrightnessMode(int brightness) async{
-    await optionsBox.put(kBrightnessMode, brightness);
+  Future<void> setBrightnessMode(BrightnessMode brightness) async{
+    await optionsBox.put(kBrightnessMode, brightness.index);
   }
 
   // 获取亮度设置
-  int getBrightnessMode() {
+  BrightnessMode getBrightnessMode() {
     if (optionsBox.get(kBrightnessMode) == null) {
-      optionsBox.put(kBrightnessMode, 0);
+      optionsBox.put(kBrightnessMode, BrightnessMode.system.index);
     }
-    return optionsBox.get(kBrightnessMode);
+    return BrightnessMode.values[optionsBox.get(kBrightnessMode)];
   }
 
   // Flow

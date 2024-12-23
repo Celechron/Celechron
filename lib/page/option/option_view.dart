@@ -86,12 +86,12 @@ class OptionPage extends StatelessWidget {
                           title: const Text('重修绩点计算'),
                           trailing: CupertinoSlidingSegmentedControl(
                             children: {
-                              0: Text('取首次',
+                              GpaStrategy.first: Text('取首次',
                                   style: CupertinoTheme.of(context)
                                       .textTheme
                                       .textStyle
                                       .copyWith(fontSize: 16)),
-                              1: Text('取最高',
+                              GpaStrategy.best: Text('取最高',
                                   style: CupertinoTheme.of(context)
                                       .textTheme
                                       .textStyle
@@ -268,9 +268,9 @@ class OptionPage extends StatelessWidget {
                       CupertinoListTile(
                         title: const Text('暗色模式'),
                         trailing: BackChervonRow(child: Obx(() => Text(
-                            _optionController.option.brightnessMode.value == OptionController.BRIGHTNESS_MODE_SYSTEM
+                            _optionController.option.brightnessMode.value == BrightnessMode.system
                                 ? "跟随系统设置"
-                                : _optionController.option.brightnessMode.value == OptionController.BRIGHTNESS_MODE_LIGHT
+                                : _optionController.option.brightnessMode.value == BrightnessMode.light
                                 ? "亮色模式"
                                 : "暗色模式",
                           style: trailingTextStyle,
@@ -362,29 +362,29 @@ class OptionPage extends StatelessWidget {
           actions: <Widget>[
             CupertinoActionSheetAction(
               onPressed: () {
-                _optionController.toggleBrightness(OptionController.BRIGHTNESS_MODE_SYSTEM);
+                _optionController.brightnessMode = BrightnessMode.system;
                 Navigator.pop(context);
               },
-              child: Text('跟随系统设置'),
+              child: const Text('跟随系统设置'),
             ),
             CupertinoActionSheetAction(
               onPressed: () {
-                _optionController.toggleBrightness(OptionController.BRIGHTNESS_MODE_LIGHT);
+                _optionController.brightnessMode = BrightnessMode.light;
                 Navigator.pop(context);
               },
-              child: Text('亮色模式'),
+              child: const Text('亮色模式'),
             ),
             CupertinoActionSheetAction(
               onPressed: () {
-                _optionController.toggleBrightness(OptionController.BRIGHTNESS_MODE_DARK);
+                _optionController.brightnessMode = BrightnessMode.dark;
                 Navigator.pop(context);
               },
-              child: Text('暗色模式'),
+              child: const Text('暗色模式'),
             ),
           ],
           cancelButton: CupertinoActionSheetAction(
             onPressed: () => Navigator.pop(context),
-            child: Text('取消'),
+            child: const Text('取消'),
           ),
         );
       },

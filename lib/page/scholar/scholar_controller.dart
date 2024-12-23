@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:celechron/utils/utils.dart';
 import 'package:get/get.dart';
 
 import 'package:celechron/model/semester.dart';
@@ -28,7 +29,7 @@ class ScholarController extends GetxController {
 
   Duration get durationToLastUpdate => _durationToLastUpdate.value;
 
-  List<double> get gpa => _option.gpaStrategy.value == 0
+  List<double> get gpa => _option.gpaStrategy.value == GpaStrategy.first
       ? _scholar.value.gpa
       : _scholar.value.aboardGpa;
 

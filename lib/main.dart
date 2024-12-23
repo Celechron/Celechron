@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:celechron/page/option/ecard_pay_page.dart';
+import 'package:celechron/utils/utils.dart';
 import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Colors, Icons;
@@ -24,7 +26,7 @@ import 'package:celechron/model/scholar.dart';
 import 'package:celechron/worker/fuse.dart';
 import 'package:celechron/database/database_helper.dart';
 
-import 'package:celechron/page/option/option_controller.dart'; // 确保导入了控制器
+import 'model/option.dart'; // 确保导入了控制器
 
 void main() async {
   // 从数据库读取数据
@@ -55,6 +57,14 @@ void main() async {
 
   if (Platform.isAndroid) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+
+    var brightness = Get.find<Option>(tag: 'option').brightnessMode;
+    ever(brightness, (value) {
+      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+        statusBarIconBrightness: value == BrightnessMode.dark ? Brightness.light : Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+      ));
+    });
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarIconBrightness:
           SchedulerBinding.instance.platformDispatcher.platformBrightness ==
@@ -84,6 +94,8 @@ void main() async {
       FlutterLocalNotificationsPlugin();
   const initializationSettingsAndroid =
       AndroidInitializationSettings('@mipmap/ic_launcher');
+  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+      AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
   const initializationSettingsDarwin = DarwinInitializationSettings(
     requestSoundPermission: true,
     requestBadgePermission: true,
@@ -105,10 +117,14 @@ class CelechronApp extends StatefulWidget {
 class _CelechronAppState extends State<CelechronApp> {
   @override
   Widget build(BuildContext context) {
-    final optionController = Get.put(OptionController());
+    var brightnessMode = Get.find<Option>(tag: 'option').brightnessMode;
     return Obx(() => GetCupertinoApp(
       theme: CupertinoThemeData(
-        brightness: optionController.brightness,
+        brightness: brightnessMode.value == BrightnessMode.system
+            ? null
+            : brightnessMode.value == BrightnessMode.dark
+            ? Brightness.dark
+            : Brightness.light,
         scaffoldBackgroundColor: CupertinoColors.systemBackground,
         barBackgroundColor: CupertinoColors.systemBackground,
       ),
@@ -129,6 +145,9 @@ class _CelechronAppState extends State<CelechronApp> {
       title: 'Celechron',
       home: const HomePage(title: 'Celechron'),
       initialRoute: '/',
+      routes: {
+        '/ecardpaypage': (context) => ECardPayPage(),
+      },
     ));
   }
 }
@@ -218,17 +237,6 @@ class _HomePageState extends State<HomePage> {
       SearchPage(), // 缓存一下
     ];
 
-    if (Platform.isAndroid) {
-      SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        statusBarIconBrightness:
-            SchedulerBinding.instance.platformDispatcher.platformBrightness ==
-                    Brightness.dark
-                ? Brightness.light
-                : Brightness.dark,
-        systemNavigationBarColor: Colors.transparent,
-      ));
-    }
     String? swipeDirection;
     return Offstage(
       offstage: _indexNum != index,
