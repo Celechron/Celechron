@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/scheduler.dart';
 
 class RoundRectangleCard extends StatefulWidget {
   final Widget child;
@@ -63,24 +62,36 @@ class _RoundRectangleCardState extends State<RoundRectangleCard>
 
   @override
   Widget build(BuildContext context) {
+    final Brightness? brightness = CupertinoTheme.of(context).brightness;
     var isDown = false;
     var isCancel = false;
     var core = Container(
         padding: widget.padding,
+        // decoration: BoxDecoration(
+        //     borderRadius: BorderRadius.circular(12),
+        //     // In light mode, color is white; in dark mode, color is black
+        //     color: SchedulerBinding
+        //                 .instance.platformDispatcher.platformBrightness ==
+        //             Brightness.dark
+        //         ? CupertinoDynamicColor.resolve(
+        //             CupertinoColors.secondarySystemBackground, context)
+        //         : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
+        //     boxShadow: SchedulerBinding
+        //                 .instance.platformDispatcher.platformBrightness ==
+        //             Brightness.dark
+        //         ? null
+        //         : widget.boxShadow),
+        // 修改了颜色控制逻辑，应该跟随应用设置而非系统设置
         decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            // In light mode, color is white; in dark mode, color is black
-            color: SchedulerBinding
-                        .instance.platformDispatcher.platformBrightness ==
-                    Brightness.dark
-                ? CupertinoDynamicColor.resolve(
-                    CupertinoColors.secondarySystemBackground, context)
-                : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
-            boxShadow: SchedulerBinding
-                        .instance.platformDispatcher.platformBrightness ==
-                    Brightness.dark
-                ? null
-                : widget.boxShadow),
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: brightness == Brightness.dark
+              ? null
+              : widget.boxShadow,
+          color: brightness == Brightness.dark
+              ? CupertinoDynamicColor.resolve(
+              CupertinoColors.secondarySystemBackground, context)
+              : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
+        ),
         child: widget.child);
     return widget.animate
         ? GestureDetector(

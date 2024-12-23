@@ -61,6 +61,7 @@ class DatabaseHelper {
   final String kAllowTime = 'allowTime';
   final String kGpaStrategy = 'gpaStrategy';
   final String kPushOnGradeChange = 'pushOnGradeChange';
+  final String kBrightnessMode = 'brightnessMode';
 
   Option getOption() {
     return Option(
@@ -69,6 +70,7 @@ class DatabaseHelper {
       allowTime: getAllowTime().obs,
       gpaStrategy: getGpaStrategy().obs,
       pushOnGradeChange: getPushOnGradeChange().obs,
+      brightnessMode: getBrightnessMode().obs,
     );
   }
 
@@ -128,6 +130,19 @@ class DatabaseHelper {
 
   Future<void> setPushOnGradeChange(bool pushOnGradeChange) async {
     await optionsBox.put(kPushOnGradeChange, pushOnGradeChange);
+  }
+
+  // 保存亮度设置
+  Future<void> setBrightnessMode(int brightness) async{
+    await optionsBox.put(kBrightnessMode, brightness);
+  }
+
+  // 获取亮度设置
+  int getBrightnessMode() {
+    if (optionsBox.get(kBrightnessMode) == null) {
+      optionsBox.put(kBrightnessMode, 0);
+    }
+    return optionsBox.get(kBrightnessMode);
   }
 
   // Flow

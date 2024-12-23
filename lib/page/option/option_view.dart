@@ -256,6 +256,29 @@ class OptionPage extends StatelessWidget {
                     },
                   ),
                 ])),
+            // 工具
+            SliverToBoxAdapter(
+                child: CupertinoListSection.insetGrouped(
+                    additionalDividerMargin: 2,
+                    margin: _defaultMargin,
+                    header: Container(
+                        padding: const EdgeInsets.only(left: 16),
+                        child: Text('工具', style: headerFooterTextStyle)),
+                    children: <CupertinoListTile>[
+                      CupertinoListTile(
+                        title: const Text('暗色模式'),
+                        trailing: Obx(() => Text(
+                            _optionController.option.brightnessMode.value == OptionController.BRIGHTNESS_MODE_SYSTEM
+                                ? "跟随系统设置"
+                                : _optionController.option.brightnessMode.value == OptionController.BRIGHTNESS_MODE_LIGHT
+                                ? "亮色模式"
+                                : "暗色模式"
+                        )),
+                        onTap: () => _showBrightnessPicker(context),
+                      ),
+                    ]
+                )
+            ),
             // 关于
             SliverToBoxAdapter(
               child: CupertinoListSection.insetGrouped(
@@ -289,13 +312,14 @@ class OptionPage extends StatelessWidget {
                                     const CustomLicensePage()));
                       },
                     ),
-                    CupertinoListTile(
-                      title: const Text('付款码'),
-                      trailing: const BackChervonRow(),
-                      onTap: () async {
-                        Navigator.of(context, rootNavigator: true).pushNamed('/ecardpaypage');
-                      },
-                    ),
+                    // 在上次fix之后有问题无法使用付款码
+                    // CupertinoListTile(
+                    //   title: const Text('付款码'),
+                    //   trailing: const BackChervonRow(),
+                    //   onTap: () async {
+                    //     Navigator.of(context, rootNavigator: true).pushNamed('/ecardpaypage');
+                    //   },
+                    // ),
                     CupertinoListTile(
                       title: const Text('前往项目网站'),
                       trailing: BackChervonRow(
@@ -329,7 +353,42 @@ class OptionPage extends StatelessWidget {
           ],
         )));
   }
-
+  void _showBrightnessPicker(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          actions: <Widget>[
+            CupertinoActionSheetAction(
+              onPressed: () {
+                _optionController.toggleBrightness(OptionController.BRIGHTNESS_MODE_SYSTEM);
+                Navigator.pop(context);
+              },
+              child: Text('跟随系统设置'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                _optionController.toggleBrightness(OptionController.BRIGHTNESS_MODE_LIGHT);
+                Navigator.pop(context);
+              },
+              child: Text('亮色模式'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                _optionController.toggleBrightness(OptionController.BRIGHTNESS_MODE_DARK);
+                Navigator.pop(context);
+              },
+              child: Text('暗色模式'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context),
+            child: Text('取消'),
+          ),
+        );
+      },
+    );
+  }
   static const _defaultMargin =
       EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 10.0);
 }

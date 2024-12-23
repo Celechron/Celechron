@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:celechron/page/option/ecard_pay_page.dart';
 import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Colors, Icons;
@@ -24,6 +23,8 @@ import 'package:celechron/page/option/option_view.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/worker/fuse.dart';
 import 'package:celechron/database/database_helper.dart';
+
+import 'package:celechron/page/option/option_controller.dart'; // 确保导入了控制器
 
 void main() async {
   // 从数据库读取数据
@@ -104,8 +105,10 @@ class CelechronApp extends StatefulWidget {
 class _CelechronAppState extends State<CelechronApp> {
   @override
   Widget build(BuildContext context) {
-    return GetCupertinoApp(
-      theme: const CupertinoThemeData(
+    final optionController = Get.put(OptionController());
+    return Obx(() => GetCupertinoApp(
+      theme: CupertinoThemeData(
+        brightness: optionController.brightness,
         scaffoldBackgroundColor: CupertinoColors.systemBackground,
         barBackgroundColor: CupertinoColors.systemBackground,
       ),
@@ -126,10 +129,7 @@ class _CelechronAppState extends State<CelechronApp> {
       title: 'Celechron',
       home: const HomePage(title: 'Celechron'),
       initialRoute: '/',
-      routes: {
-        '/ecardpaypage': (context) => ECardPayPage(),
-      },
-    );
+    ));
   }
 }
 
@@ -172,8 +172,8 @@ class _HomePageState extends State<HomePage> {
       tabBar: CupertinoTabBar(
         iconSize: 26,
         backgroundColor: CupertinoDynamicColor.resolve(
-                CupertinoColors.secondarySystemBackground, context)
-            .withValues(alpha: 0.5),
+            CupertinoColors.secondarySystemBackground, context)
+            .withOpacity(0.5),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.time),

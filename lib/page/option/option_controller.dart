@@ -10,12 +10,18 @@ import 'package:celechron/worker/background.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:workmanager/workmanager.dart';
 
+import 'package:flutter/cupertino.dart';
+
 class OptionController extends GetxController {
   final option = Get.find<Option>(tag: 'option');
   final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final _fuse = Get.find<Rx<Fuse>>(tag: 'fuse');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
   late final RxInt allowTimeLength = option.allowTime.length.obs;
+
+  static const int BRIGHTNESS_MODE_SYSTEM = 0;
+  static const int BRIGHTNESS_MODE_LIGHT = 1;
+  static const int BRIGHTNESS_MODE_DARK = 2;
 
   @override
   void onInit() {
@@ -120,4 +126,25 @@ class OptionController extends GetxController {
     pushOnGradeChange = false;
     ECardWidgetMessenger.logout();
   }
+
+  Brightness matcher(int v){
+    switch (v) {
+      case BRIGHTNESS_MODE_SYSTEM:
+        return WidgetsBinding.instance.platformDispatcher.platformBrightness;
+      case BRIGHTNESS_MODE_LIGHT:
+        return Brightness.light;
+      case BRIGHTNESS_MODE_DARK:
+        return Brightness.dark;
+      default:
+        return WidgetsBinding.instance.platformDispatcher.platformBrightness;
+    }
+  }
+
+  Brightness get brightness => matcher(option.brightnessMode.value);
+
+  void toggleBrightness(int value) {
+    option.brightnessMode.value = value;
+    _db.setBrightnessMode(value);
+  }
+
 }
