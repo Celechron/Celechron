@@ -33,6 +33,13 @@ Future<void> refreshScholar() async {
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin);
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+  const androidNotificationDetails = AndroidNotificationDetails(
+    'top.celechron.celechron.gradeChange',
+    '成绩变动提醒',
+    importance: Importance.max,
+    priority: Priority.high,
+    showWhen: false,
+  );
   const darwinNotificationDetails = DarwinNotificationDetails(
     presentSound: true,
     presentBadge: true,
@@ -42,6 +49,7 @@ Future<void> refreshScholar() async {
     badgeNumber: 0,
   );
   const notificationDetails = NotificationDetails(
+    android: androidNotificationDetails,
     iOS: darwinNotificationDetails,
   );
 

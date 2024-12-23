@@ -7,7 +7,7 @@ import 'package:get/get.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/option.dart';
 import 'package:celechron/worker/fuse.dart';
-import 'package:celechron/worker/background.dart';
+import 'package:celechron/worker/background_app_refresh.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:workmanager/workmanager.dart';
 

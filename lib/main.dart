@@ -1,10 +1,5 @@
-import 'dart:async';
 import 'dart:io';
 
-import 'package:celechron/page/home_page.dart';
-import 'package:celechron/page/option/ecard_pay_page.dart';
-import 'package:celechron/utils/utils.dart';
-import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart' show Colors;
 import 'package:flutter/scheduler.dart';
@@ -16,9 +11,12 @@ import 'package:hive_flutter/hive_flutter.dart';
 import 'package:app_links/app_links.dart';
 
 import 'package:celechron/model/scholar.dart';
+import 'package:celechron/model/option.dart';
+import 'package:celechron/page/home_page.dart';
+import 'package:celechron/page/option/ecard_pay_page.dart';
+import 'package:celechron/utils/utils.dart';
+import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:celechron/database/database_helper.dart';
-
-import 'model/option.dart'; // 确保导入了控制器
 
 void main() async {
   // 初始化数据库
@@ -37,73 +35,12 @@ void main() async {
 
   runApp(const CelechronApp());
 
-  final appLinks = AppLinks();
-  appLinks.uriLinkStream.listen((uri) {
-    if(uri.toString() == 'celechron://ecardpaypage') {
-      navigator?.popUntil((route) => !(route.settings.name?.endsWith('ecardpaypage') ?? false));
-      navigator?.pushNamed('/ecardpaypage');
-    }
-  });
-
-  if (Platform.isAndroid) {
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    var brightnessMode = Get.find<Option>(tag: 'option').brightnessMode;
-    var dispatcher = SchedulerBinding.instance.platformDispatcher;
-
-    ever(brightnessMode, (mode) {
-      if (mode == BrightnessMode.system) {
-        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-          statusBarIconBrightness: dispatcher.platformBrightness == Brightness.light ? Brightness.dark : Brightness.light,
-          systemNavigationBarColor: Colors.transparent,
-        ));
-        dispatcher.onPlatformBrightnessChanged = () {
-          SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-            statusBarIconBrightness: dispatcher.platformBrightness == Brightness.light ? Brightness.dark : Brightness.light,
-            systemNavigationBarColor: Colors.transparent,
-          ));
-        };
-      } else {
-        dispatcher.onPlatformBrightnessChanged = null;
-        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-          statusBarIconBrightness: mode == BrightnessMode.light ? Brightness.dark : Brightness.light,
-          systemNavigationBarColor: Colors.transparent,
-        ));
-      }
-    });
-
-    brightnessMode.refresh();
+  var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
+  if (scholar.value.isLogan) {
+    scholar.value.login().then((value) => scholar.value.refresh()).then((value) => scholar.refresh());
   }
 
-  Future<void> initTimezone() async {}
-
-  Future<void> initScholar() async {
-    var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
-    if (scholar.value.isLogan) {
-      await scholar.value.login();
-      await scholar.value.refresh();
-      scholar.refresh();
-    }
-  }
-  
-  initTimezone();
-  initScholar();
   ECardWidgetMessenger.update();
-
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-      FlutterLocalNotificationsPlugin();
-  const initializationSettingsAndroid =
-      AndroidInitializationSettings('@mipmap/ic_launcher');
-  flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-      AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
-  const initializationSettingsDarwin = DarwinInitializationSettings(
-    requestSoundPermission: true,
-    requestBadgePermission: true,
-    requestAlertPermission: true,
-  );
-  const initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin);
-  flutterLocalNotificationsPlugin.initialize(initializationSettings);
 }
 
 class CelechronApp extends StatefulWidget {
@@ -114,6 +51,23 @@ class CelechronApp extends StatefulWidget {
 }
 
 class _CelechronAppState extends State<CelechronApp> {
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 监听AppLinks，用于跳转至付款码页面
+    _initAppLinks();
+
+    // 初始化通知
+    _initNotification();
+
+    // 设置Android状态栏和导航栏样式
+    if (Platform.isAndroid) {
+      _initStatusBar();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     var brightnessMode = Get.find<Option>(tag: 'option').brightnessMode;
@@ -148,5 +102,61 @@ class _CelechronAppState extends State<CelechronApp> {
         '/ecardpaypage': (context) => ECardPayPage(),
       },
     ));
+  }
+
+  void _initAppLinks() {
+    final appLinks = AppLinks();
+    appLinks.uriLinkStream.listen((uri) {
+      if(uri.toString() == 'celechron://ecardpaypage') {
+        navigator?.popUntil((route) => !(route.settings.name?.endsWith('ecardpaypage') ?? false));
+        navigator?.pushNamed('/ecardpaypage');
+      }
+    });
+  }
+
+  void _initStatusBar() {
+    SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    var brightnessMode = Get.find<Option>(tag: 'option').brightnessMode;
+    var dispatcher = SchedulerBinding.instance.platformDispatcher;
+
+    ever(brightnessMode, (mode) {
+      if (mode == BrightnessMode.system) {
+        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+          statusBarIconBrightness: dispatcher.platformBrightness == Brightness.light ? Brightness.dark : Brightness.light,
+          systemNavigationBarColor: Colors.transparent,
+        ));
+        dispatcher.onPlatformBrightnessChanged = () {
+          SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+            statusBarIconBrightness: dispatcher.platformBrightness == Brightness.light ? Brightness.dark : Brightness.light,
+            systemNavigationBarColor: Colors.transparent,
+          ));
+        };
+      } else {
+        dispatcher.onPlatformBrightnessChanged = null;
+        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+          statusBarIconBrightness: mode == BrightnessMode.light ? Brightness.dark : Brightness.light,
+          systemNavigationBarColor: Colors.transparent,
+        ));
+      }
+    });
+    brightnessMode.refresh();
+  }
+
+  void _initNotification() {
+    FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+    FlutterLocalNotificationsPlugin();
+    const initializationSettingsAndroid =
+    AndroidInitializationSettings('@mipmap/ic_launcher');
+    flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+    const initializationSettingsDarwin = DarwinInitializationSettings(
+      requestSoundPermission: true,
+      requestBadgePermission: true,
+      requestAlertPermission: true,
+    );
+    const initializationSettings = InitializationSettings(
+        android: initializationSettingsAndroid,
+        iOS: initializationSettingsDarwin);
+    flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
 }

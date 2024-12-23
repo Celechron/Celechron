@@ -277,6 +277,13 @@ class OptionPage extends StatelessWidget {
                         ))),
                         onTap: () => _showBrightnessPicker(context),
                       ),
+                      CupertinoListTile(
+                        title: const Text('付款码'),
+                        trailing: const BackChervonRow(),
+                        onTap: () async {
+                          Navigator.of(context, rootNavigator: true).pushNamed('/ecardpaypage');
+                        },
+                      ),
                     ]
                 )
             ),
@@ -313,14 +320,6 @@ class OptionPage extends StatelessWidget {
                                     const CustomLicensePage()));
                       },
                     ),
-                    // 在上次fix之后有问题无法使用付款码
-                    // CupertinoListTile(
-                    //   title: const Text('付款码'),
-                    //   trailing: const BackChervonRow(),
-                    //   onTap: () async {
-                    //     Navigator.of(context, rootNavigator: true).pushNamed('/ecardpaypage');
-                    //   },
-                    // ),
                     CupertinoListTile(
                       title: const Text('前往项目网站'),
                       trailing: BackChervonRow(
