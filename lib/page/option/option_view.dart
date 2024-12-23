@@ -267,13 +267,14 @@ class OptionPage extends StatelessWidget {
                     children: <CupertinoListTile>[
                       CupertinoListTile(
                         title: const Text('暗色模式'),
-                        trailing: Obx(() => Text(
+                        trailing: BackChervonRow(child: Obx(() => Text(
                             _optionController.option.brightnessMode.value == OptionController.BRIGHTNESS_MODE_SYSTEM
                                 ? "跟随系统设置"
                                 : _optionController.option.brightnessMode.value == OptionController.BRIGHTNESS_MODE_LIGHT
                                 ? "亮色模式"
-                                : "暗色模式"
-                        )),
+                                : "暗色模式",
+                          style: trailingTextStyle,
+                        ))),
                         onTap: () => _showBrightnessPicker(context),
                       ),
                     ]
