@@ -62,7 +62,7 @@ class _RoundRectangleCardState extends State<RoundRectangleCard>
 
   @override
   Widget build(BuildContext context) {
-    final Brightness? brightness = CupertinoTheme.of(context).brightness;
+    final brightness = CupertinoTheme.of(context).brightness ?? MediaQuery.of(context).platformBrightness;
     var isDown = false;
     var isCancel = false;
     var core = Container(
