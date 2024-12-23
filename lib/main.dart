@@ -57,22 +57,31 @@ void main() async {
 
   if (Platform.isAndroid) {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+    var brightnessMode = Get.find<Option>(tag: 'option').brightnessMode;
+    var dispatcher = SchedulerBinding.instance.platformDispatcher;
 
-    var brightness = Get.find<Option>(tag: 'option').brightnessMode;
-    ever(brightness, (value) {
-      SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-        statusBarIconBrightness: value == BrightnessMode.dark ? Brightness.light : Brightness.dark,
-        systemNavigationBarColor: Colors.transparent,
-      ));
+    ever(brightnessMode, (mode) {
+      if (mode == BrightnessMode.system) {
+        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+          statusBarIconBrightness: dispatcher.platformBrightness == Brightness.light ? Brightness.dark : Brightness.light,
+          systemNavigationBarColor: Colors.transparent,
+        ));
+        dispatcher.onPlatformBrightnessChanged = () {
+          SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+            statusBarIconBrightness: dispatcher.platformBrightness == Brightness.light ? Brightness.dark : Brightness.light,
+            systemNavigationBarColor: Colors.transparent,
+          ));
+        };
+      } else {
+        dispatcher.onPlatformBrightnessChanged = null;
+        SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+          statusBarIconBrightness: mode == BrightnessMode.light ? Brightness.dark : Brightness.light,
+          systemNavigationBarColor: Colors.transparent,
+        ));
+      }
     });
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-      statusBarIconBrightness:
-          SchedulerBinding.instance.platformDispatcher.platformBrightness ==
-                  Brightness.dark
-              ? Brightness.light
-              : Brightness.dark,
-      systemNavigationBarColor: Colors.transparent,
-    ));
+
+    brightnessMode.refresh();
   }
 
   Future<void> initTimezone() async {}
