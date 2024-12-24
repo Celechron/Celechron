@@ -10,6 +10,7 @@ import androidx.glance.*
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.layout.*
 import androidx.glance.preview.ExperimentalGlancePreviewApi
@@ -53,13 +54,10 @@ class ECardWidget : GlanceAppWidget() {
         }
     }
 
-    // Generate Preview for the AppWidget
-
-
     @Composable
     private fun content(context: Context?, id: GlanceId?, balance: Int) {
         Column(
-            modifier = GlanceModifier.background(GlanceTheme.colors.background).fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp).clickable{
+            modifier = GlanceModifier.background(GlanceTheme.colors.background).fillMaxSize().padding(horizontal = 16.dp, vertical = 12.dp).cornerRadius(16.dp).clickable{
                 val intent = Intent(Intent.ACTION_VIEW, Uri.parse("celechron://ecardpaypage"))
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 context?.startActivity(intent)
