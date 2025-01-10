@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:celechron/http/zjuServices/courses.dart';
 import 'package:get/get.dart';
 
 import 'package:celechron/http/spider.dart';
@@ -19,6 +20,7 @@ class UgrsSpider implements Spider {
   late String _username;
   late String _password;
   // late AppService _appService;
+  late Courses _courses;
   late Zdbk _zdbk;
   late GrsNew _grsNew;
   late TimeConfigService _timeConfigService;
@@ -31,6 +33,7 @@ class UgrsSpider implements Spider {
     _httpClient.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     // _appService = AppService(db: _db);
+    _courses = Courses();
     _zdbk = Zdbk();
     _grsNew = GrsNew();
     _timeConfigService = TimeConfigService();
@@ -41,6 +44,7 @@ class UgrsSpider implements Spider {
   @override
   set db(DatabaseHelper? db) {
     // _appService.db = db;
+    _courses.db = db;
     _zdbk.db = db;
     _grsNew.db = db;
     _timeConfigService.db = db;
@@ -66,6 +70,12 @@ class UgrsSpider implements Spider {
               .then((value) => null as String?)
               .timeout(const Duration(seconds: 8))
               .catchError((e) => "无法登录钉钉工作台，$e"),*/
+          _courses
+              .login(_httpClient, _iPlanetDirectoryPro)
+              // ignore: unnecessary_cast
+              .then((value) => null as String?)
+              .timeout(const Duration(seconds: 8))
+              .catchError((e) => "无法登录学在浙大，$e"),
           _zdbk
               .login(_httpClient, _iPlanetDirectoryPro)
               // ignore: unnecessary_cast
@@ -103,22 +113,24 @@ class UgrsSpider implements Spider {
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override
   Future<
-      Tuple6<
+      Tuple7<
           List<String?>,
           List<String?>,
           List<Semester>,
           Map<String, List<Grade>>,
           List<double>,
-          Map<DateTime, String>>> getEverything() async {
+          Map<DateTime, String>,
+          List<Map<String, String>>>> getEverything() async {
     // 请求顺序
     var fetches = <Future<String?>>[];
-    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修'];
+    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业'];
 
     // 返回值初始化
     var outSemesters = <Semester>[];
     var outGrades = <String, List<Grade>>{};
     var outMajorGrade = <double>[];
     var outSpecialDates = <DateTime, String>{};
+    var outTodos = <Map<String, String>>[];
     var loginErrorMessages = <String?>[null, null, null];
 
     // 如果Cookie过期了，就重新登录
@@ -315,6 +327,13 @@ class UgrsSpider implements Spider {
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
+    // 作业（学在浙大）
+    fetches.add(_courses.getTodo(_httpClient).then((value) {
+      outTodos.clear();
+      outTodos.addAll(value.item2);
+      return value.item1?.toString();
+    }).catchError((e) => e.toString()));
+
     // 等待所有请求完成。然后，删除不包含考试、成绩、课程的全空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
       outSemesters.removeWhere((e) =>
@@ -346,8 +365,8 @@ class UgrsSpider implements Spider {
       }
     }
 
-    return Tuple6(loginErrorMessages, fetchErrorMessages, outSemesters,
-        outGrades, outMajorGrade, outSpecialDates);
+    return Tuple7(loginErrorMessages, fetchErrorMessages, outSemesters,
+        outGrades, outMajorGrade, outSpecialDates, outTodos);
   }
 }
 
@@ -365,15 +384,16 @@ class MockSpider extends UgrsSpider {
 
   @override
   Future<
-      Tuple6<
+      Tuple7<
           List<String?>,
           List<String?>,
           List<Semester>,
           Map<String, List<Grade>>,
           List<double>,
-          Map<DateTime, String>>> getEverything() async {
+          Map<DateTime, String>,
+          List<Map<String, String>>>> getEverything() async {
     await Future.delayed(const Duration(seconds: 2));
-    return Tuple6(
+    return Tuple7(
         [null, null],
         [null, null, null, null, null, null],
         [
@@ -387,6 +407,7 @@ class MockSpider extends UgrsSpider {
               key, (value as List).map((e) => Grade.fromJson(e)).toList());
         }),
         [4.631297709923665, 131.0],
-        {});
+        {},
+        []); // TODO: Add mock data for todo
   }
 }

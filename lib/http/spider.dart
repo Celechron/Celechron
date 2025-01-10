@@ -5,7 +5,6 @@ import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/semester.dart';
 
 abstract class Spider {
-
   set db(DatabaseHelper? db);
 
   Future<List<String?>> login() async {
@@ -17,13 +16,14 @@ abstract class Spider {
   }
 
   Future<
-      Tuple6<
+      Tuple7<
           List<String?>,
           List<String?>,
           List<Semester>,
           Map<String, List<Grade>>,
           List<double>,
-          Map<DateTime, String>>> getEverything() async {
+          Map<DateTime, String>,
+          List<Map<String, String>>>> getEverything() async {
     throw UnimplementedError();
   }
 }

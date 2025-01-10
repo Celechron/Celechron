@@ -102,15 +102,17 @@ class GrsSpider implements Spider {
   }
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
+  // TODO: 研究生也需要学在浙大的ddl吗？
   @override
   Future<
-      Tuple6<
+      Tuple7<
           List<String?>,
           List<String?>,
           List<Semester>,
           Map<String, List<Grade>>,
           List<double>,
-          Map<DateTime, String>>> getEverything() async {
+          Map<DateTime, String>,
+          List<Map<String, String>>>> getEverything() async {
     // 返回值初始化
     var outSemesters = <Semester>[];
     var outGrades = <String, List<Grade>>{};
@@ -391,7 +393,7 @@ class GrsSpider implements Spider {
       }
     }
 
-    return Tuple6(loginErrorMessages, fetchErrorMessages, outSemesters,
-        outGrades, outMajorGrade, outSpecialDates);
+    return Tuple7(loginErrorMessages, fetchErrorMessages, outSemesters,
+        outGrades, outMajorGrade, outSpecialDates, []);
   }
 }
