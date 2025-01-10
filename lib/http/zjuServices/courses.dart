@@ -15,18 +15,64 @@ class Courses {
     _db = db;
   }
 
+  Future<Tuple<Exception?, List<Map<String, String>>>> getTodo(
+      HttpClient httpClient) async {
+    late HttpClientRequest request;
+    late HttpClientResponse response;
+
+    try {
+      if (_session == null) {
+        throw ExceptionWithMessage("未登录");
+      }
+      request = await httpClient
+          .getUrl(Uri.parse("https://courses.zju.edu.cn/api/todos"))
+          .timeout(const Duration(seconds: 8),
+              onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      request.cookies.add(_session!);
+      response = await request.close().timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
+
+      var body = await response.transform(utf8.decoder).join();
+
+      _db?.setCachedWebPage("courses_todo", body);
+
+      var data = (jsonDecode(body))['todo_list'] as List;
+      var todos = <Map<String, String>>[];
+      for (final entry in data) {
+        var todo = {
+          "course_name": entry["course_name"] as String,
+          "description": entry["title"] as String,
+          "end_time": entry["end_time"] as String
+        };
+        todos.add(todo);
+      }
+      return Tuple(null, todos);
+    } catch (e) {
+      var exception =
+          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      var todos = jsonDecode(_db?.getCachedWebPage("courses_todo") ?? '[]')
+          as List<Map<String, String>>;
+      return Tuple(exception, todos);
+    }
+  }
+
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
 
-    if (iPlanetDirectoryPro == null) return false;
+    if (iPlanetDirectoryPro == null) {
+      throw ExceptionWithMessage("iPlanetDirectoryPro无效");
+    }
     var cookies = <Cookie>[iPlanetDirectoryPro];
 
     Future<void> getWithCookies(String url) async {
-      request = await httpClient.getUrl(Uri.parse(url));
+      request = await httpClient.getUrl(Uri.parse(url)).timeout(
+          const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
       request.followRedirects = false;
       request.cookies.addAll(cookies);
-      response = await request.close();
+      response = await request.close().timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
       cookies.addAll(response.cookies);
       response.drain();
       if (response.isRedirect) {
@@ -43,55 +89,13 @@ class Courses {
 
     await getWithCookies("https://courses.zju.edu.cn/user/index");
     if (_session == null) {
-      return false;
+      throw ExceptionWithMessage("无法获取session");
     }
-
-    // request = await httpClient
-    //     .getUrl(Uri.parse("https://courses.zju.edu.cn/api/todos"));
-    // request.cookies.add(_session!);
-    // response = await request.close();
-    // print(await response.transform(utf8.decoder).join());
 
     return true;
   }
 
   void logout() {
     _session = null;
-  }
-
-  Future<Tuple<Exception?, List<double>>> getTodo(HttpClient httpClient) async {
-    late HttpClientRequest request;
-    late HttpClientResponse response;
-
-    try {
-      if (_session == null) {
-        throw ExceptionWithMessage("未登录");
-      }
-      request = await httpClient
-          .getUrl(Uri.parse("https://courses.zju.edu.cn/api/todos"))
-          .timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("请求超时"));
-      request.cookies.add(_session!);
-      response = await request.close().timeout(const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("请求超时"));
-
-      var transcriptJson = await response.transform(utf8.decoder).join();
-
-      var todos =
-          (jsonDecode(transcriptJson) as Map<dynamic, dynamic>)["todo_list"];
-      print(todos);
-      // var majorGpa = GpaHelper.calculateGpa(grades);
-      // _db?.setCachedWebPage('zdbk_MajorGrade', transcriptJson);
-      // return Tuple(null, [majorGpa.item1[0], majorGpa.item2]);
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      // var grades = (jsonDecode(_db?.getCachedWebPage('zdbk_MajorGrade') ?? '[]')
-      //         as List<dynamic>)
-      //     .where((e) => e['xkkh'] != null)
-      //     .map((e) => Grade(e));
-      // var majorGpa = GpaHelper.calculateGpa(grades);
-      // return Tuple(exception, [majorGpa.item1[0], majorGpa.item2]);
-    }
   }
 }
