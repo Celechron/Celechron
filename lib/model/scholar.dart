@@ -175,12 +175,17 @@ class Scholar {
       'specialDates':
           specialDates.map((k, v) => MapEntry(k.toIso8601String(), v)),
       'lastUpdateTime': lastUpdateTime.toIso8601String(),
+      'todos': todos,
     };
   }
 
   Scholar.fromJson(Map<String, dynamic> json) {
-    username = json.containsKey('username') ? json['username'] : null;    // <=0.2.6 Compatibility
-    password = json.containsKey('password') ? json['password'] : null;   // <=0.2.6 Compatibility
+    username = json.containsKey('username')
+        ? json['username']
+        : null; // <=0.2.6 Compatibility
+    password = json.containsKey('password')
+        ? json['password']
+        : null; // <=0.2.6 Compatibility
     semesters =
         (json['semesters'] as List).map((e) => Semester.fromJson(e)).toList();
     grades = (json['grades'] as Map<String, dynamic>).map((key, value) {
@@ -194,6 +199,9 @@ class Scholar {
     specialDates = ((json['specialDates'] ?? {}) as Map)
         .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
     lastUpdateTime = DateTime.parse(json['lastUpdateTime']);
+    todos = json.containsKey('todos')
+        ? List<Map<String, String>>.from(json['todos'])
+        : []; // back compatibility
     isLogan = true;
     if (gpa.length == 3) {
       gpa.insert(2, 0);
