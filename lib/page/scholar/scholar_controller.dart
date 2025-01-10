@@ -6,7 +6,6 @@ import 'package:celechron/model/semester.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/option.dart';
 
-
 class ScholarController extends GetxController {
   final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final _option = Get.find<Option>(tag: 'option');
@@ -20,8 +19,8 @@ class ScholarController extends GetxController {
 
   Semester get selectedSemester {
     if (semesterIndex >= semesters.length || semesterIndex < 0) {
-      var thisSemesterIndex =
-          semesters.indexWhere((e) => e.name == _scholar.value.thisSemester.name);
+      var thisSemesterIndex = semesters
+          .indexWhere((e) => e.name == _scholar.value.thisSemester.name);
       semesterIndex.value = thisSemesterIndex >= 0 ? thisSemesterIndex : 0;
     }
     return semesters[semesterIndex.value];
@@ -32,6 +31,8 @@ class ScholarController extends GetxController {
   List<double> get gpa => _option.gpaStrategy.value == GpaStrategy.first
       ? _scholar.value.gpa
       : _scholar.value.aboardGpa;
+
+  List<Map<String, String>> get todos => _scholar.value.todos;
 
   Future<List<String?>> fetchData() async {
     return await _scholar.value.refresh().then((value) {

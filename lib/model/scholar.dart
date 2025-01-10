@@ -48,6 +48,9 @@ class Scholar {
   // 特殊日期
   Map<DateTime, String> specialDates = {};
 
+  // 作业（学在浙大）
+  List<Map<String, String>> todos = [];
+
   int get gradedCourseCount {
     return grades.values.fold(0, (p, e) => p + e.length);
   }
@@ -74,12 +77,12 @@ class Scholar {
 
   // 初始化以获取Cookies，并刷新数据
   Future<List<String?>> login() async {
-    if(username == null || password == null) {
+    if (username == null || password == null) {
       return ["未登录"];
     }
     if (username == '3200000000') {
       _spider = MockSpider();
-    } else if(!isGrs) {
+    } else if (!isGrs) {
       _spider = UgrsSpider(username!, password!);
     } else {
       _spider = GrsSpider(username!, password!);
@@ -124,44 +127,48 @@ class Scholar {
     }
     _mutex++;
     return await _spider?.getEverything().then((value) async {
-      for (var e in value.item1) {
-        // ignore: avoid_print
-        if (e != null) print(e);
-      }
-      for (var e in value.item2) {
-        // ignore: avoid_print
-        if (e != null) print(e);
-      }
-      if (value.item1.every((e) => e == null) &&
-          value.item2.every((e) => e == null)) {
-        lastUpdateTime = DateTime.now();
-      }
-      semesters = value.item3;
-      grades = value.item4;
-      majorGpaAndCredit = value.item5;
-      specialDates = value.item6;
-      // 保研成绩，只取第一次
-      var netGrades = grades.values.map((e) => e.first);
-      if (netGrades.isNotEmpty) {
-        gpa = GpaHelper.calculateGpa(netGrades).item1;
-      }
-      // 出国成绩，取最高的一次
-      var aboardNetGrades = grades.values.map((e) {
-        e.sort((a, b) => a.hundredPoint.compareTo(b.hundredPoint));
-        return e.last;
-      });
-      if (aboardNetGrades.isNotEmpty) {
-        var result = GpaHelper.calculateGpa(aboardNetGrades);
-        aboardGpa = result.item1;
-        // 所获学分，不包括挂科的。
-        credit = result.item2;
-      } else {
-        credit = 0.0;
-      }
+          for (var e in value.item1) {
+            // ignore: avoid_print
+            if (e != null) print(e);
+          }
+          for (var e in value.item2) {
+            // ignore: avoid_print
+            if (e != null) print(e);
+          }
+          if (value.item1.every((e) => e == null) &&
+              value.item2.every((e) => e == null)) {
+            lastUpdateTime = DateTime.now();
+          }
+          semesters = value.item3;
+          grades = value.item4;
+          majorGpaAndCredit = value.item5;
+          specialDates = value.item6;
+          todos = value.item7;
+          // 保研成绩，只取第一次
+          var netGrades = grades.values.map((e) => e.first);
+          if (netGrades.isNotEmpty) {
+            gpa = GpaHelper.calculateGpa(netGrades).item1;
+          }
+          // 出国成绩，取最高的一次
+          var aboardNetGrades = grades.values.map((e) {
+            e.sort((a, b) => a.hundredPoint.compareTo(b.hundredPoint));
+            return e.last;
+          });
+          if (aboardNetGrades.isNotEmpty) {
+            var result = GpaHelper.calculateGpa(aboardNetGrades);
+            aboardGpa = result.item1;
+            // 所获学分，不包括挂科的。
+            credit = result.item2;
+          } else {
+            credit = 0.0;
+          }
 
-      await _db?.setScholar(this);
-      return value.item1.every((e) => e == null) ? value.item2 : value.item1;
-    }).whenComplete(() => _mutex--) ?? ['未登录'];
+          await _db?.setScholar(this);
+          return value.item1.every((e) => e == null)
+              ? value.item2
+              : value.item1;
+        }).whenComplete(() => _mutex--) ??
+        ['未登录'];
   }
 
   Map<String, dynamic> toJson() {
