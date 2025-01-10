@@ -1,11 +1,12 @@
+// This implementation is adapted from the project "login-ZJU" by 5dbwat4(https://github.com/5dbwat4/login-ZJU) under the MIT License.
+// See: https://github.com/5dbwat4/login-ZJU/blob/main/src/utils/fetch-with-cookie.ts
+
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
-
-// See: https://github.com/5dbwat4/login-ZJU/blob/main/src/utils/fetch-with-cookie.ts
 
 class Courses {
   DatabaseHelper? _db;
