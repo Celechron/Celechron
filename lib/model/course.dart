@@ -93,7 +93,19 @@ class Course {
         e.oddWeek == session.oddWeek &&
         e.evenWeek == session.evenWeek &&
         e.location == session.location &&
-        e.time.contains(session.time.first))) return false;
+        e.time.contains(session.time.first))) {
+      // 观察到修改过某短学期上课周数的长学期课程出现秋+冬两个session
+      // 合并学期类型
+      var currentSession = sessions.firstWhere((e) =>
+          e.dayOfWeek == session.dayOfWeek &&
+          e.oddWeek == session.oddWeek &&
+          e.evenWeek == session.evenWeek &&
+          e.location == session.location &&
+          e.time.contains(session.time.first));
+      currentSession.firstHalf = currentSession.firstHalf || session.firstHalf;
+      currentSession.secondHalf = currentSession.secondHalf || session.secondHalf;
+      return false;
+    }
     if (sessions.any((e) =>
         e.dayOfWeek == session.dayOfWeek &&
         e.oddWeek == session.oddWeek &&
