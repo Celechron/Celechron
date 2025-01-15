@@ -79,7 +79,7 @@ class CourseBriefCard extends StatelessWidget {
                         ),
                         Expanded(
                             child: Text(
-                                ' 课号：${course.id == null ? '未知' : (course.id!.length < 22 ? course.id! : course.id!.substring(0, 22))}',
+                                ' 课号：${course.realId}',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.normal,

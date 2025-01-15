@@ -197,7 +197,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     ),
                     if (now.type == TaskType.fixed)
                       CupertinoTextFormFieldRow(
-                        placeholder: '结束时间',
+                        placeholder: '开始时间',
                         textAlign: TextAlign.left,
                         controller: TextEditingController(
                             text:
@@ -222,6 +222,9 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                       onDateTimeChanged: (DateTime newTime) {
                                         setState(() {
                                           now.startTime = newTime;
+                                          if (now.endTime.isBefore(now.startTime)) {
+                                            now.endTime = now.startTime;
+                                          }
                                         });
                                       },
                                     ),
@@ -256,6 +259,9 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                     onDateTimeChanged: (DateTime newTime) {
                                       setState(() {
                                         now.endTime = newTime;
+                                        if (now.type == TaskType.fixed && now.startTime.isAfter(now.endTime)) {
+                                          now.startTime = now.endTime;
+                                        }
                                       });
                                     },
                                   ),
