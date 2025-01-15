@@ -166,7 +166,7 @@ class _GradeCardState extends State<GradeCard>
                                 ),
                           ),
                           Text(
-                            '${widget.grade.id.substring(0, 22)} / ${widget.grade.credit.toStringAsFixed(1)} 学分',
+                            '${widget.grade.realId} / ${widget.grade.credit.toStringAsFixed(1)} 学分',
                             style: CupertinoTheme.of(context)
                                 .textTheme
                                 .textStyle

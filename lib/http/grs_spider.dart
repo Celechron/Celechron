@@ -318,9 +318,10 @@ class GrsSpider implements Spider {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addGrade(e);
         //体育课
-        var key = e.id.substring(14, 22);
-        if (key.startsWith('401')) {
-          key = e.id.substring(0, 22);
+        var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
+        var key = matchClass?.group(2) ?? e.id.substring(14, 22);
+        if (key.startsWith('PPAE') || key.startsWith('401')) {
+          key = matchClass?.group(1) ?? e.id.substring(0, 22);
         }
         outGrades.putIfAbsent(key, () => <Grade>[]).add(e);
       }

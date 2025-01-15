@@ -18,6 +18,14 @@ class Course {
 
   bool? online = false; // only used for grs
 
+  String get realId {
+    if (id == null) return '未知';
+    var matchClass = RegExp(r'(\(.*\)-.*?)-.*').firstMatch(id!);
+    var key = matchClass?.group(1);
+    key ??= id!.length < 22 ? id : id!.substring(0, 22);
+    return key ?? '未知';
+  }
+
   Course.fromExam(ExamDto examDto) {
     id = examDto.id;
     name = examDto.name;

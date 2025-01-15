@@ -20,6 +20,13 @@ class Grade {
   // only used for ugrs
   String get semesterId => id.length > 12 ? id.substring(1, 12) : "研究生请勿使用此函数";
 
+  String get realId {
+    var matchClass = RegExp(r'(\(.*\)-.*?)-.*').firstMatch(id);
+    var key = matchClass?.group(1);
+    key ??= id.length < 22 ? id : id.substring(0, 22);
+    return key ?? '未知';
+  }
+
   static final Map<double, double> _toFourPoint = {
     5.0: 4.3,
     4.8: 4.2,
