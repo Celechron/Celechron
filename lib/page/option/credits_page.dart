@@ -173,6 +173,12 @@ class CreditsPage extends StatelessWidget {
                                 textAlign: TextAlign.center,
                               ),
                             ),
+                            Expanded(
+                              child: Text(
+                                'poormonitor',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
                           ],
                         ),
                       ],
