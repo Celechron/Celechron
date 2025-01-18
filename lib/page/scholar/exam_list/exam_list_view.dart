@@ -66,7 +66,7 @@ class ExamListPage extends StatelessWidget {
                               .textTheme
                               .textStyle
                               .color!
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                         ),
                         Expanded(
                             child: Text(' 时间：${exams[0].chineseTime}',
@@ -77,7 +77,7 @@ class ExamListPage extends StatelessWidget {
                                       .textTheme
                                       .textStyle
                                       .color!
-                                      .withOpacity(0.75),
+                                      .withValues(alpha: 0.75),
                                   overflow: TextOverflow.ellipsis,
                                 )))
                       ]),
@@ -89,7 +89,7 @@ class ExamListPage extends StatelessWidget {
                               .textTheme
                               .textStyle
                               .color!
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                         ),
                         Expanded(
                             child: Text(' 地点：${exams[0].location ?? '未知'}',
@@ -100,7 +100,7 @@ class ExamListPage extends StatelessWidget {
                                       .textTheme
                                       .textStyle
                                       .color!
-                                      .withOpacity(0.75),
+                                      .withValues(alpha: 0.75),
                                   overflow: TextOverflow.ellipsis,
                                 )))
                       ]),
@@ -112,7 +112,7 @@ class ExamListPage extends StatelessWidget {
                               .textTheme
                               .textStyle
                               .color!
-                              .withOpacity(0.5),
+                              .withValues(alpha: 0.5),
                         ),
                         Expanded(
                             child: Text(' 座位：${exams[0].seat ?? '未知'}',
@@ -123,7 +123,7 @@ class ExamListPage extends StatelessWidget {
                                       .textTheme
                                       .textStyle
                                       .color!
-                                      .withOpacity(0.75),
+                                      .withValues(alpha: 0.75),
                                   overflow: TextOverflow.ellipsis,
                                 )))
                       ]),
@@ -172,7 +172,7 @@ class ExamListPage extends StatelessWidget {
                                 .textTheme
                                 .textStyle
                                 .color!
-                                .withOpacity(0.5),
+                                .withValues(alpha: 0.5),
                           ),
                           Expanded(
                               child: Text(' 时间：${exams[i].chineseTime}',
@@ -183,7 +183,7 @@ class ExamListPage extends StatelessWidget {
                                         .textTheme
                                         .textStyle
                                         .color!
-                                        .withOpacity(0.75),
+                                        .withValues(alpha: 0.75),
                                     overflow: TextOverflow.ellipsis,
                                   )))
                         ]),
@@ -195,7 +195,7 @@ class ExamListPage extends StatelessWidget {
                                 .textTheme
                                 .textStyle
                                 .color!
-                                .withOpacity(0.5),
+                                .withValues(alpha: 0.5),
                           ),
                           Expanded(
                               child: Text(' 地点：${exams[i].location ?? '未知'}',
@@ -206,7 +206,7 @@ class ExamListPage extends StatelessWidget {
                                         .textTheme
                                         .textStyle
                                         .color!
-                                        .withOpacity(0.75),
+                                        .withValues(alpha: 0.75),
                                     overflow: TextOverflow.ellipsis,
                                   )))
                         ]),
@@ -218,7 +218,7 @@ class ExamListPage extends StatelessWidget {
                                 .textTheme
                                 .textStyle
                                 .color!
-                                .withOpacity(0.5),
+                                .withValues(alpha: 0.5),
                           ),
                           Expanded(
                               child: Text(' 座位：${exams[i].seat ?? '未知'}',
@@ -229,7 +229,7 @@ class ExamListPage extends StatelessWidget {
                                         .textTheme
                                         .textStyle
                                         .color!
-                                        .withOpacity(0.75),
+                                        .withValues(alpha: 0.75),
                                     overflow: TextOverflow.ellipsis,
                                   )))
                         ]),

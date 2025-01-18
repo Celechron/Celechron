@@ -101,7 +101,7 @@ class ScholarPage extends StatelessWidget {
                         child: RoundRectangleCardWithForehead(
                             foreheadColor: CustomCupertinoDynamicColors
                                 .okGreen.darkColor
-                                .withOpacity(0.25),
+                                .withValues(alpha: 0.25),
                             forehead: Obx(() => Row(children: [
                                   // University Icon
                                   Padding(
@@ -268,7 +268,7 @@ class ScholarPage extends StatelessWidget {
                         animate: false,
                         foreheadColor: CustomCupertinoDynamicColors
                             .cyan.darkColor
-                            .withOpacity(0.25),
+                            .withValues(alpha: 0.25),
                         forehead: Obx(() => Row(children: [
                               // University Icon
                               Padding(

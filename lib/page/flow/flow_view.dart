@@ -132,7 +132,7 @@ class FlowPage extends StatelessWidget {
                                     .textTheme
                                     .textStyle
                                     .color!
-                                    .withOpacity(0.75),
+                                    .withValues(alpha: 0.75),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
@@ -159,7 +159,7 @@ class FlowPage extends StatelessWidget {
                                                   .textTheme
                                                   .textStyle
                                                   .color!
-                                                  .withOpacity(0.75),
+                                                  .withValues(alpha: 0.75),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
@@ -192,7 +192,7 @@ class FlowPage extends StatelessWidget {
                                                   .textTheme
                                                   .textStyle
                                                   .color!
-                                                  .withOpacity(0.75),
+                                                  .withValues(alpha: 0.75),
                                               overflow: TextOverflow.ellipsis,
                                             ),
                                           ),
@@ -331,7 +331,7 @@ class FlowPage extends StatelessWidget {
                                   .textTheme
                                   .textStyle
                                   .color!
-                                  .withOpacity(0.5),
+                                  .withValues(alpha: 0.5),
                             ),
                             const SizedBox(width: 6),
                             Expanded(
@@ -344,7 +344,7 @@ class FlowPage extends StatelessWidget {
                                     .textTheme
                                     .textStyle
                                     .color!
-                                    .withOpacity(0.75),
+                                    .withValues(alpha: 0.75),
                                 overflow: TextOverflow.ellipsis,
                               ),
                             )),
@@ -358,7 +358,7 @@ class FlowPage extends StatelessWidget {
                                     .textTheme
                                     .textStyle
                                     .color!
-                                    .withOpacity(0.5),
+                                    .withValues(alpha: 0.5),
                               ),
                               const SizedBox(width: 6),
                               Expanded(
@@ -370,7 +370,7 @@ class FlowPage extends StatelessWidget {
                                             .textTheme
                                             .textStyle
                                             .color!
-                                            .withOpacity(0.75),
+                                            .withValues(alpha: 0.75),
                                         overflow: TextOverflow.ellipsis,
                                       )))
                             ]),
@@ -394,7 +394,7 @@ class FlowPage extends StatelessWidget {
                                     .textTheme
                                     .textStyle
                                     .color!
-                                    .withOpacity(0.75),
+                                    .withValues(alpha: 0.75),
                               ),
                               textAlign: TextAlign.right,
                             )
@@ -408,7 +408,7 @@ class FlowPage extends StatelessWidget {
                                     .textTheme
                                     .textStyle
                                     .color!
-                                    .withOpacity(0.75),
+                                    .withValues(alpha: 0.75),
                               ),
                               textAlign: TextAlign.right,
                             ),
