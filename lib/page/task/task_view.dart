@@ -231,7 +231,7 @@ class TaskPage extends StatelessWidget {
                           .textTheme
                           .textStyle
                           .color!
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                     ),
                     Expanded(
                       child: Text(
@@ -245,7 +245,7 @@ class TaskPage extends StatelessWidget {
                               .textTheme
                               .textStyle
                               .color!
-                              .withOpacity(0.75),
+                              .withValues(alpha: 0.75),
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
@@ -262,7 +262,7 @@ class TaskPage extends StatelessWidget {
                             .textTheme
                             .textStyle
                             .color!
-                            .withOpacity(0.5),
+                            .withValues(alpha: 0.5),
                       ),
                       Expanded(
                         child: Text(
@@ -274,7 +274,7 @@ class TaskPage extends StatelessWidget {
                                 .textTheme
                                 .textStyle
                                 .color!
-                                .withOpacity(0.75),
+                                .withValues(alpha: 0.75),
                             overflow: TextOverflow.ellipsis,
                           ),
                         ),
@@ -291,7 +291,7 @@ class TaskPage extends StatelessWidget {
                           .textTheme
                           .textStyle
                           .color!
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                     ),
                     Expanded(
                         child: Text(' 地点：${deadline.location}',
@@ -302,7 +302,7 @@ class TaskPage extends StatelessWidget {
                                   .textTheme
                                   .textStyle
                                   .color!
-                                  .withOpacity(0.75),
+                                  .withValues(alpha: 0.75),
                               overflow: TextOverflow.ellipsis,
                             )))
                   ]),
@@ -316,7 +316,7 @@ class TaskPage extends StatelessWidget {
                           .textTheme
                           .textStyle
                           .color!
-                          .withOpacity(0.5),
+                          .withValues(alpha: 0.5),
                     ),
                     Expanded(
                         child: Text(deadlineProgress(deadline),
@@ -327,7 +327,7 @@ class TaskPage extends StatelessWidget {
                                   .textTheme
                                   .textStyle
                                   .color!
-                                  .withOpacity(0.75),
+                                  .withValues(alpha: 0.75),
                               overflow: TextOverflow.ellipsis,
                             ))),
                   ]),

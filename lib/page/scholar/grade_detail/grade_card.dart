@@ -56,7 +56,7 @@ class _GradeCardState extends State<GradeCard>
 
   @override
   Widget build(BuildContext context) {
-    var brightness = MediaQuery.of(context).platformBrightness;
+    var brightness = CupertinoTheme.of(context).brightness ?? MediaQuery.of(context).platformBrightness;
     var isDown = false;
     var isCancel = false;
 
@@ -113,7 +113,7 @@ class _GradeCardState extends State<GradeCard>
               boxShadow: [
                 BoxShadow(
                   // Only show shadow in light mode
-                  color: CupertinoColors.black.withOpacity(0.1),
+                  color: CupertinoColors.black.withValues(alpha: 0.1),
                   spreadRadius: 0,
                   blurRadius: 12,
                   offset: const Offset(0, 6), // changes position of shadow
@@ -161,7 +161,7 @@ class _GradeCardState extends State<GradeCard>
                                       .textTheme
                                       .textStyle
                                       .color!
-                                      .withOpacity(isHighlighted() ? 1.0 : 0.5),
+                                      .withValues(alpha: isHighlighted() ? 1.0 : 0.5),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                           ),
@@ -175,7 +175,7 @@ class _GradeCardState extends State<GradeCard>
                                       .textTheme
                                       .textStyle
                                       .color!
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                                   fontSize: 12,
                                   fontWeight: FontWeight.normal,
                                   overflow: TextOverflow.ellipsis,
@@ -196,7 +196,7 @@ class _GradeCardState extends State<GradeCard>
                                 .textTheme
                                 .textStyle
                                 .color!
-                                .withOpacity(isHighlighted() ? 1.0 : 0.5),
+                                .withValues(alpha: isHighlighted() ? 1.0 : 0.5),
                           ),
                     ),
                   ],
