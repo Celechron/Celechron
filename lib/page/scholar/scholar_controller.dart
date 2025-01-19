@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:celechron/model/todo.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:get/get.dart';
 
@@ -32,7 +33,12 @@ class ScholarController extends GetxController {
       ? _scholar.value.gpa
       : _scholar.value.aboardGpa;
 
-  List<Map<String, String>> get todos => _scholar.value.todos;
+  List<Todo> get todos =>
+      _scholar.value.todos..sort((a, b) => a.endTime.compareTo(b.endTime));
+
+  List<Todo> get todosInOneDay => todos.where((e) => e.isInOneDay()).toList();
+
+  List<Todo> get todosInOneWeek => todos.where((e) => e.isInOneWeek()).toList();
 
   Future<List<String?>> fetchData() async {
     return await _scholar.value.refresh().then((value) {
