@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
+import 'package:celechron/model/todo.dart';
 
 class Courses {
   DatabaseHelper? _db;
@@ -16,8 +17,7 @@ class Courses {
     _db = db;
   }
 
-  Future<Tuple<Exception?, List<Map<String, String>>>> getTodo(
-      HttpClient httpClient) async {
+  Future<Tuple<Exception?, List<Todo>>> getTodo(HttpClient httpClient) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
 
@@ -37,22 +37,13 @@ class Courses {
 
       _db?.setCachedWebPage("courses_todo", body);
 
-      var data = (jsonDecode(body))['todo_list'] as List;
-      var todos = <Map<String, String>>[];
-      for (final entry in data) {
-        var todo = {
-          "course_name": entry["course_name"] as String,
-          "description": entry["title"] as String,
-          "end_time": entry["end_time"] as String
-        };
-        todos.add(todo);
-      }
-      return Tuple(null, todos);
+      return Tuple(null,
+          Todo.getAllFromCourses((jsonDecode(body) as Map<String, dynamic>)));
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      var todos = jsonDecode(_db?.getCachedWebPage("courses_todo") ?? '[]')
-          as List<Map<String, String>>;
+      var todos = Todo.getAllFromCourses(
+          (jsonDecode(_db?.getCachedWebPage("courses_todo") ?? '{}')));
       return Tuple(exception, todos);
     }
   }

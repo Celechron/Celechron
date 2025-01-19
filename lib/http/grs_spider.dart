@@ -5,6 +5,7 @@ import 'package:celechron/http/spider.dart';
 import 'package:celechron/http/time_config_service.dart';
 import 'package:celechron/http/zjuServices/grs_new.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
+import 'package:celechron/model/todo.dart';
 import 'package:get/get.dart';
 
 import 'package:celechron/database/database_helper.dart';
@@ -102,7 +103,6 @@ class GrsSpider implements Spider {
   }
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
-  // TODO: 研究生也需要学在浙大的ddl吗？
   @override
   Future<
       Tuple7<
@@ -112,7 +112,7 @@ class GrsSpider implements Spider {
           Map<String, List<Grade>>,
           List<double>,
           Map<DateTime, String>,
-          List<Map<String, String>>>> getEverything() async {
+          List<Todo>>> getEverything() async {
     // 返回值初始化
     var outSemesters = <Semester>[];
     var outGrades = <String, List<Grade>>{};

@@ -1,6 +1,7 @@
 import 'period.dart';
 import 'grade.dart';
 import 'semester.dart';
+import 'todo.dart';
 import 'package:celechron/utils/gpa_helper.dart';
 import 'package:celechron/http/spider.dart';
 import 'package:celechron/http/ugrs_spider.dart';
@@ -49,7 +50,7 @@ class Scholar {
   Map<DateTime, String> specialDates = {};
 
   // 作业（学在浙大）
-  List<Map<String, String>> todos = [];
+  List<Todo> todos = [];
 
   int get gradedCourseCount {
     return grades.values.fold(0, (p, e) => p + e.length);
@@ -206,9 +207,9 @@ class Scholar {
     specialDates = ((json['specialDates'] ?? {}) as Map)
         .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
     lastUpdateTime = DateTime.parse(json['lastUpdateTime']);
-    todos = json.containsKey('todos')
-        ? List<Map<String, String>>.from(json['todos'])
-        : []; // back compatibility
+    todos = json.containsKey('todos') // back compatibility
+        ? (json['todos'] as List).map((e) => Todo.fromJson(e)).toList()
+        : [];
     isLogan = true;
     if (gpa.length == 3) {
       gpa.insert(2, 0);

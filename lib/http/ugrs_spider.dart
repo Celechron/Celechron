@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:celechron/http/zjuServices/courses.dart';
+import 'package:celechron/model/todo.dart';
 import 'package:get/get.dart';
 
 import 'package:celechron/http/spider.dart';
@@ -120,7 +121,7 @@ class UgrsSpider implements Spider {
           Map<String, List<Grade>>,
           List<double>,
           Map<DateTime, String>,
-          List<Map<String, String>>>> getEverything() async {
+          List<Todo>>> getEverything() async {
     // 请求顺序
     var fetches = <Future<String?>>[];
     List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业'];
@@ -130,7 +131,7 @@ class UgrsSpider implements Spider {
     var outGrades = <String, List<Grade>>{};
     var outMajorGrade = <double>[];
     var outSpecialDates = <DateTime, String>{};
-    var outTodos = <Map<String, String>>[];
+    var outTodos = <Todo>[];
     var loginErrorMessages = <String?>[null, null, null];
 
     // 如果Cookie过期了，就重新登录
@@ -391,7 +392,7 @@ class MockSpider extends UgrsSpider {
           Map<String, List<Grade>>,
           List<double>,
           Map<DateTime, String>,
-          List<Map<String, String>>>> getEverything() async {
+          List<Todo>>> getEverything() async {
     await Future.delayed(const Duration(seconds: 2));
     return Tuple7(
         [null, null],
@@ -408,6 +409,7 @@ class MockSpider extends UgrsSpider {
         }),
         [4.631297709923665, 131.0],
         {},
-        []); // TODO: Add mock data for todo
+        Todo.getAllFromCourses((jsonDecode(
+            '{"todo_list":[{"course_code":"(2024-2025-1)-21121340-0018181-1A","course_id":74393,"course_name":"计算机网络","course_type":1,"end_time":"2025-02-01T06:00:00Z","id":908844,"is_locked":false,"is_student":true,"prerequisites":[],"title":"Project-资料","type":"homework"},{"course_code":"(2024-2025-1)-21121340-0018181-1A","course_id":74393,"course_name":"计算机网络","course_type":1,"end_time":"2025-02-01T04:50:00Z","id":924799,"is_locked":false,"is_student":true,"prerequisites":[],"title":"实验四","type":"homework"},{"course_code":"(2024-2025-1)-21121340-0018181-1A","course_id":74393,"course_name":"计算机网络","course_type":1,"end_time":"2025-02-01T04:53:00Z","id":924802,"is_locked":false,"is_student":true,"prerequisites":[],"title":"作业三","type":"homework"},{"course_code":"(2024-2025-1)-21121340-0018181-1A","course_id":74393,"course_name":"计算机网络","course_type":1,"end_time":"2025-02-01T05:13:00Z","id":929150,"is_locked":false,"is_student":true,"prerequisites":[],"title":"实验五","type":"homework"},{"course_code":"(2024-2025-1)-21121340-0018181-1A","course_id":74393,"course_name":"计算机网络","course_type":1,"end_time":"2025-02-01T05:18:00Z","id":929152,"is_locked":false,"is_student":true,"prerequisites":[],"title":"实验六","type":"homework"},{"course_code":"(2024-2025-1)-21121340-0018181-1A","course_id":74393,"course_name":"计算机网络","course_type":1,"end_time":"2025-02-01T05:20:00Z","id":929153,"is_locked":false,"is_student":true,"prerequisites":[],"title":"作业四","type":"homework"},{"course_code":"(2024-2025-1)-21121340-0018181-1A","course_id":74393,"course_name":"计算机网络","course_type":1,"end_time":"2025-02-01T05:21:00Z","id":929154,"is_locked":false,"is_student":true,"prerequisites":[],"title":"作业五","type":"homework"},{"course_code":"(2024-2025-1)-21121340-0018181-1A","course_id":74393,"course_name":"计算机网络","course_type":1,"end_time":"2025-02-01T11:50:00Z","id":933292,"is_locked":false,"is_student":true,"prerequisites":[],"title":"期末project-提交通道","type":"homework"},{"course_code":"(2024-2025-1)-21192040-0001038-1A","course_id":74535,"course_name":"量子计算理论基础与软件系统","course_type":1,"end_time":"2025-01-09T15:59:00Z","id":928371,"is_locked":false,"is_student":true,"prerequisites":[],"title":"期末大作业","type":"homework"},{"course_code":"(2024-2025-1)-21121500-0003412-1","course_id":78036,"course_name":"优化基本理论与方法","course_type":1,"end_time":"2025-01-18T15:59:00Z","id":932896,"is_locked":false,"is_student":true,"prerequisites":[],"title":"Final Report","type":"homework"}]}'))));
   }
 }
