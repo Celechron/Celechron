@@ -58,7 +58,8 @@ String durationToString(Duration duration) {
 }
 
 String toStringHumanReadable(DateTime dateTime) {
-  String str = dateTime.toIso8601String().replaceFirst(RegExp(r'T'), ' ');
+  String str =
+      dateTime.toLocal().toIso8601String().replaceFirst(RegExp(r'T'), ' ');
   str = str.substring(0, str.length - 7);
   return str;
 }
