@@ -463,7 +463,7 @@ class ScholarPage extends StatelessWidget {
                         animate: false,
                         foreheadColor: CustomCupertinoDynamicColors
                             .magenta.darkColor
-                            .withOpacity(0.25),
+                            .withValues(alpha: 0.25),
                         forehead: Obx(() => Row(children: [
                               Padding(
                                 padding: const EdgeInsets.only(
@@ -550,23 +550,24 @@ class ScholarPage extends StatelessWidget {
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold)),
                               ],
-                              titles: const ["总计", "即将截止", "本周截至"],
+                              titles: const ["总计", "一天内", "本周截止"],
                               onTaps: [() {}, () {}, () {}],
                             ),
                             const SizedBox(height: 16),
-                            SizedBox(
-                                height: 108,
-                                child: ListView.separated(
-                                    scrollDirection: Axis.horizontal,
-                                    itemCount: _scholarController.todos.length,
-                                    separatorBuilder: (context, index) =>
-                                        const SizedBox(width: 8),
-                                    itemBuilder: (context, index) {
-                                      final todo =
-                                          _scholarController.todos[index];
-                                      return SizedBox(
-                                          width: 200,
-                                          child: TodoCard(todo: todo));
+                            if (_scholarController.todos.isNotEmpty)
+                              SizedBox(
+                                  height: 102,
+                                  child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      itemCount: _scholarController.todos.length,
+                                      separatorBuilder: (context, index) =>
+                                          const SizedBox(width: 8),
+                                      itemBuilder: (context, index) {
+                                        final todo =
+                                            _scholarController.todos[index];
+                                        return SizedBox(
+                                            width: 200,
+                                            child: TodoCard(todo: todo));
                                     }))
                           ],
                         ))),

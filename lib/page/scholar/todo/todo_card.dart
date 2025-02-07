@@ -12,7 +12,7 @@ class TodoCard extends StatelessWidget {
     var brightness = CupertinoTheme.of(context).brightness ??
         MediaQuery.of(context).platformBrightness;
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(10),
         color: brightness == Brightness.dark
@@ -29,6 +29,7 @@ class TodoCard extends StatelessWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
         // add a colored edge
         children: [
           Text(
@@ -41,12 +42,12 @@ class TodoCard extends StatelessWidget {
                       .textTheme
                       .textStyle
                       .color!
-                      .withOpacity(0.5),
+                      .withValues(alpha: 0.5),
                   fontSize: 14,
                   fontWeight: FontWeight.normal,
                 ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 6),
           Text(
             todo.name,
             maxLines: 1,
@@ -60,7 +61,7 @@ class TodoCard extends StatelessWidget {
                       : CupertinoTheme.of(context).textTheme.textStyle.color,
                 ),
           ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 4),
           Text(
             toStringHumanReadable(todo.endTime),
             style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
