@@ -1,11 +1,11 @@
 import 'dart:async';
+import 'package:celechron/model/todo.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:get/get.dart';
 
 import 'package:celechron/model/semester.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/option.dart';
-
 
 class ScholarController extends GetxController {
   final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
@@ -20,8 +20,8 @@ class ScholarController extends GetxController {
 
   Semester get selectedSemester {
     if (semesterIndex >= semesters.length || semesterIndex < 0) {
-      var thisSemesterIndex =
-          semesters.indexWhere((e) => e.name == _scholar.value.thisSemester.name);
+      var thisSemesterIndex = semesters
+          .indexWhere((e) => e.name == _scholar.value.thisSemester.name);
       semesterIndex.value = thisSemesterIndex >= 0 ? thisSemesterIndex : 0;
     }
     return semesters[semesterIndex.value];
@@ -32,6 +32,13 @@ class ScholarController extends GetxController {
   List<double> get gpa => _option.gpaStrategy.value == GpaStrategy.first
       ? _scholar.value.gpa
       : _scholar.value.aboardGpa;
+
+  List<Todo> get todos =>
+      _scholar.value.todos..sort((a, b) => a.endTime.compareTo(b.endTime));
+
+  List<Todo> get todosInOneDay => todos.where((e) => e.isInOneDay()).toList();
+
+  List<Todo> get todosInOneWeek => todos.where((e) => e.isInOneWeek()).toList();
 
   Future<List<String?>> fetchData() async {
     return await _scholar.value.refresh().then((value) {

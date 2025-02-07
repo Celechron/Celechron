@@ -1,4 +1,5 @@
 // Official packages
+import 'package:celechron/page/scholar/todo/todo_card.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -450,6 +451,131 @@ class ScholarPage extends StatelessWidget {
         ));
   }
 
+  Widget _buildTodos(BuildContext context) {
+    return RoundRectangleCard(
+        padding: const EdgeInsets.all(0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: RoundRectangleCardWithForehead(
+                        animate: false,
+                        foreheadColor: CustomCupertinoDynamicColors
+                            .magenta.darkColor
+                            .withOpacity(0.25),
+                        forehead: Obx(() => Row(children: [
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    left: 12, top: 6, bottom: 6),
+                                child: Icon(
+                                  Icons.check_circle_rounded,
+                                  color: CupertinoDynamicColor.resolve(
+                                      CupertinoColors.label, context),
+                                  size: 18,
+                                ),
+                              ),
+                              Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 6, top: 6, bottom: 6),
+                                  child: Text('作业',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        overflow: TextOverflow.ellipsis,
+                                        color: CupertinoDynamicColor.resolve(
+                                            CupertinoColors.label, context),
+                                      ))),
+                              const Spacer(),
+                              Padding(
+                                padding:
+                                    const EdgeInsets.only(top: 4, bottom: 4),
+                                child: Icon(
+                                  _scholarController
+                                              .durationToLastUpdate.inMinutes <
+                                          5
+                                      ? CupertinoIcons.check_mark_circled_solid
+                                      : CupertinoIcons
+                                          .exclamationmark_circle_fill,
+                                  color: CupertinoDynamicColor.resolve(
+                                      CupertinoColors.label, context),
+                                  size: 14,
+                                ),
+                              ),
+                              Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 4, top: 4, bottom: 4, right: 16),
+                                  child: Text(
+                                      _scholarController.durationToLastUpdate
+                                                  .inMinutes >
+                                              10000000
+                                          ? '获取数据时遇到问题'
+                                          : '更新于 ${_scholarController.durationToLastUpdate.inMinutes} 分钟前',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        overflow: TextOverflow.ellipsis,
+                                        color: CupertinoDynamicColor.resolve(
+                                            CupertinoColors.label, context),
+                                      )))
+                            ])),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            MultipleColumns(
+                              contents: [
+                                Text(_scholarController.todos.length.toString(),
+                                    style: CupertinoTheme.of(context)
+                                        .textTheme
+                                        .navTitleTextStyle
+                                        .copyWith(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold)),
+                                Text(
+                                    _scholarController.todosInOneDay.length
+                                        .toString(),
+                                    style: CupertinoTheme.of(context)
+                                        .textTheme
+                                        .navTitleTextStyle
+                                        .copyWith(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold)),
+                                Text(
+                                    _scholarController.todosInOneWeek.length
+                                        .toString(),
+                                    style: CupertinoTheme.of(context)
+                                        .textTheme
+                                        .navTitleTextStyle
+                                        .copyWith(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold)),
+                              ],
+                              titles: const ["总计", "即将截止", "本周截至"],
+                              onTaps: [() {}, () {}, () {}],
+                            ),
+                            const SizedBox(height: 16),
+                            SizedBox(
+                                height: 108,
+                                child: ListView.separated(
+                                    scrollDirection: Axis.horizontal,
+                                    itemCount: _scholarController.todos.length,
+                                    separatorBuilder: (context, index) =>
+                                        const SizedBox(width: 8),
+                                    itemBuilder: (context, index) {
+                                      final todo =
+                                          _scholarController.todos[index];
+                                      return SizedBox(
+                                          width: 200,
+                                          child: TodoCard(todo: todo));
+                                    }))
+                          ],
+                        ))),
+              ],
+            ),
+          ],
+        ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
@@ -611,13 +737,25 @@ class ScholarPage extends StatelessWidget {
           if (_scholarController.scholar.semesters.isNotEmpty) {
             return SliverToBoxAdapter(
               child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.only(
+                    top: 8,
+                    right: 16,
+                    left: 16,
+                    bottom: MediaQuery.of(context).padding.bottom + 4),
                 child: Column(
                   children: _scholarController.scholar.isGrs
                       ? [
                           const SizedBox(height: 12),
                           _buildSemester(context),
+                          const SizedBox(height: 12),
+                          Divider(
+                            thickness: 0,
+                            color: CupertinoDynamicColor.resolve(
+                                CupertinoColors.separator, context),
+                            height: 14,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildTodos(context),
                         ]
                       : [
                           _buildGradeBrief(context),
@@ -630,6 +768,15 @@ class ScholarPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _buildSemester(context),
+                          const SizedBox(height: 12),
+                          Divider(
+                            thickness: 0,
+                            color: CupertinoDynamicColor.resolve(
+                                CupertinoColors.separator, context),
+                            height: 14,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildTodos(context),
                         ],
                 ),
               ),
@@ -646,7 +793,7 @@ class ScholarPage extends StatelessWidget {
                       const Spacer()
                     ])));
           }
-        })
+        }),
       ],
     ));
   }
