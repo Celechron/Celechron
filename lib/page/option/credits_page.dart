@@ -181,6 +181,23 @@ class CreditsPage extends StatelessWidget {
                             ),
                           ],
                         ),
+                        SizedBox(
+                          height: 12,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          mainAxisSize: MainAxisSize.max,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          verticalDirection: VerticalDirection.down,
+                          children: <Widget>[
+                            Expanded(
+                              child: Text(
+                                'heddxh',
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
