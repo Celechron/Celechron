@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:celechron/http/spider.dart';
 import 'package:celechron/http/time_config_service.dart';
+import 'package:celechron/http/zjuServices/courses.dart';
 import 'package:celechron/http/zjuServices/grs_new.dart';
 import 'package:celechron/http/zjuServices/tuple.dart';
 import 'package:celechron/model/todo.dart';
@@ -22,6 +23,7 @@ class GrsSpider implements Spider {
   // late AppService _appService;
   late Zdbk _zdbk;
   late GrsNew _grsNew;
+  late Courses _courses;
   late TimeConfigService _timeConfigService;
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
@@ -39,6 +41,7 @@ class GrsSpider implements Spider {
     _httpClient.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     // _appService = AppService();
+    _courses = Courses();
     _zdbk = Zdbk();
     _grsNew = GrsNew();
     _timeConfigService = TimeConfigService();
@@ -49,6 +52,7 @@ class GrsSpider implements Spider {
   @override
   set db(DatabaseHelper? db) {
     // _appService.db = db;
+    _courses.db = db;
     _zdbk.db = db;
     _grsNew.db = db;
     _timeConfigService.db = db;
@@ -72,6 +76,12 @@ class GrsSpider implements Spider {
           .then((value) => null as String?)
           .timeout(const Duration(seconds: 8))
           .catchError((e) => "无法登录研究生院网，$e"),
+      _courses
+          .login(_httpClient, _iPlanetDirectoryPro)
+      // ignore: unnecessary_cast
+          .then((value) => null as String?)
+          .timeout(const Duration(seconds: 8))
+          .catchError((e) => "无法登录学在浙大，$e"),
       /* _appService
                     .login(_httpClient, _iPlanetDirectoryPro)
                     // ignore: unnecessary_cast
@@ -118,6 +128,7 @@ class GrsSpider implements Spider {
     var outGrades = <String, List<Grade>>{};
     var outMajorGrade = <double>[];
     var outSpecialDates = <DateTime, String>{};
+    var outTodos = <Todo>[];
     var loginErrorMessages = <String?>[null, null, null];
 
     // 如果Cookie过期了，就重新登录
@@ -360,8 +371,11 @@ class GrsSpider implements Spider {
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    /*fetches.add(Future.wait(examFetches)
-        .then((value) => value.firstWhereOrNull((e) => e != null)));*/
+    fetches.add(_courses.getTodo(_httpClient).then((value) {
+      outTodos.clear();
+      outTodos.addAll(value.item2);
+      return value.item1?.toString();
+    }).catchError((e) => e.toString()));
 
     // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
@@ -395,6 +409,6 @@ class GrsSpider implements Spider {
     }
 
     return Tuple7(loginErrorMessages, fetchErrorMessages, outSemesters,
-        outGrades, outMajorGrade, outSpecialDates, []);
+        outGrades, outMajorGrade, outSpecialDates, outTodos);
   }
 }
