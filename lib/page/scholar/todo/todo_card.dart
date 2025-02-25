@@ -63,7 +63,7 @@ class TodoCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            toStringHumanReadable(todo.endTime),
+            todo.endTime != null ? toStringHumanReadable(todo.endTime!) : "无",
             style: CupertinoTheme.of(context).textTheme.textStyle.copyWith(
                   fontSize: 12,
                   fontWeight: FontWeight.bold,

@@ -34,7 +34,11 @@ class ScholarController extends GetxController {
       : _scholar.value.aboardGpa;
 
   List<Todo> get todos =>
-      _scholar.value.todos..sort((a, b) => a.endTime.compareTo(b.endTime));
+      _scholar.value.todos..sort((a, b) {
+        if (a.endTime == null) return 1;
+        if (b.endTime == null) return -1;
+        return a.endTime!.compareTo(b.endTime!);
+      });
 
   List<Todo> get todosInOneDay => todos.where((e) => e.isInOneDay()).toList();
 

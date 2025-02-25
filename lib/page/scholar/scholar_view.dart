@@ -778,6 +778,7 @@ class ScholarPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _buildTodos(context),
+                          const SizedBox(height: 20),
                         ],
                 ),
               ),
