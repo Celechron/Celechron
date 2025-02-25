@@ -693,6 +693,11 @@ class FlowPage extends StatelessWidget {
                 );
               },
             ),
+            const SliverToBoxAdapter(
+              child: SizedBox(
+                height: 20,
+              ),
+            ),
           ],
         ),
       ),
