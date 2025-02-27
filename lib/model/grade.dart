@@ -78,7 +78,7 @@ class Grade {
     hundredPoint = _toHundredPoint[original] ?? int.tryParse(RegExp(r'\d+').firstMatch(original)!.group(0) ?? "-100000")!;
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
     fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
-    creditIncluded = original != "弃修" && original != "待录" && original != "缓考";
+    creditIncluded = original != "弃修" && original != "待录" && original != "缓考" && original != "无效";
     gpaIncluded = creditIncluded &&
         original != "合格" &&
         original != "不合格" &&
