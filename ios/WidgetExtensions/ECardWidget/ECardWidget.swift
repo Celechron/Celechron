@@ -85,9 +85,10 @@ struct ECardWidgetProvider: TimelineProvider {
                 if let jsonDict = try JSONSerialization.jsonObject(with: data, options: []) as? [String: Any] {
                     let data = jsonDict["data"] as? [String: Any]
                     if(data == nil) { return }
-                    let card = data!["card"] as? [[String: Any]]
-                    if(card == nil) { return }
-                    let balance = card![0]["db_balance"] as? Int
+                    let cardList = data!["card"] as? [[String: Any]]
+                    if(cardList == nil) { return }
+                    let balanceList = cardList!.map { card in card["db_balance"] as! Int }
+                    let balance = balanceList.max()
                     if(balance == nil) { return }
                     completion(Timeline(entries: [ECardEntry(date: Date(), balance: balance!)], policy: .after(Date(timeIntervalSinceNow: 1800))))
                 } else {
