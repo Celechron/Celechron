@@ -245,7 +245,14 @@ class Semester {
           // 1 - week % 2 : 判断是单周还是双周。例如，第8周是双周。
           // session.dayOfWeek : 星期X上课
           // (week - 1) ~/ 2 + 1 : 这是（秋/冬）（单/双）周的第几个星期X。例如，第8周的周二是双周的第4个周二， 第7周的周二是单周的第4个周二。
-          var day = _dayOfWeekToDays[(week - 1) ~/ 8][1 - week % 2][session.dayOfWeek][(week - 1) % 8 ~/ 2];
+
+          // 课程的第几周上课，如果超过16周，就在第16周最后一天的基础上计算。不要问为什么有17周18周的课，我只能说世界之大无奇不有。
+          DateTime day;
+          if (week > 16) {
+            day = _dayOfWeekToDays.last.last.last.last.add(Duration(days: (week - 17) * 7 + session.dayOfWeek));
+          } else {
+            day = _dayOfWeekToDays[(week - 1) ~/ 8][1 - week % 2][session.dayOfWeek][(week - 1) % 8 ~/ 2];
+          }
           var period = Period(
               uid: '${session.id}${session.dayOfWeek}${session.time.first}$week',
               fromUid: session.id,
