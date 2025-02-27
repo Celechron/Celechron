@@ -169,10 +169,10 @@ class ECardWidget : GlanceAppWidget() {
                     "User-Agent",
                     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0"
                 )
-                // Parse JSON response. response["data"]["card"][0]["db_balance"]
                 val response = inputStream.bufferedReader().readText()
                 val json = Json.parseToJsonElement(response)
-                return@async json.jsonObject["data"]!!.jsonObject["card"]!!.jsonArray[0].jsonObject["db_balance"]!!.jsonPrimitive.int
+                val cardList = json.jsonObject["data"]!!.jsonObject["card"]!!.jsonArray
+                return@async cardList.maxOf { it.jsonObject["db_balance"]!!.jsonPrimitive.int }
             }
         }.await()
     }
