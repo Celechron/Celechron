@@ -66,7 +66,12 @@ class ECard {
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
     var accountJson = await response.transform(utf8.decoder).join();
-    var account = jsonDecode(accountJson)['data']['card'][0]['account'];
+    var cardList = jsonDecode(accountJson)['data']['card'] as List;
+    // Card list is a List<Map<String, dynamic>> object, which may contain multiple cards.
+    // Select the card which has the highest balance.
+    // The account number is stored in the 'account' field.
+    // The balance is stored in the 'db_balance' field.
+    var account = cardList.reduce((a, b) => a['db_balance'] > b['db_balance'] ? a : b)['account'];
     return account;
   }
 
