@@ -204,6 +204,7 @@ class UgrsSpider implements Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
+
       // 查考试
       /*examFetches
           .add(_appService.getExamsDto(_httpClient, yearStr, "1").then((value) {
@@ -219,6 +220,7 @@ class UgrsSpider implements Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));*/
+
       // 本科生课
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {
@@ -252,37 +254,55 @@ class UgrsSpider implements Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
-      // 研究生课
+
+      // 研究生课与考试
       if (fetchGrs) {
+        timetableFetches.add(
+            _grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
+              for (var e in value.item2) {
+                outSemesters[semesterIndexMap['$yearStr-1']!]
+                    .addSession(e, '$yearStr-1');
+              }
+              return value.item1?.toString();
+            }).catchError((e) => e.toString()));
+        timetableFetches.add(
+            _grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
+              for (var e in value.item2) {
+                outSemesters[semesterIndexMap['$yearStr-1']!]
+                    .addSession(e, '$yearStr-1');
+              }
+              return value.item1?.toString();
+            }).catchError((e) => e.toString()));
         timetableFetches.add(
             _grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
           for (var e in value.item2) {
-            outSemesters[semesterIndexMap['$yearStr-1']!]
-                .addSession(e, '$yearStr-1');
+            outSemesters[semesterIndexMap['$yearStr-2']!]
+                .addSession(e, '$yearStr-2');
           }
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
         timetableFetches.add(
             _grsNew.getTimetable(_httpClient, yearEnroll, 12).then((value) {
           for (var e in value.item2) {
+            outSemesters[semesterIndexMap['$yearStr-2']!]
+                .addSession(e, '$yearStr-2');
+          }
+          return value.item1?.toString();
+        }).catchError((e) => e.toString()));
+        // 研究生课的【考试】
+        timetableFetches
+            .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 12).then((value) {
+          for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-1']!]
-                .addSession(e, '$yearStr-1');
+                .addExamWithSemester(e, '$yearStr-1');
           }
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
-        timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
+        timetableFetches
+            .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 11).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-2']!]
-                .addSession(e, '$yearStr-2');
-          }
-          return value.item1?.toString();
-        }).catchError((e) => e.toString()));
-        timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
-          for (var e in value.item2) {
-            outSemesters[semesterIndexMap['$yearStr-2']!]
-                .addSession(e, '$yearStr-2');
+                .addExamWithSemester(e, '$yearStr-2');
           }
           return value.item1?.toString();
         }).catchError((e) => e.toString()));

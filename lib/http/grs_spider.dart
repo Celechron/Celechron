@@ -30,10 +30,10 @@ class GrsSpider implements Spider {
   static List<String> fetchSequenceGrs = [
     '配置',
     '课表',
-    '本科生课程考试',
-    '本科生课程成绩',
-    '研究生课程考试',
-    '研究生课程成绩'
+    '本科生课考试',
+    '本科生课成绩',
+    '研究生课考试',
+    '研究生课成绩'
   ];
 
   GrsSpider(String username, String password) {
@@ -206,6 +206,7 @@ class GrsSpider implements Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
+
       // 查考试
       /*examFetches
           .add(_appService.getExamsDto(_httpClient, yearStr, "1").then((value) {
@@ -221,6 +222,7 @@ class GrsSpider implements Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));*/
+
       // 本科生课
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {
@@ -272,16 +274,6 @@ class GrsSpider implements Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
-
-      examFetches
-          .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 12).then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addExamWithSemester(e, '$yearStr-1');
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-
       timetableFetches
           .add(_grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
         for (var e in value.item2) {
@@ -299,6 +291,15 @@ class GrsSpider implements Spider {
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
 
+      // 研究生课考试
+      examFetches
+          .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 12).then((value) {
+        for (var e in value.item2) {
+          outSemesters[semesterIndexMap['$yearStr-1']!]
+              .addExamWithSemester(e, '$yearStr-1');
+        }
+        return value.item1?.toString();
+      }).catchError((e) => e.toString()));
       examFetches
           .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 11).then((value) {
         for (var e in value.item2) {
@@ -319,14 +320,15 @@ class GrsSpider implements Spider {
     fetches.add(Future.wait(timetableFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
-    // 本科生有的 考试
+    // 本科生课考试
     fetches.add(_zdbk.getExamsDto(_httpClient).then((value) {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
       }
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
-    // 查成绩，也加入请求列表
+
+    // 查成绩
     fetches.add(_zdbk.getTranscript(_httpClient).then((value) {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addGrade(e);
@@ -341,11 +343,11 @@ class GrsSpider implements Spider {
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    // 研究生 有考试
+    // 研究生课考试
     fetches.add(Future.wait(examFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
-    // 研究生 成绩，也加入请求列表
+    // 研究生课成绩
     fetches.add(_grsNew.getGrade(_httpClient).then((value) {
       for (var e in value.item2) {
         if (e.id.length < 6) {
