@@ -34,7 +34,7 @@ class Session {
         evenWeek = false,
         dayOfWeek = 1;
 
-  Session(Map<String, dynamic> json)
+  /*Session.fromAppService(Map<String, dynamic> json)
       : id = RegExp(r'(.*?-){5}\d+(?=.*\d{10})')
             .firstMatch(json['kcid'] as String)!
             .group(0)!,
@@ -51,7 +51,7 @@ class Session {
       firstHalf = semester.contains("秋") || semester.contains("春");
       secondHalf = semester.contains("冬") || semester.contains("夏");
     }
-  }
+  }*/
 
   Session.fromZdbk(Map<String, dynamic> json)
       : confirmed = (json['sfqd'] as String) == '1',
@@ -100,6 +100,8 @@ class Session {
         'day': dayOfWeek,
         'time': time,
         'location': location,
+        'customRepeat': customRepeat,
+        'customRepeatWeeks': customRepeatWeeks,
       };
 
   Session.fromJson(Map<String, dynamic> json)
@@ -113,7 +115,9 @@ class Session {
         evenWeek = json['evenWeek'],
         dayOfWeek = json['day'],
         time = List<int>.from(json['time']),
-        location = json['location'];
+        location = json['location'],
+        customRepeat = json['customRepeat'] ?? false,
+        customRepeatWeeks = List<int>.from(json['customRepeatWeeks'] ?? []);
 
   String get chineseTime {
     var timeString =
