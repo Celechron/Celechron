@@ -19,7 +19,7 @@ class Session {
   bool oddWeek;
   bool evenWeek;
 
-  // 自定义单双周。目前仅在研究生课标中出现。
+  // 自定义单双周。目前仅在研究生课程中出现。
   bool customRepeat = false;
   List<int> customRepeatWeeks = [];
 
