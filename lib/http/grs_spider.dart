@@ -367,6 +367,7 @@ class GrsSpider implements Spider {
           continue;
         }
         String yearStr = '$year-${year + 1}$semesterStr';
+        e.id = RegExp(r'班级编号(\d{7})').firstMatch(e.id)!.group(1)!;
         outSemesters[semesterIndexMap[yearStr]!]
             .addGradeWithSemester(e, yearStr, true);
       }
