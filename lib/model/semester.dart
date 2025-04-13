@@ -348,7 +348,7 @@ class Semester {
     } else {
       if (isGrs) {
         _courses
-            .addEntries([MapEntry(key, Course.fromGrsGradeWithoutID(grade))]);
+            .addEntries([MapEntry(key, Course.fromGrsGrade(grade))]);
       } else {
         _courses.addEntries([MapEntry(key, Course.fromUgrsGrade(grade))]);
       }

@@ -58,8 +58,9 @@ class Course {
 
   // used for grs
   // grs的获取课表接口和获取成绩接口拿到的id不同，一切id以课表接口为准
-  Course.fromGrsGradeWithoutID(Grade this.grade)
-      : name = grade.name,
+  Course.fromGrsGrade(Grade this.grade)
+      : id = grade.id,
+        name = grade.name,
         confirmed = true,
         online = grade.isOnline,
         credit = grade.credit;
