@@ -104,7 +104,7 @@ class LoginForm extends StatelessWidget {
                     });
                   },
                   color: buttonPressed.value ? CupertinoColors.inactiveGray : CupertinoColors.activeBlue,
-                  child: SizedBox(height: 24, child: buttonPressed.value ? const CupertinoActivityIndicator() : const Text('登录', style: TextStyle(color: CupertinoColors.white)),
+                  child: SizedBox(height: 24, width: 60, child: buttonPressed.value ? const CupertinoActivityIndicator() : const Text('登录', style: TextStyle(color: CupertinoColors.white)),
                   ))),
               ],
             ),
