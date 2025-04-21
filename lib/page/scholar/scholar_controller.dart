@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'package:celechron/model/todo.dart';
-import 'package:celechron/utils/utils.dart';
+
 import 'package:get/get.dart';
 
+import 'package:celechron/model/todo.dart';
 import 'package:celechron/model/semester.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/option.dart';

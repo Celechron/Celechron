@@ -5,7 +5,7 @@ import 'package:celechron/http/spider.dart';
 import 'package:celechron/http/time_config_service.dart';
 import 'package:celechron/http/zjuServices/courses.dart';
 import 'package:celechron/http/zjuServices/grs_new.dart';
-import 'package:celechron/http/zjuServices/tuple.dart';
+import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/model/todo.dart';
 import 'package:get/get.dart';
 
@@ -119,13 +119,13 @@ class GrsSpider implements Spider {
           List<String?>,
           List<String?>,
           List<Semester>,
-          Map<String, List<Grade>>,
+          List<Grade>,
           List<double>,
           Map<DateTime, String>,
           List<Todo>>> getEverything() async {
     // 返回值初始化
     var outSemesters = <Semester>[];
-    var outGrades = <String, List<Grade>>{};
+    var outGrades = <Grade>[];
     var outMajorGrade = <double>[];
     var outSpecialDates = <DateTime, String>{};
     var outTodos = <Todo>[];
@@ -332,13 +332,7 @@ class GrsSpider implements Spider {
     fetches.add(_zdbk.getTranscript(_httpClient).then((value) {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addGrade(e);
-        //体育课
-        var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
-        var key = matchClass?.group(2) ?? e.id.substring(14, 22);
-        if (key.startsWith('PPAE') || key.startsWith('401')) {
-          key = matchClass?.group(1) ?? e.id.substring(0, 22);
-        }
-        outGrades.putIfAbsent(key, () => <Grade>[]).add(e);
+        outGrades.add(e);
       }
       return value.item1?.toString();
     }).catchError((e) => e.toString()));

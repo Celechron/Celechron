@@ -1,4 +1,4 @@
-import 'package:celechron/http/zjuServices/tuple.dart';
+import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/model/grade.dart';
 
 class GpaHelper {

@@ -1,11 +1,16 @@
-import 'package:celechron/page/option/custom_license_page.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:celechron/utils/utils.dart';
+
 import 'package:url_launcher/url_launcher_string.dart';
-import './allow_time_edit_page.dart';
+
+import 'package:celechron/utils/utils.dart';
+import 'package:celechron/model/option.dart';
+
+import 'allow_time_edit_page.dart';
+import 'course_id_mapping_edit_page.dart';
 import 'credits_page.dart';
 import 'package:get/get.dart';
+import 'custom_license_page.dart';
 
 import 'login_page.dart';
 import 'option_controller.dart';
@@ -22,7 +27,7 @@ const Color _kHeaderFooterColor = CupertinoDynamicColor(
 );
 
 class OptionPage extends StatelessWidget {
-  final _optionController = Get.put(OptionController());
+  final _optionController = Get.put(OptionController(), tag: 'optionController');
 
   OptionPage({super.key});
 
@@ -102,6 +107,16 @@ class OptionPage extends StatelessWidget {
                               _optionController.gpaStrategy = value!;
                             },
                           ),
+                        ),
+                        CupertinoListTile(
+                          title: const Text('自定义课程代码映射'),
+                          trailing: const BackChervonRow(),
+                          onTap: () async {
+                            Navigator.of(context, rootNavigator: true).push(
+                                CupertinoPageRoute(
+                                    builder: (context) =>
+                                        CourseIdMappingEditPage()));
+                          },
                         ),
                         CupertinoListTile(
                             title: const Text('推送成绩变动'),
@@ -265,28 +280,30 @@ class OptionPage extends StatelessWidget {
                         padding: const EdgeInsets.only(left: 16),
                         child: Text('工具', style: headerFooterTextStyle)),
                     children: <CupertinoListTile>[
-                      CupertinoListTile(
-                        title: const Text('暗色模式'),
-                        trailing: BackChervonRow(child: Obx(() => Text(
-                            _optionController.option.brightnessMode.value == BrightnessMode.system
-                                ? "跟随系统设置"
-                                : _optionController.option.brightnessMode.value == BrightnessMode.light
-                                ? "亮色模式"
-                                : "暗色模式",
-                          style: trailingTextStyle,
-                        ))),
-                        onTap: () => _showBrightnessPicker(context),
-                      ),
-                      CupertinoListTile(
-                        title: const Text('付款码'),
-                        trailing: const BackChervonRow(),
-                        onTap: () async {
-                          Navigator.of(context, rootNavigator: true).pushNamed('/ecardpaypage');
-                        },
-                      ),
-                    ]
-                )
-            ),
+                  CupertinoListTile(
+                    title: const Text('暗色模式'),
+                    trailing: BackChervonRow(
+                        child: Obx(() => Text(
+                              _optionController.brightnessMode ==
+                                      BrightnessMode.system
+                                  ? "跟随系统设置"
+                                  : _optionController.brightnessMode ==
+                                          BrightnessMode.light
+                                      ? "亮色模式"
+                                      : "暗色模式",
+                              style: trailingTextStyle,
+                            ))),
+                    onTap: () => _showBrightnessPicker(context),
+                  ),
+                  CupertinoListTile(
+                    title: const Text('付款码'),
+                    trailing: const BackChervonRow(),
+                    onTap: () async {
+                      Navigator.of(context, rootNavigator: true)
+                          .pushNamed('/ecardpaypage');
+                    },
+                  ),
+                ])),
             // 关于
             SliverToBoxAdapter(
               child: CupertinoListSection.insetGrouped(
@@ -353,6 +370,7 @@ class OptionPage extends StatelessWidget {
           ],
         )));
   }
+
   void _showBrightnessPicker(BuildContext context) {
     showCupertinoModalPopup(
       context: context,
@@ -389,6 +407,7 @@ class OptionPage extends StatelessWidget {
       },
     );
   }
+
   static const _defaultMargin =
       EdgeInsetsDirectional.fromSTEB(16.0, 0.0, 16.0, 10.0);
 }

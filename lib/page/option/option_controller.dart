@@ -1,27 +1,27 @@
 import 'dart:io';
 
-import 'package:celechron/utils/utils.dart';
-import 'package:celechron/worker/ecard_widget_messenger.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:get/get.dart';
-import 'package:celechron/model/scholar.dart';
-import 'package:celechron/model/option.dart';
-import 'package:celechron/worker/fuse.dart';
-import 'package:celechron/worker/background_app_refresh.dart';
-import 'package:celechron/database/database_helper.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:workmanager/workmanager.dart';
 
+import 'package:celechron/model/scholar.dart';
+import 'package:celechron/model/option.dart';
+import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/worker/ecard_widget_messenger.dart';
+import 'package:celechron/worker/fuse.dart';
+import 'package:celechron/worker/background_app_refresh.dart';
+
 class OptionController extends GetxController {
-  final option = Get.find<Option>(tag: 'option');
+  final _option = Get.find<Option>(tag: 'option');
   final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final _fuse = Get.find<Rx<Fuse>>(tag: 'fuse');
   final _db = Get.find<DatabaseHelper>(tag: 'db');
-  late final RxInt allowTimeLength = option.allowTime.length.obs;
+  late final RxInt allowTimeLength = _option.allowTime.length.obs;
 
   @override
   void onInit() {
     super.onInit();
-    if (option.pushOnGradeChange.value) {
+    if (_option.pushOnGradeChange.value) {
       Workmanager()
           .initialize(callbackDispatcher)
           .then((value) => Workmanager().registerPeriodicTask(
@@ -33,41 +33,45 @@ class OptionController extends GetxController {
     } else {
       Workmanager().cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch');
     }
+
+    ever(courseIdMappingList, (value) {
+      _db.setCourseIdMappingList(value);
+    });
   }
 
-  Duration get workTime => option.workTime.value;
+  Duration get workTime => _option.workTime.value;
 
   set workTime(Duration value) {
-    option.workTime.value = value;
+    _option.workTime.value = value;
     _db.setWorkTime(value);
   }
 
-  Duration get restTime => option.restTime.value;
+  Duration get restTime => _option.restTime.value;
 
   set restTime(Duration value) {
-    option.restTime.value = value;
+    _option.restTime.value = value;
     _db.setRestTime(value);
   }
 
-  Map<DateTime, DateTime> get allowTime => option.allowTime;
+  Map<DateTime, DateTime> get allowTime => _option.allowTime;
 
   set allowTime(Map<DateTime, DateTime> value) {
-    option.allowTime.value = value;
+    _option.allowTime.value = value;
     _db.setAllowTime(value);
     allowTimeLength.value = value.length;
   }
 
-  GpaStrategy get gpaStrategy => option.gpaStrategy.value;
+  GpaStrategy get gpaStrategy => _option.gpaStrategy.value;
 
   set gpaStrategy(GpaStrategy value) {
-    option.gpaStrategy.value = value;
+    _option.gpaStrategy.value = value;
     _db.setGpaStrategy(value);
   }
 
-  bool get pushOnGradeChange => option.pushOnGradeChange.value;
+  bool get pushOnGradeChange => _option.pushOnGradeChange.value;
 
   set pushOnGradeChange(bool value) {
-    option.pushOnGradeChange.value = value;
+    _option.pushOnGradeChange.value = value;
     _db.setPushOnGradeChange(value);
     Workmanager()
         .cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch')
@@ -101,6 +105,15 @@ class OptionController extends GetxController {
     }
   }
 
+  BrightnessMode get brightnessMode => _option.brightnessMode.value;
+
+  set brightnessMode(BrightnessMode value) {
+    _option.brightnessMode.value = value;
+    _db.setBrightnessMode(value);
+  }
+
+  RxList<CourseIdMap> get courseIdMappingList => _option.courseIdMappingList;
+
   String get celechronVersion => _fuse.value.displayVersion;
 
   bool get hasNewVersion => _fuse.value.hasNewVersion;
@@ -110,11 +123,6 @@ class OptionController extends GetxController {
     scholar.refresh();
     pushOnGradeChange = false;
     ECardWidgetMessenger.logout();
-  }
-
-  set brightnessMode(BrightnessMode value) {
-    option.brightnessMode.value = value;
-    _db.setBrightnessMode(value);
   }
 
 }

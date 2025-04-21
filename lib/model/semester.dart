@@ -1,7 +1,6 @@
 import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/utils/gpa_helper.dart';
-import 'package:celechron/utils/utils.dart';
 import 'course.dart';
 import 'exam.dart';
 import 'grade.dart';

@@ -1,3 +1,7 @@
+import 'package:get/get.dart';
+
+import 'package:celechron/page/option/option_controller.dart';
+
 import 'period.dart';
 import 'grade.dart';
 import 'semester.dart';
@@ -26,6 +30,7 @@ class Scholar {
   String? username;
   String? password;
   Spider? _spider;
+
   bool get isGrs => !username!.startsWith('3');
 
   // 按学期整理好的学业信息，包括该学期的所有科目、考试、课表、均绩等
@@ -115,6 +120,7 @@ class Scholar {
 
   // 刷新数据
   var _mutex = 0;
+
   Future<List<String?>> refresh() async {
     if (!isLogan) {
       return ["未登录"];
@@ -141,10 +147,25 @@ class Scholar {
             lastUpdateTime = DateTime.now();
           }
           semesters = value.item3;
-          grades = value.item4;
+          grades = value.item4.fold(<String, List<Grade>>{}, (p, e) {
+            // 体育课
+            var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
+            var key = matchClass?.group(2) ?? e.id.substring(14, 22);
+            if (key.startsWith('PPAE') || key.startsWith('401')) {
+              key = matchClass?.group(1) ?? e.id.substring(0, 22);
+            }
+            var courseIdMappingList = Get.find<OptionController>(tag: 'optionController').courseIdMappingList;
+            var courseIdMappingMap = { for (var e in courseIdMappingList) e.id1 : e.id2 };
+            if (courseIdMappingMap.containsKey(key)) {
+              key = courseIdMappingMap[key]!;
+            }
+            p.putIfAbsent(key, () => <Grade>[]).add(e);
+            return p;
+          });
           majorGpaAndCredit = value.item5;
           specialDates = value.item6;
           todos = value.item7;
+
           // 保研成绩，只取第一次
           var netGrades = grades.values.map((e) => e.first);
           if (netGrades.isNotEmpty) {
@@ -185,6 +206,45 @@ class Scholar {
       'lastUpdateTime': lastUpdateTime.toIso8601String(),
       'todos': todos,
     };
+  }
+
+  Future<void> recalculateGpa() async {
+    grades = grades.values.expand((e) => e).fold(<String, List<Grade>>{}, (p, e) {
+      // 体育课
+      var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
+      var key = matchClass?.group(2) ?? e.id.substring(14, 22);
+      if (key.startsWith('PPAE') || key.startsWith('401')) {
+        key = matchClass?.group(1) ?? e.id.substring(0, 22);
+      }
+      var courseIdMappingList = Get.find<OptionController>(tag: 'optionController').courseIdMappingList;
+      var courseIdMappingMap = { for (var e in courseIdMappingList) e.id1 : e.id2 };
+      if (courseIdMappingMap.containsKey(key)) {
+        key = courseIdMappingMap[key]!;
+      }
+      p.putIfAbsent(key, () => <Grade>[]).add(e);
+      return p;
+    });
+
+    // 保研成绩，只取第一次
+    var netGrades = grades.values.map((e) => e.first);
+    if (netGrades.isNotEmpty) {
+      gpa = GpaHelper.calculateGpa(netGrades).item1;
+    }
+    // 出国成绩，取最高的一次
+    var aboardNetGrades = grades.values.map((e) {
+      e.sort((a, b) => a.hundredPoint.compareTo(b.hundredPoint));
+      return e.last;
+    });
+    if (aboardNetGrades.isNotEmpty) {
+      var result = GpaHelper.calculateGpa(aboardNetGrades);
+      aboardGpa = result.item1;
+      // 所获学分，不包括挂科的。
+      credit = result.item2;
+    } else {
+      credit = 0.0;
+    }
+
+    await _db?.setScholar(this);
   }
 
   Scholar.fromJson(Map<String, dynamic> json) {

@@ -7,12 +7,13 @@ import 'package:celechron/worker/fuse.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/option.dart';
-import '../utils/utils.dart';
+import 'package:celechron/utils/utils.dart';
 import 'adapters/duration_adapter.dart';
 import 'adapters/scholar_adapter.dart';
 import 'adapters/deadline_adapter.dart';
 import 'adapters/period_adapter.dart';
 import 'adapters/fuse_adapter.dart';
+import 'adapters/course_id_map_adapter.dart';
 
 class DatabaseHelper {
   late final Box optionsBox;
@@ -34,6 +35,7 @@ class DatabaseHelper {
     Hive.registerAdapter(PeriodTypeAdapter());
     Hive.registerAdapter(PeriodAdapter());
     Hive.registerAdapter(FuseAdapter());
+    Hive.registerAdapter(CourseIdMapAdapter());
     optionsBox = await Hive.openBox(dbOptions);
     scholarBox = await Hive.openBox(dbScholar);
     taskBox = await Hive.openBox(dbTask);
@@ -62,6 +64,7 @@ class DatabaseHelper {
   final String kGpaStrategy = 'gpaStrategy';
   final String kPushOnGradeChange = 'pushOnGradeChange';
   final String kBrightnessMode = 'brightnessMode';
+  final String kCourseIdMappingList = 'courseIdMappingList';
 
   Option getOption() {
     return Option(
@@ -71,6 +74,7 @@ class DatabaseHelper {
       gpaStrategy: getGpaStrategy().obs,
       pushOnGradeChange: getPushOnGradeChange().obs,
       brightnessMode: getBrightnessMode().obs,
+      courseIdMappingList: getCourseIdMappingList().obs,
     );
   }
 
@@ -132,17 +136,26 @@ class DatabaseHelper {
     await optionsBox.put(kPushOnGradeChange, pushOnGradeChange);
   }
 
-  // 保存亮度设置
   Future<void> setBrightnessMode(BrightnessMode brightness) async{
     await optionsBox.put(kBrightnessMode, brightness.index);
   }
 
-  // 获取亮度设置
   BrightnessMode getBrightnessMode() {
     if (optionsBox.get(kBrightnessMode) == null) {
       optionsBox.put(kBrightnessMode, BrightnessMode.system.index);
     }
     return BrightnessMode.values[optionsBox.get(kBrightnessMode)];
+  }
+
+  List<CourseIdMap> getCourseIdMappingList() {
+    if (optionsBox.get(kCourseIdMappingList) == null) {
+      optionsBox.put(kCourseIdMappingList, <CourseIdMap>[]);
+    }
+    return List<CourseIdMap>.from(optionsBox.get(kCourseIdMappingList));
+  }
+
+  Future<void> setCourseIdMappingList(List<CourseIdMap> courseIdMappingList) async {
+    await optionsBox.put(kCourseIdMappingList, courseIdMappingList);
   }
 
   // Flow

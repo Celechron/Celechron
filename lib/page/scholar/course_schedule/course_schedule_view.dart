@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:celechron/design/custom_colors.dart';
-import 'package:celechron/http/zjuServices/tuple.dart';
+import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/model/session.dart';
 import 'package:celechron/design/persistent_headers.dart';
 import 'course_schedule_controller.dart';

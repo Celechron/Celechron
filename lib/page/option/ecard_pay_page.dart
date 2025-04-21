@@ -75,7 +75,7 @@ class ECardPayPage extends StatelessWidget {
                             borderRadius: BorderRadius.circular(10),
                           ),
                         ),
-                        _barcode.value.isNotEmpty && _barcode.value.length < 30 ? QrImageView(data: _barcode.value, version: 3, size: 200) : Text(_barcode.value, style: TextStyle(color: CupertinoColors.black)),
+                        _barcode.value.isNotEmpty && _barcode.value.length < 30 ? QrImageView(data: _barcode.value, version: 3, size: 200) : Text(_barcode.value, style: const TextStyle(color: CupertinoColors.black)),
                       ],
                     ));
                 }}),

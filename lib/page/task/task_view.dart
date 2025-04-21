@@ -8,6 +8,7 @@ import 'package:celechron/design/custom_colors.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:celechron/model/task.dart';
+import 'package:celechron/model/period.dart';
 import 'task_edit_page.dart';
 import 'dart:async';
 import 'package:get/get.dart';

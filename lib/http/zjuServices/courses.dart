@@ -6,7 +6,7 @@ import 'dart:io';
 
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
-import 'package:celechron/http/zjuServices/tuple.dart';
+import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/model/todo.dart';
 
 class Courses {

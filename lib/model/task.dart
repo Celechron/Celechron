@@ -5,6 +5,38 @@ import 'package:uuid/uuid.dart';
 import 'package:hive/hive.dart';
 import 'package:quiver/time.dart';
 
+enum TaskType {
+  deadline,     // 只有结束时间固定的《真DDL》
+  fixed,      // 开始和结束时间都固定的《日程》
+  fixedlegacy // 已过的《日程》
+}
+
+enum TaskStatus { running, suspended, completed, failed, deleted, outdated }
+
+enum TaskRepeatType { norepeat, days, month, year }
+
+const Map<TaskType, String> deadlineTypeName = {
+  TaskType.deadline: 'DDL',
+  TaskType.fixed: '日程',
+  TaskType.fixedlegacy: '过去日程',
+};
+
+const Map<TaskStatus, String> deadlineStatusName = {
+  TaskStatus.running: '进行中',
+  TaskStatus.suspended: '已暂停',
+  TaskStatus.completed: '完成',
+  TaskStatus.failed: '已过期', // DDL 失败
+  TaskStatus.deleted: '已删除',
+  TaskStatus.outdated: '已过期',
+};
+
+const Map<TaskRepeatType, String> deadlineRepeatTypeName = {
+  TaskRepeatType.norepeat: '不重复',
+  TaskRepeatType.days: '每隔几天',
+  TaskRepeatType.month: '每月的这一天',
+  TaskRepeatType.year: '每年的这一天',
+};
+
 class DateTimePair {
   DateTime first, second;
   DateTimePair({required this.first, required this.second});

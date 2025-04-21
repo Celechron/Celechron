@@ -1,6 +1,7 @@
-import 'package:celechron/utils/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
+import 'package:celechron/model/period.dart';
 
 class ArrowDecoration extends Decoration {
   final Color color;

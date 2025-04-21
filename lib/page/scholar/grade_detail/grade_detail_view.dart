@@ -1,5 +1,5 @@
 import 'package:celechron/design/custom_colors.dart';
-import 'package:celechron/http/zjuServices/tuple.dart';
+import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/semester.dart';
 import 'package:flutter/cupertino.dart';
