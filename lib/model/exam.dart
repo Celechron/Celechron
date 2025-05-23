@@ -45,6 +45,22 @@ class Exam {
   }*/
 
   Exam._fromZdbk(this.id, this.name, Map<String, dynamic> json, this.type) {
+    // 2025-2026秋冬学期的考试时间格式与其他学期不同
+    if(this.id.contains("2025-2026-1")) {
+      switch (type) {
+        case ExamType.midterm:
+          time = [DateTime(2077, 11, 4, 5, 14), DateTime(2077, 11, 4, 7, 14)];
+          location = json['qzjsmc'];
+          seat = json['qzzwxh'];
+          break;
+        case ExamType.finalExam:
+          time = [DateTime(2077, 11, 4, 5, 14), DateTime(2077, 11, 4, 7, 14)];
+          location = json['jsmc'];
+          seat = json['zwxh'];
+          break;
+      }
+    }
+
     switch (type) {
       case ExamType.midterm:
         time = TimeHelper.parseExamDateTime(json['qzkssj']);
