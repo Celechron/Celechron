@@ -16,13 +16,13 @@ class ExamDto {
         exams = [];
 
   // 第一个元素是开始时间，第二个元素是结束时间
-  ExamDto(Map<String, dynamic> json)
+  /*ExamDto(Map<String, dynamic> json)
       : id = json['xkkh'] as String,
         name =
             (json['kcmc'] as String).replaceAll('(', '（').replaceAll(')', '）'),
         credit = double.parse(json['xkxf'] as String) {
     exams = Exam.parseExams(json, id, name);
-  }
+  }*/
 
   ExamDto.fromZdbk(Map<String, dynamic> json)
       : id = json['xkkh'] as String,

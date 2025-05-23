@@ -16,7 +16,7 @@ class Exam {
         type = ExamType.finalExam,
         time = [];
 
-  Exam._fromAppService(
+  /*Exam._fromAppService(
       this.id, this.name, Map<String, dynamic> json, this.type) {
     switch (type) {
       case ExamType.midterm:
@@ -30,9 +30,9 @@ class Exam {
         seat = json['zwxh'];
         break;
     }
-  }
+  }*/
 
-  static List<Exam> parseExams(
+  /*static List<Exam> parseExams(
       Map<String, dynamic> json, String id, String name) {
     var exams = <Exam>[];
     if (json.containsKey("qzkssj")) {
@@ -42,7 +42,7 @@ class Exam {
       exams.add(Exam._fromAppService(id, name, json, ExamType.finalExam));
     }
     return exams;
-  }
+  }*/
 
   Exam._fromZdbk(this.id, this.name, Map<String, dynamic> json, this.type) {
     switch (type) {
