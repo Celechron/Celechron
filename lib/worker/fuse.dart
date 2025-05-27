@@ -17,7 +17,7 @@ class Fuse {
   final HttpClient _httpClient = HttpClient();
   final DatabaseHelper _db = Get.find<DatabaseHelper>(tag: 'db');
 
-  String get displayVersion => version.take(3).join('.') + (isBeta ? ' beta' : '');
+  String get displayVersion => version.join('.') + (isBeta ? ' beta' : '');
 
   Fuse() {
     lastUpdateTime = DateTime(2001, 1, 1);
@@ -45,10 +45,10 @@ class Fuse {
       var response = await request.close().timeout(const Duration(seconds: 8));
       var html = await response.transform(utf8.decoder).join();
 
-      var match = RegExp('[0-9.]+').firstMatch(html)!;
+      var match = RegExp('[0-9.]+').allMatches(html);
       remoteVersion =
-          match.group(1)!.split('.').map((e) => int.parse(e)).toList();
-      remoteBuild = int.parse(match.group(2)!);
+          match.elementAt(0).group(0)!.split('.').map((e) => int.parse(e)).toList();
+      remoteBuild = int.parse(match.elementAt(1).group(0)!);
 
       hasNewVersion = _compareVersion(html.contains('beta'));
       lastUpdateTime = DateTime.now();
