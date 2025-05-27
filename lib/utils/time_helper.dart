@@ -3,18 +3,33 @@ import 'package:celechron/utils/utils.dart';
 class TimeHelper {
   static List<DateTime> parseExamDateTime(String datetimeStr) {
     // Input format: 2021年01月22日(08:00-10:00)
-    var date =
-        '${datetimeStr.substring(0, 4)}${datetimeStr.substring(5, 7)}${datetimeStr.substring(8, 10)}T';
-    var timeBegin = datetimeStr.substring(12, 17);
-    var timeEnd = datetimeStr.substring(18, 23);
+    String date, timeBegin, timeEnd;
+    if (datetimeStr.contains("年") ?? false) {
+      date =
+          '${datetimeStr.substring(0, 4)}${datetimeStr.substring(5, 7)}${datetimeStr.substring(8, 10)}T';
+      timeBegin = datetimeStr.substring(12, 17);
+      timeEnd = datetimeStr.substring(18, 23);
+    } else {
+      // 校历未出时zdbk不会有具体日期 使用1970代替
+      var datePat = RegExp("第(\\d+)天\\((.+)-(.+)\\)").firstMatch(datetimeStr);
+      date = '197001${datePat?.group(1)?.padLeft(2, '0') ?? "14"}T';
+      timeBegin = datePat?.group(2) ?? "05:14";
+      timeEnd = datePat?.group(3) ?? "07:14";
+    }
     return [DateTime.parse(date + timeBegin), DateTime.parse(date + timeEnd)];
   }
 
   static String chineseDateTime(DateTime dateTime) {
+    if (dateTime.year == 1970) {
+      return '考试周第 ${dateTime.day} 天 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    }
     return '${dateTime.year} 年 ${dateTime.month} 月 ${dateTime.day} 日 ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
   static String chineseDate(DateTime date) {
+    if (date.year == 1970) {
+      return '考试周第 ${date.day} 天';
+    }
     return '${date.year} 年 ${date.month} 月 ${date.day} 日';
   }
 
@@ -23,8 +38,10 @@ class TimeHelper {
   }
 
   static String chineseDay(DateTime date) {
-    var dayStr = '${date.month} 月 ${date.day} 日 ';
-    return dayStr;
+    if (date.year == 1970) {
+      return '考试周第 ${date.day} 天 ';
+    }
+    return '${date.month} 月 ${date.day} 日 ';
   }
 
   static String toHM(Duration duration) {
