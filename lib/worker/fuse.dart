@@ -8,14 +8,16 @@ class Fuse {
   late DateTime lastUpdateTime;
 
   final bool isBeta = true;
-  final version = [0, 3, 7];
+  final version = [0, 3, 8];
+  final build = 1;
   List<int>? remoteVersion;
+  int? remoteBuild;
   bool hasNewVersion = false;
 
   final HttpClient _httpClient = HttpClient();
   final DatabaseHelper _db = Get.find<DatabaseHelper>(tag: 'db');
 
-  String get displayVersion => version.join('.') + (isBeta ? ' beta' : '');
+  String get displayVersion => version.take(3).join('.') + (isBeta ? ' beta' : '');
 
   Fuse() {
     lastUpdateTime = DateTime(2001, 1, 1);
@@ -45,7 +47,8 @@ class Fuse {
 
       var match = RegExp('[0-9.]+').firstMatch(html)!;
       remoteVersion =
-          match.group(0)!.split('.').map((e) => int.parse(e)).toList();
+          match.group(1)!.split('.').map((e) => int.parse(e)).toList();
+      remoteBuild = int.parse(match.group(2)!);
 
       hasNewVersion = _compareVersion(html.contains('beta'));
       lastUpdateTime = DateTime.now();
@@ -61,7 +64,7 @@ class Fuse {
   }
 
   bool _compareVersion(bool remoteIsBeta) {
-    if (remoteVersion == null) {
+    if (remoteVersion == null || remoteBuild == null) {
       return false;
     }
     if (remoteVersion![0] > version[0]) {
@@ -73,8 +76,12 @@ class Fuse {
         if (remoteVersion![2] > version[2]) {
           return true;
         } else if (remoteVersion![2] == version[2]) {
-          if (isBeta && !remoteIsBeta) {
+          if (remoteBuild! > build) {
             return true;
+          } else if (remoteBuild == build) {
+            if (isBeta && !remoteIsBeta) {
+              return true;
+            }
           }
         }
       }
