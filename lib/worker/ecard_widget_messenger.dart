@@ -14,7 +14,22 @@ class ECardWidgetMessenger {
     var secureStorage = const FlutterSecureStorage();
     var username = await secureStorage.read(key: 'username', iOptions: secureStorageIOSOptions);
     var password = await secureStorage.read(key: 'password', iOptions: secureStorageIOSOptions);
-    if(username == null || password == null) return;
+    if (username == null || password == null) return;
+
+    // 如果是测试账号，则直接写入
+    if (username == "3200000000") {
+      await secureStorage.write(key: 'synjonesAuth',
+          value: "3200000000",
+          iOptions: secureStorageIOSOptions);
+      await secureStorage.write(key: 'eCardAccount',
+          value: "3200000000",
+          iOptions: secureStorageIOSOptions);
+
+      if (Platform.isIOS || Platform.isAndroid) {
+        const platform = MethodChannel('top.celechron.celechron/ecardWidget');
+        await platform.invokeMethod('update');
+      }
+    }
 
     var httpClient = HttpClient();
     httpClient.userAgent = "E-CampusZJU/2.3.20 (iPhone; iOS 17.5.1; Scale/3.00)";

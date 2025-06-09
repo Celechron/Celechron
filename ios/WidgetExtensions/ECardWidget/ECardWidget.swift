@@ -52,9 +52,12 @@ struct ECardWidgetProvider: TimelineProvider {
             value = String(data: ref as! Data, encoding: .utf8)
         }
         
-        if(value == nil) {
+        if (value == nil) {
             completion(Timeline(entries: [ECardEntry(date: Date(), balance: -1)], policy: .after(Date(timeIntervalSinceNow: 1800))))
             return
+        } else if (value == "3200000000") {
+            // 如果是测试账号，直接显示18.97元
+            completion(Timeline(entries: [ECardEntry(date: Date(), balance: 1897)], policy: .after(Date(timeIntervalSinceNow: 1800))))
         }
         
         var request = URLRequest(url: URL(string: "https://ecard.zju.edu.cn/berserker-app/ykt/tsm/getCampusCards")!)

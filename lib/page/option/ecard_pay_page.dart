@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -19,7 +20,12 @@ class ECardPayPage extends StatelessWidget {
     const secureStorage = FlutterSecureStorage();
     var synjonesAuth = await secureStorage.read(key: 'synjonesAuth', iOptions: secureStorageIOSOptions);
     var eCardAccount = await secureStorage.read(key: 'eCardAccount', iOptions: secureStorageIOSOptions);
-    if(synjonesAuth == null) return '';
+    if (synjonesAuth == null) return '';
+    if (synjonesAuth == "3200000000") {
+      // Random 16 digits
+      return List.generate(16, (_) => (Random().nextInt(10)).toString()).join();
+    }
+
     eCardAccount ??= await ECard.getAccount(_httpClient, synjonesAuth);
     try {
       _httpClient.userAgent = "E-CampusZJU/2.3.20 (iPhone; iOS 17.5.1; Scale/3.00)";
