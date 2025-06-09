@@ -7,8 +7,8 @@ import 'package:celechron/database/database_helper.dart';
 class Fuse {
   late DateTime lastUpdateTime;
 
-  final bool isBeta = true;
-  final version = [0, 3, 8];
+  final bool isBeta = false;
+  final version = [1, 0, 0];
   final build = 1;
   List<int>? remoteVersion;
   int? remoteBuild;
