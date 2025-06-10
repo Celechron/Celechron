@@ -1,5 +1,6 @@
 // Official packages
 import 'package:celechron/page/scholar/todo/todo_card.dart';
+import 'package:celechron/utils/platform_features.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -88,6 +89,7 @@ class ScholarPage extends StatelessWidget {
   }
 
   final _scholarController = Get.put(ScholarController());
+  final ValueNotifier<bool> _isRefreshing = ValueNotifier(false);
 
   Widget _buildGradeBrief(BuildContext context) {
     return RoundRectangleCard(
@@ -559,7 +561,8 @@ class ScholarPage extends StatelessWidget {
                                   height: 102,
                                   child: ListView.separated(
                                       scrollDirection: Axis.horizontal,
-                                      itemCount: _scholarController.todos.length,
+                                      itemCount:
+                                          _scholarController.todos.length,
                                       separatorBuilder: (context, index) =>
                                           const SizedBox(width: 8),
                                       itemBuilder: (context, index) {
@@ -568,7 +571,7 @@ class ScholarPage extends StatelessWidget {
                                         return SizedBox(
                                             width: 200,
                                             child: TodoCard(todo: todo));
-                                    }))
+                                      }))
                           ],
                         ))),
               ],
@@ -652,6 +655,54 @@ class ScholarPage extends StatelessWidget {
                         // Do not popup the keyboard
                       ),
                     ),
+                    if (PlatformFeatures.isDesktop)
+                      ValueListenableBuilder(
+                          valueListenable: _isRefreshing,
+                          builder: (context, isRefreshing, child) =>
+                              CupertinoButton(
+                                onPressed: isRefreshing
+                                    ? null
+                                    : () async {
+                                        _isRefreshing.value = true;
+                                        var error = await _scholarController
+                                            .fetchData();
+                                        _isRefreshing.value = false;
+                                        if (error.any((e) => e != null)) {
+                                          if (context.mounted) {
+                                            showCupertinoDialog(
+                                                context: context,
+                                                builder: (context) {
+                                                  return CupertinoAlertDialog(
+                                                    title: const Text('刷新失败'),
+                                                    content: Text(error
+                                                        .where((e) => e != null)
+                                                        .fold('',
+                                                            (p, v) => '$p\n$v')
+                                                        .trim()),
+                                                    actions: [
+                                                      CupertinoDialogAction(
+                                                        child: const Text('确定'),
+                                                        onPressed: () async {
+                                                          Navigator.of(context)
+                                                              .pop();
+                                                        },
+                                                      )
+                                                    ],
+                                                  );
+                                                });
+                                          }
+                                        }
+                                      },
+                                child: isRefreshing
+                                    ? const CupertinoActivityIndicator()
+                                    : Icon(
+                                        CupertinoIcons.refresh,
+                                        color: CupertinoDynamicColor.resolve(
+                                            CupertinoColors.systemBlue,
+                                            context),
+                                        size: 20,
+                                      ),
+                              ))
                   ],
                 ),
                 const SizedBox(height: 12),
