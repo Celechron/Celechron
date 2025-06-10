@@ -112,6 +112,7 @@ class _CelechronAppState extends State<CelechronApp> with WidgetsBindingObserver
       routes: {
         '/ecardpaypage': (context) => ECardPayPage(),
       },
+      debugShowCheckedModeBanner: false,
     ));
   }
 
