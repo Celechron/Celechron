@@ -78,7 +78,7 @@ class GrsSpider implements Spider {
           .catchError((e) => "无法登录研究生院网，$e"),
       _courses
           .login(_httpClient, _iPlanetDirectoryPro)
-      // ignore: unnecessary_cast
+          // ignore: unnecessary_cast
           .then((value) => null as String?)
           .timeout(const Duration(seconds: 8))
           .catchError((e) => "无法登录学在浙大，$e"),
@@ -183,7 +183,7 @@ class GrsSpider implements Spider {
                   MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'semesterConf($yearStr-1) $e'));
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-2').then((value) {
         if (value.item2 != null) {
@@ -205,7 +205,7 @@ class GrsSpider implements Spider {
                   MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'semesterConf($yearStr-2) $e'));
 
       // 查考试
       /*examFetches
@@ -231,7 +231,7 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-1');
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'zdbk($yearStr, 1|秋) $e'));
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "1|冬").then((value) {
         for (var e in value.item2) {
@@ -239,7 +239,7 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-1');
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'zdbk($yearStr, 1|冬) $e'));
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "2|春").then((value) {
         for (var e in value.item2) {
@@ -247,7 +247,7 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-2');
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'zdbk($yearStr, 2|春) $e'));
       timetableFetches
           .add(_zdbk.getTimetable(_httpClient, yearStr, "2|夏").then((value) {
         for (var e in value.item2) {
@@ -255,7 +255,7 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-2');
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'zdbk($yearStr, 2|夏) $e'));
 
       // 研究生课
       timetableFetches
@@ -265,7 +265,7 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-1', true);
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'grsNew($yearStr-1, 13) $e'));
       timetableFetches
           .add(_grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
         for (var e in value.item2) {
@@ -273,7 +273,7 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-1', true);
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'grsNew($yearStr-1, 14) $e'));
       timetableFetches
           .add(_grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
         for (var e in value.item2) {
@@ -281,7 +281,7 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-2', true);
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'grsNew($yearStr-2, 11) $e'));
       timetableFetches
           .add(_grsNew.getTimetable(_httpClient, yearEnroll, 12).then((value) {
         for (var e in value.item2) {
@@ -289,7 +289,7 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-2', true);
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'grsNew($yearStr-2, 12) $e'));
 
       // 研究生课考试
       examFetches
@@ -299,7 +299,7 @@ class GrsSpider implements Spider {
               .addExamWithSemester(e, '$yearStr-1');
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'grsExam($yearStr-1) $e'));
       examFetches
           .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 11).then((value) {
         for (var e in value.item2) {
@@ -307,7 +307,7 @@ class GrsSpider implements Spider {
               .addExamWithSemester(e, '$yearStr-2');
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) => 'grsExam($yearStr-2) $e'));
       yearEnroll++;
     }
 
@@ -326,7 +326,7 @@ class GrsSpider implements Spider {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
       }
       return value.item1?.toString();
-    }).catchError((e) => e.toString()));
+    }).catchError((e) => 'zdbkExam $e'));
 
     // 查成绩
     fetches.add(_zdbk.getTranscript(_httpClient).then((value) {
@@ -335,7 +335,7 @@ class GrsSpider implements Spider {
         outGrades.add(e);
       }
       return value.item1?.toString();
-    }).catchError((e) => e.toString()));
+    }).catchError((e) => 'zdbkGrade $e'));
 
     // 研究生课考试
     fetches.add(Future.wait(examFetches)
@@ -366,13 +366,13 @@ class GrsSpider implements Spider {
             .addGradeWithSemester(e, yearStr, true);
       }
       return value.item1?.toString();
-    }).catchError((e) => e.toString()));
+    }).catchError((e) => 'grsGrade $e'));
 
     fetches.add(_courses.getTodo(_httpClient).then((value) {
       outTodos.clear();
       outTodos.addAll(value.item2);
       return value.item1?.toString();
-    }).catchError((e) => e.toString()));
+    }).catchError((e) => 'coursesTodo $e'));
 
     // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
