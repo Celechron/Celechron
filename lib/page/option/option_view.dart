@@ -1,3 +1,4 @@
+import 'package:celechron/utils/platform_features.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
@@ -122,9 +123,12 @@ class OptionPage extends StatelessWidget {
                             title: const Text('推送成绩变动'),
                             trailing: CupertinoSwitch(
                               value: _optionController.pushOnGradeChange,
-                              onChanged: (value) async {
-                                _optionController.pushOnGradeChange = value;
-                              },
+                              onChanged: PlatformFeatures.hasBackgroundRefresh
+                                  ? (value) async {
+                                      _optionController.pushOnGradeChange =
+                                          value;
+                                    }
+                                  : null,
                             )),
                       } else ...{
                         CupertinoListTile(

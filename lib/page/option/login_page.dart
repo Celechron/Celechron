@@ -1,3 +1,4 @@
+import 'package:celechron/utils/platform_features.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:celechron/model/scholar.dart';
@@ -68,7 +69,6 @@ class LoginForm extends StatelessWidget {
                 )),
                 const SizedBox(height: 16),
                 Obx(() => CupertinoButton(
-
                   onPressed: () async {
                     buttonPressed.value = true;
                     var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
@@ -80,7 +80,7 @@ class LoginForm extends StatelessWidget {
                           await val.refresh();
                           scholar.refresh();
                           buttonPressed.value = false;
-                          _optionController.pushOnGradeChange = true;
+                          _optionController.pushOnGradeChange = PlatformFeatures.hasBackgroundRefresh;
                           if(context.mounted) Navigator.of(context).pop();
                         } else {
                           buttonPressed.value = false;
@@ -104,7 +104,15 @@ class LoginForm extends StatelessWidget {
                     });
                   },
                   color: buttonPressed.value ? CupertinoColors.inactiveGray : CupertinoColors.activeBlue,
-                  child: SizedBox(height: 24, width: 60, child: Center(child: buttonPressed.value ? const CupertinoActivityIndicator() : const Text('登录', style: TextStyle(color: CupertinoColors.white))),
+                        child: SizedBox(
+                          height: 24,
+                          width: 60,
+                          child: Center(
+                              child: buttonPressed.value
+                                  ? const CupertinoActivityIndicator()
+                                  : const Text('登录',
+                                      style: TextStyle(
+                                          color: CupertinoColors.white))),
                   ))),
               ],
             ),

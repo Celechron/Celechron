@@ -36,7 +36,7 @@ class Fuse {
       } else if (Platform.isIOS) {
         checkUpdateUrl = "https://api.celechron.top/checkUpdate?platform=ios";
       } else {
-        return "https://api.celechron.top/checkUpdate?platform=others";
+        checkUpdateUrl = "https://api.celechron.top/checkUpdate?platform=others";
       }
 
       var request = await _httpClient
