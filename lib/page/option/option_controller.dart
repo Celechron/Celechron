@@ -10,6 +10,7 @@ import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:celechron/worker/fuse.dart';
 import 'package:celechron/worker/background_app_refresh.dart';
+import 'package:celechron/utils/platform_features.dart';
 
 class OptionController extends GetxController {
   final _option = Get.find<Option>(tag: 'option');
@@ -21,17 +22,20 @@ class OptionController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    if (_option.pushOnGradeChange.value) {
-      Workmanager()
-          .initialize(callbackDispatcher)
-          .then((value) => Workmanager().registerPeriodicTask(
-                'top.celechron.celechron.backgroundScholarFetch',
-                'top.celechron.celechron.backgroundScholarFetch',
-                initialDelay: const Duration(seconds: 10),
-                frequency: const Duration(minutes: 15),
-              ));
-    } else {
-      Workmanager().cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch');
+    if (PlatformFeatures.hasBackgroundRefresh) {
+      if (_option.pushOnGradeChange.value) {
+        Workmanager()
+            .initialize(callbackDispatcher)
+            .then((value) => Workmanager().registerPeriodicTask(
+                  'top.celechron.celechron.backgroundScholarFetch',
+                  'top.celechron.celechron.backgroundScholarFetch',
+                  initialDelay: const Duration(seconds: 10),
+                  frequency: const Duration(minutes: 15),
+                ));
+      } else {
+        Workmanager().cancelByUniqueName(
+            'top.celechron.celechron.backgroundScholarFetch');
+      }
     }
 
     ever(courseIdMappingList, (value) {
@@ -73,6 +77,11 @@ class OptionController extends GetxController {
   set pushOnGradeChange(bool value) {
     _option.pushOnGradeChange.value = value;
     _db.setPushOnGradeChange(value);
+
+    if (!PlatformFeatures.hasBackgroundRefresh) {
+      return;
+    }
+
     Workmanager()
         .cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch')
         .then((value) {
@@ -124,5 +133,4 @@ class OptionController extends GetxController {
     pushOnGradeChange = false;
     ECardWidgetMessenger.logout();
   }
-
 }

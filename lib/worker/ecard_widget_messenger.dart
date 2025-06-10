@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:celechron/utils/platform_features.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -31,7 +32,7 @@ class ECardWidgetMessenger {
           value: eCardAccount,
           iOptions: secureStorageIOSOptions);
 
-      if (Platform.isIOS || Platform.isAndroid) {
+      if (PlatformFeatures.hasWidgetSupport) {
         const platform = MethodChannel('top.celechron.celechron/ecardWidget');
         await platform.invokeMethod('update');
       }
@@ -44,7 +45,7 @@ class ECardWidgetMessenger {
     var secureStorage = const FlutterSecureStorage();
     await secureStorage.delete(key: 'synjonesAuth', iOptions: secureStorageIOSOptions);
 
-    if(Platform.isIOS || Platform.isAndroid) {
+    if(PlatformFeatures.hasWidgetSupport) {
       const platform = MethodChannel('top.celechron.celechron/ecardWidget');
       await platform.invokeMethod('logout');
     }
