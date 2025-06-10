@@ -192,11 +192,11 @@ class GrsNew {
         newExam.id = (rawExam["kcbh"] as String).substring(0, 7);
         newExam.name = rawExam["kcmc"] as String;
         newExam.type = ExamType.finalExam;
-        newExam.location = rawExam["mc"] as String;
+        newExam.location = (rawExam["mc"] as String?) ?? "未知地点";
         newExam.seat = (rawExam["zwh"] as int).toString();
-        int day = rawExam["rq"] as int;
-        int start = rawExam["kssj"] as int;
-        int end = rawExam["jssj"] as int;
+        int day = (rawExam["rq"] as int?) ?? 19700101;
+        int start = (rawExam["kssj"] as int?) ?? 800;
+        int end = (rawExam["jssj"] as int?) ?? 2200;
         String dayFromat =
             '${day.toString().substring(0, 4)}-${day.toString().substring(4, 6)}-${day.toString().substring(6, 8)}';
         DateTime dayTime = formatter.parse(dayFromat);
