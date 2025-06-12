@@ -57,6 +57,7 @@ class Grade {
     "缺考": 0,
     "缓考": 0,
     "待录": 0,
+    "无效": 0,
   };
 
   Grade.empty()
@@ -96,7 +97,7 @@ class Grade {
     hundredPoint = _toHundredPoint[original] ?? int.parse(original);
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
     fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
-    creditIncluded = original != "弃修" && original != "待录" && original != "缓考";
+    creditIncluded = original != "弃修" && original != "待录" && original != "缓考" && original != "无效";
     gpaIncluded = creditIncluded && original != "合格" && original != "不合格";
     major = true;
   }
