@@ -36,9 +36,13 @@ class Zdbk {
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
     response.drain();
 
-    request = await httpClient
-        .getUrl(Uri.parse(response.headers.value('location') ??
-            (throw ExceptionWithMessage("iPlanetDirectoryPro无效"))))
+    var stLocation = response.headers.value('location');
+    if (stLocation == null) {
+      throw ExceptionWithMessage("iPlanetDirectoryPro无效");
+    } else if (stLocation.startsWith("http://")) {
+      stLocation = stLocation.replaceFirst("http://", "https://");
+    }
+    request = await httpClient.getUrl(Uri.parse(stLocation))
         .timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
     request.followRedirects = false;
@@ -46,7 +50,7 @@ class Zdbk {
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
     response.drain();
 
-    if (response.cookies.any((element) => element.name == 'JSESSIONID')) {
+    if (response.cookies.any((element) => element.name == 'JSESSIONID' && element.path == '/jwglxt')) {
       _jSessionId = response.cookies
           .firstWhere((element) => element.name == 'JSESSIONID');
     } else {
@@ -79,7 +83,7 @@ class Zdbk {
       }
       request = await httpClient
           .postUrl(Uri.parse(
-              "http://zdbk.zju.edu.cn/jwglxt/zycjtj/xszgkc_cxXsZgkcIndex.html?doType=query&queryModel.showCount=5000"))
+              "https://zdbk.zju.edu.cn/jwglxt/zycjtj/xszgkc_cxXsZgkcIndex.html?doType=query&queryModel.showCount=5000"))
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
       request.cookies.add(_jSessionId!);
@@ -122,7 +126,7 @@ class Zdbk {
       }
       request = await httpClient
           .postUrl(Uri.parse(
-              "http://zdbk.zju.edu.cn/jwglxt/cxdy/xscjcx_cxXscjIndex.html?doType=query&queryModel.showCount=5000"))
+              "https://zdbk.zju.edu.cn/jwglxt/cxdy/xscjcx_cxXscjIndex.html?doType=query&queryModel.showCount=5000"))
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
       request.cookies.add(_jSessionId!);
@@ -164,7 +168,7 @@ class Zdbk {
       }
       request = await httpClient
           .postUrl(Uri.parse(
-              "http://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXsKb.html"))
+              "https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXsKb.html?gnmkdm=N253508&su=3210100947"))
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
       request.cookies.add(_jSessionId!);
@@ -209,7 +213,7 @@ class Zdbk {
       }
       request = await httpClient
           .postUrl(Uri.parse(
-          "http://zdbk.zju.edu.cn/jwglxt/xskscx/kscx_cxXsgrksIndex.html?doType=query&queryModel.showCount=5000"))
+          "https://zdbk.zju.edu.cn/jwglxt/xskscx/kscx_cxXsgrksIndex.html?doType=query&queryModel.showCount=5000"))
           .timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
       request.cookies.add(_jSessionId!);
