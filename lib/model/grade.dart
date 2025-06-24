@@ -15,7 +15,7 @@ class Grade {
   late bool creditIncluded;
 
   // 获得的学分（挂科、不计学分的不计）
-  double get earnedCredit => (creditIncluded && fivePoint != 0) ? credit : 0.0;
+  double get earnedCredit => (creditIncluded && (fivePoint != 0 || id.contains('xtwkc'))) ? credit : 0.0;
 
   // only used for ugrs
   String get semesterId => id.length > 12 ? id.substring(1, 12) : "研究生请勿使用此函数";
