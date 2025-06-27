@@ -27,7 +27,7 @@ class Zdbk {
     }
     request = await httpClient
         .getUrl(Uri.parse(
-        "https://zjuam.zju.edu.cn/cas/login?service=http%3A%2F%2Fzdbk.zju.edu.cn%2Fjwglxt%2Fxtgl%2Flogin_ssologin.html"))
+        "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fzdbk.zju.edu.cn%2Fjwglxt%2Fxtgl%2Flogin_ssologin.html"))
         .timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
     request.followRedirects = false;
