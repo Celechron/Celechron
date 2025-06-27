@@ -52,7 +52,7 @@ class Zdbk {
 
     if (response.cookies.any((element) => element.name == 'JSESSIONID' && element.path == '/jwglxt')) {
       _jSessionId = response.cookies
-          .firstWhere((element) => element.name == 'JSESSIONID');
+          .firstWhere((element) => element.name == 'JSESSIONID' && element.path == '/jwglxt');
     } else {
       throw ExceptionWithMessage("无法获取JSESSIONID");
     }
