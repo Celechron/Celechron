@@ -151,7 +151,7 @@ class OptionPage extends StatelessWidget {
                       },
                       //
                       CupertinoListTile(
-                          title: const Text('是否隐藏主页绩点'),
+                          title: const Text('隐藏绩点'),
                           trailing: Obx(() => CupertinoSwitch(
                                 value: _optionController.hideHomeGpa,
                                 onChanged: (value) async {
