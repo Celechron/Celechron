@@ -45,14 +45,18 @@ class DatabaseHelper {
     customGpaBox = await Hive.openBox(dbCustomGpa);
     secureStorage = const FlutterSecureStorage();
     // Migrate all items without groupID
-    var secureStorageItems = await secureStorage.readAll(iOptions: const IOSOptions(
-        accessibility: KeychainAccessibility.first_unlock,
-        accountName: 'Celechron'));
+    var secureStorageItems = await secureStorage.readAll(
+        iOptions: const IOSOptions(
+            accessibility: KeychainAccessibility.first_unlock,
+            accountName: 'Celechron'));
     await Future.forEach(secureStorageItems.entries, (e) async {
-      await secureStorage.delete(key: e.key, iOptions: const IOSOptions(
-          accessibility: KeychainAccessibility.first_unlock,
-          accountName: 'Celechron'));
-      await secureStorage.write(key: e.key, value: e.value, iOptions: secureStorageIOSOptions);
+      await secureStorage.delete(
+          key: e.key,
+          iOptions: const IOSOptions(
+              accessibility: KeychainAccessibility.first_unlock,
+              accountName: 'Celechron'));
+      await secureStorage.write(
+          key: e.key, value: e.value, iOptions: secureStorageIOSOptions);
     });
   }
 
@@ -65,6 +69,7 @@ class DatabaseHelper {
   final String kPushOnGradeChange = 'pushOnGradeChange';
   final String kBrightnessMode = 'brightnessMode';
   final String kCourseIdMappingList = 'courseIdMappingList';
+  final String kHideHomeGpa = 'hideHomeGpa';
 
   Option getOption() {
     return Option(
@@ -75,6 +80,7 @@ class DatabaseHelper {
       pushOnGradeChange: getPushOnGradeChange().obs,
       brightnessMode: getBrightnessMode().obs,
       courseIdMappingList: getCourseIdMappingList().obs,
+      hideHomeGpa: getHideHomeGpa().obs,
     );
   }
 
@@ -136,7 +142,7 @@ class DatabaseHelper {
     await optionsBox.put(kPushOnGradeChange, pushOnGradeChange);
   }
 
-  Future<void> setBrightnessMode(BrightnessMode brightness) async{
+  Future<void> setBrightnessMode(BrightnessMode brightness) async {
     await optionsBox.put(kBrightnessMode, brightness.index);
   }
 
@@ -147,6 +153,17 @@ class DatabaseHelper {
     return BrightnessMode.values[optionsBox.get(kBrightnessMode)];
   }
 
+  bool getHideHomeGpa() {
+    if (optionsBox.get(kHideHomeGpa) == null) {
+      optionsBox.put(kHideHomeGpa, false);
+    }
+    return optionsBox.get(kHideHomeGpa);
+  }
+
+  Future<void> setHideHomeGpa(bool hideHomeGpa) async {
+    await optionsBox.put(kHideHomeGpa, hideHomeGpa);
+  }
+
   List<CourseIdMap> getCourseIdMappingList() {
     if (optionsBox.get(kCourseIdMappingList) == null) {
       optionsBox.put(kCourseIdMappingList, <CourseIdMap>[]);
@@ -154,7 +171,8 @@ class DatabaseHelper {
     return List<CourseIdMap>.from(optionsBox.get(kCourseIdMappingList));
   }
 
-  Future<void> setCourseIdMappingList(List<CourseIdMap> courseIdMappingList) async {
+  Future<void> setCourseIdMappingList(
+      List<CourseIdMap> courseIdMappingList) async {
     await optionsBox.put(kCourseIdMappingList, courseIdMappingList);
   }
 
@@ -210,10 +228,14 @@ class DatabaseHelper {
   Future<Scholar> getScholar() async {
     var scholar = scholarBox.get('user', defaultValue: Scholar());
     await Future.wait([
-      secureStorage.read(key: kUsername, iOptions: secureStorageIOSOptions).then((value) {
+      secureStorage
+          .read(key: kUsername, iOptions: secureStorageIOSOptions)
+          .then((value) {
         if (value != null) scholar.username = value;
       }),
-      secureStorage.read(key: kPassword, iOptions: secureStorageIOSOptions).then((value) {
+      secureStorage
+          .read(key: kPassword, iOptions: secureStorageIOSOptions)
+          .then((value) {
         if (value != null) scholar.password = value;
       })
     ]);
@@ -225,9 +247,13 @@ class DatabaseHelper {
     await Future.wait([
       scholarBox.put('user', scholar),
       secureStorage.write(
-          key: kUsername, value: scholar.username, iOptions: secureStorageIOSOptions),
+          key: kUsername,
+          value: scholar.username,
+          iOptions: secureStorageIOSOptions),
       secureStorage.write(
-          key: kPassword, value: scholar.password, iOptions: secureStorageIOSOptions)
+          key: kPassword,
+          value: scholar.password,
+          iOptions: secureStorageIOSOptions)
     ]);
   }
 

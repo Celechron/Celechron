@@ -123,6 +123,13 @@ class OptionController extends GetxController {
 
   RxList<CourseIdMap> get courseIdMappingList => _option.courseIdMappingList;
 
+  bool get hideHomeGpa => _option.hideHomeGpa.value;
+
+  set hideHomeGpa(bool value) {
+    _option.hideHomeGpa.value = value;
+    _db.setHideHomeGpa(value);
+  }
+
   String get celechronVersion => _fuse.value.displayVersion;
 
   bool get hasNewVersion => _fuse.value.hasNewVersion;
