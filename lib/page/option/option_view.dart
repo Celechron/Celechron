@@ -28,7 +28,8 @@ const Color _kHeaderFooterColor = CupertinoDynamicColor(
 );
 
 class OptionPage extends StatelessWidget {
-  final _optionController = Get.put(OptionController(), tag: 'optionController');
+  final _optionController =
+      Get.put(OptionController(), tag: 'optionController');
 
   OptionPage({super.key});
 
@@ -147,8 +148,16 @@ class OptionPage extends StatelessWidget {
                                 });
                           },
                         ),
-                      }
+                      },
                       //
+                      CupertinoListTile(
+                          title: const Text('是否隐藏主页绩点'),
+                          trailing: Obx(() => CupertinoSwitch(
+                                value: _optionController.hideHomeGpa,
+                                onChanged: (value) async {
+                                  _optionController.hideHomeGpa = value;
+                                },
+                              ))),
                     ],
                   ),
                 )),
