@@ -8,12 +8,10 @@ import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:celechron/design/two_line_card.dart';
 import 'package:celechron/design/persistent_headers.dart';
 import 'grade_card.dart';
-import 'package:celechron/page/scholar/scholar_controller.dart';
 import 'grade_detail_controller.dart';
 import 'package:celechron/utils/gpa_helper.dart';
 
 class GradeDetailPage extends StatelessWidget {
-  final _scholarController = Get.find<ScholarController>();
   final _gradeDetailController = Get.put(GradeDetailController());
 
   GradeDetailPage({super.key}) {

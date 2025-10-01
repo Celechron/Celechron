@@ -5,7 +5,6 @@ import 'package:celechron/model/semester.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/utils/gpa_helper.dart';
-import 'package:celechron/model/grade.dart';
 
 class GradeDetailController extends GetxController {
   final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
@@ -44,31 +43,20 @@ class GradeDetailController extends GetxController {
   }
 
   Tuple<List<double>, double> getYearMajorGpa(int semesterIndex) {
-    var s1 = semestersWithGrades[semesterIndex];
+    // 提取当前学期的学年 ID，例如 "2022-2023"
+    final yearId = semestersWithGrades[semesterIndex].name.substring(0, 9);
 
-    // Find paired semester in the same academic year
-    int pairedIndex = -1;
-    for (var i = 0; i < semestersWithGrades.length; i++) {
-      if (i != semesterIndex &&
-          semestersWithGrades[i].name.substring(2, 5) ==
-              s1.name.substring(2, 5)) {
-        pairedIndex = i;
-        break;
-      }
+    // 获取该学年的所有主修课程
+    final majorGrades = scholar.value.grades.values
+        .expand((g) => g)
+        .where((g) => g.major && g.semesterId.contains(yearId))
+        .toList();
+
+    // 如果该学年没有主修课程，返回 0.0, 0.0, 0.0
+    if (majorGrades.isEmpty) {
+      return Tuple([0.0, 0.0, 0.0], 0.0);
     }
 
-    // If no paired semester found, return only this semester's major GPA
-    if (pairedIndex == -1) {
-      var majorGrades = s1.grades.where((g) => g.major);
-      return GpaHelper.calculateGpa(majorGrades);
-    }
-
-    // Calculate combined major GPA for both semesters
-    var s2 = semestersWithGrades[pairedIndex];
-    var majorGrades = [
-      ...s1.grades.where((g) => g.major),
-      ...s2.grades.where((g) => g.major)
-    ];
     return GpaHelper.calculateGpa(majorGrades);
   }
 }
