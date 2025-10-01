@@ -3,6 +3,9 @@ import 'package:get/get.dart';
 
 import 'package:celechron/model/semester.dart';
 import 'package:celechron/model/scholar.dart';
+import 'package:celechron/utils/tuple.dart';
+import 'package:celechron/utils/gpa_helper.dart';
+import 'package:celechron/model/grade.dart';
 
 class GradeDetailController extends GetxController {
   final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
@@ -38,5 +41,34 @@ class GradeDetailController extends GetxController {
 
   void refreshCustomGpa() {
     _db.setCustomGpa(customGpaSelected);
+  }
+
+  Tuple<List<double>, double> getYearMajorGpa(int semesterIndex) {
+    var s1 = semestersWithGrades[semesterIndex];
+
+    // Find paired semester in the same academic year
+    int pairedIndex = -1;
+    for (var i = 0; i < semestersWithGrades.length; i++) {
+      if (i != semesterIndex &&
+          semestersWithGrades[i].name.substring(2, 5) ==
+              s1.name.substring(2, 5)) {
+        pairedIndex = i;
+        break;
+      }
+    }
+
+    // If no paired semester found, return only this semester's major GPA
+    if (pairedIndex == -1) {
+      var majorGrades = s1.grades.where((g) => g.major);
+      return GpaHelper.calculateGpa(majorGrades);
+    }
+
+    // Calculate combined major GPA for both semesters
+    var s2 = semestersWithGrades[pairedIndex];
+    var majorGrades = [
+      ...s1.grades.where((g) => g.major),
+      ...s2.grades.where((g) => g.major)
+    ];
+    return GpaHelper.calculateGpa(majorGrades);
   }
 }
