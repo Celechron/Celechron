@@ -62,7 +62,8 @@ class _RoundRectangleCardState extends State<RoundRectangleCard>
 
   @override
   Widget build(BuildContext context) {
-    final brightness = CupertinoTheme.of(context).brightness ?? MediaQuery.of(context).platformBrightness;
+    final brightness = CupertinoTheme.of(context).brightness ??
+        MediaQuery.of(context).platformBrightness;
     var isDown = false;
     var isCancel = false;
     var core = Container(
@@ -84,12 +85,10 @@ class _RoundRectangleCardState extends State<RoundRectangleCard>
         // 修改了颜色控制逻辑，应该跟随应用设置而非系统设置
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          boxShadow: brightness == Brightness.dark
-              ? null
-              : widget.boxShadow,
+          boxShadow: brightness == Brightness.dark ? null : widget.boxShadow,
           color: brightness == Brightness.dark
               ? CupertinoDynamicColor.resolve(
-              CupertinoColors.secondarySystemBackground, context)
+                  CupertinoColors.secondarySystemBackground, context)
               : CupertinoDynamicColor.resolve(CupertinoColors.white, context),
         ),
         child: widget.child);
@@ -149,18 +148,20 @@ class RoundRectangleCardWithForehead extends StatelessWidget {
             boxShadow: const [],
           ),
         ))),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            forehead,
-            RoundRectangleCard(
-              onTap: onTap,
-              animate: animate,
-              boxShadow: const [],
-              child: child,
-            ),
-          ],
+        SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              forehead,
+              RoundRectangleCard(
+                onTap: onTap,
+                animate: animate,
+                boxShadow: const [],
+                child: child,
+              ),
+            ],
+          ),
         )
       ],
     );
