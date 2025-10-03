@@ -11,6 +11,20 @@ import 'package:get/get.dart';
 
 /// iCal日历格式转换器
 /// 将课程信息转换为iCal格式，支持导入到各种日历应用
+///
+/// 主要功能:
+/// - iCal生成: [generateIcal], [generateIcalFromScholar], [generateIcalFromSemester]
+/// - 文件导出: [exportIcsFile], [exportSpecificSemester], [exportAllSemesters]
+/// - 学期管理: [getAvailableSemesters]
+/// - UI交互: [showExportDialog], [_showSemesterSelectionDialog]
+/// - 统计功能: [getCalendarStatistics]
+///
+/// 内部工具方法:
+/// - [_toISOString]: 时间格式转换
+/// - [_generateVEvent]: 生成单个事件
+/// - [_generateHash]: 生成事件唯一标识
+/// - [_showAlert]: 显示提示弹窗
+
 class CalendarToIcal {
   /// 将DateTime转换为iCal格式的时间字符串
   /// 格式：YYYYMMDDTHHMMSS

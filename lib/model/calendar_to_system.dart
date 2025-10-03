@@ -8,6 +8,22 @@ import 'package:celechron/model/semester.dart';
 
 /// 系统日历同步管理器
 /// 负责创建和管理Celechron课表在系统日历中的同步
+///
+/// 主要功能:
+/// - 日历权限管理: [requestPermissions], [hasCalendarPermission]
+/// - 日历创建与管理: [getOrCreateCelechronCalendar], [deleteCelechronCalendar]
+/// - 课程同步: [syncScholarToSystemCalendar], [resyncCalendarEvents]
+/// - 学期管理: [syncSpecificSemester], [syncAllSemesters], [getAvailableSemesters]
+/// - 同步状态: [calendarSyncEnabled], [checkInitialCalendarSyncStatus], [toggleCalendarSync]
+/// - 事件管理: [clearSyncedEvents], [getSyncStats]
+/// - UI交互: [showCalendarSyncDialog], [_showSemesterSelectionDialog]
+///
+/// 注意事项:
+/// - 需要系统日历权限才能使用
+/// - 支持单个学期或全部学期同步
+/// - 可以自动处理重复事件
+/// - 提供同步状态和统计信息
+
 class CalendarToSystemManager {
   static const String celechronCalendarName = 'Celechron课表';
   static const String calendarDescription = '由Celechron自动同步的浙大课程表';
