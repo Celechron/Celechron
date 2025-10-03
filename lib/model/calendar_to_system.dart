@@ -24,7 +24,6 @@ class CalendarToSystemManager {
   // Celechron课表日历的ID
   String? _celechronCalendarId;
 
-  // 学者信息
   final Scholar scholar;
 
   // 日历同步状态
@@ -97,7 +96,7 @@ class CalendarToSystemManager {
     }
   }
 
-  /// 同步学者的课程到系统日历
+  /// 同步Scholar中的课程到系统日历
   /// [semester] 指定要同步的学期，如果为null则同步当前学期
   /// [syncAllSemesters] 是否同步所有学期，默认false
   Future<bool> syncScholarToSystemCalendar({

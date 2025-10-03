@@ -313,9 +313,7 @@ class OptionPage extends StatelessWidget {
                     trailing: BackChervonRow(
                       child: Text('iCal格式', style: trailingTextStyle),
                     ),
-                    onTap: () async {
-                      _showExportDialog(context);
-                    },
+                    onTap: () => _optionController.showExportDialog(context),
                   ),
                   Obx(() => CupertinoListTile(
                         title: const Text('日历同步'),
@@ -472,89 +470,6 @@ class OptionPage extends StatelessWidget {
                 Navigator.pop(context);
               },
               child: const Text('暗色模式'),
-            ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showExportDialog(BuildContext context) {
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) {
-        return CupertinoActionSheet(
-          title: const Text('导出课程表'),
-          message: const Text('选择导出方式'),
-          actions: <Widget>[
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.pop(context);
-                _optionController.exportIcsFile();
-              },
-              child: const Text('导出当前学期'),
-            ),
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.pop(context);
-                _showSemesterSelectionDialog(context);
-              },
-              child: const Text('选择学期导出'),
-            ),
-          ],
-          cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-        );
-      },
-    );
-  }
-
-  void _showSemesterSelectionDialog(BuildContext context) {
-    final semesters = _optionController.getAvailableSemesters();
-
-    if (semesters.isEmpty) {
-      showCupertinoDialog(
-        context: context,
-        builder: (context) => CupertinoAlertDialog(
-          title: const Text('提示'),
-          content: const Text('没有可导出的课程表数据'),
-          actions: [
-            CupertinoDialogAction(
-              child: const Text('确定'),
-              onPressed: () => Navigator.pop(context),
-            ),
-          ],
-        ),
-      );
-      return;
-    }
-
-    showCupertinoModalPopup(
-      context: context,
-      builder: (BuildContext context) {
-        return CupertinoActionSheet(
-          title: const Text('选择学期'),
-          message: const Text('选择要导出的学期'),
-          actions: [
-            ...semesters.map((semester) => CupertinoActionSheetAction(
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _optionController.exportSpecificSemester(semester);
-                  },
-                  child: Text(semester),
-                )),
-            CupertinoActionSheetAction(
-              onPressed: () {
-                Navigator.pop(context);
-                _optionController.exportAllSemesters();
-              },
-              child: const Text('导出所有学期'),
             ),
           ],
           cancelButton: CupertinoActionSheetAction(

@@ -6,6 +6,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/semester.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:get/get.dart';
 
 /// iCal日历格式转换器
 /// 将课程信息转换为iCal格式，支持导入到各种日历应用
@@ -67,11 +69,11 @@ class CalendarToIcal {
     buffer.writeln('UID:$hash');
 
     // 可以选择是否添加提醒
-    // buffer.writeln('BEGIN:VALARM');
-    // buffer.writeln('TRIGGER:-PT15M');
-    // buffer.writeln('ACTION:DISPLAY');
-    // buffer.writeln('DESCRIPTION:提醒');
-    // buffer.writeln('END:VALARM');
+    buffer.writeln('BEGIN:VALARM');
+    buffer.writeln('TRIGGER:-PT15M');
+    buffer.writeln('ACTION:DISPLAY');
+    buffer.writeln('DESCRIPTION:提醒');
+    buffer.writeln('END:VALARM');
 
     buffer.writeln('END:VEVENT');
 
@@ -127,6 +129,23 @@ class CalendarToIcal {
     return buffer.toString();
   }
 
+  /// 显示提示弹窗
+  static void _showAlert(String title, String message, {bool isError = false}) {
+    Get.dialog(
+      CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('确定'),
+            onPressed: () => Get.back(),
+          ),
+        ],
+      ),
+      barrierDismissible: true,
+    );
+  }
+
   /// 从Scholar对象生成iCal
   static String generateIcalFromScholar({
     required Scholar scholar,
@@ -174,11 +193,10 @@ class CalendarToIcal {
   }
 
   /// 导出ICS课程表文件
-  static Future<void> exportIcsFile(Scholar scholar,
-      Function(String, String, {bool isError}) showAlert) async {
+  static Future<void> exportIcsFile(Scholar scholar) async {
     try {
       if (!scholar.isLogan) {
-        showAlert('提示', '请先登录后再导出课程表');
+        _showAlert('提示', '请先登录后再导出课程表');
         return;
       }
 
@@ -207,17 +225,15 @@ class CalendarToIcal {
         ),
       );
 
-      showAlert('成功', '课程表已导出，请选择保存位置或分享');
+      _showAlert('成功', '课程表已导出，请选择保存位置或分享');
     } catch (e) {
-      showAlert('错误', '导出失败: $e', isError: true);
+      _showAlert('错误', '导出失败: $e', isError: true);
     }
   }
 
   /// 导出指定学期
   static Future<void> exportSpecificSemester(
-      Scholar scholar,
-      String semesterName,
-      Function(String, String, {bool isError}) showAlert) async {
+      Scholar scholar, String semesterName) async {
     try {
       final icalContent = generateIcalFromScholar(
         scholar: scholar,
@@ -241,15 +257,14 @@ class CalendarToIcal {
         ),
       );
 
-      showAlert('成功', '$semesterName 课程表已导出');
+      _showAlert('成功', '$semesterName 课程表已导出');
     } catch (e) {
-      showAlert('错误', '导出失败: $e', isError: true);
+      _showAlert('错误', '导出失败: $e', isError: true);
     }
   }
 
   /// 导出所有学期
-  static Future<void> exportAllSemesters(Scholar scholar,
-      Function(String, String, {bool isError}) showAlert) async {
+  static Future<void> exportAllSemesters(Scholar scholar) async {
     try {
       final icalContent = generateIcalFromScholar(
         scholar: scholar,
@@ -273,15 +288,98 @@ class CalendarToIcal {
         ),
       );
 
-      showAlert('成功', '完整课程表已导出');
+      _showAlert('成功', '完整课程表已导出');
     } catch (e) {
-      showAlert('错误', '导出失败: $e', isError: true);
+      _showAlert('错误', '导出失败: $e', isError: true);
     }
   }
 
   /// 获取可用的学期列表
   static List<String> getAvailableSemesters(Scholar scholar) {
     return scholar.semesters.map((s) => s.name).toList();
+  }
+
+  /// 显示导出课程表对话框
+  static void showExportDialog(BuildContext context, Scholar scholar) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        title: const Text('导出课程表'),
+        message: const Text('选择导出方式'),
+        actions: [
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              exportIcsFile(scholar);
+            },
+            child: const Text('导出当前学期'),
+          ),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              _showSemesterSelectionDialog(context, scholar);
+            },
+            child: const Text('选择学期导出'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+      ),
+    );
+  }
+
+  /// 显示学期选择对话框（UI界面）
+  static void _showSemesterSelectionDialog(
+      BuildContext context, Scholar scholar) {
+    final semesters = getAvailableSemesters(scholar);
+
+    if (semesters.isEmpty) {
+      showCupertinoDialog(
+        context: context,
+        builder: (_) => CupertinoAlertDialog(
+          title: const Text('提示'),
+          content: const Text('没有可导出的课程表数据'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('确定'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    /// 显示学期选择对话框 （UI界面）
+    showCupertinoModalPopup(
+      context: context,
+      builder: (_) => CupertinoActionSheet(
+        title: const Text('选择学期'),
+        message: const Text('选择要导出的学期'),
+        actions: [
+          ...semesters.map((semester) => CupertinoActionSheetAction(
+                onPressed: () {
+                  Navigator.pop(context);
+                  exportSpecificSemester(scholar, semester);
+                },
+                child: Text(semester),
+              )),
+          CupertinoActionSheetAction(
+            onPressed: () {
+              Navigator.pop(context);
+              exportAllSemesters(scholar);
+            },
+            child: const Text('导出所有学期'),
+          ),
+        ],
+        cancelButton: CupertinoActionSheetAction(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+      ),
+    );
   }
 
   /// 生成课程统计信息
