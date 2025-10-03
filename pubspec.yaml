@@ -32,6 +32,11 @@ dependencies:
   flutter_secure_storage:
   qr_flutter:
   app_links:
+  crypto:
+  path_provider:
+  share_plus:
+  device_calendar:
+  timezone:
 
 dev_dependencies:
   flutter_test:
