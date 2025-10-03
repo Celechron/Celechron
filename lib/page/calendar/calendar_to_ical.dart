@@ -25,12 +25,8 @@ class CalendarToIcal {
   /// 单个课程事件
   static String _generateVEvent(Period period) {
     final buffer = StringBuffer();
-    final utcStr = DateTime.now()
-            .toUtc()
-            .toIso8601String()
-            .replaceAll(RegExp(r'[-:]'), '')
-            .split('.')[0] +
-        'Z';
+    final utcStr =
+        '${DateTime.now().toUtc().toIso8601String().replaceAll(RegExp(r'[-:]'), '').split('.')[0]}Z';
     final startStr = _toISOString(period.startTime);
     final endStr = _toISOString(period.endTime);
 
