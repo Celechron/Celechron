@@ -1,5 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:crypto/crypto.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:get/get.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/semester.dart';
@@ -168,6 +173,125 @@ class CalendarToIcal {
       calendarName: name,
       includeExams: includeExams,
     );
+  }
+
+  /// 显示 Cupertino 风格的提示弹窗
+  static void showAlert(String title, String message, {bool isError = false}) {
+    Get.dialog(
+      CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('确定'),
+            onPressed: () => Get.back(),
+          ),
+        ],
+      ),
+      barrierDismissible: true,
+    );
+  }
+
+  /// 导出ICS课程表文件
+  static Future<void> exportIcsFile(Scholar scholar) async {
+    try {
+      if (!scholar.isLogan) {
+        showAlert('提示', '请先登录后再导出课程表');
+        return;
+      }
+
+      // 生成iCal内容
+      final icalContent = generateIcalFromScholar(
+        scholar: scholar,
+        calendarName: "浙大课程表-${scholar.thisSemester.name}",
+        includeExams: true,
+      );
+
+      // 获取应用文档目录
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName =
+          'celechron_schedule_${DateTime.now().millisecondsSinceEpoch}.ics';
+      final tempFile = File('${directory.path}/$fileName');
+
+      // 写入临时文件
+      await tempFile.writeAsString(icalContent);
+
+      // 使用系统分享功能
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(tempFile.path)],
+          subject: '浙大课程表',
+          text: '从 Celechron 导出的课程表文件，可导入到其他日历应用中使用。',
+        ),
+      );
+
+      showAlert('成功', '课程表已导出，请选择保存位置或分享');
+    } catch (e) {
+      showAlert('错误', '导出失败: $e', isError: true);
+    }
+  }
+
+  /// 导出指定学期
+  static Future<void> exportSpecificSemester(
+      Scholar scholar, String semesterName) async {
+    try {
+      final icalContent = generateIcalFromScholar(
+        scholar: scholar,
+        semesterName: semesterName,
+        calendarName: "浙大课程表-$semesterName",
+        includeExams: true,
+      );
+
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName =
+          'celechron_${semesterName.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.ics';
+      final tempFile = File('${directory.path}/$fileName');
+
+      await tempFile.writeAsString(icalContent);
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(tempFile.path)],
+          subject: '浙大课程表-$semesterName',
+          text: '从 Celechron 导出的 $semesterName 课程表文件。',
+        ),
+      );
+
+      showAlert('成功', '$semesterName 课程表已导出');
+    } catch (e) {
+      showAlert('错误', '导出失败: $e', isError: true);
+    }
+  }
+
+  /// 导出所有学期
+  static Future<void> exportAllSemesters(Scholar scholar) async {
+    try {
+      final icalContent = generateIcalFromScholar(
+        scholar: scholar,
+        calendarName: "课程表-完整版",
+        includeExams: true,
+        includeAllSemesters: true,
+      );
+
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName =
+          'celechron_all_semesters_${DateTime.now().millisecondsSinceEpoch}.ics';
+      final tempFile = File('${directory.path}/$fileName');
+
+      await tempFile.writeAsString(icalContent);
+
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(tempFile.path)],
+          subject: '浙大课程表-完整版',
+          text: '从 Celechron 导出的完整课程表文件，包含所有学期。',
+        ),
+      );
+
+      showAlert('成功', '完整课程表已导出');
+    } catch (e) {
+      showAlert('错误', '导出失败: $e', isError: true);
+    }
   }
 
   /// 获取可用的学期列表

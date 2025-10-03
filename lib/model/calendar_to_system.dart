@@ -1,4 +1,5 @@
 import 'package:device_calendar/device_calendar.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:celechron/model/scholar.dart';
@@ -23,26 +24,34 @@ class CalendarToSystemManager {
   // Celechron课表日历的ID
   String? _celechronCalendarId;
 
+  // 学者信息
+  final Scholar scholar;
+
+  // 日历同步状态
+  final RxBool _calendarSyncEnabled = false.obs;
+  final RxBool _hasCalendarPermission = false.obs;
+
+  bool get calendarSyncEnabled => _calendarSyncEnabled.value;
+  bool get hasCalendarPermission => _hasCalendarPermission.value;
+
+  CalendarToSystemManager(this.scholar);
+
   /// 获取设备日历权限
   Future<bool> requestPermissions() async {
     try {
       var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
       if (permissionsGranted.isSuccess && permissionsGranted.data!) {
-        // print('日历权限已获取');
+        _hasCalendarPermission.value = true;
         return true;
       } else {
         var permissionsRequested =
             await _deviceCalendarPlugin.requestPermissions();
-        if (permissionsRequested.isSuccess && permissionsRequested.data!) {
-          // print('日历权限获取成功');
-          return true;
-        } else {
-          // print('日历权限获取失败');
-          return false;
-        }
+        _hasCalendarPermission.value =
+            permissionsRequested.isSuccess && permissionsRequested.data!;
+        return _hasCalendarPermission.value;
       }
     } catch (e) {
-      // print('检查日历权限时出错: $e');
+      _hasCalendarPermission.value = false;
       return false;
     }
   }
@@ -57,7 +66,6 @@ class CalendarToSystemManager {
           var existingCalendar = calendarsResult.data!
               .firstWhereOrNull((cal) => cal.id == _celechronCalendarId);
           if (existingCalendar != null) {
-            // print('找到已存在的Celechron日历: ${existingCalendar.name}');
             return _celechronCalendarId;
           }
         }
@@ -70,7 +78,6 @@ class CalendarToSystemManager {
             .firstWhereOrNull((cal) => cal.name == celechronCalendarName);
 
         if (existingCalendar != null) {
-          // print('找到已存在的Celechron日历: ${existingCalendar.name}');
           _celechronCalendarId = existingCalendar.id;
           return existingCalendar.id;
         }
@@ -81,40 +88,31 @@ class CalendarToSystemManager {
           await _deviceCalendarPlugin.createCalendar(celechronCalendarName);
       if (createResult.isSuccess && createResult.data != null) {
         _celechronCalendarId = createResult.data;
-        // print('成功创建Celechron日历，ID: $_celechronCalendarId');
         return _celechronCalendarId;
       } else {
-        // print('创建Celechron日历失败');
         return null;
       }
     } catch (e) {
-      // print('获取或创建Celechron日历时出错: $e');
       return null;
     }
   }
 
   /// 同步学者的课程到系统日历
-  /// [scholar] 学者信息
   /// [semester] 指定要同步的学期，如果为null则同步当前学期
   /// [syncAllSemesters] 是否同步所有学期，默认false
-  Future<bool> syncScholarToSystemCalendar(
-    Scholar scholar, {
+  Future<bool> syncScholarToSystemCalendar({
     Semester? semester,
     bool syncAllSemesters = false,
   }) async {
     try {
-      // print('开始同步课程到系统日历...');
-
       // 检查权限
       if (!await requestPermissions()) {
-        // print('没有日历权限，无法同步');
         return false;
       }
 
       // 获取或创建Celechron日历
       var calendarId = await getOrCreateCelechronCalendar();
       if (calendarId == null) {
-        // print('无法获取或创建Celechron日历');
         return false;
       }
 
@@ -135,16 +133,12 @@ class CalendarToSystemManager {
         allPeriods = targetSemester.periods;
       }
 
-      // print('开始同步 $syncDescription 的课程，找到 ${allPeriods.length} 个课程期间');
-
       // 只同步课程和考试，不同步用户日程
       var coursePeriods = allPeriods
           .where((period) =>
               period.type == PeriodType.classes ||
               period.type == PeriodType.test)
           .toList();
-
-      // print('需要同步的课程/考试期间: ${coursePeriods.length} 个');
 
       int syncedCount = 0;
       Set<String> syncedCourseNames = <String>{}; // 用于统计不重复的课程名
@@ -172,12 +166,9 @@ class CalendarToSystemManager {
             syncedCount++;
             // 统计课程名称（去重）
             syncedCourseNames.add(period.summary);
-            // print('成功同步事件: ${period.summary}');
-          } else {
-            // print('同步事件失败: ${period.summary}');
           }
         } catch (e) {
-          // print('同步单个事件时出错: ${period.summary}, 错误: $e');
+          // 忽略单个事件的错误，继续同步其他事件
         }
       }
 
@@ -185,10 +176,8 @@ class CalendarToSystemManager {
       _syncedCourseCount = syncedCourseNames.length;
       _syncedEventCount = syncedCount;
 
-      // print('同步完成! 成功同步: $syncedCount 个, 跳过: $skippedCount 个');
       return syncedCount > 0;
     } catch (e) {
-      // print('同步课程到系统日历时出错: $e');
       return false;
     }
   }
@@ -241,7 +230,6 @@ class CalendarToSystemManager {
   Future<bool> clearSyncedEvents() async {
     try {
       if (_celechronCalendarId == null) {
-        // print('没有找到Celechron日历，无需清除');
         return true;
       }
 
@@ -256,7 +244,6 @@ class CalendarToSystemManager {
 
       if (eventsResult.isSuccess) {
         var events = eventsResult.data ?? [];
-        // print('找到 ${events.length} 个事件需要清除');
         for (var event in events) {
           try {
             await _deviceCalendarPlugin.deleteEvent(
@@ -264,11 +251,10 @@ class CalendarToSystemManager {
               event.eventId!,
             );
           } catch (e) {
-            // print('删除事件失败: ${event.title}, 错误: $e');
+            // 忽略单个事件删除失败
           }
         }
 
-        // print('成功删除事件');
         _syncedEventIds.clear();
         _syncedCourseCount = 0;
         _syncedEventCount = 0;
@@ -277,18 +263,17 @@ class CalendarToSystemManager {
 
       return false;
     } catch (e) {
-      // print('清除已同步事件时出错: $e');
       return false;
     }
   }
 
   /// 获取可用学期列表（供UI使用）
-  List<String> getAvailableSemesters(Scholar scholar) {
+  List<String> getAvailableSemesters() {
     return scholar.semesters.map((semester) => semester.name).toList();
   }
 
   /// 根据学期名称获取学期对象
-  Semester? getSemesterByName(Scholar scholar, String semesterName) {
+  Semester? getSemesterByName(String semesterName) {
     return scholar.semesters.firstWhereOrNull((s) => s.name == semesterName);
   }
 
@@ -310,7 +295,6 @@ class CalendarToSystemManager {
 
       // 如果还是没有找到日历，说明日历不存在
       if (_celechronCalendarId == null) {
-        // print('没有找到Celechron日历，无需删除');
         return true;
       }
 
@@ -319,19 +303,17 @@ class CalendarToSystemManager {
           await _deviceCalendarPlugin.deleteCalendar(_celechronCalendarId!);
 
       if (deleteResult.isSuccess && deleteResult.data!) {
-        // print('成功删除Celechron日历');
         // 清空所有缓存信息
         _celechronCalendarId = null;
         _syncedEventIds.clear();
         _syncedCourseCount = 0;
         _syncedEventCount = 0;
+        _calendarSyncEnabled.value = false;
         return true;
       } else {
-        // print('删除Celechron日历失败');
         return false;
       }
     } catch (e) {
-      // print('删除Celechron日历时出错: $e');
       return false;
     }
   }
@@ -344,5 +326,267 @@ class CalendarToSystemManager {
       'calendarId': _celechronCalendarId,
       'calendarName': celechronCalendarName,
     };
+  }
+
+  /// 显示提示弹窗
+  void _showAlert(String title, String message, {bool isError = false}) {
+    Get.dialog(
+      CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('确定'),
+            onPressed: () => Get.back(),
+          ),
+        ],
+      ),
+      barrierDismissible: true,
+    );
+  }
+
+  /// 强制重新同步课程（先清除后同步）
+  Future<void> resyncCalendarEvents() async {
+    try {
+      if (!await requestPermissions()) {
+        _showAlert('权限获取失败', '请在系统设置中手动开启日历权限');
+        return;
+      }
+
+      // 先清除已有事件
+      await clearSyncedEvents();
+
+      // 重新同步
+      bool syncSuccess = await syncScholarToSystemCalendar();
+
+      if (syncSuccess) {
+        var stats = getSyncStats();
+        _showAlert('重新同步成功',
+            '已重新同步 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+      } else {
+        _showAlert('重新同步失败', '无法重新同步课程到系统日历');
+      }
+    } catch (e) {
+      _showAlert('错误', '重新同步时出错: $e', isError: true);
+    }
+  }
+
+  /// 同步指定学期的课程
+  Future<void> syncSpecificSemester(String semesterName) async {
+    try {
+      if (!await requestPermissions()) {
+        _showAlert('权限获取失败', '请在系统设置中手动开启日历权限');
+        return;
+      }
+
+      var semester = getSemesterByName(semesterName);
+      if (semester == null) {
+        _showAlert('错误', '未找到指定的学期');
+        return;
+      }
+
+      // 先清除已有事件
+      await clearSyncedEvents();
+
+      // 同步指定学期
+      bool syncSuccess = await syncScholarToSystemCalendar(
+        semester: semester,
+      );
+
+      if (syncSuccess) {
+        var stats = getSyncStats();
+        _showAlert('同步成功',
+            '已同步 $semesterName 的 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+      } else {
+        _showAlert('同步失败', '无法同步 $semesterName 的课程');
+      }
+    } catch (e) {
+      _showAlert('错误', '同步时出错: $e', isError: true);
+    }
+  }
+
+  /// 同步所有学期的课程
+  Future<void> syncAllSemesters() async {
+    try {
+      if (!await requestPermissions()) {
+        _showAlert('权限获取失败', '请在系统设置中手动开启日历权限');
+        return;
+      }
+
+      // 先清除已有事件
+      await clearSyncedEvents();
+
+      // 同步所有学期
+      bool syncSuccess = await syncScholarToSystemCalendar(
+        syncAllSemesters: true,
+      );
+
+      if (syncSuccess) {
+        var stats = getSyncStats();
+        _showAlert('同步成功',
+            '已同步所有学期的 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+      } else {
+        _showAlert('同步失败', '无法同步所有学期的课程');
+      }
+    } catch (e) {
+      _showAlert('错误', '同步时出错: $e', isError: true);
+    }
+  }
+
+  /// 显示日历同步选项对话框
+  void showCalendarSyncDialog(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: const Text('同步日历选项'),
+          message: const Text('选择日历同步操作'),
+          actions: <Widget>[
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                resyncCalendarEvents();
+              },
+              child: const Text('更新当前课表'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                _showSemesterSelectionDialog(context);
+              },
+              child: const Text('选择学期同步'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 显示学期选择对话框
+  void _showSemesterSelectionDialog(BuildContext context) {
+    final semesters = getAvailableSemesters();
+
+    if (semesters.isEmpty) {
+      _showAlert('提示', '没有可同步的学期数据，请先登录');
+      return;
+    }
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: const Text('选择学期'),
+          message: const Text('选择要同步的学期'),
+          actions: [
+            ...semesters.map((semester) => CupertinoActionSheetAction(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    syncSpecificSemester(semester);
+                  },
+                  child: Text(semester),
+                )),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                syncAllSemesters();
+              },
+              child: const Text('同步所有学期'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        );
+      },
+    );
+  }
+
+  /// 检查初始日历同步状态
+  Future<void> checkInitialCalendarSyncStatus() async {
+    try {
+      // 先检查权限
+      await requestPermissions();
+
+      // 如果没有权限，直接返回
+      if (!_hasCalendarPermission.value) {
+        _calendarSyncEnabled.value = false;
+        return;
+      }
+
+      var calendarsResult = await _deviceCalendarPlugin.retrieveCalendars();
+      if (calendarsResult.isSuccess) {
+        var existingCalendar = calendarsResult.data!
+            .firstWhereOrNull((cal) => cal.name == celechronCalendarName);
+
+        if (existingCalendar != null) {
+          // 如果找到了Celechron日历，说明之前可能开启过同步
+          // 但为了保险起见，我们检查日历中是否有事件
+          var eventsResult = await _deviceCalendarPlugin.retrieveEvents(
+            existingCalendar.id!,
+            RetrieveEventsParams(
+              startDate: DateTime.now().subtract(const Duration(days: 30)),
+              endDate: DateTime.now().add(const Duration(days: 30)),
+            ),
+          );
+
+          if (eventsResult.isSuccess &&
+              (eventsResult.data?.isNotEmpty ?? false)) {
+            // 如果有事件，说明确实在使用，设置为已开启状态
+            _calendarSyncEnabled.value = true;
+          }
+        }
+      }
+    } catch (e) {
+      // 忽略错误
+    }
+  }
+
+  /// 切换日历同步功能
+  Future<void> toggleCalendarSync(bool enabled) async {
+    if (enabled) {
+      // 如果要开启同步，先检查权限
+      if (!await requestPermissions()) {
+        _showAlert('权限获取失败', '请在系统设置中手动开启日历权限');
+        return;
+      }
+
+      // 检查是否已登录
+      if (!scholar.isLogan) {
+        _showAlert('提示', '请先登录后再开启日历同步功能');
+        return;
+      }
+
+      // 开始同步当前学期课程到系统日历
+      bool syncSuccess = await syncScholarToSystemCalendar();
+
+      if (syncSuccess) {
+        _calendarSyncEnabled.value = true;
+        var stats = getSyncStats();
+        _showAlert('同步成功',
+            '已同步 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+      } else {
+        _showAlert('同步失败', '无法同步课程到系统日历，请检查权限和网络连接');
+      }
+    } else {
+      // 关闭同步功能
+      _calendarSyncEnabled.value = false;
+
+      // 删除课表数据和Celechron日历
+      try {
+        bool deleteSuccess = await deleteCelechronCalendar();
+        if (deleteSuccess) {
+          _showAlert('成功', '日历同步功能已关闭，已删除课表数据和Celechron日历');
+        } else {
+          _showAlert('成功', '日历同步功能已关闭，但删除日历时遇到问题');
+        }
+      } catch (e) {
+        _showAlert('成功', '日历同步功能已关闭，但删除日历时出错: $e');
+      }
+    }
   }
 }
