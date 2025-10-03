@@ -28,7 +28,8 @@ const Color _kHeaderFooterColor = CupertinoDynamicColor(
 );
 
 class OptionPage extends StatelessWidget {
-  final _optionController = Get.put(OptionController(), tag: 'optionController');
+  final _optionController =
+      Get.put(OptionController(), tag: 'optionController');
 
   OptionPage({super.key});
 
@@ -283,7 +284,7 @@ class OptionPage extends StatelessWidget {
                     header: Container(
                         padding: const EdgeInsets.only(left: 16),
                         child: Text('工具', style: headerFooterTextStyle)),
-                    children: <CupertinoListTile>[
+                    children: <Widget>[
                   CupertinoListTile(
                     title: const Text('暗色模式'),
                     trailing: BackChervonRow(
@@ -307,6 +308,76 @@ class OptionPage extends StatelessWidget {
                           .pushNamed('/ecardpaypage');
                     },
                   ),
+                  CupertinoListTile(
+                    title: const Text('导出课程表'),
+                    trailing: BackChervonRow(
+                      child: Text('iCal格式', style: trailingTextStyle),
+                    ),
+                    onTap: () async {
+                      _showExportDialog(context);
+                    },
+                  ),
+                  Obx(() => CupertinoListTile(
+                        title: const Text('日历同步'),
+                        subtitle: Text(
+                          _optionController.hasCalendarPermission
+                              ? '已获取日历权限'
+                              : '未获取日历权限',
+                          style: TextStyle(
+                            color: _optionController.hasCalendarPermission
+                                ? CupertinoColors.systemGreen
+                                : CupertinoColors.systemRed,
+                            fontSize: 12,
+                          ),
+                        ),
+                        trailing: CupertinoSwitch(
+                          value: _optionController.calendarSyncEnabled,
+                          onChanged: (value) async {
+                            await _optionController.toggleCalendarSync(value);
+                          },
+                        ),
+                      )),
+                  Obx(() => CupertinoListTile(
+                        title: Text(
+                          '同步日历选项',
+                          style: TextStyle(
+                            color: _optionController.calendarSyncEnabled
+                                ? null // 使用默认颜色
+                                : CupertinoDynamicColor.resolve(
+                                    CupertinoColors.quaternaryLabel, context),
+                          ),
+                        ),
+                        subtitle: Text(
+                          '管理课程表的日历同步设置',
+                          style: TextStyle(
+                            color: _optionController.calendarSyncEnabled
+                                ? CupertinoDynamicColor.resolve(
+                                    CupertinoColors.secondaryLabel, context)
+                                : CupertinoDynamicColor.resolve(
+                                    CupertinoColors.quaternaryLabel, context),
+                          ),
+                        ),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.arrow_forward_ios,
+                              color: _optionController.calendarSyncEnabled
+                                  ? CupertinoDynamicColor.resolve(
+                                      CupertinoColors.tertiaryLabel, context)
+                                  : CupertinoDynamicColor.resolve(
+                                      CupertinoColors.quaternaryLabel, context),
+                              size: 16,
+                            )
+                          ],
+                        ),
+                        onTap: _optionController.calendarSyncEnabled
+                            ? () {
+                                _optionController
+                                    .showCalendarSyncDialog(context);
+                              }
+                            : null, // 禁用点击
+                      )),
                 ])),
             // 关于
             SliverToBoxAdapter(
@@ -401,6 +472,89 @@ class OptionPage extends StatelessWidget {
                 Navigator.pop(context);
               },
               child: const Text('暗色模式'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showExportDialog(BuildContext context) {
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: const Text('导出课程表'),
+          message: const Text('选择导出方式'),
+          actions: <Widget>[
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                _optionController.exportIcsFile();
+              },
+              child: const Text('导出当前学期'),
+            ),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                _showSemesterSelectionDialog(context);
+              },
+              child: const Text('选择学期导出'),
+            ),
+          ],
+          cancelButton: CupertinoActionSheetAction(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('取消'),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSemesterSelectionDialog(BuildContext context) {
+    final semesters = _optionController.getAvailableSemesters();
+
+    if (semesters.isEmpty) {
+      showCupertinoDialog(
+        context: context,
+        builder: (context) => CupertinoAlertDialog(
+          title: const Text('提示'),
+          content: const Text('没有可导出的课程表数据'),
+          actions: [
+            CupertinoDialogAction(
+              child: const Text('确定'),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
+    showCupertinoModalPopup(
+      context: context,
+      builder: (BuildContext context) {
+        return CupertinoActionSheet(
+          title: const Text('选择学期'),
+          message: const Text('选择要导出的学期'),
+          actions: [
+            ...semesters.map((semester) => CupertinoActionSheetAction(
+                  onPressed: () {
+                    Navigator.pop(context);
+                    _optionController.exportSpecificSemester(semester);
+                  },
+                  child: Text(semester),
+                )),
+            CupertinoActionSheetAction(
+              onPressed: () {
+                Navigator.pop(context);
+                _optionController.exportAllSemesters();
+              },
+              child: const Text('导出所有学期'),
             ),
           ],
           cancelButton: CupertinoActionSheetAction(

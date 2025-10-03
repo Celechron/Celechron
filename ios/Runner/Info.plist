@@ -47,10 +47,6 @@
 	<true/>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>fetch</string>
-	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -66,5 +62,11 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Celechron需要访问您的日历来同步课程表信息</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Celechron需要完整访问您的日历来同步课程表信息</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Celechron需要访问通讯录来设置事件参与者</string>
 </dict>
 </plist>
