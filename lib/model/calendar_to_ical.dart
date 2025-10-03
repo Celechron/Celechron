@@ -3,8 +3,6 @@ import 'dart:io';
 import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:flutter/cupertino.dart';
-import 'package:get/get.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/semester.dart';
@@ -175,25 +173,9 @@ class CalendarToIcal {
     );
   }
 
-  /// 显示 Cupertino 风格的提示弹窗
-  static void showAlert(String title, String message, {bool isError = false}) {
-    Get.dialog(
-      CupertinoAlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          CupertinoDialogAction(
-            child: const Text('确定'),
-            onPressed: () => Get.back(),
-          ),
-        ],
-      ),
-      barrierDismissible: true,
-    );
-  }
-
   /// 导出ICS课程表文件
-  static Future<void> exportIcsFile(Scholar scholar) async {
+  static Future<void> exportIcsFile(Scholar scholar,
+      Function(String, String, {bool isError}) showAlert) async {
     try {
       if (!scholar.isLogan) {
         showAlert('提示', '请先登录后再导出课程表');
@@ -233,7 +215,9 @@ class CalendarToIcal {
 
   /// 导出指定学期
   static Future<void> exportSpecificSemester(
-      Scholar scholar, String semesterName) async {
+      Scholar scholar,
+      String semesterName,
+      Function(String, String, {bool isError}) showAlert) async {
     try {
       final icalContent = generateIcalFromScholar(
         scholar: scholar,
@@ -264,7 +248,8 @@ class CalendarToIcal {
   }
 
   /// 导出所有学期
-  static Future<void> exportAllSemesters(Scholar scholar) async {
+  static Future<void> exportAllSemesters(Scholar scholar,
+      Function(String, String, {bool isError}) showAlert) async {
     try {
       final icalContent = generateIcalFromScholar(
         scholar: scholar,

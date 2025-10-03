@@ -6,8 +6,6 @@ import 'package:url_launcher/url_launcher_string.dart';
 
 import 'package:celechron/utils/utils.dart';
 import 'package:celechron/model/option.dart';
-import 'package:celechron/model/calendar_to_ical.dart';
-import 'package:celechron/model/calendar_to_system.dart';
 
 import 'allow_time_edit_page.dart';
 import 'course_id_mapping_edit_page.dart';
@@ -32,12 +30,8 @@ const Color _kHeaderFooterColor = CupertinoDynamicColor(
 class OptionPage extends StatelessWidget {
   final _optionController =
       Get.put(OptionController(), tag: 'optionController');
-  late final CalendarToSystemManager _calendarManager;
 
-  OptionPage({super.key}) {
-    _calendarManager = CalendarToSystemManager(_optionController.scholar.value);
-    _calendarManager.checkInitialCalendarSyncStatus();
-  }
+  OptionPage({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -326,20 +320,20 @@ class OptionPage extends StatelessWidget {
                   Obx(() => CupertinoListTile(
                         title: const Text('日历同步'),
                         subtitle: Text(
-                          _calendarManager.hasCalendarPermission
+                          _optionController.hasCalendarPermission
                               ? '已获取日历权限'
                               : '未获取日历权限',
                           style: TextStyle(
-                            color: _calendarManager.hasCalendarPermission
+                            color: _optionController.hasCalendarPermission
                                 ? CupertinoColors.systemGreen
                                 : CupertinoColors.systemRed,
                             fontSize: 12,
                           ),
                         ),
                         trailing: CupertinoSwitch(
-                          value: _calendarManager.calendarSyncEnabled,
+                          value: _optionController.calendarSyncEnabled,
                           onChanged: (value) async {
-                            await _calendarManager.toggleCalendarSync(value);
+                            await _optionController.toggleCalendarSync(value);
                           },
                         ),
                       )),
@@ -347,7 +341,7 @@ class OptionPage extends StatelessWidget {
                         title: Text(
                           '同步日历选项',
                           style: TextStyle(
-                            color: _calendarManager.calendarSyncEnabled
+                            color: _optionController.calendarSyncEnabled
                                 ? null // 使用默认颜色
                                 : CupertinoDynamicColor.resolve(
                                     CupertinoColors.quaternaryLabel, context),
@@ -356,7 +350,7 @@ class OptionPage extends StatelessWidget {
                         subtitle: Text(
                           '管理课程表的日历同步设置',
                           style: TextStyle(
-                            color: _calendarManager.calendarSyncEnabled
+                            color: _optionController.calendarSyncEnabled
                                 ? CupertinoDynamicColor.resolve(
                                     CupertinoColors.secondaryLabel, context)
                                 : CupertinoDynamicColor.resolve(
@@ -368,7 +362,7 @@ class OptionPage extends StatelessWidget {
                           children: [
                             Icon(
                               Icons.arrow_forward_ios,
-                              color: _calendarManager.calendarSyncEnabled
+                              color: _optionController.calendarSyncEnabled
                                   ? CupertinoDynamicColor.resolve(
                                       CupertinoColors.tertiaryLabel, context)
                                   : CupertinoDynamicColor.resolve(
@@ -377,9 +371,9 @@ class OptionPage extends StatelessWidget {
                             )
                           ],
                         ),
-                        onTap: _calendarManager.calendarSyncEnabled
+                        onTap: _optionController.calendarSyncEnabled
                             ? () {
-                                _calendarManager
+                                _optionController
                                     .showCalendarSyncDialog(context);
                               }
                             : null, // 禁用点击
@@ -500,7 +494,7 @@ class OptionPage extends StatelessWidget {
             CupertinoActionSheetAction(
               onPressed: () {
                 Navigator.pop(context);
-                CalendarToIcal.exportIcsFile(_optionController.scholar.value);
+                _optionController.exportIcsFile();
               },
               child: const Text('导出当前学期'),
             ),
@@ -522,8 +516,7 @@ class OptionPage extends StatelessWidget {
   }
 
   void _showSemesterSelectionDialog(BuildContext context) {
-    final semesters =
-        CalendarToIcal.getAvailableSemesters(_optionController.scholar.value);
+    final semesters = _optionController.getAvailableSemesters();
 
     if (semesters.isEmpty) {
       showCupertinoDialog(
@@ -552,16 +545,14 @@ class OptionPage extends StatelessWidget {
             ...semesters.map((semester) => CupertinoActionSheetAction(
                   onPressed: () {
                     Navigator.pop(context);
-                    CalendarToIcal.exportSpecificSemester(
-                        _optionController.scholar.value, semester);
+                    _optionController.exportSpecificSemester(semester);
                   },
                   child: Text(semester),
                 )),
             CupertinoActionSheetAction(
               onPressed: () {
                 Navigator.pop(context);
-                CalendarToIcal.exportAllSemesters(
-                    _optionController.scholar.value);
+                _optionController.exportAllSemesters();
               },
               child: const Text('导出所有学期'),
             ),

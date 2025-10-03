@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:get/get.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -11,6 +12,8 @@ import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:celechron/worker/fuse.dart';
 import 'package:celechron/worker/background_app_refresh.dart';
 import 'package:celechron/utils/platform_features.dart';
+import 'package:celechron/model/calendar_to_ical.dart';
+import 'package:celechron/model/calendar_to_system.dart';
 
 class OptionController extends GetxController {
   final _option = Get.find<Option>(tag: 'option');
@@ -19,9 +22,13 @@ class OptionController extends GetxController {
   final _db = Get.find<DatabaseHelper>(tag: 'db');
   late final RxInt allowTimeLength = _option.allowTime.length.obs;
 
+  // 日历同步相关
+  late final CalendarToSystemManager _calendarManager;
+
   @override
   void onInit() {
     super.onInit();
+    _calendarManager = CalendarToSystemManager(scholar.value);
 
     if (PlatformFeatures.hasBackgroundRefresh) {
       if (_option.pushOnGradeChange.value) {
@@ -42,6 +49,9 @@ class OptionController extends GetxController {
     ever(courseIdMappingList, (value) {
       _db.setCourseIdMappingList(value);
     });
+
+    // 初始化时检查日历权限和同步状态（不显示提示框）
+    _calendarManager.checkInitialCalendarSyncStatus();
   }
 
   Duration get workTime => _option.workTime.value;
@@ -128,10 +138,78 @@ class OptionController extends GetxController {
 
   bool get hasNewVersion => _fuse.value.hasNewVersion;
 
+  // 日历同步相关getter
+  bool get calendarSyncEnabled => _calendarManager.calendarSyncEnabled;
+  bool get hasCalendarPermission => _calendarManager.hasCalendarPermission;
+
   Future<void> logout() async {
     await scholar.value.logout();
     scholar.refresh();
     pushOnGradeChange = false;
     ECardWidgetMessenger.logout();
+  }
+
+  /// 显示 Cupertino 风格的提示弹窗
+  void _showAlert(String title, String message, {bool isError = false}) {
+    Get.dialog(
+      CupertinoAlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          CupertinoDialogAction(
+            child: const Text('确定'),
+            onPressed: () => Get.back(),
+          ),
+        ],
+      ),
+      barrierDismissible: true,
+    );
+  }
+
+  /// 导出ICS课程表文件
+  Future<void> exportIcsFile() async {
+    await CalendarToIcal.exportIcsFile(scholar.value, _showAlert);
+  }
+
+  /// 获取可用学期列表（供UI使用）
+  List<String> getAvailableSemesters() {
+    if (!scholar.value.isLogan) {
+      return [];
+    }
+    return CalendarToIcal.getAvailableSemesters(scholar.value);
+  }
+
+  /// 导出指定学期
+  Future<void> exportSpecificSemester(String semesterName) async {
+    await CalendarToIcal.exportSpecificSemester(
+        scholar.value, semesterName, _showAlert);
+  }
+
+  /// 导出所有学期
+  Future<void> exportAllSemesters() async {
+    await CalendarToIcal.exportAllSemesters(scholar.value, _showAlert);
+  }
+
+  /// 切换日历同步功能
+  Future<void> toggleCalendarSync(bool enabled) async {
+    await _calendarManager.toggleCalendarSync(enabled);
+  }
+
+  /// 获取同步状态信息
+  Map<String, dynamic> getCalendarSyncStatus() {
+    var stats = _calendarManager.getSyncStats();
+    return {
+      'enabled': _calendarManager.calendarSyncEnabled,
+      'hasPermission': _calendarManager.hasCalendarPermission,
+      'isLoggedIn': scholar.value.isLogan,
+      'syncedCourseCount': stats['syncedCourseCount'],
+      'syncedEventCount': stats['syncedEventCount'],
+      'calendarName': stats['calendarName'],
+    };
+  }
+
+  /// 显示日历同步选项对话框
+  void showCalendarSyncDialog(BuildContext context) {
+    _calendarManager.showCalendarSyncDialog(context);
   }
 }
