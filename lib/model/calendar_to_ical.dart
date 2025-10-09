@@ -231,12 +231,10 @@ class CalendarToIcal {
       await tempFile.writeAsString(icalContent);
 
       // 使用系统分享功能
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(tempFile.path)],
-          subject: '浙大课程表',
-          text: '从 Celechron 导出的课程表文件，可导入到其他日历应用中使用。',
-        ),
+      await Share.shareXFiles(
+        [XFile(tempFile.path)],
+        subject: '浙大课程表',
+        text: '从 Celechron 导出的课程表文件，可导入到其他日历应用中使用。',
       );
 
       _showAlert('成功', '课程表已导出，请选择保存位置或分享');
@@ -263,12 +261,10 @@ class CalendarToIcal {
 
       await tempFile.writeAsString(icalContent);
 
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(tempFile.path)],
-          subject: '浙大课程表-$semesterName',
-          text: '从 Celechron 导出的 $semesterName 课程表文件。',
-        ),
+      await Share.shareXFiles(
+        [XFile(tempFile.path)],
+        subject: '浙大课程表-$semesterName',
+        text: '从 Celechron 导出的 $semesterName 课程表文件。',
       );
 
       _showAlert('成功', '$semesterName 课程表已导出');
@@ -294,12 +290,10 @@ class CalendarToIcal {
 
       await tempFile.writeAsString(icalContent);
 
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(tempFile.path)],
-          subject: '浙大课程表-完整版',
-          text: '从 Celechron 导出的完整课程表文件，包含所有学期。',
-        ),
+      await Share.shareXFiles(
+        [XFile(tempFile.path)],
+        subject: '浙大课程表-完整版',
+        text: '从 Celechron 导出的完整课程表文件，包含所有学期。',
       );
 
       _showAlert('成功', '完整课程表已导出');

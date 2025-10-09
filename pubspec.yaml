@@ -28,14 +28,14 @@ dependencies:
       url: https://github.com/Celechron/flutter_workmanager.git
       ref: main
       path: workmanager
-  flutter_local_notifications:
+  flutter_local_notifications: ^17.2.4
   flutter_secure_storage:
   qr_flutter:
   app_links:
-  crypto:
+  crypto: 
   path_provider:
-  share_plus:
-  device_calendar:
+  share_plus: ^7.2.1
+  device_calendar: ^4.2.0
   timezone:
 
 dev_dependencies:
