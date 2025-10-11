@@ -47,7 +47,8 @@ class _AnimateButtonState extends State<AnimateButton>
   Widget build(BuildContext context) {
     var isDown = false;
     var isCancel = false;
-    var brightness = CupertinoTheme.of(context).brightness ?? MediaQuery.of(context).platformBrightness;
+    var brightness = CupertinoTheme.of(context).brightness ??
+        MediaQuery.of(context).platformBrightness;
 
     return GestureDetector(
       onTapDown: (_) async {

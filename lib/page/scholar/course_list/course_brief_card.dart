@@ -78,8 +78,7 @@ class CourseBriefCard extends StatelessWidget {
                               .withValues(alpha: 0.5),
                         ),
                         Expanded(
-                            child: Text(
-                                ' 课号：${course.realId}',
+                            child: Text(' 课号：${course.realId}',
                                 style: TextStyle(
                                   fontSize: 14,
                                   fontWeight: FontWeight.normal,

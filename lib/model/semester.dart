@@ -125,17 +125,23 @@ class Semester {
   }
 
   double get firstHalfSessionCount {
-    return _sessions.where((e) => e.firstHalf && e.confirmed && e.showOnTimetable).fold(
-        0.0,
-        (p, e) =>
-            p + (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
+    return _sessions
+        .where((e) => e.firstHalf && e.confirmed && e.showOnTimetable)
+        .fold(
+            0.0,
+            (p, e) =>
+                p +
+                (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
   }
 
   double get secondHalfSessionCount {
-    return _sessions.where((e) => e.secondHalf && e.confirmed && e.showOnTimetable).fold(
-        0.0,
-        (p, e) =>
-            p + (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
+    return _sessions
+        .where((e) => e.secondHalf && e.confirmed && e.showOnTimetable)
+        .fold(
+            0.0,
+            (p, e) =>
+                p +
+                (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
   }
 
   List<Period> get periods {
@@ -231,14 +237,16 @@ class Semester {
       var originalDay = DateTime(
           period.startTime.year, period.startTime.month, period.startTime.day);
       if (_exchanges.containsKey(originalDay)) {
-        var exchangedDay = _exchanges[DateTime(
-            period.startTime.year, period.startTime.month, period.startTime.day)]!;
-        period.startTime = period.startTime.add(exchangedDay.difference(originalDay));
-        period.endTime = period.endTime.add(exchangedDay.difference(originalDay));
+        var exchangedDay = _exchanges[DateTime(period.startTime.year,
+            period.startTime.month, period.startTime.day)]!;
+        period.startTime =
+            period.startTime.add(exchangedDay.difference(originalDay));
+        period.endTime =
+            period.endTime.add(exchangedDay.difference(originalDay));
       }
     }
     // 自定义第几周上课的课程，在这里处理
-    for(var session in _sessions) {
+    for (var session in _sessions) {
       if (session.customRepeat) {
         for (var week in session.customRepeatWeeks) {
           // (week - 1) ~/ 8 : 判断是上半学期还是下半学期。例如，第8周是上半学期。
@@ -249,12 +257,15 @@ class Semester {
           // 课程的第几周上课，如果超过16周，就在第16周最后一天的基础上计算。不要问为什么有17周18周的课，我只能说世界之大无奇不有。
           DateTime day;
           if (week > 16) {
-            day = _dayOfWeekToDays.last.last.last.last.add(Duration(days: (week - 17) * 7 + session.dayOfWeek));
+            day = _dayOfWeekToDays.last.last.last.last
+                .add(Duration(days: (week - 17) * 7 + session.dayOfWeek));
           } else {
-            day = _dayOfWeekToDays[(week - 1) ~/ 8][1 - week % 2][session.dayOfWeek][(week - 1) % 8 ~/ 2];
+            day = _dayOfWeekToDays[(week - 1) ~/ 8][1 - week % 2]
+                [session.dayOfWeek][(week - 1) % 8 ~/ 2];
           }
           var period = Period(
-              uid: '${session.id}${session.dayOfWeek}${session.time.first}$week',
+              uid:
+                  '${session.id}${session.dayOfWeek}${session.time.first}$week',
               fromUid: session.id,
               type: PeriodType.classes,
               description: "教师: ${session.teacher}",
@@ -347,8 +358,7 @@ class Semester {
       _courses[key]!.completeGrade(grade);
     } else {
       if (isGrs) {
-        _courses
-            .addEntries([MapEntry(key, Course.fromGrsGrade(grade))]);
+        _courses.addEntries([MapEntry(key, Course.fromGrsGrade(grade))]);
       } else {
         _courses.addEntries([MapEntry(key, Course.fromUgrsGrade(grade))]);
       }

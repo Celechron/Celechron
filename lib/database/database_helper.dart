@@ -45,14 +45,18 @@ class DatabaseHelper {
     customGpaBox = await Hive.openBox(dbCustomGpa);
     secureStorage = const FlutterSecureStorage();
     // Migrate all items without groupID
-    var secureStorageItems = await secureStorage.readAll(iOptions: const IOSOptions(
-        accessibility: KeychainAccessibility.first_unlock,
-        accountName: 'Celechron'));
+    var secureStorageItems = await secureStorage.readAll(
+        iOptions: const IOSOptions(
+            accessibility: KeychainAccessibility.first_unlock,
+            accountName: 'Celechron'));
     await Future.forEach(secureStorageItems.entries, (e) async {
-      await secureStorage.delete(key: e.key, iOptions: const IOSOptions(
-          accessibility: KeychainAccessibility.first_unlock,
-          accountName: 'Celechron'));
-      await secureStorage.write(key: e.key, value: e.value, iOptions: secureStorageIOSOptions);
+      await secureStorage.delete(
+          key: e.key,
+          iOptions: const IOSOptions(
+              accessibility: KeychainAccessibility.first_unlock,
+              accountName: 'Celechron'));
+      await secureStorage.write(
+          key: e.key, value: e.value, iOptions: secureStorageIOSOptions);
     });
   }
 
@@ -136,7 +140,7 @@ class DatabaseHelper {
     await optionsBox.put(kPushOnGradeChange, pushOnGradeChange);
   }
 
-  Future<void> setBrightnessMode(BrightnessMode brightness) async{
+  Future<void> setBrightnessMode(BrightnessMode brightness) async {
     await optionsBox.put(kBrightnessMode, brightness.index);
   }
 
@@ -154,7 +158,8 @@ class DatabaseHelper {
     return List<CourseIdMap>.from(optionsBox.get(kCourseIdMappingList));
   }
 
-  Future<void> setCourseIdMappingList(List<CourseIdMap> courseIdMappingList) async {
+  Future<void> setCourseIdMappingList(
+      List<CourseIdMap> courseIdMappingList) async {
     await optionsBox.put(kCourseIdMappingList, courseIdMappingList);
   }
 
@@ -210,10 +215,14 @@ class DatabaseHelper {
   Future<Scholar> getScholar() async {
     var scholar = scholarBox.get('user', defaultValue: Scholar());
     await Future.wait([
-      secureStorage.read(key: kUsername, iOptions: secureStorageIOSOptions).then((value) {
+      secureStorage
+          .read(key: kUsername, iOptions: secureStorageIOSOptions)
+          .then((value) {
         if (value != null) scholar.username = value;
       }),
-      secureStorage.read(key: kPassword, iOptions: secureStorageIOSOptions).then((value) {
+      secureStorage
+          .read(key: kPassword, iOptions: secureStorageIOSOptions)
+          .then((value) {
         if (value != null) scholar.password = value;
       })
     ]);
@@ -225,9 +234,13 @@ class DatabaseHelper {
     await Future.wait([
       scholarBox.put('user', scholar),
       secureStorage.write(
-          key: kUsername, value: scholar.username, iOptions: secureStorageIOSOptions),
+          key: kUsername,
+          value: scholar.username,
+          iOptions: secureStorageIOSOptions),
       secureStorage.write(
-          key: kPassword, value: scholar.password, iOptions: secureStorageIOSOptions)
+          key: kPassword,
+          value: scholar.password,
+          iOptions: secureStorageIOSOptions)
     ]);
   }
 

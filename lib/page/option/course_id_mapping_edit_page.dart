@@ -39,7 +39,8 @@ class CourseIdMappingEditForm extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Container(
-                padding: const EdgeInsets.only(left: 16, right: 16, bottom: 8, top: 16),
+                padding: const EdgeInsets.only(
+                    left: 16, right: 16, bottom: 8, top: 16),
                 child: Text(
                   title,
                   style: CupertinoTheme.of(context).textTheme.navTitleTextStyle,
@@ -131,12 +132,11 @@ class CourseIdMappingEditForm extends StatelessWidget {
                                 });
                             return;
                           } else {
-                            courseIdMappingList.removeWhere(
-                                (element) =>
-                                    element.id1 == oldIdController.text ||
-                                    element.id2 == oldIdController.text ||
-                                    element.id1 == newIdController.text ||
-                                    element.id2 == newIdController.text);
+                            courseIdMappingList.removeWhere((element) =>
+                                element.id1 == oldIdController.text ||
+                                element.id2 == oldIdController.text ||
+                                element.id1 == newIdController.text ||
+                                element.id2 == newIdController.text);
                             courseIdMappingList.add(CourseIdMap(
                                 id1: oldIdController.text,
                                 id2: newIdController.text,
@@ -150,8 +150,10 @@ class CourseIdMappingEditForm extends StatelessWidget {
                         child: const SizedBox(
                           height: 24,
                           width: 60,
-                          child: Center(child: Text('保存',
-                              style: TextStyle(color: CupertinoColors.white))),
+                          child: Center(
+                              child: Text('保存',
+                                  style:
+                                      TextStyle(color: CupertinoColors.white))),
                         )),
                   ],
                 ),
@@ -178,39 +180,40 @@ class CourseIdMappingEditPage extends StatelessWidget {
           slivers: [
             const CelechronSliverTextHeader(subtitle: '自定义课程代码映射'),
             Obx(() => SliverList(
-              delegate: SliverChildBuilderDelegate(
-                  (context, index) => Container(
-                        padding: index == 0
-                            ? const EdgeInsets.only(
-                                top: 0, bottom: 5, left: 16, right: 16)
-                            : const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 5),
-                        child: CupertinoFormRow(
-                          prefix: Text('${courseIdMappingList[index].comment}： ${courseIdMappingList[index].id1} <-> ${courseIdMappingList[index].id2}',
-                              style: CupertinoTheme.of(context)
-                                  .textTheme
-                                  .textStyle),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              CupertinoButton(
-                                padding: EdgeInsets.zero,
-                                onPressed: () async {
-                                  courseIdMappingList.removeAt(index);
-                                  await scholar.value.recalculateGpa();
-                                  scholar.refresh();
-                                },
-                                child: const Icon(
-                                  CupertinoIcons.delete,
-                                  color: CupertinoColors.destructiveRed,
-                                ),
+                  delegate: SliverChildBuilderDelegate(
+                      (context, index) => Container(
+                            padding: index == 0
+                                ? const EdgeInsets.only(
+                                    top: 0, bottom: 5, left: 16, right: 16)
+                                : const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 5),
+                            child: CupertinoFormRow(
+                              prefix: Text(
+                                  '${courseIdMappingList[index].comment}： ${courseIdMappingList[index].id1} <-> ${courseIdMappingList[index].id2}',
+                                  style: CupertinoTheme.of(context)
+                                      .textTheme
+                                      .textStyle),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.end,
+                                children: [
+                                  CupertinoButton(
+                                    padding: EdgeInsets.zero,
+                                    onPressed: () async {
+                                      courseIdMappingList.removeAt(index);
+                                      await scholar.value.recalculateGpa();
+                                      scholar.refresh();
+                                    },
+                                    child: const Icon(
+                                      CupertinoIcons.delete,
+                                      color: CupertinoColors.destructiveRed,
+                                    ),
+                                  ),
+                                ],
                               ),
-                            ],
+                            ),
                           ),
-                        ),
-                      ),
-                  childCount: courseIdMappingList.length),
-            )),
+                      childCount: courseIdMappingList.length),
+                )),
             SliverToBoxAdapter(
                 child: Column(
               children: [
