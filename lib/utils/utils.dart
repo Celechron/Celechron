@@ -33,4 +33,3 @@ const secureStorageIOSOptions = kDebugMode
         accessibility: KeychainAccessibility.first_unlock,
         accountName: 'Celechron',
         groupId: 'group.top.celechron.celechron');
-

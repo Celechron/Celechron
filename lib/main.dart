@@ -36,7 +36,10 @@ void main() async {
 
   var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   if (scholar.value.isLogan) {
-    scholar.value.login().then((value) => scholar.value.refresh()).then((value) => scholar.refresh());
+    scholar.value
+        .login()
+        .then((value) => scholar.value.refresh())
+        .then((value) => scholar.refresh());
   }
 
   ECardWidgetMessenger.update();
@@ -49,8 +52,8 @@ class CelechronApp extends StatefulWidget {
   State<CelechronApp> createState() => _CelechronAppState();
 }
 
-class _CelechronAppState extends State<CelechronApp> with WidgetsBindingObserver {
-
+class _CelechronAppState extends State<CelechronApp>
+    with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
@@ -83,44 +86,45 @@ class _CelechronAppState extends State<CelechronApp> with WidgetsBindingObserver
   Widget build(BuildContext context) {
     var brightnessMode = Get.find<Option>(tag: 'option').brightnessMode;
     return Obx(() => GetCupertinoApp(
-      theme: CupertinoThemeData(
-        brightness: brightnessMode.value == BrightnessMode.system
-            ? null
-            : brightnessMode.value == BrightnessMode.dark
-            ? Brightness.dark
-            : Brightness.light,
-        scaffoldBackgroundColor: CupertinoColors.systemBackground,
-        barBackgroundColor: CupertinoColors.systemBackground,
-      ),
-      localizationsDelegates: const [
-        GlobalMaterialLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-      ],
-      supportedLocales: const [
-        Locale('zh'),
-        Locale('en'),
-      ],
-      locale: const Locale('zh'),
-      builder: (context, child) => MediaQuery(
-        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-        child: child!,
-      ),
-      title: 'Celechron',
-      home: const HomePage(title: 'Celechron'),
-      initialRoute: '/',
-      routes: {
-        '/ecardpaypage': (context) => ECardPayPage(),
-      },
-      debugShowCheckedModeBanner: false,
-    ));
+          theme: CupertinoThemeData(
+            brightness: brightnessMode.value == BrightnessMode.system
+                ? null
+                : brightnessMode.value == BrightnessMode.dark
+                    ? Brightness.dark
+                    : Brightness.light,
+            scaffoldBackgroundColor: CupertinoColors.systemBackground,
+            barBackgroundColor: CupertinoColors.systemBackground,
+          ),
+          localizationsDelegates: const [
+            GlobalMaterialLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+          ],
+          supportedLocales: const [
+            Locale('zh'),
+            Locale('en'),
+          ],
+          locale: const Locale('zh'),
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!,
+          ),
+          title: 'Celechron',
+          home: const HomePage(title: 'Celechron'),
+          initialRoute: '/',
+          routes: {
+            '/ecardpaypage': (context) => ECardPayPage(),
+          },
+          debugShowCheckedModeBanner: false,
+        ));
   }
 
   void _initAppLinks() {
     final appLinks = AppLinks();
     appLinks.uriLinkStream.listen((uri) {
-      if(uri.toString() == 'celechron://ecardpaypage') {
-        navigator?.popUntil((route) => !(route.settings.name?.endsWith('ecardpaypage') ?? false));
+      if (uri.toString() == 'celechron://ecardpaypage') {
+        navigator?.popUntil((route) =>
+            !(route.settings.name?.endsWith('ecardpaypage') ?? false));
         navigator?.pushNamed('/ecardpaypage');
       }
     });
@@ -134,19 +138,26 @@ class _CelechronAppState extends State<CelechronApp> with WidgetsBindingObserver
     ever(brightnessMode, (mode) {
       if (mode == BrightnessMode.system) {
         SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-          statusBarIconBrightness: dispatcher.platformBrightness == Brightness.light ? Brightness.dark : Brightness.light,
+          statusBarIconBrightness:
+              dispatcher.platformBrightness == Brightness.light
+                  ? Brightness.dark
+                  : Brightness.light,
           systemNavigationBarColor: Colors.transparent,
         ));
         dispatcher.onPlatformBrightnessChanged = () {
           SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-            statusBarIconBrightness: dispatcher.platformBrightness == Brightness.light ? Brightness.dark : Brightness.light,
+            statusBarIconBrightness:
+                dispatcher.platformBrightness == Brightness.light
+                    ? Brightness.dark
+                    : Brightness.light,
             systemNavigationBarColor: Colors.transparent,
           ));
         };
       } else {
         dispatcher.onPlatformBrightnessChanged = null;
         SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-          statusBarIconBrightness: mode == BrightnessMode.light ? Brightness.dark : Brightness.light,
+          statusBarIconBrightness:
+              mode == BrightnessMode.light ? Brightness.dark : Brightness.light,
           systemNavigationBarColor: Colors.transparent,
         ));
       }
@@ -156,11 +167,13 @@ class _CelechronAppState extends State<CelechronApp> with WidgetsBindingObserver
 
   void _initNotification() {
     FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
-    FlutterLocalNotificationsPlugin();
+        FlutterLocalNotificationsPlugin();
     const initializationSettingsAndroid =
-    AndroidInitializationSettings('@mipmap/ic_launcher');
-    flutterLocalNotificationsPlugin.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>()?.requestNotificationsPermission();
+        AndroidInitializationSettings('@mipmap/ic_launcher');
+    flutterLocalNotificationsPlugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
     const initializationSettingsDarwin = DarwinInitializationSettings(
       requestSoundPermission: true,
       requestBadgePermission: true,

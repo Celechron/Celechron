@@ -13,7 +13,6 @@ import 'package:celechron/page/option/option_view.dart';
 
 import 'package:celechron/worker/fuse.dart';
 
-
 class HomePage extends StatefulWidget {
   const HomePage({super.key, required this.title});
 
@@ -53,7 +52,7 @@ class _HomePageState extends State<HomePage> {
       tabBar: CupertinoTabBar(
         iconSize: 26,
         backgroundColor: CupertinoDynamicColor.resolve(
-            CupertinoColors.secondarySystemBackground, context)
+                CupertinoColors.secondarySystemBackground, context)
             .withValues(alpha: 0.5),
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
@@ -142,7 +141,7 @@ class _HomePageState extends State<HomePage> {
     await Future.delayed(const Duration(seconds: 1));
     var fuse = Get.find<Rx<Fuse>>(tag: 'fuse');
     var response =
-    await fuse.value.checkUpdate().whenComplete(() => fuse.refresh());
+        await fuse.value.checkUpdate().whenComplete(() => fuse.refresh());
     if (response != null) {
       if (context.mounted) {
         showCupertinoDialog(

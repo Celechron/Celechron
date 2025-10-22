@@ -6,8 +6,8 @@ import 'package:hive/hive.dart';
 import 'package:quiver/time.dart';
 
 enum TaskType {
-  deadline,     // 只有结束时间固定的《真DDL》
-  fixed,      // 开始和结束时间都固定的《日程》
+  deadline, // 只有结束时间固定的《真DDL》
+  fixed, // 开始和结束时间都固定的《日程》
   fixedlegacy // 已过的《日程》
 }
 

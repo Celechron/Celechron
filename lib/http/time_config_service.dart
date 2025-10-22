@@ -17,8 +17,7 @@ class TimeConfigService {
       HttpClient httpClient, String semesterId) async {
     try {
       var response = await httpClient
-          .getUrl(Uri.parse(
-              'http://calendar.celechron.top/$semesterId.json'))
+          .getUrl(Uri.parse('http://calendar.celechron.top/$semesterId.json'))
           .then((request) => request.close())
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));

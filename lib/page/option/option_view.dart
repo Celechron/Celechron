@@ -28,7 +28,8 @@ const Color _kHeaderFooterColor = CupertinoDynamicColor(
 );
 
 class OptionPage extends StatelessWidget {
-  final _optionController = Get.put(OptionController(), tag: 'optionController');
+  final _optionController =
+      Get.put(OptionController(), tag: 'optionController');
 
   OptionPage({super.key});
 

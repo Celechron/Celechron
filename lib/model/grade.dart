@@ -15,7 +15,10 @@ class Grade {
   late bool creditIncluded;
 
   // 获得的学分（挂科、不计学分的不计）
-  double get earnedCredit => (creditIncluded && (fivePoint != 0 || id.contains('xtwkc'))) ? credit : 0.0;
+  double get earnedCredit =>
+      (creditIncluded && (fivePoint != 0 || id.contains('xtwkc')))
+          ? credit
+          : 0.0;
 
   // only used for ugrs
   String get semesterId => id.length > 12 ? id.substring(1, 12) : "研究生请勿使用此函数";
@@ -76,10 +79,15 @@ class Grade {
         original = json['cj'] as String,
         fivePoint = double.parse(json['jd'] as String) {
     // 匹配第一组连续的数字，如果没有则返回-100000
-    hundredPoint = _toHundredPoint[original] ?? int.tryParse(RegExp(r'\d+').firstMatch(original)!.group(0) ?? "-100000")!;
+    hundredPoint = _toHundredPoint[original] ??
+        int.tryParse(
+            RegExp(r'\d+').firstMatch(original)!.group(0) ?? "-100000")!;
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
     fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
-    creditIncluded = original != "弃修" && original != "待录" && original != "缓考" && original != "无效";
+    creditIncluded = original != "弃修" &&
+        original != "待录" &&
+        original != "缓考" &&
+        original != "无效";
     gpaIncluded = creditIncluded &&
         original != "合格" &&
         original != "不合格" &&
@@ -97,7 +105,10 @@ class Grade {
     hundredPoint = _toHundredPoint[original] ?? int.parse(original);
     fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
     fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
-    creditIncluded = original != "弃修" && original != "待录" && original != "缓考" && original != "无效";
+    creditIncluded = original != "弃修" &&
+        original != "待录" &&
+        original != "缓考" &&
+        original != "无效";
     gpaIncluded = creditIncluded && original != "合格" && original != "不合格";
     major = true;
   }

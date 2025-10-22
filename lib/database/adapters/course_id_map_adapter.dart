@@ -12,5 +12,6 @@ class CourseIdMapAdapter extends TypeAdapter<CourseIdMap> {
       writer.writeString(jsonEncode(obj));
 
   @override
-  CourseIdMap read(BinaryReader reader) => CourseIdMap.fromJson(jsonDecode(reader.readString()));
+  CourseIdMap read(BinaryReader reader) =>
+      CourseIdMap.fromJson(jsonDecode(reader.readString()));
 }
