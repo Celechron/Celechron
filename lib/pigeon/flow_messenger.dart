@@ -107,9 +107,9 @@ class _FlowMessengerCodec extends StandardMessageCodec {
   @override
   Object? readValueOfType(int type, ReadBuffer buffer) {
     switch (type) {
-      case 128: 
+      case 128:
         return FlowMessage.decode(readValue(buffer)!);
-      case 129: 
+      case 129:
         return PeriodDto.decode(readValue(buffer)!);
       default:
         return super.readValueOfType(type, buffer);
@@ -121,9 +121,11 @@ class FlowMessenger {
   /// Constructor for [FlowMessenger].  The [binaryMessenger] named argument is
   /// available for dependency injection.  If it is left null, the default
   /// BinaryMessenger will be used which routes to the host platform.
-  FlowMessenger({BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
+  FlowMessenger(
+      {BinaryMessenger? binaryMessenger, String messageChannelSuffix = ''})
       : __pigeon_binaryMessenger = binaryMessenger,
-        __pigeon_messageChannelSuffix = messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
+        __pigeon_messageChannelSuffix =
+            messageChannelSuffix.isNotEmpty ? '.$messageChannelSuffix' : '';
   final BinaryMessenger? __pigeon_binaryMessenger;
 
   static const MessageCodec<Object?> pigeonChannelCodec = _FlowMessengerCodec();
@@ -131,8 +133,10 @@ class FlowMessenger {
   final String __pigeon_messageChannelSuffix;
 
   Future<bool> transfer(FlowMessage data) async {
-    final String __pigeon_channelName = 'dev.flutter.pigeon.celechron.FlowMessenger.transfer$__pigeon_messageChannelSuffix';
-    final BasicMessageChannel<Object?> __pigeon_channel = BasicMessageChannel<Object?>(
+    final String __pigeon_channelName =
+        'dev.flutter.pigeon.celechron.FlowMessenger.transfer$__pigeon_messageChannelSuffix';
+    final BasicMessageChannel<Object?> __pigeon_channel =
+        BasicMessageChannel<Object?>(
       __pigeon_channelName,
       pigeonChannelCodec,
       binaryMessenger: __pigeon_binaryMessenger,

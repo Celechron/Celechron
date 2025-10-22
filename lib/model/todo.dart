@@ -8,7 +8,8 @@ class Todo {
       : id = json["id"].toString(),
         name = json["title"],
         course = json["course_name"],
-        endTime = json["end_time"] != null ? DateTime.parse(json["end_time"]) : null;
+        endTime =
+            json["end_time"] != null ? DateTime.parse(json["end_time"]) : null;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -23,9 +24,11 @@ class Todo {
         .toList();
   }
 
-  bool isInOneDay() =>
-      endTime != null ? endTime!.subtract(const Duration(days: 1)).isBefore(DateTime.now()) : false;
+  bool isInOneDay() => endTime != null
+      ? endTime!.subtract(const Duration(days: 1)).isBefore(DateTime.now())
+      : false;
 
-  bool isInOneWeek() =>
-      endTime != null ? endTime!.subtract(const Duration(days: 7)).isBefore(DateTime.now()) : false;
+  bool isInOneWeek() => endTime != null
+      ? endTime!.subtract(const Duration(days: 7)).isBefore(DateTime.now())
+      : false;
 }

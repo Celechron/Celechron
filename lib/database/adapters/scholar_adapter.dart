@@ -12,5 +12,6 @@ class ScholarAdapter extends TypeAdapter<Scholar> {
       writer.writeString(jsonEncode(obj));
 
   @override
-  Scholar read(BinaryReader reader) => Scholar.fromJson(jsonDecode(reader.readString()));
+  Scholar read(BinaryReader reader) =>
+      Scholar.fromJson(jsonDecode(reader.readString()));
 }

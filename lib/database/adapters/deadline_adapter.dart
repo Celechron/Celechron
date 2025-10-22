@@ -1,4 +1,3 @@
-
 import 'package:hive/hive.dart';
 import 'package:celechron/model/task.dart';
 
@@ -7,12 +6,10 @@ class DeadlineStatusAdapter extends TypeAdapter<TaskStatus> {
   final typeId = 7;
 
   @override
-  void write(BinaryWriter writer, TaskStatus obj) =>
-      writer.writeInt(obj.index);
+  void write(BinaryWriter writer, TaskStatus obj) => writer.writeInt(obj.index);
 
   @override
-  TaskStatus read(BinaryReader reader) =>
-      TaskStatus.values[reader.readInt()];
+  TaskStatus read(BinaryReader reader) => TaskStatus.values[reader.readInt()];
 }
 
 class DeadlineTypeAdapter extends TypeAdapter<TaskType> {
@@ -20,12 +17,10 @@ class DeadlineTypeAdapter extends TypeAdapter<TaskType> {
   final typeId = 10;
 
   @override
-  void write(BinaryWriter writer, TaskType obj) =>
-      writer.writeInt(obj.index);
+  void write(BinaryWriter writer, TaskType obj) => writer.writeInt(obj.index);
 
   @override
-  TaskType read(BinaryReader reader) =>
-      TaskType.values[reader.readInt()];
+  TaskType read(BinaryReader reader) => TaskType.values[reader.readInt()];
 }
 
 class DeadlineRepeatTypeAdapter extends TypeAdapter<TaskRepeatType> {
@@ -105,11 +100,9 @@ class DeadlineAdapter extends TypeAdapter<Task> {
       ..isBreakable = fields[8] as bool
       ..type = fields[9] as TaskType? ?? TaskType.deadline
       ..startTime = fields[10] as DateTime? ?? (fields[5] as DateTime)
-      ..repeatType =
-          fields[11] as TaskRepeatType? ?? TaskRepeatType.norepeat
+      ..repeatType = fields[11] as TaskRepeatType? ?? TaskRepeatType.norepeat
       ..repeatPeriod = fields[12] as int? ?? 1
-      ..repeatEndsTime =
-          fields[13] as DateTime? ?? (fields[5] as DateTime)
+      ..repeatEndsTime = fields[13] as DateTime? ?? (fields[5] as DateTime)
       ..blockArrangements = fields[14] as bool? ?? true
       ..fromUid = fields[15] as String?;
   }

@@ -56,7 +56,8 @@ class _GradeCardState extends State<GradeCard>
 
   @override
   Widget build(BuildContext context) {
-    var brightness = CupertinoTheme.of(context).brightness ?? MediaQuery.of(context).platformBrightness;
+    var brightness = CupertinoTheme.of(context).brightness ??
+        MediaQuery.of(context).platformBrightness;
     var isDown = false;
     var isCancel = false;
 
@@ -161,7 +162,8 @@ class _GradeCardState extends State<GradeCard>
                                       .textTheme
                                       .textStyle
                                       .color!
-                                      .withValues(alpha: isHighlighted() ? 1.0 : 0.5),
+                                      .withValues(
+                                          alpha: isHighlighted() ? 1.0 : 0.5),
                                   overflow: TextOverflow.ellipsis,
                                 ),
                           ),

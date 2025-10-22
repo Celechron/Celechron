@@ -32,11 +32,13 @@ class Fuse {
 
       late String checkUpdateUrl;
       if (Platform.isAndroid) {
-        checkUpdateUrl = "https://api.celechron.top/checkUpdate?platform=android";
+        checkUpdateUrl =
+            "https://api.celechron.top/checkUpdate?platform=android";
       } else if (Platform.isIOS) {
         checkUpdateUrl = "https://api.celechron.top/checkUpdate?platform=ios";
       } else {
-        checkUpdateUrl = "https://api.celechron.top/checkUpdate?platform=others";
+        checkUpdateUrl =
+            "https://api.celechron.top/checkUpdate?platform=others";
       }
 
       var request = await _httpClient
@@ -46,8 +48,12 @@ class Fuse {
       var html = await response.transform(utf8.decoder).join();
 
       var match = RegExp('[0-9.]+').allMatches(html);
-      remoteVersion =
-          match.elementAt(0).group(0)!.split('.').map((e) => int.parse(e)).toList();
+      remoteVersion = match
+          .elementAt(0)
+          .group(0)!
+          .split('.')
+          .map((e) => int.parse(e))
+          .toList();
       remoteBuild = int.parse(match.elementAt(1).group(0)!);
 
       hasNewVersion = _compareVersion(html.contains('beta'));

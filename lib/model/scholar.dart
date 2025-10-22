@@ -154,8 +154,12 @@ class Scholar {
             if (key.startsWith('PPAE') || key.startsWith('401')) {
               key = matchClass?.group(1) ?? e.id.substring(0, 22);
             }
-            var courseIdMappingList = Get.find<OptionController>(tag: 'optionController').courseIdMappingList;
-            var courseIdMappingMap = { for (var e in courseIdMappingList) e.id1 : e.id2 };
+            var courseIdMappingList =
+                Get.find<OptionController>(tag: 'optionController')
+                    .courseIdMappingList;
+            var courseIdMappingMap = {
+              for (var e in courseIdMappingList) e.id1: e.id2
+            };
             if (courseIdMappingMap.containsKey(key)) {
               key = courseIdMappingMap[key]!;
             }
@@ -209,15 +213,20 @@ class Scholar {
   }
 
   Future<void> recalculateGpa() async {
-    grades = grades.values.expand((e) => e).fold(<String, List<Grade>>{}, (p, e) {
+    grades =
+        grades.values.expand((e) => e).fold(<String, List<Grade>>{}, (p, e) {
       // 体育课
       var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
       var key = matchClass?.group(2) ?? e.id.substring(14, 22);
       if (key.startsWith('PPAE') || key.startsWith('401')) {
         key = matchClass?.group(1) ?? e.id.substring(0, 22);
       }
-      var courseIdMappingList = Get.find<OptionController>(tag: 'optionController').courseIdMappingList;
-      var courseIdMappingMap = { for (var e in courseIdMappingList) e.id1 : e.id2 };
+      var courseIdMappingList =
+          Get.find<OptionController>(tag: 'optionController')
+              .courseIdMappingList;
+      var courseIdMappingMap = {
+        for (var e in courseIdMappingList) e.id1: e.id2
+      };
       if (courseIdMappingMap.containsKey(key)) {
         key = courseIdMappingMap[key]!;
       }

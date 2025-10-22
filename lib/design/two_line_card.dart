@@ -68,7 +68,8 @@ class _TwoLineCardState extends State<TwoLineCard>
   Widget build(BuildContext context) {
     var isDown = false;
     var isCancel = false;
-    var brightness = CupertinoTheme.of(context).brightness ?? MediaQuery.of(context).platformBrightness;
+    var brightness = CupertinoTheme.of(context).brightness ??
+        MediaQuery.of(context).platformBrightness;
 
     if (widget.transparent) {
       return Container(

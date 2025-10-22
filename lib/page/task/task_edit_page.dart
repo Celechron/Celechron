@@ -16,8 +16,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
   int __got = 0;
 
   void saveAndExit() {
-    if (now.type == TaskType.fixed &&
-        !now.startTime.isBefore(now.endTime)) {
+    if (now.type == TaskType.fixed && !now.startTime.isBefore(now.endTime)) {
       showCupertinoDialog(
         context: context,
         builder: (BuildContext context) {
@@ -68,10 +67,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
       int length = now.endTime.difference(now.startTime).inMinutes;
       if ((now.repeatType == TaskRepeatType.days &&
               length > now.repeatPeriod * 24 * 60) ||
-          (now.repeatType == TaskRepeatType.month &&
-              length > 28 * 24 * 60) ||
-          (now.repeatType == TaskRepeatType.year &&
-              length > 365 * 24 * 60)) {
+          (now.repeatType == TaskRepeatType.month && length > 28 * 24 * 60) ||
+          (now.repeatType == TaskRepeatType.year && length > 365 * 24 * 60)) {
         showCupertinoDialog(
           context: context,
           builder: (BuildContext context) {
@@ -119,8 +116,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
         now.startTime = now.endTime.add(const Duration(minutes: -1));
       }
       if (now.repeatEndsTime.isAfter(DateTime(2099, 1, 1)) ||
-          dateOnly(now.repeatEndsTime)
-              .isBefore(dateOnly(now.startTime))) {
+          dateOnly(now.repeatEndsTime).isBefore(dateOnly(now.startTime))) {
         now.repeatEndsTime = dateOnly(now.startTime);
       }
       __got = 1;
@@ -222,7 +218,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                       onDateTimeChanged: (DateTime newTime) {
                                         setState(() {
                                           now.startTime = newTime;
-                                          if (now.endTime.isBefore(now.startTime)) {
+                                          if (now.endTime
+                                              .isBefore(now.startTime)) {
                                             now.endTime = now.startTime;
                                           }
                                         });
@@ -259,7 +256,9 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                     onDateTimeChanged: (DateTime newTime) {
                                       setState(() {
                                         now.endTime = newTime;
-                                        if (now.type == TaskType.fixed && now.startTime.isAfter(now.endTime)) {
+                                        if (now.type == TaskType.fixed &&
+                                            now.startTime
+                                                .isAfter(now.endTime)) {
                                           now.startTime = now.endTime;
                                         }
                                       });
@@ -492,8 +491,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                     children: [
                       CupertinoListTile(
                         title: const Text('重复'),
-                        trailing: Text(
-                            deadlineRepeatTypeName[now.repeatType]!),
+                        trailing: Text(deadlineRepeatTypeName[now.repeatType]!),
                         onTap: () async {
                           await showCupertinoModalPopup(
                               context: context,
@@ -509,8 +507,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                       itemExtent: 32,
                                       scrollController:
                                           FixedExtentScrollController(
-                                        initialItem:
-                                            now.repeatType.index,
+                                        initialItem: now.repeatType.index,
                                       ),
                                       onSelectedItemChanged: (int value) {
                                         setState(() {
@@ -519,8 +516,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
 
                                           if (now.repeatType !=
                                                   TaskRepeatType.norepeat &&
-                                              dateOnly(now
-                                                      .repeatEndsTime)
+                                              dateOnly(now.repeatEndsTime)
                                                   .isBefore(dateOnly(
                                                       now.startTime))) {
                                             now.repeatEndsTime =
@@ -563,13 +559,11 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                         itemExtent: 32,
                                         scrollController:
                                             FixedExtentScrollController(
-                                          initialItem:
-                                              now.repeatPeriod - 1,
+                                          initialItem: now.repeatPeriod - 1,
                                         ),
                                         onSelectedItemChanged: (int value) {
                                           setState(() {
-                                            now.repeatPeriod =
-                                                value + 1;
+                                            now.repeatPeriod = value + 1;
                                           });
                                         },
                                         children: List<Widget>.generate(
@@ -590,8 +584,8 @@ class _TaskEditPageState extends State<TaskEditPage> {
                       if (now.repeatType != TaskRepeatType.norepeat)
                         CupertinoListTile(
                           title: const Text('重复截止日期'),
-                          trailing: Text(TimeHelper.chineseDate(
-                              now.repeatEndsTime)),
+                          trailing:
+                              Text(TimeHelper.chineseDate(now.repeatEndsTime)),
                           onTap: () async {
                             await showCupertinoModalPopup(
                                 context: context,
@@ -605,8 +599,7 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                           3,
                                       child: CupertinoDatePicker(
                                         mode: CupertinoDatePickerMode.date,
-                                        initialDateTime:
-                                            now.repeatEndsTime,
+                                        initialDateTime: now.repeatEndsTime,
                                         onDateTimeChanged: (value) {
                                           setState(() {
                                             now.repeatEndsTime = value;

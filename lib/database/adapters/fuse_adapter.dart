@@ -12,5 +12,6 @@ class FuseAdapter extends TypeAdapter<Fuse> {
       writer.writeString(jsonEncode(obj));
 
   @override
-  Fuse read(BinaryReader reader) => Fuse.fromJson(jsonDecode(reader.readString()));
+  Fuse read(BinaryReader reader) =>
+      Fuse.fromJson(jsonDecode(reader.readString()));
 }
