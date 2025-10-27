@@ -143,33 +143,32 @@ class _HomePageState extends State<HomePage> {
     var response =
         await fuse.value.checkUpdate().whenComplete(() => fuse.refresh());
     if (response != null) {
-      if (context.mounted) {
-        showCupertinoDialog(
-            context: context,
-            builder: (context) {
-              return CupertinoAlertDialog(
-                title: const Text('更新可用'),
-                content: Text(response),
-                actions: [
-                  CupertinoDialogAction(
-                    child: const Text('忽略'),
-                    onPressed: () async {
-                      Navigator.of(context).pop();
-                    },
-                  ),
-                  CupertinoDialogAction(
-                    child: const Text('访问网站'),
-                    onPressed: () async {
-                      await launchUrlString(
-                        'https://celechron.top',
-                        mode: LaunchMode.externalApplication,
-                      );
-                    },
-                  ),
-                ],
-              );
-            });
-      }
+      if (!mounted) return;
+      showCupertinoDialog(
+          context: context,
+          builder: (context) {
+            return CupertinoAlertDialog(
+              title: const Text('更新可用'),
+              content: Text(response),
+              actions: [
+                CupertinoDialogAction(
+                  child: const Text('忽略'),
+                  onPressed: () async {
+                    Navigator.of(context).pop();
+                  },
+                ),
+                CupertinoDialogAction(
+                  child: const Text('访问网站'),
+                  onPressed: () async {
+                    await launchUrlString(
+                      'https://celechron.top',
+                      mode: LaunchMode.externalApplication,
+                    );
+                  },
+                ),
+              ],
+            );
+          });
     }
   }
 }

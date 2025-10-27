@@ -102,10 +102,12 @@ class LoginForm extends StatelessWidget {
                                 buttonPressed.value = false;
                                 _optionController.pushOnGradeChange =
                                     PlatformFeatures.hasBackgroundRefresh;
-                                if (context.mounted)
+                                if (context.mounted) {
                                   Navigator.of(context).pop();
+                                }
                               } else {
                                 buttonPressed.value = false;
+                                if (!context.mounted) return;
                                 showCupertinoDialog(
                                     context: context,
                                     builder: (context) {
