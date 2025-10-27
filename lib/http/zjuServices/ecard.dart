@@ -16,7 +16,7 @@ class ECard {
     }
     request = await httpClient
         .getUrl(Uri.parse(
-            "https://ecard.zju.edu.cn/berserker-auth/cas/oauth2?resultUrl=https://ecard.zju.edu.cn/plat-pc"))
+            "https://elife.zju.edu.cn/berserker-auth/cas/oauth2?resultUrl=https://elife.zju.edu.cn/plat-pc"))
         .timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
     request.followRedirects = false;
@@ -59,7 +59,7 @@ class ECard {
 
     request = await httpClient
         .getUrl(Uri.parse(
-            "https://ecard.zju.edu.cn/berserker-app/ykt/tsm/getCampusCards"))
+            "https://elife.zju.edu.cn/berserker-app/ykt/tsm/getCampusCards"))
         .timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
     request.headers.add("Synjones-Auth", "Bearer $synjonesAuth");
@@ -84,7 +84,7 @@ class ECard {
 
     request = await httpClient
         .getUrl(Uri.parse(
-            "https://ecard.zju.edu.cn/berserker-app/ykt/tsm/getBarCode?account=$eCardAccount&payacc=001&paytype=1&synAccessSource=app"))
+            "https://elife.zju.edu.cn/berserker-app/ykt/tsm/batchGetBarCodeGet?account=$eCardAccount&payacc=%23%23%23&paytype=1&synAccessSource=app"))
         .timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时1"));
     request.headers.add("synjones-auth", "bearer $synjonesAuth");
