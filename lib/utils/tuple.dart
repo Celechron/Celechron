@@ -35,7 +35,8 @@ class Tuple6<T1, T2, T3, T4, T5, T6> {
   T4 item4;
   T5 item5;
   T6 item6;
-  Tuple6(this.item1, this.item2, this.item3, this.item4, this.item5, this.item6);
+  Tuple6(
+      this.item1, this.item2, this.item3, this.item4, this.item5, this.item6);
 }
 
 class Tuple7<T1, T2, T3, T4, T5, T6, T7> {

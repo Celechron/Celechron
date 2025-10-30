@@ -4,7 +4,8 @@ class TimeHelper {
   static List<DateTime> parseExamDateTime(String datetimeStr) {
     // Input format: 2021年01月22日(08:00-10:00)
     String date, timeBegin, timeEnd;
-    if (datetimeStr.contains("年") ?? false) {
+    if (datetimeStr.contains("年")) {
+      // contains方法返回值是bool，不会返回null
       date =
           '${datetimeStr.substring(0, 4)}${datetimeStr.substring(5, 7)}${datetimeStr.substring(8, 10)}T';
       timeBegin = datetimeStr.substring(12, 17);

@@ -308,16 +308,19 @@ class GrsNew {
               // 课表和狗皮膏药一样完全读不懂，“秋冬1,2,4,5,6,7,8,9,10,11,12,13,14,15,16周上课”这玩意儿是给人看的？
               String weekExtra = rawClass["zc"] as String;
               weekExtra = weekExtra.replaceAll(RegExp(r"[^\d,]"), "");
-              List<int> weekExtraList = weekExtra.split(",").map(int.parse).toList();
+              List<int> weekExtraList =
+                  weekExtra.split(",").map(int.parse).toList();
 
               newSession.customRepeat = true;
               newSession.customRepeatWeeks = weekExtraList;
 
-              var threshold = (newSession.firstHalf && newSession.secondHalf) ? 8 : 4;
-              if(weekExtraList.length > threshold) {
+              var threshold =
+                  (newSession.firstHalf && newSession.secondHalf) ? 8 : 4;
+              if (weekExtraList.length > threshold) {
                 newSession.oddWeek = newSession.evenWeek = true;
               } else {
-                int oddWeekCount = weekExtraList.where((e) => e % 2 == 1).length;
+                int oddWeekCount =
+                    weekExtraList.where((e) => e % 2 == 1).length;
                 if (oddWeekCount > weekExtraList.length / 2) {
                   newSession.oddWeek = true;
                 } else {

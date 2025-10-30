@@ -125,7 +125,8 @@ class CalendarPage extends StatelessWidget {
                     markersMaxCount: 10,
                     selectedDecoration: BoxDecoration(
                       color: CupertinoDynamicColor.resolve(
-                          CupertinoColors.activeBlue.withValues(alpha: 0.5), context),
+                          CupertinoColors.activeBlue.withValues(alpha: 0.5),
+                          context),
                       shape: BoxShape.circle,
                     ),
                     selectedTextStyle:

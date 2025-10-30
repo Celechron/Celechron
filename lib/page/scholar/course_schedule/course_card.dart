@@ -108,7 +108,7 @@ class _SessionCardState extends State<SessionCard>
                   children: [
                     for (var s in widget.sessionList)
                       CupertinoButton(
-                        minSize: 22.0,
+                        minimumSize: const Size(22.0, 22.0),
                         padding:
                             const EdgeInsets.fromLTRB(16.0, 16.0, 16.0, 0.0),
                         child: Text(

@@ -112,7 +112,8 @@ class Course {
           e.location == session.location &&
           e.time.contains(session.time.first));
       currentSession.firstHalf = currentSession.firstHalf || session.firstHalf;
-      currentSession.secondHalf = currentSession.secondHalf || session.secondHalf;
+      currentSession.secondHalf =
+          currentSession.secondHalf || session.secondHalf;
       return false;
     }
     if (sessions.any((e) =>

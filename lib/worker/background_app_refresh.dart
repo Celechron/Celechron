@@ -55,12 +55,13 @@ Future<void> refreshScholar() async {
 
   var scholar = Scholar();
   var secureStorage = const FlutterSecureStorage();
-  scholar.username =
-      await secureStorage.read(key: 'username', iOptions: secureStorageIOSOptions);
-  scholar.password =
-      await secureStorage.read(key: 'password', iOptions: secureStorageIOSOptions);
+  scholar.username = await secureStorage.read(
+      key: 'username', iOptions: secureStorageIOSOptions);
+  scholar.password = await secureStorage.read(
+      key: 'password', iOptions: secureStorageIOSOptions);
   var oldGpa =
-      await secureStorage.read(key: 'gpa', iOptions: secureStorageIOSOptions) ?? '0.0';
+      await secureStorage.read(key: 'gpa', iOptions: secureStorageIOSOptions) ??
+          '0.0';
   var gradedCourseCount = await secureStorage.read(
           key: 'gradedCourseCount', iOptions: secureStorageIOSOptions) ??
       '0';
@@ -80,14 +81,18 @@ Future<void> refreshScholar() async {
           '若有新出分的课程，Celechron 将会通知您。若不需要此功能，可在 Celechron 的设置页面中关闭。',
           notificationDetails);
       await secureStorage.write(
-          key: 'pushOnGradeChangeFuse', value: '1', iOptions: secureStorageIOSOptions);
+          key: 'pushOnGradeChangeFuse',
+          value: '1',
+          iOptions: secureStorageIOSOptions);
     } else if (scholar.gpa[0] != double.tryParse(oldGpa) ||
         scholar.gradedCourseCount != int.tryParse(gradedCourseCount)) {
       await flutterLocalNotificationsPlugin.show(
           0, '成绩变动提醒', '有新出分的课程，可在 Celechron 的学业页面中刷新查看。', notificationDetails);
     }
     await secureStorage.write(
-        key: 'gpa', value: scholar.gpa[0].toString(), iOptions: secureStorageIOSOptions);
+        key: 'gpa',
+        value: scholar.gpa[0].toString(),
+        iOptions: secureStorageIOSOptions);
     await secureStorage.write(
         key: 'gradedCourseCount',
         value: scholar.gradedCourseCount.toString(),

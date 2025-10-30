@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:get/get.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:workmanager/workmanager.dart';
 
@@ -11,6 +12,8 @@ import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:celechron/worker/fuse.dart';
 import 'package:celechron/worker/background_app_refresh.dart';
 import 'package:celechron/utils/platform_features.dart';
+import 'package:celechron/model/calendar_to_system.dart';
+import 'package:celechron/model/calendar_to_ical.dart';
 
 class OptionController extends GetxController {
   final _option = Get.find<Option>(tag: 'option');
@@ -19,9 +22,14 @@ class OptionController extends GetxController {
   final _db = Get.find<DatabaseHelper>(tag: 'db');
   late final RxInt allowTimeLength = _option.allowTime.length.obs;
 
+  // 日历管理器
+  late final CalendarToSystemManager _calendarManager;
+
   @override
   void onInit() {
     super.onInit();
+    _calendarManager = CalendarToSystemManager(scholar.value);
+
     if (PlatformFeatures.hasBackgroundRefresh) {
       if (_option.pushOnGradeChange.value) {
         Workmanager()
@@ -41,6 +49,9 @@ class OptionController extends GetxController {
     ever(courseIdMappingList, (value) {
       _db.setCourseIdMappingList(value);
     });
+
+    // 初始化时检查日历权限和同步状态（不显示提示框）
+    _calendarManager.checkInitialCalendarSyncStatus();
   }
 
   Duration get workTime => _option.workTime.value;
@@ -139,5 +150,30 @@ class OptionController extends GetxController {
     scholar.refresh();
     pushOnGradeChange = false;
     ECardWidgetMessenger.logout();
+  }
+
+  /// calendar_to_ical.dart: 显示导出课程表对话框
+  void showExportDialog(BuildContext context) {
+    CalendarToIcal.showExportDialog(context, scholar.value);
+  }
+
+  /// calendar_to_system.dart: 系统日历同步相关方法
+
+  // 日历同步相关getter
+  bool get calendarSyncEnabled => _calendarManager.calendarSyncEnabled;
+  bool get hasCalendarPermission => _calendarManager.hasCalendarPermission;
+
+  Future<void> toggleCalendarSync(bool enabled) =>
+      _calendarManager.toggleCalendarSync(enabled);
+  void showCalendarSyncDialog(BuildContext context) =>
+      _calendarManager.showCalendarSyncDialog(context);
+  Map<String, dynamic> getCalendarSyncStatus() {
+    final stats = _calendarManager.getSyncStats();
+    return {
+      'enabled': calendarSyncEnabled,
+      'hasPermission': hasCalendarPermission,
+      'isLoggedIn': scholar.value.isLogan,
+      ...stats,
+    };
   }
 }
