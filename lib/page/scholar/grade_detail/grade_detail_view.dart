@@ -8,12 +8,10 @@ import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:celechron/design/two_line_card.dart';
 import 'package:celechron/design/persistent_headers.dart';
 import 'grade_card.dart';
-import 'package:celechron/page/scholar/scholar_controller.dart';
 import 'grade_detail_controller.dart';
 import 'package:celechron/utils/gpa_helper.dart';
 
 class GradeDetailPage extends StatelessWidget {
-  final _scholarController = Get.find<ScholarController>();
   final _gradeDetailController = Get.put(GradeDetailController());
 
   GradeDetailPage({super.key}) {
@@ -68,37 +66,15 @@ class GradeDetailPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Obx(() => TwoLineCard(
-                                title: '五分制',
-                                content: _scholarController.gpa[0]
-                                    .toStringAsFixed(2),
-                                backgroundColor:
-                                    CustomCupertinoDynamicColors.cyan)),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Obx(() => TwoLineCard(
-                                title: '获得学分',
-                                content: _scholarController.scholar.credit
+                                title: '学年学分',
+                                content: getYearStats(_gradeDetailController
+                                        .semesterIndex.value)
+                                    .item2
                                     .toStringAsFixed(1),
                                 backgroundColor:
-                                    CustomCupertinoDynamicColors.peach)),
+                                    CustomCupertinoDynamicColors.sand)),
                           ),
                           const SizedBox(width: 8),
-                          Expanded(
-                            child: Obx(() => TwoLineCard(
-                                title: '四分制',
-                                content: _scholarController.gpa[1]
-                                    .toStringAsFixed(2),
-                                extraContent: _scholarController.gpa[2]
-                                    .toStringAsFixed(2),
-                                backgroundColor:
-                                    CustomCupertinoDynamicColors.spring)),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
                           Expanded(
                             child: Obx(() => TwoLineCard(
                                 title: '学年均绩',
@@ -108,17 +84,6 @@ class GradeDetailPage extends StatelessWidget {
                                     .toStringAsFixed(2),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.sakura)),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Obx(() => TwoLineCard(
-                                title: '学年学分',
-                                content: getYearStats(_gradeDetailController
-                                        .semesterIndex.value)
-                                    .item2
-                                    .toStringAsFixed(1),
-                                backgroundColor:
-                                    CustomCupertinoDynamicColors.sand)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -135,6 +100,51 @@ class GradeDetailPage extends StatelessWidget {
                                     .toStringAsFixed(2),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.magenta)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Obx(() => TwoLineCard(
+                                title: '学年主修学分',
+                                content: _gradeDetailController
+                                    .getYearMajorGpa(_gradeDetailController
+                                        .semesterIndex.value)
+                                    .item2
+                                    .toStringAsFixed(1),
+                                backgroundColor:
+                                    CustomCupertinoDynamicColors.peach)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Obx(() => TwoLineCard(
+                                title: '学年主修均绩',
+                                content: _gradeDetailController
+                                    .getYearMajorGpa(_gradeDetailController
+                                        .semesterIndex.value)
+                                    .item1[0]
+                                    .toStringAsFixed(2),
+                                backgroundColor:
+                                    CustomCupertinoDynamicColors.cyan)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Obx(() => TwoLineCard(
+                                title: '学年主修四分制',
+                                content: _gradeDetailController
+                                    .getYearMajorGpa(_gradeDetailController
+                                        .semesterIndex.value)
+                                    .item1[1]
+                                    .toStringAsFixed(2),
+                                extraContent: _gradeDetailController
+                                    .getYearMajorGpa(_gradeDetailController
+                                        .semesterIndex.value)
+                                    .item1[2]
+                                    .toStringAsFixed(2),
+                                backgroundColor:
+                                    CustomCupertinoDynamicColors.spring)),
                           ),
                         ],
                       ),
@@ -178,18 +188,18 @@ class GradeDetailPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Obx(() => TwoLineCard(
-                                title: '已选五分制',
-                                content: inGpa.item1[0].toStringAsFixed(2),
-                                backgroundColor:
-                                    CustomCupertinoDynamicColors.sakura)),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Obx(() => TwoLineCard(
                                 title: '已选学分',
                                 content: inGpa.item2.toStringAsFixed(1),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.sand)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Obx(() => TwoLineCard(
+                                title: '已选五分制',
+                                content: inGpa.item1[0].toStringAsFixed(2),
+                                backgroundColor:
+                                    CustomCupertinoDynamicColors.sakura)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(
@@ -207,18 +217,18 @@ class GradeDetailPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Obx(() => TwoLineCard(
-                                title: '未选五分制',
-                                content: notGpa.item1[0].toStringAsFixed(2),
-                                backgroundColor:
-                                    CustomCupertinoDynamicColors.cyan)),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Obx(() => TwoLineCard(
                                 title: '未选学分',
                                 content: notGpa.item2.toStringAsFixed(1),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.peach)),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Obx(() => TwoLineCard(
+                                title: '未选五分制',
+                                content: notGpa.item1[0].toStringAsFixed(2),
+                                backgroundColor:
+                                    CustomCupertinoDynamicColors.cyan)),
                           ),
                           const SizedBox(width: 8),
                           Expanded(

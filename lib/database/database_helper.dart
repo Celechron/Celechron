@@ -69,6 +69,7 @@ class DatabaseHelper {
   final String kPushOnGradeChange = 'pushOnGradeChange';
   final String kBrightnessMode = 'brightnessMode';
   final String kCourseIdMappingList = 'courseIdMappingList';
+  final String kHideHomeGpa = 'hideHomeGpa';
 
   Option getOption() {
     return Option(
@@ -79,6 +80,7 @@ class DatabaseHelper {
       pushOnGradeChange: getPushOnGradeChange().obs,
       brightnessMode: getBrightnessMode().obs,
       courseIdMappingList: getCourseIdMappingList().obs,
+      hideHomeGpa: getHideHomeGpa().obs,
     );
   }
 
@@ -149,6 +151,17 @@ class DatabaseHelper {
       optionsBox.put(kBrightnessMode, BrightnessMode.system.index);
     }
     return BrightnessMode.values[optionsBox.get(kBrightnessMode)];
+  }
+
+  bool getHideHomeGpa() {
+    if (optionsBox.get(kHideHomeGpa) == null) {
+      optionsBox.put(kHideHomeGpa, false);
+    }
+    return optionsBox.get(kHideHomeGpa);
+  }
+
+  Future<void> setHideHomeGpa(bool hideHomeGpa) async {
+    await optionsBox.put(kHideHomeGpa, hideHomeGpa);
   }
 
   List<CourseIdMap> getCourseIdMappingList() {

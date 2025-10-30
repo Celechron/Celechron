@@ -30,6 +30,7 @@ class Option {
   RxBool pushOnGradeChange;
   Rx<BrightnessMode> brightnessMode;
   RxList<CourseIdMap> courseIdMappingList;
+  RxBool hideHomeGpa;
 
   Option({
     required this.workTime,
@@ -39,5 +40,6 @@ class Option {
     required this.pushOnGradeChange,
     required this.brightnessMode,
     required this.courseIdMappingList,
+    required this.hideHomeGpa,
   });
 }

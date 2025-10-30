@@ -73,7 +73,7 @@ class Zdbk {
     _route = null;
   }
 
-  Future<Tuple<Exception?, List<double>>> getMajorGrade(
+  Future<Tuple<Exception?, Tuple<List<double>, String>>> getMajorGrade(
       HttpClient httpClient) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
@@ -93,26 +93,40 @@ class Zdbk {
       response = await request.close().timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
+      var responseText = await response.transform(utf8.decoder).join();
       var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
-          .firstMatch(await response.transform(utf8.decoder).join())
+          .firstMatch(responseText)
           ?.group(0);
       if (transcriptJson == null) throw ExceptionWithMessage("无法解析");
 
+      // 创建成绩对象并标记为主修课程
       var grades = (jsonDecode(transcriptJson) as List<dynamic>)
           .where((e) => e['xkkh'] != null)
-          .map((e) => Grade(e));
+          .map((e) {
+        var grade = Grade(e);
+        grade.major = true; // 标记为主修课程
+        return grade;
+      });
       var majorGpa = GpaHelper.calculateGpa(grades);
       _db?.setCachedWebPage('zdbk_MajorGrade', transcriptJson);
-      return Tuple(null, [majorGpa.item1[0], majorGpa.item2]);
+      return Tuple(
+          null, Tuple([majorGpa.item1[0], majorGpa.item2], responseText));
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      var grades = (jsonDecode(_db?.getCachedWebPage('zdbk_MajorGrade') ?? '[]')
-              as List<dynamic>)
+      var cachedJson = _db?.getCachedWebPage('zdbk_MajorGrade') ?? '[]';
+      var grades = (jsonDecode(cachedJson) as List<dynamic>)
           .where((e) => e['xkkh'] != null)
-          .map((e) => Grade(e));
+          .map((e) {
+        var grade = Grade(e);
+        grade.major = true; // 标记为主修课程
+        return grade;
+      });
       var majorGpa = GpaHelper.calculateGpa(grades);
-      return Tuple(exception, [majorGpa.item1[0], majorGpa.item2]);
+      return Tuple(
+          exception,
+          Tuple([majorGpa.item1[0], majorGpa.item2],
+              '{"items":$cachedJson,"limit":0}'));
     }
   }
 

@@ -148,8 +148,16 @@ class OptionPage extends StatelessWidget {
                                 });
                           },
                         ),
-                      }
+                      },
                       //
+                      CupertinoListTile(
+                          title: const Text('隐藏绩点'),
+                          trailing: Obx(() => CupertinoSwitch(
+                                value: _optionController.hideHomeGpa,
+                                onChanged: (value) async {
+                                  _optionController.hideHomeGpa = value;
+                                },
+                              ))),
                     ],
                   ),
                 )),

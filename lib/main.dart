@@ -179,14 +179,15 @@ class _CelechronAppState extends State<CelechronApp>
       requestBadgePermission: true,
       requestAlertPermission: true,
     );
-    const initializationSettingsWindows = WindowsInitializationSettings(
-        appName: 'Celechron',
-        appUserModelId: 'top.celechron.app',
-        guid: '7c85e25b-fa7d-489e-9b10-b4c22a3458f0');
+    // const initializationSettingsWindows = WindowsInitializationSettings(
+    //     appName: 'Celechron',
+    //     appUserModelId: 'top.celechron.app',
+    //     guid: '7c85e25b-fa7d-489e-9b10-b4c22a3458f0');
     const initializationSettings = InitializationSettings(
-        android: initializationSettingsAndroid,
-        iOS: initializationSettingsDarwin,
-        windows: initializationSettingsWindows);
+      android: initializationSettingsAndroid,
+      iOS: initializationSettingsDarwin,
+      // windows: initializationSettingsWindows);
+    );
     flutterLocalNotificationsPlugin.initialize(initializationSettings);
   }
 }

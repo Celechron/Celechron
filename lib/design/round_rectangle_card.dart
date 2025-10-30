@@ -148,18 +148,20 @@ class RoundRectangleCardWithForehead extends StatelessWidget {
             boxShadow: const [],
           ),
         ))),
-        Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            forehead,
-            RoundRectangleCard(
-              onTap: onTap,
-              animate: animate,
-              boxShadow: const [],
-              child: child,
-            ),
-          ],
+        SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              forehead,
+              RoundRectangleCard(
+                onTap: onTap,
+                animate: animate,
+                boxShadow: const [],
+                child: child,
+              ),
+            ],
+          ),
         )
       ],
     );

@@ -19,6 +19,7 @@ import 'course_schedule/course_schedule_view.dart';
 import 'exam_list/exam_list_view.dart';
 import 'grade_detail/grade_detail_view.dart';
 import 'scholar_controller.dart';
+import 'package:celechron/page/option/option_controller.dart';
 
 class ScholarErrorHandler extends StatelessWidget {
   final FlutterErrorDetails errorDetails;
@@ -92,6 +93,15 @@ class ScholarPage extends StatelessWidget {
   final ValueNotifier<bool> _isRefreshing = ValueNotifier(false);
 
   Widget _buildGradeBrief(BuildContext context) {
+    final optionController =
+        Get.find<OptionController>(tag: 'optionController');
+
+    String mask(String s) {
+      // 绩点隐藏功能
+      if (!optionController.hideHomeGpa) return s;
+      return s.replaceAll('.', '').replaceAll(RegExp(r'[\d.]'), '*');
+    }
+
     return RoundRectangleCard(
         padding: const EdgeInsets.all(0),
         child: Column(
@@ -183,8 +193,9 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '五分制',
-                                          content: _scholarController.gpa[0]
-                                              .toStringAsFixed(2),
+                                          content: mask(_scholarController
+                                              .gpa[0]
+                                              .toStringAsFixed(2)),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
                                                   .cyan)),
@@ -193,9 +204,9 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '获得学分',
-                                          content: _scholarController
+                                          content: mask(_scholarController
                                               .scholar.credit
-                                              .toStringAsFixed(1),
+                                              .toStringAsFixed(1)),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
                                                   .peach)),
@@ -204,8 +215,9 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '四分制',
-                                          content: _scholarController.gpa[1]
-                                              .toStringAsFixed(2),
+                                          content: mask(_scholarController
+                                              .gpa[1]
+                                              .toStringAsFixed(2)),
                                           extraContent: _scholarController
                                               .gpa[2]
                                               .toStringAsFixed(2),
@@ -221,9 +233,9 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '主修均绩',
-                                          content: _scholarController
+                                          content: mask(_scholarController
                                               .scholar.majorGpaAndCredit[0]
-                                              .toStringAsFixed(2),
+                                              .toStringAsFixed(2)),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
                                                   .sakura)),
@@ -232,9 +244,9 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '主修学分',
-                                          content: _scholarController
+                                          content: mask(_scholarController
                                               .scholar.majorGpaAndCredit[1]
-                                              .toStringAsFixed(1),
+                                              .toStringAsFixed(1)),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
                                                   .sand)),
@@ -243,8 +255,9 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '百分制',
-                                          content: _scholarController.gpa[3]
-                                              .toStringAsFixed(2),
+                                          content: mask(_scholarController
+                                              .gpa[3]
+                                              .toStringAsFixed(2)),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
                                                   .magenta)),

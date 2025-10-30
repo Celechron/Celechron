@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import 'package:celechron/model/semester.dart';
 import 'package:celechron/model/scholar.dart';
+import 'package:celechron/utils/tuple.dart';
+import 'package:celechron/utils/gpa_helper.dart';
 
 class GradeDetailController extends GetxController {
   final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
@@ -38,5 +40,23 @@ class GradeDetailController extends GetxController {
 
   void refreshCustomGpa() {
     _db.setCustomGpa(customGpaSelected);
+  }
+
+  Tuple<List<double>, double> getYearMajorGpa(int semesterIndex) {
+    // 提取当前学期的学年 ID，例如 "2022-2023"
+    final yearId = semestersWithGrades[semesterIndex].name.substring(0, 9);
+
+    // 获取该学年的所有主修课程
+    final majorGrades = scholar.value.grades.values
+        .expand((g) => g)
+        .where((g) => g.major && g.semesterId.contains(yearId))
+        .toList();
+
+    // 如果该学年没有主修课程，返回 0.0, 0.0, 0.0
+    if (majorGrades.isEmpty) {
+      return Tuple([0.0, 0.0, 0.0], 0.0);
+    }
+
+    return GpaHelper.calculateGpa(majorGrades);
   }
 }
