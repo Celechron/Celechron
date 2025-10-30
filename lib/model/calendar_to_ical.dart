@@ -311,27 +311,27 @@ class CalendarToIcal {
   static void showExportDialog(BuildContext context, Scholar scholar) {
     showCupertinoModalPopup(
       context: context,
-      builder: (_) => CupertinoActionSheet(
+      builder: (BuildContext popupContext) => CupertinoActionSheet(
         title: const Text('导出课程表'),
         message: const Text('选择导出方式'),
         actions: [
           CupertinoActionSheetAction(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(popupContext);
               exportIcsFile(scholar);
             },
             child: const Text('导出当前学期'),
           ),
           CupertinoActionSheetAction(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(popupContext);
               _showSemesterSelectionDialog(context, scholar);
             },
             child: const Text('选择学期导出'),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(popupContext),
           child: const Text('取消'),
         ),
       ),
@@ -346,13 +346,13 @@ class CalendarToIcal {
     if (semesters.isEmpty) {
       showCupertinoDialog(
         context: context,
-        builder: (_) => CupertinoAlertDialog(
+        builder: (BuildContext dialogContext) => CupertinoAlertDialog(
           title: const Text('提示'),
           content: const Text('没有可导出的课程表数据'),
           actions: [
             CupertinoDialogAction(
               child: const Text('确定'),
-              onPressed: () => Navigator.pop(context),
+              onPressed: () => Navigator.pop(dialogContext),
             ),
           ],
         ),
@@ -363,27 +363,27 @@ class CalendarToIcal {
     /// 显示学期选择对话框 （UI界面）
     showCupertinoModalPopup(
       context: context,
-      builder: (_) => CupertinoActionSheet(
+      builder: (BuildContext popupContext) => CupertinoActionSheet(
         title: const Text('选择学期'),
         message: const Text('选择要导出的学期'),
         actions: [
           ...semesters.map((semester) => CupertinoActionSheetAction(
                 onPressed: () {
-                  Navigator.pop(context);
+                  Navigator.pop(popupContext);
                   exportSpecificSemester(scholar, semester);
                 },
                 child: Text(semester),
               )),
           CupertinoActionSheetAction(
             onPressed: () {
-              Navigator.pop(context);
+              Navigator.pop(popupContext);
               exportAllSemesters(scholar);
             },
             child: const Text('导出所有学期'),
           ),
         ],
         cancelButton: CupertinoActionSheetAction(
-          onPressed: () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(popupContext),
           child: const Text('取消'),
         ),
       ),
@@ -408,7 +408,7 @@ class CalendarToIcal {
 
     // 时间范围
     if (periods.isNotEmpty) {
-      final sortedPeriods = periods.toList()
+      final sortedPeriods = List<Period>.from(periods)
         ..sort((a, b) => a.startTime.compareTo(b.startTime));
       stats['startDate'] = sortedPeriods.first.startTime;
       stats['endDate'] = sortedPeriods.last.endTime;
