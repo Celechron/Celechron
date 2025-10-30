@@ -133,6 +133,8 @@ class UgrsSpider implements Spider {
     var outSpecialDates = <DateTime, String>{};
     var outTodos = <Todo>[];
     var loginErrorMessages = <String?>[null, null, null];
+    // 暂存主修课程ID集合，待所有请求完成后再打标记
+    var majorCourseIds = <String>{};
 
     // 如果Cookie过期了，就重新登录
     if (DateTime.now().difference(_lastUpdateTime).inMinutes > 15) {
@@ -341,22 +343,15 @@ class UgrsSpider implements Spider {
       outMajorGrade.clear();
       outMajorGrade.addAll(value.item2.item1);
 
-      // 获取主修课程的课程号列表
+      // 获取主修课程的课程号列表并暂存
       var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
               .firstMatch(value.item2.item2)
               ?.group(0) ??
           '[]';
-      var majorCourseIds = (jsonDecode(transcriptJson) as List<dynamic>)
+      majorCourseIds = (jsonDecode(transcriptJson) as List<dynamic>)
           .where((e) => e['xkkh'] != null)
           .map((e) => e['xkkh'] as String)
           .toSet();
-
-      // 给主修课程打标记
-      for (var grade in outGrades) {
-        if (majorCourseIds.contains(grade.id)) {
-          grade.major = true;
-        }
-      }
 
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
@@ -375,6 +370,13 @@ class UgrsSpider implements Spider {
           e.sessions.isEmpty &&
           e.exams.isEmpty &&
           e.courses.isEmpty);
+      
+      // 所有请求完成后，统一给主修课程打标记
+      for (var grade in outGrades) {
+        if (majorCourseIds.contains(grade.id)) {
+          grade.major = true;
+        }
+      }
     });
 
     // 检查是否有查询失败的情况
