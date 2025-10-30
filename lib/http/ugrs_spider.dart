@@ -370,7 +370,7 @@ class UgrsSpider implements Spider {
           e.sessions.isEmpty &&
           e.exams.isEmpty &&
           e.courses.isEmpty);
-      
+
       // 所有请求完成后，统一给主修课程打标记
       for (var grade in outGrades) {
         if (majorCourseIds.contains(grade.id)) {
