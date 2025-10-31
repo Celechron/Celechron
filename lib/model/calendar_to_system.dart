@@ -52,6 +52,23 @@ class CalendarToSystemManager {
   CalendarToSystemManager(this.scholar);
 
   /// 获取设备日历权限
+  Future<bool> checkPermissions() async {
+    try {
+      var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
+      if (permissionsGranted.isSuccess && permissionsGranted.data!) {
+        _hasCalendarPermission.value = true;
+        return true;
+      } else {
+        _hasCalendarPermission.value = false;
+        return false;
+      }
+    } catch (e) {
+      _hasCalendarPermission.value = false;
+      return false;
+    }
+  }
+
+  /// 获取设备日历权限
   Future<bool> requestPermissions() async {
     try {
       var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
@@ -525,7 +542,7 @@ class CalendarToSystemManager {
   Future<void> checkInitialCalendarSyncStatus() async {
     try {
       // 先检查权限
-      await requestPermissions();
+      await checkPermissions();
 
       // 如果没有权限，直接返回
       if (!_hasCalendarPermission.value) {

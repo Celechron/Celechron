@@ -295,7 +295,8 @@ class OptionPage extends StatelessWidget {
                   Obx(() => CupertinoListTile(
                         title: const Text('同步到系统日历'),
                         trailing: CupertinoSwitch(
-                          value: _optionController.calendarSyncEnabled,
+                          value: _optionController.calendarSyncEnabled &&
+                              _optionController.hasCalendarPermission,
                           onChanged: (value) async {
                             await _optionController.toggleCalendarSync(value);
                           },
