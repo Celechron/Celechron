@@ -25,7 +25,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
-	<string>????</string>
+	<string>Clcr</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -45,6 +45,12 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Celechron需要完整访问您的日历来同步课程表信息</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Celechron需要访问您的日历来同步课程表信息</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Celechron需要访问通讯录来设置事件参与者</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>
 	<true/>
 	<key>UIBackgroundModes</key>
@@ -66,11 +72,5 @@
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
-	<key>NSCalendarsUsageDescription</key>
-	<string>Celechron需要访问您的日历来同步课程表信息</string>
-	<key>NSCalendarsFullAccessUsageDescription</key>
-	<string>Celechron需要完整访问您的日历来同步课程表信息</string>
-	<key>NSContactsUsageDescription</key>
-	<string>Celechron需要访问通讯录来设置事件参与者</string>
 </dict>
 </plist>
