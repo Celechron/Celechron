@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
@@ -602,7 +604,12 @@ class CalendarToSystemManager {
         _showAlert('同步成功',
             '已同步 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
       } else {
-        _showAlert('同步失败', '无法同步课程到系统日历，请检查权限和网络连接');
+        // For iOS, show different message
+        if (Platform.isIOS) {
+          _showAlert('同步失败', '无法同步课程到系统日历，从日历中移除Google账户后重试');
+        } else {
+          _showAlert('同步失败', '无法同步课程到系统日历，请检查权限和网络连接');
+        }
       }
     } else {
       // 关闭同步功能
