@@ -161,12 +161,15 @@ class OptionController extends GetxController {
 
   // 日历同步相关getter
   bool get calendarSyncEnabled => _calendarManager.calendarSyncEnabled;
+
   bool get hasCalendarPermission => _calendarManager.hasCalendarPermission;
 
   Future<void> toggleCalendarSync(bool enabled) =>
       _calendarManager.toggleCalendarSync(enabled);
+
   void showCalendarSyncDialog(BuildContext context) =>
       _calendarManager.showCalendarSyncDialog(context);
+
   Map<String, dynamic> getCalendarSyncStatus() {
     final stats = _calendarManager.getSyncStats();
     return {

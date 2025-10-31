@@ -111,6 +111,14 @@ class OptionPage extends StatelessWidget {
                           ),
                         ),
                         CupertinoListTile(
+                            title: const Text('隐藏绩点'),
+                            trailing: Obx(() => CupertinoSwitch(
+                                  value: _optionController.hideHomeGpa,
+                                  onChanged: (value) async {
+                                    _optionController.hideHomeGpa = value;
+                                  },
+                                ))),
+                        CupertinoListTile(
                           title: const Text('自定义课程代码映射'),
                           trailing: const BackChervonRow(),
                           onTap: () async {
@@ -149,15 +157,6 @@ class OptionPage extends StatelessWidget {
                           },
                         ),
                       },
-                      //
-                      CupertinoListTile(
-                          title: const Text('隐藏绩点'),
-                          trailing: Obx(() => CupertinoSwitch(
-                                value: _optionController.hideHomeGpa,
-                                onChanged: (value) async {
-                                  _optionController.hideHomeGpa = value;
-                                },
-                              ))),
                     ],
                   ),
                 )),
@@ -284,6 +283,54 @@ class OptionPage extends StatelessWidget {
                     },
                   ),
                 ])),
+            // 日程
+            SliverToBoxAdapter(
+                child: CupertinoListSection.insetGrouped(
+                    additionalDividerMargin: 2,
+                    margin: _defaultMargin,
+                    header: Container(
+                        padding: const EdgeInsets.only(left: 16),
+                        child: Text('日程', style: headerFooterTextStyle)),
+                    children: [
+                  Obx(() => CupertinoListTile(
+                        title: const Text('同步到系统日历'),
+                        trailing: CupertinoSwitch(
+                          value: _optionController.calendarSyncEnabled,
+                          onChanged: (value) async {
+                            await _optionController.toggleCalendarSync(value);
+                          },
+                        ),
+                      )),
+                  Obx(() => CupertinoListTile(
+                        title: Text(
+                          '课表同步选项',
+                          style: TextStyle(
+                            color: _optionController.calendarSyncEnabled
+                                ? null // 使用默认颜色
+                                : CupertinoDynamicColor.resolve(
+                                    CupertinoColors.quaternaryLabel, context),
+                          ),
+                        ),
+                        trailing: BackChervonRow(
+                            child: Text('选择学期',
+                                style: TextStyle(
+                                    color: CupertinoDynamicColor.resolve(
+                                        CupertinoColors.secondaryLabel,
+                                        context),
+                                    fontSize: 16))),
+                        onTap: _optionController.calendarSyncEnabled
+                            ? () {
+                                _optionController
+                                    .showCalendarSyncDialog(context);
+                              }
+                            : null, // 禁用点击
+                      )),
+                  CupertinoListTile(
+                    title: const Text('导出为iCal文件'),
+                    trailing: const BackChervonRow(),
+                    onTap: () => _optionController.showExportDialog(context),
+                  ),
+                ])),
             // 工具
             SliverToBoxAdapter(
                 child: CupertinoListSection.insetGrouped(
@@ -316,74 +363,6 @@ class OptionPage extends StatelessWidget {
                           .pushNamed('/ecardpaypage');
                     },
                   ),
-                  CupertinoListTile(
-                    title: const Text('导出课程表'),
-                    trailing: BackChervonRow(
-                      child: Text('iCal格式', style: trailingTextStyle),
-                    ),
-                    onTap: () => _optionController.showExportDialog(context),
-                  ),
-                  Obx(() => CupertinoListTile(
-                        title: const Text('日历同步'),
-                        subtitle: Text(
-                          _optionController.hasCalendarPermission
-                              ? '已获取日历权限'
-                              : '未获取日历权限',
-                          style: TextStyle(
-                            color: _optionController.hasCalendarPermission
-                                ? CupertinoColors.systemGreen
-                                : CupertinoColors.systemRed,
-                            fontSize: 12,
-                          ),
-                        ),
-                        trailing: CupertinoSwitch(
-                          value: _optionController.calendarSyncEnabled,
-                          onChanged: (value) async {
-                            await _optionController.toggleCalendarSync(value);
-                          },
-                        ),
-                      )),
-                  Obx(() => CupertinoListTile(
-                        title: Text(
-                          '同步日历选项',
-                          style: TextStyle(
-                            color: _optionController.calendarSyncEnabled
-                                ? null // 使用默认颜色
-                                : CupertinoDynamicColor.resolve(
-                                    CupertinoColors.quaternaryLabel, context),
-                          ),
-                        ),
-                        subtitle: Text(
-                          '管理课程表的日历同步设置',
-                          style: TextStyle(
-                            color: _optionController.calendarSyncEnabled
-                                ? CupertinoDynamicColor.resolve(
-                                    CupertinoColors.secondaryLabel, context)
-                                : CupertinoDynamicColor.resolve(
-                                    CupertinoColors.quaternaryLabel, context),
-                          ),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.arrow_forward_ios,
-                              color: _optionController.calendarSyncEnabled
-                                  ? CupertinoDynamicColor.resolve(
-                                      CupertinoColors.tertiaryLabel, context)
-                                  : CupertinoDynamicColor.resolve(
-                                      CupertinoColors.quaternaryLabel, context),
-                              size: 16,
-                            )
-                          ],
-                        ),
-                        onTap: _optionController.calendarSyncEnabled
-                            ? () {
-                                _optionController
-                                    .showCalendarSyncDialog(context);
-                              }
-                            : null, // 禁用点击
-                      )),
                 ])),
             // 关于
             SliverToBoxAdapter(
