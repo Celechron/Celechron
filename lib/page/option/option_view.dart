@@ -7,6 +7,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:celechron/model/option.dart';
 
+import '../../design/cupertino_async_switch.dart';
 import 'allow_time_edit_page.dart';
 import 'course_id_mapping_edit_page.dart';
 import 'credits_page.dart';
@@ -284,25 +285,26 @@ class OptionPage extends StatelessWidget {
                   ),
                 ])),
             // 日程
-            SliverToBoxAdapter(
-                child: CupertinoListSection.insetGrouped(
-                    additionalDividerMargin: 2,
-                    margin: _defaultMargin,
-                    header: Container(
-                        padding: const EdgeInsets.only(left: 16),
-                        child: Text('日程', style: headerFooterTextStyle)),
-                    children: [
-                  Obx(() => CupertinoListTile(
+            Obx(() => SliverToBoxAdapter(
+                    child: CupertinoListSection.insetGrouped(
+                        additionalDividerMargin: 2,
+                        margin: _defaultMargin,
+                        header: Container(
+                            padding: const EdgeInsets.only(left: 16),
+                            child: Text('日程', style: headerFooterTextStyle)),
+                        children: [
+                      CupertinoListTile(
                         title: const Text('同步到系统日历'),
-                        trailing: CupertinoSwitch(
+                        trailing: CupertinoAsyncSwitch(
                           value: _optionController.calendarSyncEnabled &&
                               _optionController.hasCalendarPermission,
                           onChanged: (value) async {
-                            await _optionController.toggleCalendarSync(value);
+                            await _optionController.toggleCalendarSync(
+                                context, value);
                           },
                         ),
-                      )),
-                  Obx(() => CupertinoListTile(
+                      ),
+                      CupertinoListTile(
                         title: Text(
                           '课表同步选项',
                           style: TextStyle(
@@ -325,13 +327,14 @@ class OptionPage extends StatelessWidget {
                                     .showCalendarSyncDialog(context);
                               }
                             : null, // 禁用点击
-                      )),
-                  CupertinoListTile(
-                    title: const Text('导出为iCal文件'),
-                    trailing: const BackChervonRow(),
-                    onTap: () => _optionController.showExportDialog(context),
-                  ),
-                ])),
+                      ),
+                      CupertinoListTile(
+                        title: const Text('导出为iCal文件'),
+                        trailing: const BackChervonRow(),
+                        onTap: () =>
+                            _optionController.showExportDialog(context),
+                      ),
+                    ]))),
             // 工具
             SliverToBoxAdapter(
                 child: CupertinoListSection.insetGrouped(

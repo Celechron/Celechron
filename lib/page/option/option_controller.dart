@@ -164,8 +164,8 @@ class OptionController extends GetxController {
 
   bool get hasCalendarPermission => _calendarManager.hasCalendarPermission;
 
-  Future<void> toggleCalendarSync(bool enabled) =>
-      _calendarManager.toggleCalendarSync(enabled);
+  Future<void> toggleCalendarSync(BuildContext context, bool enabled) =>
+      _calendarManager.toggleCalendarSync(context, enabled);
 
   void showCalendarSyncDialog(BuildContext context) =>
       _calendarManager.showCalendarSyncDialog(context);
