@@ -176,7 +176,7 @@ class AllowTimeEditPage extends StatefulWidget {
 }
 
 class _AllowTimeEditPageState extends State<AllowTimeEditPage> {
-  final _optionController = Get.put(OptionController());
+  final _optionController = Get.find<OptionController>(tag: 'optionController');
   List<DateTimePair> now = [];
   int __got = 0;
 

@@ -9,7 +9,7 @@ import 'option_controller.dart';
 class LoginForm extends StatelessWidget {
   final TextEditingController usernameController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
-  final _optionController = Get.put(OptionController());
+  final _optionController = Get.find<OptionController>(tag: 'optionController');
   final buttonPressed = false.obs;
 
   LoginForm({super.key});
