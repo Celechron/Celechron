@@ -60,7 +60,7 @@ struct ECardWidgetProvider: TimelineProvider {
             completion(Timeline(entries: [ECardEntry(date: Date(), balance: 1897)], policy: .after(Date(timeIntervalSinceNow: 1800))))
         }
         
-        var request = URLRequest(url: URL(string: "https://ecard.zju.edu.cn/berserker-app/ykt/tsm/getCampusCards")!)
+        var request = URLRequest(url: URL(string: "https://elife.zju.edu.cn/berserker-app/ykt/tsm/getCampusCards")!)
         request.httpMethod = "GET"
         request.addValue("Bearer " + value!, forHTTPHeaderField: "Synjones-Auth")
         request.addValue("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0", forHTTPHeaderField: "User-Agent")

@@ -160,7 +160,7 @@ class ECardWidget : GlanceAppWidget() {
     }
 
     private fun fetchBalance(synjonesAuth: String?): Int = runBlocking {
-        val url = URL("https://ecard.zju.edu.cn/berserker-app/ykt/tsm/getCampusCards")
+        val url = URL("https://elife.zju.edu.cn/berserker-app/ykt/tsm/getCampusCards")
         async(Dispatchers.IO) {
             with(url.openConnection() as HttpURLConnection) {
                 requestMethod = "GET"
