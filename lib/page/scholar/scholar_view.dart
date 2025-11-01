@@ -96,7 +96,7 @@ class ScholarPage extends StatelessWidget {
     final optionController =
         Get.find<OptionController>(tag: 'optionController');
 
-    String mask(String s) {
+    String maskGPA(String s) {
       // 绩点隐藏功能
       if (!optionController.hideHomeGpa) return s;
       return s.replaceAll('.', '').replaceAll(RegExp(r'[\d.]'), '*');
@@ -193,7 +193,7 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '五分制',
-                                          content: mask(_scholarController
+                                          content: maskGPA(_scholarController
                                               .gpa[0]
                                               .toStringAsFixed(2)),
                                           backgroundColor:
@@ -204,7 +204,7 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '获得学分',
-                                          content: mask(_scholarController
+                                          content: maskGPA(_scholarController
                                               .scholar.credit
                                               .toStringAsFixed(1)),
                                           backgroundColor:
@@ -215,12 +215,12 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '四分制',
-                                          content: mask(_scholarController
+                                          content: maskGPA(_scholarController
                                               .gpa[1]
                                               .toStringAsFixed(2)),
-                                          extraContent: _scholarController
-                                              .gpa[2]
-                                              .toStringAsFixed(2),
+                                          extraContent: maskGPA(
+                                              _scholarController.gpa[2]
+                                                  .toStringAsFixed(2)),
                                           backgroundColor:
                                               CustomCupertinoDynamicColors
                                                   .spring)),
@@ -233,7 +233,7 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '主修均绩',
-                                          content: mask(_scholarController
+                                          content: maskGPA(_scholarController
                                               .scholar.majorGpaAndCredit[0]
                                               .toStringAsFixed(2)),
                                           backgroundColor:
@@ -244,7 +244,7 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '主修学分',
-                                          content: mask(_scholarController
+                                          content: maskGPA(_scholarController
                                               .scholar.majorGpaAndCredit[1]
                                               .toStringAsFixed(1)),
                                           backgroundColor:
@@ -255,7 +255,7 @@ class ScholarPage extends StatelessWidget {
                                     Expanded(
                                       child: Obx(() => TwoLineCard(
                                           title: '百分制',
-                                          content: mask(_scholarController
+                                          content: maskGPA(_scholarController
                                               .gpa[3]
                                               .toStringAsFixed(2)),
                                           backgroundColor:
