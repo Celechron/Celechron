@@ -58,9 +58,9 @@ class Scholar {
   List<Todo> todos = [];
 
   // 实践学分（素质拓展）
-  double dektJf = 0.0; // 二课分
-  double dsktJf = 0.0; // 三课分
-  double dsiktJf = 0.0; // 四课分
+  double pt2 = 0.0; // 二课分
+  double pt3 = 0.0; // 三课分
+  double pt4 = 0.0; // 四课分
   bool isSztzLoggedIn = false; // 是否成功登录素质拓展
 
   int get gradedCourseCount {
@@ -116,9 +116,9 @@ class Scholar {
     aboardGpa = [0.0, 0.0, 0.0, 0.0];
     credit = 0.0;
     majorGpaAndCredit = [0.0, 0.0];
-    dektJf = 0.0;
-    dsktJf = 0.0;
-    dsiktJf = 0.0;
+    pt2 = 0.0;
+    pt3 = 0.0;
+    pt4 = 0.0;
     isSztzLoggedIn = false;
     isLogan = false;
     lastUpdateTime = DateTime.parse("20010101");
@@ -206,20 +206,20 @@ class Scholar {
             try {
               var practiceScores = ugrsSpider.practiceScores;
               if (practiceScores != null) {
-                dektJf = practiceScores['dektJf'] ?? 0.0;
-                dsktJf = practiceScores['dsktJf'] ?? 0.0;
-                dsiktJf = practiceScores['dsiktJf'] ?? 0.0;
+                pt2 = practiceScores['pt2'] ?? 0.0;
+                pt3 = practiceScores['pt3'] ?? 0.0;
+                pt4 = practiceScores['pt4'] ?? 0.0;
               } else {
                 // 如果数据为空，保持默认值 0.0
-                dektJf = 0.0;
-                dsktJf = 0.0;
-                dsiktJf = 0.0;
+                pt2 = 0.0;
+                pt3 = 0.0;
+                pt4 = 0.0;
               }
             } catch (e) {
               // 解析失败，保持默认值 0.0
-              dektJf = 0.0;
-              dsktJf = 0.0;
-              dsiktJf = 0.0;
+              pt2 = 0.0;
+              pt3 = 0.0;
+              pt4 = 0.0;
             }
           } else {
             isSztzLoggedIn = false;
@@ -245,9 +245,9 @@ class Scholar {
           specialDates.map((k, v) => MapEntry(k.toIso8601String(), v)),
       'lastUpdateTime': lastUpdateTime.toIso8601String(),
       'todos': todos,
-      'dektJf': dektJf,
-      'dsktJf': dsktJf,
-      'dsiktJf': dsiktJf,
+      'pt2': pt2,
+      'pt3': pt3,
+      'pt4': pt4,
       'isSztzLoggedIn': isSztzLoggedIn,
     };
   }
@@ -319,9 +319,9 @@ class Scholar {
     todos = json.containsKey('todos') // back compatibility
         ? (json['todos'] as List).map((e) => Todo.fromJson(e)).toList()
         : [];
-    dektJf = json.containsKey('dektJf') ? (json['dektJf'] as num).toDouble() : 0.0;
-    dsktJf = json.containsKey('dsktJf') ? (json['dsktJf'] as num).toDouble() : 0.0;
-    dsiktJf = json.containsKey('dsiktJf') ? (json['dsiktJf'] as num).toDouble() : 0.0;
+    pt2 = json.containsKey('pt2') ? (json['pt2'] as num).toDouble() : 0.0;
+    pt3 = json.containsKey('pt3') ? (json['pt3'] as num).toDouble() : 0.0;
+    pt4 = json.containsKey('pt4') ? (json['pt4'] as num).toDouble() : 0.0;
     isSztzLoggedIn = json.containsKey('isSztzLoggedIn') ? (json['isSztzLoggedIn'] as bool) : false;
     isLogan = true;
     if (gpa.length == 3) {

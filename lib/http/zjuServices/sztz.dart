@@ -117,9 +117,9 @@ class Sztz {
             var myInfo = extend['myInfo'];
             if (myInfo is Map<String, dynamic>) {
               var scores = <String, double>{
-                'dektJf': (myInfo['dektJf'] as num?)?.toDouble() ?? 0.0,
-                'dsktJf': (myInfo['dsktJf'] as num?)?.toDouble() ?? 0.0,
-                'dsiktJf': (myInfo['dsiktJf'] as num?)?.toDouble() ?? 0.0,
+                'pt2': (myInfo['dektJf'] as num?)?.toDouble() ?? 0.0,
+                'pt3': (myInfo['dsktJf'] as num?)?.toDouble() ?? 0.0,
+                'pt4': (myInfo['dsiktJf'] as num?)?.toDouble() ?? 0.0,
               };
               return Tuple(null, scores);
             }
@@ -129,7 +129,7 @@ class Sztz {
         // 解析失败，返回默认值
         return Tuple(
             ExceptionWithMessage("解析响应失败: $e"),
-            {'dektJf': 0.0, 'dsktJf': 0.0, 'dsiktJf': 0.0});
+            {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0});
       }
       // 如果响应格式不对，返回默认值
       return Tuple(

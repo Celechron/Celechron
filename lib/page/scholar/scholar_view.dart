@@ -659,7 +659,7 @@ class ScholarPage extends StatelessWidget {
                             MultipleColumns(
                               contents: [
                                 Obx(() => Text(
-                                    _scholarController.scholar.dektJf
+                                    _scholarController.scholar.pt2
                                         .toStringAsFixed(2),
                                     style: CupertinoTheme.of(context)
                                         .textTheme
@@ -668,7 +668,7 @@ class ScholarPage extends StatelessWidget {
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold))),
                                 Obx(() => Text(
-                                    _scholarController.scholar.dsktJf
+                                    _scholarController.scholar.pt3
                                         .toStringAsFixed(2),
                                     style: CupertinoTheme.of(context)
                                         .textTheme
@@ -677,7 +677,7 @@ class ScholarPage extends StatelessWidget {
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold))),
                                 Obx(() => Text(
-                                    _scholarController.scholar.dsiktJf
+                                    _scholarController.scholar.pt4
                                         .toStringAsFixed(2),
                                     style: CupertinoTheme.of(context)
                                         .textTheme
