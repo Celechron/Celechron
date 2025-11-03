@@ -1,7 +1,7 @@
 name: celechron
 description: Time scheduler for zjuers.
 publish_to: "none"
-version: 1.1.0+1
+version: 1.1.0+8
 environment:
   sdk: ">=3.0.0"
 
@@ -34,8 +34,8 @@ dependencies:
   app_links:
   crypto: 
   path_provider:
-  share_plus: ^7.2.1
-  device_calendar: ^4.2.0
+  share_plus:
+  device_calendar:
   timezone:
 
 dev_dependencies:
