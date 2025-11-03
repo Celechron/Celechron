@@ -34,9 +34,10 @@ dependencies:
   app_links:
   crypto: 
   path_provider:
-  share_plus:
+  share_plus: ^12.0.1 # 9fb0fb 提交当中提升了版本
   device_calendar:
   timezone:
+  device_info_plus:
 
 dev_dependencies:
   flutter_test:
