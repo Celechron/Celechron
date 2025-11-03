@@ -57,6 +57,12 @@ class Scholar {
   // 作业（学在浙大）
   List<Todo> todos = [];
 
+  // 实践学分（素质拓展）
+  double dektJf = 0.0; // 二课分
+  double dsktJf = 0.0; // 三课分
+  double dsiktJf = 0.0; // 四课分
+  bool isSztzLoggedIn = false; // 是否成功登录素质拓展
+
   int get gradedCourseCount {
     return grades.values.fold(0, (p, e) => p + e.length);
   }
@@ -110,6 +116,10 @@ class Scholar {
     aboardGpa = [0.0, 0.0, 0.0, 0.0];
     credit = 0.0;
     majorGpaAndCredit = [0.0, 0.0];
+    dektJf = 0.0;
+    dsktJf = 0.0;
+    dsiktJf = 0.0;
+    isSztzLoggedIn = false;
     isLogan = false;
     lastUpdateTime = DateTime.parse("20010101");
     _spider?.logout();
@@ -189,6 +199,32 @@ class Scholar {
             credit = 0.0;
           }
 
+          // 获取实践学分数据（仅本科生）
+          if (_spider is UgrsSpider && !isGrs) {
+            var ugrsSpider = _spider as UgrsSpider;
+            isSztzLoggedIn = ugrsSpider.isSztzLoggedIn;
+            try {
+              var practiceScores = ugrsSpider.practiceScores;
+              if (practiceScores != null) {
+                dektJf = practiceScores['dektJf'] ?? 0.0;
+                dsktJf = practiceScores['dsktJf'] ?? 0.0;
+                dsiktJf = practiceScores['dsiktJf'] ?? 0.0;
+              } else {
+                // 如果数据为空，保持默认值 0.0
+                dektJf = 0.0;
+                dsktJf = 0.0;
+                dsiktJf = 0.0;
+              }
+            } catch (e) {
+              // 解析失败，保持默认值 0.0
+              dektJf = 0.0;
+              dsktJf = 0.0;
+              dsiktJf = 0.0;
+            }
+          } else {
+            isSztzLoggedIn = false;
+          }
+
           await _db?.setScholar(this);
           return value.item1.every((e) => e == null)
               ? value.item2
@@ -209,6 +245,10 @@ class Scholar {
           specialDates.map((k, v) => MapEntry(k.toIso8601String(), v)),
       'lastUpdateTime': lastUpdateTime.toIso8601String(),
       'todos': todos,
+      'dektJf': dektJf,
+      'dsktJf': dsktJf,
+      'dsiktJf': dsiktJf,
+      'isSztzLoggedIn': isSztzLoggedIn,
     };
   }
 
@@ -279,6 +319,10 @@ class Scholar {
     todos = json.containsKey('todos') // back compatibility
         ? (json['todos'] as List).map((e) => Todo.fromJson(e)).toList()
         : [];
+    dektJf = json.containsKey('dektJf') ? (json['dektJf'] as num).toDouble() : 0.0;
+    dsktJf = json.containsKey('dsktJf') ? (json['dsktJf'] as num).toDouble() : 0.0;
+    dsiktJf = json.containsKey('dsiktJf') ? (json['dsiktJf'] as num).toDouble() : 0.0;
+    isSztzLoggedIn = json.containsKey('isSztzLoggedIn') ? (json['isSztzLoggedIn'] as bool) : false;
     isLogan = true;
     if (gpa.length == 3) {
       gpa.insert(2, 0);
