@@ -3,7 +3,7 @@ plugins {
     id "kotlin-android"
     id "dev.flutter.flutter-gradle-plugin"
     id 'org.jetbrains.compose'
-    id 'org.jetbrains.kotlin.plugin.compose' version '2.0.20'
+    id 'org.jetbrains.kotlin.plugin.compose' version '2.2.0'
 }
 
 def localProperties = new Properties()
