@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:crypto/crypto.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/semester.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 
 /// iCal日历格式转换器
@@ -24,6 +26,8 @@ import 'package:get/get.dart';
 /// - [_generateVEvent]: 生成单个事件
 /// - [_generateHash]: 生成事件唯一标识
 /// - [_showAlert]: 显示提示弹窗
+/// - [_isIPad]: 判断是否为 iPad
+/// - [_calculateSharePositionOrigin]: 计算分享位置（iPad必需）
 
 class CalendarToIcal {
   /// 将DateTime转换为iCal格式的时间字符串
@@ -160,6 +164,24 @@ class CalendarToIcal {
     );
   }
 
+  /// 判断是否为 iPad
+  static Future<bool> _isIPad() async {
+    if (!Platform.isIOS) return false;
+    final deviceInfo = DeviceInfoPlugin();
+    final iosInfo = await deviceInfo.iosInfo;
+    return iosInfo.model.toLowerCase().contains('ipad');
+  }
+
+  /// 计算分享位置（iPad 必需）
+  static Future<Rect?> _calculateSharePositionOrigin(BuildContext? context) async {
+    if (!(await _isIPad()) || context == null) return null;
+    final box = context.findRenderObject() as RenderBox?;
+    if (box != null && box.hasSize) {
+      return box.localToGlobal(Offset.zero) & box.size;
+    }
+    return null;
+  }
+
   /// 从Scholar对象生成iCal
   static String generateIcalFromScholar({
     required Scholar scholar,
@@ -207,7 +229,10 @@ class CalendarToIcal {
   }
 
   /// 导出ICS课程表文件
-  static Future<void> exportIcsFile(Scholar scholar) async {
+  static Future<void> exportIcsFile(
+    Scholar scholar, {
+    BuildContext? context,
+  }) async {
     try {
       if (!scholar.isLogan) {
         _showAlert('提示', '请先登录后再导出课程表');
@@ -236,6 +261,7 @@ class CalendarToIcal {
           files: [XFile(tempFile.path)],
           subject: '浙大课程表',
           text: '从 Celechron 导出的课程表文件，可导入到其他日历应用中使用。',
+          sharePositionOrigin: await _calculateSharePositionOrigin(context),
         ),
       );
 
@@ -247,7 +273,10 @@ class CalendarToIcal {
 
   /// 导出指定学期
   static Future<void> exportSpecificSemester(
-      Scholar scholar, String semesterName) async {
+    Scholar scholar,
+    String semesterName, {
+    BuildContext? context,
+  }) async {
     try {
       final icalContent = generateIcalFromScholar(
         scholar: scholar,
@@ -268,6 +297,7 @@ class CalendarToIcal {
           files: [XFile(tempFile.path)],
           subject: '浙大课程表-$semesterName',
           text: '从 Celechron 导出的 $semesterName 课程表文件。',
+          sharePositionOrigin: await _calculateSharePositionOrigin(context),
         ),
       );
 
@@ -278,7 +308,10 @@ class CalendarToIcal {
   }
 
   /// 导出所有学期
-  static Future<void> exportAllSemesters(Scholar scholar) async {
+  static Future<void> exportAllSemesters(
+    Scholar scholar, {
+    BuildContext? context,
+  }) async {
     try {
       final icalContent = generateIcalFromScholar(
         scholar: scholar,
@@ -299,6 +332,7 @@ class CalendarToIcal {
           files: [XFile(tempFile.path)],
           subject: '浙大课程表-完整版',
           text: '从 Celechron 导出的完整课程表文件，包含所有学期。',
+          sharePositionOrigin: await _calculateSharePositionOrigin(context),
         ),
       );
 
@@ -324,7 +358,7 @@ class CalendarToIcal {
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
-              exportIcsFile(scholar);
+              exportIcsFile(scholar, context: popupContext);
             },
             child: const Text('导出当前学期'),
           ),
@@ -376,14 +410,14 @@ class CalendarToIcal {
           ...semesters.map((semester) => CupertinoActionSheetAction(
                 onPressed: () {
                   Navigator.pop(popupContext);
-                  exportSpecificSemester(scholar, semester);
+                  exportSpecificSemester(scholar, semester, context: popupContext);
                 },
                 child: Text(semester),
               )),
           CupertinoActionSheetAction(
             onPressed: () {
               Navigator.pop(popupContext);
-              exportAllSemesters(scholar);
+              exportAllSemesters(scholar, context: popupContext);
             },
             child: const Text('导出所有学期'),
           ),
