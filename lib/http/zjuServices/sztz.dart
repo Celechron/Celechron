@@ -14,63 +14,79 @@ class Sztz {
   }
 
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
-    late HttpClientRequest request;
-    late HttpClientResponse response;
-
     if (iPlanetDirectoryPro == null) {
       throw ExceptionWithMessage("iPlanetDirectoryPro无效");
     }
-    request = await httpClient
+
+    // 第一步：携带 cookie 请求 CAS，获取 ticket
+    var request = await httpClient
         .getUrl(Uri.parse(
             "https://zjuam.zju.edu.cn/cas/login?service=https://sztz.zju.edu.cn/dekt/"))
         .timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
     request.followRedirects = false;
     request.cookies.add(iPlanetDirectoryPro);
-    response = await request.close().timeout(const Duration(seconds: 8),
+    var response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
-    response.drain();
 
+    // 读取 headers 再 drain
     var stLocation = response.headers.value('location');
+    await response.drain();
+
     if (stLocation == null) {
       throw ExceptionWithMessage("iPlanetDirectoryPro无效");
-    } else if (stLocation.startsWith("http://")) {
+    }
+    if (stLocation.startsWith("http://")) {
       stLocation = stLocation.replaceFirst("http://", "https://");
     }
 
+    // 保存 cookies（iPlanet 以及后续 session）
     var cookies = <Cookie>[iPlanetDirectoryPro];
-    Future<void> followRedirects(String url) async {
-      request = await httpClient.getUrl(Uri.parse(url)).timeout(
-          const Duration(seconds: 8),
+
+    Future<Cookie?> followRedirects(String url) async {
+      var req = await httpClient
+          .getUrl(Uri.parse(url))
+          .timeout(const Duration(seconds: 8),
+              onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      req.followRedirects = false;
+      req.cookies.addAll(cookies);
+      var res = await req.close().timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
-      request.followRedirects = false;
-      request.cookies.addAll(cookies);
-      response = await request.close().timeout(const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("请求超时"));
-      cookies.addAll(response.cookies);
-      response.drain();
-      if (response.isRedirect) {
-        var location = response.headers.value(HttpHeaders.locationHeader);
+
+      // 收集 cookie
+      if (res.cookies.isNotEmpty) cookies.addAll(res.cookies);
+
+      // 检查是否跳转
+      if (res.isRedirect) {
+        var location = res.headers.value(HttpHeaders.locationHeader);
+        await res.drain();
         if (location != null) {
           if (location.startsWith("http://")) {
             location = location.replaceFirst("http://", "https://");
           }
           return await followRedirects(location);
         }
+      } else {
+        // 尝试提取 session
+        await res.drain();
+        var sessionCookie = cookies.firstWhere(
+            (c) => c.name.toLowerCase() == "session",
+            orElse: () => Cookie("session", ""));
+        return sessionCookie.value.isEmpty ? null : sessionCookie;
       }
-      // 尝试获取 session cookie
-      if (response.cookies.any((cookie) => cookie.name == "session")) {
-        _session = response.cookies.firstWhere((cookie) => cookie.name == "session");
-      }
+      return null;
     }
 
-    await followRedirects(stLocation);
-    if (_session == null) {
+    var sessionCookie = await followRedirects(stLocation);
+
+    if (sessionCookie == null) {
       throw ExceptionWithMessage("无法获取session");
     }
 
+    _session = sessionCookie;
     return true;
   }
+
 
   Future<Tuple<Exception?, Map<String, double>>> getMyInfo(
       HttpClient httpClient) async {
