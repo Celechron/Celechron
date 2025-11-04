@@ -26,18 +26,17 @@ class _CreditsPageState extends State<CreditsPage> {
   Future<void> _loadContributors() async {
     try {
       var result = await _githubService.getContributors(_httpClient);
-      if (result.item1 == null) {
-        setState(() {
-          _contributors = result.item2;
-          _isLoading = false;
-        });
-      } else {
-        setState(() {
-          _isLoading = false;
-        });
-      }
-    } catch (e) {
+      // 无论是否有错误，都使用返回的 contributors 列表
+      // GitHubService 保证即使出错也会返回默认作者名单
       setState(() {
+        _contributors = result.item2;
+        _isLoading = false;
+      });
+    } catch (e) {
+      // 如果 GitHubService 本身抛出异常
+      // 则使用 GitHubService 中的默认名单
+      setState(() {
+        _contributors = GitHubService.defaultContributors;
         _isLoading = false;
       });
     }

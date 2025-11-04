@@ -6,7 +6,7 @@ import 'package:celechron/utils/tuple.dart';
 
 class GitHubService {
   // 默认作者名单
-  static const List<String> _defaultContributors = [
+  static const List<String> defaultContributors = [
     'nosig',
     'iotang',
     'cxz66666',
@@ -39,7 +39,7 @@ class GitHubService {
         
         // 如果抓取到的列表为空，返回默认作者名单
         if (logins.isEmpty) {
-          return Tuple(null, _defaultContributors);
+          return Tuple(null, defaultContributors);
         }
         
         return Tuple(null, logins);
@@ -47,14 +47,14 @@ class GitHubService {
         // 请求失败时返回默认作者名单
         return Tuple(
             ExceptionWithMessage("获取contributors失败: ${response.statusCode}"),
-            _defaultContributors);
+            defaultContributors);
       }
     } catch (e) {
       // 网络错误或其他异常时返回默认作者名单
       var exception = e is SocketException
           ? ExceptionWithMessage("网络错误")
           : e as Exception;
-      return Tuple(exception, _defaultContributors);
+      return Tuple(exception, defaultContributors);
     }
   }
 }
