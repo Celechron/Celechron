@@ -32,6 +32,7 @@ class UgrsSpider implements Spider {
   bool fetchGrs = false;
   bool fetchSztz = false;
   Map<String, double>? _practiceScores;
+  bool _isSztzGet = false; // 是否成功获取到二三四课堂分数
 
   UgrsSpider(String username, String password) {
     _httpClient = HttpClient();
@@ -128,11 +129,12 @@ class UgrsSpider implements Spider {
     _grsNew.logout();
     _sztz.logout();
     _practiceScores = null;
+    _isSztzGet = false;
     fetchSztz = false;
   }
 
   Map<String, double>? get practiceScores => _practiceScores;
-  bool get isSztzLoggedIn => fetchSztz;
+  bool get isSztzGet => _isSztzGet;
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override
@@ -389,11 +391,22 @@ class UgrsSpider implements Spider {
     // 实践学分（素质拓展）- 仅当登录成功时获取
     if (fetchSztz) {
       fetches.add(_sztz.getMyInfo(_httpClient).then((value) {
-        _practiceScores = value.item2;
+        // 只有当没有错误时，才设置为 true
+        if (value.item1 == null) {
+          _practiceScores = value.item2;
+          _isSztzGet = true;
+        } else {
+          _practiceScores = value.item2;
+          _isSztzGet = false;
+        }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((e) {
+        _isSztzGet = false;
+        return e.toString();
+      }));
     } else {
       // 未登录，不获取数据，返回null表示跳过
+      _isSztzGet = false;
       fetches.add(Future.value(null));
     }
 

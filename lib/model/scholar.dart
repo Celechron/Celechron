@@ -61,7 +61,7 @@ class Scholar {
   double pt2 = 0.0; // 二课分
   double pt3 = 0.0; // 三课分
   double pt4 = 0.0; // 四课分
-  bool isSztzLoggedIn = false; // 是否成功登录素质拓展
+  bool isSztzGet = false; // 是否成功获取到二三四课堂分数
 
   int get gradedCourseCount {
     return grades.values.fold(0, (p, e) => p + e.length);
@@ -119,7 +119,7 @@ class Scholar {
     pt2 = 0.0;
     pt3 = 0.0;
     pt4 = 0.0;
-    isSztzLoggedIn = false;
+    isSztzGet = false;
     isLogan = false;
     lastUpdateTime = DateTime.parse("20010101");
     _spider?.logout();
@@ -202,7 +202,7 @@ class Scholar {
           // 获取实践学分数据（仅本科生）
           if (_spider is UgrsSpider && !isGrs) {
             var ugrsSpider = _spider as UgrsSpider;
-            isSztzLoggedIn = ugrsSpider.isSztzLoggedIn;
+            isSztzGet = ugrsSpider.isSztzGet;
             try {
               var practiceScores = ugrsSpider.practiceScores;
               if (practiceScores != null) {
@@ -210,7 +210,7 @@ class Scholar {
                 pt3 = practiceScores['pt3'] ?? 0.0;
                 pt4 = practiceScores['pt4'] ?? 0.0;
               } else {
-                // 如果数据为空，保持默认值 0.0
+                // 数据为空，保持默认值 0.0
                 pt2 = 0.0;
                 pt3 = 0.0;
                 pt4 = 0.0;
@@ -222,7 +222,7 @@ class Scholar {
               pt4 = 0.0;
             }
           } else {
-            isSztzLoggedIn = false;
+            isSztzGet = false;
           }
 
           await _db?.setScholar(this);
@@ -248,7 +248,7 @@ class Scholar {
       'pt2': pt2,
       'pt3': pt3,
       'pt4': pt4,
-      'isSztzLoggedIn': isSztzLoggedIn,
+      'isSztzGet': isSztzGet,
     };
   }
 
@@ -322,7 +322,7 @@ class Scholar {
     pt2 = json.containsKey('pt2') ? (json['pt2'] as num).toDouble() : 0.0;
     pt3 = json.containsKey('pt3') ? (json['pt3'] as num).toDouble() : 0.0;
     pt4 = json.containsKey('pt4') ? (json['pt4'] as num).toDouble() : 0.0;
-    isSztzLoggedIn = json.containsKey('isSztzLoggedIn') ? (json['isSztzLoggedIn'] as bool) : false;
+    isSztzGet = json.containsKey('isSztzGet') ? (json['isSztzGet'] as bool) : false;
     isLogan = true;
     if (gpa.length == 3) {
       gpa.insert(2, 0);

@@ -87,7 +87,7 @@ class Sztz {
     return true;
   }
 
-
+  // 获取二三四课堂学分信息
   Future<Tuple<Exception?, Map<String, double>>> getMyInfo(
       HttpClient httpClient) async {
     late HttpClientRequest request;
@@ -126,15 +126,14 @@ class Sztz {
           }
         }
       } catch (e) {
-        // 解析失败，返回默认值
         return Tuple(
             ExceptionWithMessage("解析响应失败: $e"),
-            {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0});
+            {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0}); // 解析失败，返回默认值
       }
       // 如果响应格式不对，返回默认值
       return Tuple(
           ExceptionWithMessage("无法获取实践学分信息"),
-          {'dektJf': 0.0, 'dsktJf': 0.0, 'dsiktJf': 0.0});
+          {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0});
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
@@ -149,9 +148,9 @@ class Sztz {
               var myInfo = extend['myInfo'];
               if (myInfo is Map<String, dynamic>) {
                 var scores = <String, double>{
-                  'dektJf': (myInfo['dektJf'] as num?)?.toDouble() ?? 0.0,
-                  'dsktJf': (myInfo['dsktJf'] as num?)?.toDouble() ?? 0.0,
-                  'dsiktJf': (myInfo['dsiktJf'] as num?)?.toDouble() ?? 0.0,
+                  'pt2': (myInfo['dektJf'] as num?)?.toDouble() ?? 0.0,
+                  'pt3': (myInfo['dsktJf'] as num?)?.toDouble() ?? 0.0,
+                  'pt4': (myInfo['dsiktJf'] as num?)?.toDouble() ?? 0.0,
                 };
                 return Tuple(exception, scores);
               }
@@ -161,7 +160,7 @@ class Sztz {
           // 缓存解析失败，返回默认值
         }
       }
-      return Tuple(exception, {'dektJf': 0.0, 'dsktJf': 0.0, 'dsiktJf': 0.0});
+      return Tuple(exception, {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0});
     }
   }
 

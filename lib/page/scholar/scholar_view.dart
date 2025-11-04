@@ -629,28 +629,28 @@ class ScholarPage extends StatelessWidget {
                                             CupertinoColors.label, context),
                                       ))),
                               const Spacer(),
-                              if (!_scholarController.scholar.isSztzLoggedIn)
+                              if (!_scholarController.scholar.isSztzGet)
                                 Padding(
                                   padding:
-                                      const EdgeInsets.only(top: 4, bottom: 4, right: 16),
+                                      const EdgeInsets.only(top: 4, bottom: 4),
                                   child: Icon(
                                     CupertinoIcons.exclamationmark_circle_fill,
                                     color: CupertinoDynamicColor.resolve(
-                                        CupertinoColors.systemRed, context),
+                                        CupertinoColors.label, context),
                                     size: 14,
                                   ),
                                 ),
-                              if (!_scholarController.scholar.isSztzLoggedIn)
+                              if (!_scholarController.scholar.isSztzGet)
                                 Padding(
                                     padding: const EdgeInsets.only(
                                         left: 4, top: 4, bottom: 4, right: 16),
-                                    child: Text('未登录',
+                                    child: Text('获取实践分数时遇到问题',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
                                           overflow: TextOverflow.ellipsis,
                                           color: CupertinoDynamicColor.resolve(
-                                              CupertinoColors.systemRed, context),
+                                              CupertinoColors.label, context),
                                         ))),
                             ])),
                         child: Column(
