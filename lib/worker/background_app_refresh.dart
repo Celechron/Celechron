@@ -31,7 +31,8 @@ Future<void> refreshScholar() async {
   );
   const initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
-      iOS: initializationSettingsDarwin);
+      iOS: initializationSettingsDarwin,
+      macOS: initializationSettingsDarwin); // ✅ 添加 macOS 配置
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
   const androidNotificationDetails = AndroidNotificationDetails(
     'top.celechron.celechron.gradeChange',
