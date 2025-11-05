@@ -87,7 +87,31 @@ class OptionPage extends StatelessWidget {
                                             context),
                                         fontSize: 16))),
                             onTap: () async {
-                              await _optionController.logout();
+                              await showCupertinoDialog(
+                                  context: context,
+                                  builder: (BuildContext dialogContext) {
+                                    return CupertinoAlertDialog(
+                                      title: const Text('退出登录'),
+                                      content:
+                                          const Text('确定要退出当前账号吗？'),
+                                      actions: [
+                                        CupertinoDialogAction(
+                                          child: const Text('取消'),
+                                          onPressed: () {
+                                            Navigator.of(dialogContext).pop();
+                                          },
+                                        ),
+                                        CupertinoDialogAction(
+                                          isDestructiveAction: true,
+                                          child: const Text('退出'),
+                                          onPressed: () async {
+                                            Navigator.of(dialogContext).pop();
+                                            await _optionController.logout();
+                                          },
+                                        ),
+                                      ],
+                                    );
+                                  });
                             }),
                         CupertinoListTile(
                           title: const Text('重修绩点计算'),
