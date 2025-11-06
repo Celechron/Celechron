@@ -288,7 +288,7 @@ class UgrsSpider implements Spider {
             _grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-1']!]
-                .addSession(e, '$yearStr-1');
+                .addSession(e, '$yearStr-1', true);
           }
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
@@ -296,7 +296,7 @@ class UgrsSpider implements Spider {
             _grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-1']!]
-                .addSession(e, '$yearStr-1');
+                .addSession(e, '$yearStr-1', true);
           }
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
@@ -304,7 +304,7 @@ class UgrsSpider implements Spider {
             _grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-2']!]
-                .addSession(e, '$yearStr-2');
+                .addSession(e, '$yearStr-2', true);
           }
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
@@ -312,7 +312,7 @@ class UgrsSpider implements Spider {
             _grsNew.getTimetable(_httpClient, yearEnroll, 12).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-2']!]
-                .addSession(e, '$yearStr-2');
+                .addSession(e, '$yearStr-2', true);
           }
           return value.item1?.toString();
         }).catchError((e) => e.toString()));

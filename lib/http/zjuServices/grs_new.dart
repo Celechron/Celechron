@@ -99,9 +99,10 @@ class GrsNew {
         throw ExceptionWithMessage('获取成绩api错误，错误信息为 ${result["message"]}');
       }
 
-      final records = result["result"] as Map<String, dynamic>;
-
-      final rawGrades = records["xxjhnList"] as List<dynamic>;
+      final rawGrades = (result["result"]?["xxjhnList"] as List?) ?? [];
+      if (rawGrades.isEmpty) {
+        return Tuple(null, <Grade>[]);
+      }
       List<Grade> grades = [];
 
       for (var rawGradeDyn in rawGrades) {
@@ -207,7 +208,6 @@ class GrsNew {
         newExam.time = [startTime, endTime];
         newExamDto.id = (rawExam["kcbh"] as String).substring(0, 7);
         newExamDto.name = rawExam["kcmc"] as String;
-        // TODO credit
         newExamDto.credit = 0;
         newExamDto.exams.add(newExam);
 
@@ -219,6 +219,109 @@ class GrsNew {
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(exception, []);
     }
+  }
+
+  // Helper method to map semester code to semester name
+  String _getSemesterName(int semester) {
+    // 11: spring, 15: spring-summer -> "春夏学期"
+    // 12: summer, 13: autumn, 14: winter, 16: autumn-winter -> "秋冬学期"
+    if (semester == 11 || semester == 15) {
+      return "春夏学期";
+    } else {
+      return "秋冬学期";
+    }
+  }
+
+  /// 根据课程列表 sessions，通过研究生教务系统课程详情 API 补全每门课程的学分、上课方式（线上/线下）、课程类型等详细信息。
+  ///
+  /// 参数说明：
+  /// [httpClient] - Dart 的 HttpClient 实例，用于发起 API 请求。
+  /// [year] - 学年（如 2023），等同于 API 参数 xns。
+  /// [semester] - 学期代码，Semester 枚举值（11/12/13/14/15/16），等同于 API 参数 pkxq。
+  /// [sessions] - 课程 Session 对象列表，需要补全详细信息的课程列表。
+  ///
+  /// 用法示例：
+  ///   await _fetchCourseDetails(httpClient, 2023, 13, sessions);
+  ///
+  /// 注意：必须先登录获取 _token，否则不会进行任何操作。
+  Future<void> _fetchCourseDetails(HttpClient httpClient, int year,
+      int semester, List<Session> sessions) async {
+    if (_token == null) return;
+
+    // 将 sessions 按课程 id 归类，以便批量更新同一课程可能出现的多条 session 信息
+    Map<String, List<Session>> sessionsByCourse = {};
+    for (var session in sessions) {
+      if (session.id != null) {
+        sessionsByCourse.putIfAbsent(session.id!, () => []).add(session);
+      }
+    }
+
+    String semesterName = _getSemesterName(semester);
+    await Future.wait(sessionsByCourse.entries.map((entry) async {
+      String sessionId = entry.key;
+      List<Session> courseSessions = entry.value;
+      String? teacherId = courseSessions.first.teacherId;
+
+      // 没有教师信息的不查（课表 API 异常情况下可出现）
+      if (teacherId == null || teacherId.isEmpty) return;
+
+      try {
+        // Build URL with parameters
+        // 对应研究生教务系统的查询全校开课情况接口
+        String url =
+            "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryKcbjDetailInfoPage?";
+        url += "&xns=$year";
+        url += "&xqMc=${Uri.encodeComponent(semesterName)}"; // 学期名称
+        url += "&kcbh=${Uri.encodeComponent(sessionId)}"; // 课程ID
+        url +=
+            "&kcmc=${Uri.encodeComponent(courseSessions.first.name)}"; // 课程名称
+        url += "&zjjsJzgId=${Uri.encodeComponent(teacherId)}"; // 教师ID
+        var req = await httpClient.getUrl(Uri.parse(url)).timeout(
+            const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("request timeout"));
+        req.headers.add("X-Access-Token", _token!);
+        var res = await req.close().timeout(const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("request timeout"));
+
+        final resultJson = await res.transform(utf8.decoder).join();
+        final result = jsonDecode(resultJson) as Map<String, dynamic>;
+        if (result["success"] == true) {
+          final records = result["result"]?["records"] as List?;
+          if (records != null && records.isNotEmpty) {
+            var detail = records[0] as Map<String, dynamic>;
+
+            // 抓取学分
+            if (detail["xf"] != null) {
+              double creditValue = (detail["xf"] as num).toDouble();
+              for (var session in courseSessions) {
+                session.credit = creditValue;
+              }
+            }
+
+            // 抓取是否线上课程
+            if (detail["bz"] != null) {
+              String comments = detail["bz"] as String;
+              bool isOnline = comments.contains("线上") ||
+                  comments.contains("录播") ||
+                  comments.contains("直播");
+              for (var session in courseSessions) {
+                session.online = isOnline;
+              }
+            }
+
+            // 抓取课程类型（专业学位课、公共学位课、专业必修课、公共必修课、专业选修课、公共选修课）
+            if (detail["kcxzDm_dictText"] != null) {
+              String courseType = detail["kcxzDm_dictText"] as String;
+              for (var session in courseSessions) {
+                session.type = courseType;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // 若接口访问或解包异常，课程信息维持原值，不做抛出
+      }
+    }));
   }
 
   Future<Tuple<Exception?, Iterable<Session>>> getTimetable(
@@ -288,8 +391,8 @@ class GrsNew {
               var newSession = Session.empty();
               newSession.id = sessionId;
               newSession.name = rawClass["kcmc"] as String;
-              // TODO teacher name
               newSession.teacher = rawClass["xm"] as String;
+              newSession.teacherId = rawClass["jzgId"] as String?;
               newSession.location = rawClass["cdmc"] as String?;
               newSession.confirmed = true;
               newSession.dayOfWeek = i;
@@ -337,6 +440,10 @@ class GrsNew {
 
         sessions.addAll(sessionThisDay.values);
       }
+
+      // Fetch course details for each unique course
+      await _fetchCourseDetails(httpClient, year, semester, sessions);
+
       return Tuple(null, sessions);
     } catch (e) {
       var exception =

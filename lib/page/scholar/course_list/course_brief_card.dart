@@ -55,7 +55,10 @@ class CourseBriefCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          Text('  ${course.credit.toStringAsFixed(1)} 学分',
+                          Text(
+                              course.credit > 0
+                                  ? '  ${course.credit.toStringAsFixed(1)} 学分'
+                                  : '  待更新',
                               style: CupertinoTheme.of(context)
                                   .textTheme
                                   .textStyle
@@ -137,6 +140,58 @@ class CourseBriefCard extends StatelessWidget {
                               )),
                         }
                       ]),
+                      // 添加online和type字段的显示
+                      // 当课程为线上课程(online == true)或具有特定课程类型(type != null)时显示
+                      if (course.online == true || course.type != null) ...{
+                        // const SizedBox(height: 4.0),
+                        Row(children: [
+                          if (course.online == true) ...{
+                            Icon(
+                              CupertinoIcons.globe,
+                              size: 14,
+                              color: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .color!
+                                  .withValues(alpha: 0.5),
+                            ),
+                            Text(' 线上课程',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.normal,
+                                  color: CupertinoTheme.of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .color!
+                                      .withValues(alpha: 0.75),
+                                  overflow: TextOverflow.ellipsis,
+                                )),
+                            const SizedBox(width: 8.0),
+                          },
+                          if (course.type != null) ...{
+                            Icon(
+                              CupertinoIcons.tag,
+                              size: 14,
+                              color: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .color!
+                                  .withValues(alpha: 0.5),
+                            ),
+                            Text(' ${course.type}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.normal,
+                                  color: CupertinoTheme.of(context)
+                                      .textTheme
+                                      .textStyle
+                                      .color!
+                                      .withValues(alpha: 0.75),
+                                  overflow: TextOverflow.ellipsis,
+                                )),
+                          }
+                        ]),
+                      }
                     ],
                   )),
             ],
