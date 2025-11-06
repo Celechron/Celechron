@@ -99,9 +99,10 @@ class GrsNew {
         throw ExceptionWithMessage('获取成绩api错误，错误信息为 ${result["message"]}');
       }
 
-      final records = result["result"] as Map<String, dynamic>;
-
-      final rawGrades = records["xxjhnList"] as List<dynamic>;
+      final rawGrades = (result["result"]?["xxjhnList"] as List?) ?? [];
+      if (rawGrades.isEmpty) {
+        return Tuple(null, <Grade>[]);
+      }
       List<Grade> grades = [];
 
       for (var rawGradeDyn in rawGrades) {
