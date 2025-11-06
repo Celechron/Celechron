@@ -92,8 +92,7 @@ class OptionPage extends StatelessWidget {
                                   builder: (BuildContext dialogContext) {
                                     return CupertinoAlertDialog(
                                       title: const Text('退出登录'),
-                                      content:
-                                          const Text('确定要退出当前账号吗？'),
+                                      content: const Text('确定要退出当前账号吗？'),
                                       actions: [
                                         CupertinoDialogAction(
                                           child: const Text('取消'),
