@@ -68,7 +68,7 @@ class _CreditsPageState extends State<CreditsPage> {
     List<Widget> rows = [];
     for (int i = 0; i < _contributors.length; i += 2) {
       List<Widget> children = [];
-      
+
       // 第一个contributor
       children.add(
         Expanded(
