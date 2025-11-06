@@ -104,12 +104,33 @@ class _HomePageState extends State<HomePage> {
       child: TickerMode(
         enabled: _indexNum == index,
         child: GestureDetector(
+          onPanStart: (details) {
+            // 记录滑动开始位置，用于判断是否从边缘开始
+            final screenWidth = MediaQuery.of(context).size.width;
+            final edgeThreshold = screenWidth * 0.1; // 屏幕宽度的10%作为边缘区域
+            
+            // 如果滑动不是从屏幕边缘开始，则不处理（让子组件处理）
+            if (details.localPosition.dx > edgeThreshold &&
+                details.localPosition.dx < screenWidth - edgeThreshold) {
+              swipeDirection = null; // 标记为不处理
+            } else {
+              // 从边缘开始，初始化方向
+              swipeDirection = '';
+            }
+          },
           onPanUpdate: (details) {
-            int sensitivity = 4;
-            if (details.delta.dy > sensitivity / 2 ||
-                details.delta.dy < -sensitivity / 2) {
+            // 如果已经设置为不处理，则直接返回
+            if (swipeDirection == null) {
               return;
             }
+            
+            int sensitivity = 8; // 增加灵敏度阈值，需要更明确的滑动
+            // 检查垂直滑动，如果垂直滑动较大，则不处理水平滑动
+            if (details.delta.dy.abs() > sensitivity / 2) {
+              swipeDirection = null;
+              return;
+            }
+            // 需要累积足够的水平滑动距离才触发
             if (details.delta.dx > sensitivity) {
               swipeDirection = 'right';
             } else if (details.delta.dx < -sensitivity) {
@@ -117,7 +138,8 @@ class _HomePageState extends State<HomePage> {
             }
           },
           onPanEnd: (details) {
-            if (swipeDirection == null) {
+            if (swipeDirection == null || swipeDirection!.isEmpty) {
+              swipeDirection = null;
               return;
             }
             if (swipeDirection == 'left') {
@@ -130,6 +152,7 @@ class _HomePageState extends State<HomePage> {
                 changeIndex(_indexNum - 1);
               }
             }
+            swipeDirection = null; // 重置方向
           },
           child: widgetList[index],
         ),

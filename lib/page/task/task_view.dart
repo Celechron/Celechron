@@ -174,9 +174,94 @@ class TaskPage extends StatelessWidget {
         title == null
             ? const SizedBox(height: 0)
             : SubtitleRow(subtitle: title),
-        RoundRectangleCard(
-          onTap: () => showCardDialog(context, deadline),
-          child: Padding(
+        Dismissible(
+          key: Key(deadline.uid),
+          direction: deadline.type == TaskType.deadline
+              ? DismissDirection.horizontal
+              : DismissDirection.startToEnd,
+          movementDuration: const Duration(milliseconds: 200),
+          resizeDuration: const Duration(milliseconds: 200),
+          dismissThresholds: const {
+            DismissDirection.startToEnd: 0.4,
+            DismissDirection.endToStart: 0.4,
+          },
+          background: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 20),
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemRed,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              CupertinoIcons.delete,
+              color: CupertinoColors.white,
+              size: 28,
+            ),
+          ),
+          secondaryBackground: deadline.type == TaskType.deadline
+              ? Container(
+                  alignment: Alignment.centerRight,
+                  padding: const EdgeInsets.only(right: 20),
+                  decoration: BoxDecoration(
+                    color: deadline.status == TaskStatus.completed
+                        ? CupertinoColors.systemOrange
+                        : CupertinoColors.systemGreen,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(
+                    deadline.status == TaskStatus.completed
+                        ? CupertinoIcons.arrow_counterclockwise
+                        : CupertinoIcons.check_mark_circled_solid,
+                    color: CupertinoColors.white,
+                    size: 28,
+                  ),
+                )
+              : null,
+          confirmDismiss: (direction) async {
+            // 确认滑动操作
+            if (direction == DismissDirection.endToStart) {
+              // 右滑完成（从右到左）- 仅对 DDL 类型任务有效
+              if (deadline.type == TaskType.deadline) {
+                if (deadline.status == TaskStatus.completed) {
+                  // 如果已完成，恢复为未完成状态
+                  deadline.forceRefreshStatus();
+                } else {
+                  // 标记为完成
+                  deadline.status = TaskStatus.completed;
+                }
+                _taskController.updateDeadlineListTime();
+                _taskController.taskList.refresh();
+                return true;
+              }
+              return false;
+            } else if (direction == DismissDirection.startToEnd) {
+              // 左滑删除（从左到右）
+              deadline.status = TaskStatus.deleted;
+              _taskController.updateDeadlineList();
+              _taskController.taskList.refresh();
+              return true;
+            }
+            return false;
+          },
+          child: RoundRectangleCard(
+            onTap: () async {
+              // 直接导航到编辑页面
+              Task? res = await Navigator.of(context).push(
+                CupertinoPageRoute(
+                  builder: (context) => TaskEditPage(deadline),
+                ),
+              );
+              if (res != null && res.status != TaskStatus.deleted) {
+                bool needUpdate = deadline.differentForFlow(res);
+                deadline.copy(res);
+                _taskController.updateDeadlineList();
+                if (needUpdate) {
+                  _taskController.updateDeadlineListTime();
+                }
+                _taskController.taskList.refresh();
+              }
+            },
+            child: Padding(
             padding: const EdgeInsets.only(left: 8, right: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,6 +459,7 @@ class TaskPage extends StatelessWidget {
                 ],
               ],
             ),
+          ),
           ),
         ),
       ],
