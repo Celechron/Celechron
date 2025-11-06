@@ -233,22 +233,19 @@ class GrsNew {
   }
 
   /// 根据课程列表 sessions，通过研究生教务系统课程详情 API 补全每门课程的学分、上课方式（线上/线下）、课程类型等详细信息。
-  /// 
+  ///
   /// 参数说明：
   /// [httpClient] - Dart 的 HttpClient 实例，用于发起 API 请求。
   /// [year] - 学年（如 2023），等同于 API 参数 xns。
   /// [semester] - 学期代码，Semester 枚举值（11/12/13/14/15/16），等同于 API 参数 pkxq。
   /// [sessions] - 课程 Session 对象列表，需要补全详细信息的课程列表。
-  /// 
+  ///
   /// 用法示例：
   ///   await _fetchCourseDetails(httpClient, 2023, 13, sessions);
   ///
   /// 注意：必须先登录获取 _token，否则不会进行任何操作。
-  Future<void> _fetchCourseDetails(
-      HttpClient httpClient,
-      int year,
-      int semester,
-      List<Session> sessions) async {
+  Future<void> _fetchCourseDetails(HttpClient httpClient, int year,
+      int semester, List<Session> sessions) async {
     if (_token == null) return;
 
     // 将 sessions 按课程 id 归类，以便批量更新同一课程可能出现的多条 session 信息
@@ -271,16 +268,17 @@ class GrsNew {
       try {
         // Build URL with parameters
         // 对应研究生教务系统的查询全校开课情况接口
-        String url = "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryKcbjDetailInfoPage?";
+        String url =
+            "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryKcbjDetailInfoPage?";
         url += "&xns=$year";
         url += "&xqMc=${Uri.encodeComponent(semesterName)}"; // 学期名称
         url += "&kcbh=${Uri.encodeComponent(sessionId)}"; // 课程ID
-        url += "&kcmc=${Uri.encodeComponent(courseSessions.first.name)}"; // 课程名称
+        url +=
+            "&kcmc=${Uri.encodeComponent(courseSessions.first.name)}"; // 课程名称
         url += "&zjjsJzgId=${Uri.encodeComponent(teacherId)}"; // 教师ID
-        var req = await httpClient
-            .getUrl(Uri.parse(url))
-            .timeout(const Duration(seconds: 8),
-                onTimeout: () => throw ExceptionWithMessage("request timeout"));
+        var req = await httpClient.getUrl(Uri.parse(url)).timeout(
+            const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("request timeout"));
         req.headers.add("X-Access-Token", _token!);
         var res = await req.close().timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("request timeout"));

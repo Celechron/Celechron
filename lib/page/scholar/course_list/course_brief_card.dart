@@ -56,7 +56,7 @@ class CourseBriefCard extends StatelessWidget {
                             ),
                           ),
                           Text(
-                              course.credit > 0 
+                              course.credit > 0
                                   ? '  ${course.credit.toStringAsFixed(1)} 学分'
                                   : '  待更新',
                               style: CupertinoTheme.of(context)
