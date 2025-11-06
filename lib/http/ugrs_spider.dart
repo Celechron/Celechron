@@ -15,6 +15,7 @@ import 'package:celechron/model/semester.dart';
 // import 'zjuServices/appservice.dart';
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
+import 'zjuServices/sztz.dart';
 
 class UgrsSpider implements Spider {
   late HttpClient _httpClient;
@@ -25,9 +26,13 @@ class UgrsSpider implements Spider {
   late Zdbk _zdbk;
   late GrsNew _grsNew;
   late TimeConfigService _timeConfigService;
+  late Sztz _sztz;
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
   bool fetchGrs = false;
+  bool fetchSztz = false;
+  Map<String, double>? _practiceScores;
+  bool _isSztzGet = false; // 是否成功获取到二三四课堂分数
 
   UgrsSpider(String username, String password) {
     _httpClient = HttpClient();
@@ -38,6 +43,7 @@ class UgrsSpider implements Spider {
     _zdbk = Zdbk();
     _grsNew = GrsNew();
     _timeConfigService = TimeConfigService();
+    _sztz = Sztz();
     _username = username;
     _password = password;
   }
@@ -49,6 +55,7 @@ class UgrsSpider implements Spider {
     _zdbk.db = db;
     _grsNew.db = db;
     _timeConfigService.db = db;
+    _sztz.db = db;
   }
 
   @override
@@ -94,6 +101,17 @@ class UgrsSpider implements Spider {
               // 本科生一般不需要登录研究生院，所以不管登录成功与否都不会报错
               // ignore: unnecessary_cast
               .catchError((e) => null as String?),
+          _sztz
+              .login(_httpClient, _iPlanetDirectoryPro)
+              .then((value) {
+                fetchSztz = true;
+                // ignore: unnecessary_cast
+                return null as String?;
+              })
+              .timeout(const Duration(seconds: 8))
+              // 本科生可能无法登录素质拓展，所以不管登录成功与否都不会报错
+              // ignore: unnecessary_cast
+              .catchError((e) => null as String?),
         ]).then((value) {
       if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
       return value;
@@ -109,7 +127,14 @@ class UgrsSpider implements Spider {
     // _appService.logout();
     _zdbk.logout();
     _grsNew.logout();
+    _sztz.logout();
+    _practiceScores = null;
+    _isSztzGet = false;
+    fetchSztz = false;
   }
+
+  Map<String, double>? get practiceScores => _practiceScores;
+  bool get isSztzGet => _isSztzGet;
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override
@@ -124,7 +149,7 @@ class UgrsSpider implements Spider {
           List<Todo>>> getEverything() async {
     // 请求顺序
     var fetches = <Future<String?>>[];
-    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业'];
+    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业', '实践'];
 
     // 返回值初始化
     var outSemesters = <Semester>[];
@@ -362,6 +387,28 @@ class UgrsSpider implements Spider {
       outTodos.addAll(value.item2);
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
+
+    // 实践学分（素质拓展）- 仅当登录成功时获取
+    if (fetchSztz) {
+      fetches.add(_sztz.getMyInfo(_httpClient).then((value) {
+        // 只有当没有错误时，才设置为 true
+        if (value.item1 == null) {
+          _practiceScores = value.item2;
+          _isSztzGet = true;
+        } else {
+          _practiceScores = value.item2;
+          _isSztzGet = false;
+        }
+        return value.item1?.toString();
+      }).catchError((e) {
+        _isSztzGet = false;
+        return e.toString();
+      }));
+    } else {
+      // 未登录，不获取数据，返回null表示跳过
+      _isSztzGet = false;
+      fetches.add(Future.value(null));
+    }
 
     // 等待所有请求完成。然后，删除不包含考试、成绩、课程的全空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {

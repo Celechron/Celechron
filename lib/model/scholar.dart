@@ -57,6 +57,12 @@ class Scholar {
   // 作业（学在浙大）
   List<Todo> todos = [];
 
+  // 实践学分（素质拓展）
+  double pt2 = 0.0; // 二课分
+  double pt3 = 0.0; // 三课分
+  double pt4 = 0.0; // 四课分
+  bool isSztzGet = false; // 是否成功获取到二三四课堂分数
+
   int get gradedCourseCount {
     return grades.values.fold(0, (p, e) => p + e.length);
   }
@@ -110,6 +116,10 @@ class Scholar {
     aboardGpa = [0.0, 0.0, 0.0, 0.0];
     credit = 0.0;
     majorGpaAndCredit = [0.0, 0.0];
+    pt2 = 0.0;
+    pt3 = 0.0;
+    pt4 = 0.0;
+    isSztzGet = false;
     isLogan = false;
     lastUpdateTime = DateTime.parse("20010101");
     _spider?.logout();
@@ -189,6 +199,32 @@ class Scholar {
             credit = 0.0;
           }
 
+          // 获取实践学分数据（仅本科生）
+          if (_spider is UgrsSpider && !isGrs) {
+            var ugrsSpider = _spider as UgrsSpider;
+            isSztzGet = ugrsSpider.isSztzGet;
+            try {
+              var practiceScores = ugrsSpider.practiceScores;
+              if (practiceScores != null) {
+                pt2 = practiceScores['pt2'] ?? 0.0;
+                pt3 = practiceScores['pt3'] ?? 0.0;
+                pt4 = practiceScores['pt4'] ?? 0.0;
+              } else {
+                // 数据为空，保持默认值 0.0
+                pt2 = 0.0;
+                pt3 = 0.0;
+                pt4 = 0.0;
+              }
+            } catch (e) {
+              // 解析失败，保持默认值 0.0
+              pt2 = 0.0;
+              pt3 = 0.0;
+              pt4 = 0.0;
+            }
+          } else {
+            isSztzGet = false;
+          }
+
           await _db?.setScholar(this);
           return value.item1.every((e) => e == null)
               ? value.item2
@@ -209,6 +245,10 @@ class Scholar {
           specialDates.map((k, v) => MapEntry(k.toIso8601String(), v)),
       'lastUpdateTime': lastUpdateTime.toIso8601String(),
       'todos': todos,
+      'pt2': pt2,
+      'pt3': pt3,
+      'pt4': pt4,
+      'isSztzGet': isSztzGet,
     };
   }
 
@@ -279,6 +319,11 @@ class Scholar {
     todos = json.containsKey('todos') // back compatibility
         ? (json['todos'] as List).map((e) => Todo.fromJson(e)).toList()
         : [];
+    pt2 = json.containsKey('pt2') ? (json['pt2'] as num).toDouble() : 0.0;
+    pt3 = json.containsKey('pt3') ? (json['pt3'] as num).toDouble() : 0.0;
+    pt4 = json.containsKey('pt4') ? (json['pt4'] as num).toDouble() : 0.0;
+    isSztzGet =
+        json.containsKey('isSztzGet') ? (json['isSztzGet'] as bool) : false;
     isLogan = true;
     if (gpa.length == 3) {
       gpa.insert(2, 0);
