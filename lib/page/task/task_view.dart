@@ -178,27 +178,14 @@ class TaskPage extends StatelessWidget {
           key: Key(deadline.uid),
           direction: deadline.type == TaskType.deadline
               ? DismissDirection.horizontal
-              : DismissDirection.startToEnd,
+              : DismissDirection.endToStart,
           movementDuration: const Duration(milliseconds: 200),
           resizeDuration: const Duration(milliseconds: 200),
           dismissThresholds: const {
             DismissDirection.startToEnd: 0.4,
             DismissDirection.endToStart: 0.4,
           },
-          background: Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: 20),
-            decoration: BoxDecoration(
-              color: CupertinoColors.systemRed,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(
-              CupertinoIcons.delete,
-              color: CupertinoColors.white,
-              size: 28,
-            ),
-          ),
-          secondaryBackground: deadline.type == TaskType.deadline
+          background: deadline.type == TaskType.deadline
               ? Container(
                   alignment: Alignment.centerRight,
                   padding: const EdgeInsets.only(right: 20),
@@ -217,10 +204,22 @@ class TaskPage extends StatelessWidget {
                   ),
                 )
               : null,
+          secondaryBackground: Container(
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.only(left: 20),
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemRed,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              CupertinoIcons.delete,
+              color: CupertinoColors.white,
+              size: 28,
+            ),
+          ),
           confirmDismiss: (direction) async {
-            // 确认滑动操作
-            if (direction == DismissDirection.endToStart) {
-              // 右滑完成（从右到左）- 仅对 DDL 类型任务有效
+            if (direction == DismissDirection.startToEnd) {
+              // 向右滑（从左到右）：完成 - 不真正 dismiss，只更新状态
               if (deadline.type == TaskType.deadline) {
                 if (deadline.status == TaskStatus.completed) {
                   // 如果已完成，恢复为未完成状态
@@ -231,17 +230,22 @@ class TaskPage extends StatelessWidget {
                 }
                 _taskController.updateDeadlineListTime();
                 _taskController.taskList.refresh();
-                return true;
               }
-              return false;
-            } else if (direction == DismissDirection.startToEnd) {
-              // 左滑删除（从左到右）
-              deadline.status = TaskStatus.deleted;
-              _taskController.updateDeadlineList();
-              _taskController.taskList.refresh();
+              return false; // 阻止真正的 dismiss
+            } else if (direction == DismissDirection.endToStart) {
+              // 向左滑（从右到左）：删除 - 允许 dismiss
               return true;
             }
             return false;
+          },
+          onDismissed: (direction) {
+            // 只有删除操作会真正 dismiss
+            if (direction == DismissDirection.endToStart) {
+              // 向左滑（从右到左）：删除
+              deadline.status = TaskStatus.deleted;
+              _taskController.updateDeadlineList();
+              _taskController.taskList.refresh();
+            }
           },
           child: RoundRectangleCard(
             onTap: () async {
