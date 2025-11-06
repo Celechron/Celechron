@@ -161,7 +161,13 @@ class TaskPage extends StatelessWidget {
     );
     if (res != null && res.status != TaskStatus.deleted) {
       _taskController.taskList.add(res);
+      _taskController.updateDeadlineList();
       _taskController.updateDeadlineListTime();
+      // 重新规划
+      _flowController.removeFlowInFlowList();
+      DateTime now = DateTime.now();
+      DateTime startsAt = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+      _flowController.generateNewFlowList(startsAt);
       _taskController.taskList.refresh();
     }
   }
@@ -239,13 +245,21 @@ class TaskPage extends StatelessWidget {
               // 向右滑（从左到右）：完成 - 不真正 dismiss，只更新状态
               if (deadline.type == TaskType.deadline) {
                 if (deadline.status == TaskStatus.completed) {
-                  // 如果已完成，恢复为未完成状态
+                  // 如果已完成，恢复为未完成状态，并重置计时
+                  deadline.timeSpent = const Duration(minutes: 0);
                   deadline.forceRefreshStatus();
                 } else {
-                  // 标记为完成
+                  // 标记为完成，完成度设为100%
+                  deadline.timeSpent = deadline.timeNeeded;
                   deadline.status = TaskStatus.completed;
                 }
+                _taskController.updateDeadlineList();
                 _taskController.updateDeadlineListTime();
+                // 重新规划
+                _flowController.removeFlowInFlowList();
+                DateTime now = DateTime.now();
+                DateTime startsAt = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+                _flowController.generateNewFlowList(startsAt);
                 _taskController.taskList.refresh();
               }
               return false; // 阻止真正的 dismiss
@@ -261,6 +275,12 @@ class TaskPage extends StatelessWidget {
               // 向左滑（从右到左）：删除
               deadline.status = TaskStatus.deleted;
               _taskController.updateDeadlineList();
+              _taskController.updateDeadlineListTime();
+              // 重新规划
+              _flowController.removeFlowInFlowList();
+              DateTime now = DateTime.now();
+              DateTime startsAt = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+              _flowController.generateNewFlowList(startsAt);
               _taskController.taskList.refresh();
             }
           },
@@ -273,12 +293,14 @@ class TaskPage extends StatelessWidget {
                 ),
               );
               if (res != null && res.status != TaskStatus.deleted) {
-                bool needUpdate = deadline.differentForFlow(res);
                 deadline.copy(res);
                 _taskController.updateDeadlineList();
-                if (needUpdate) {
-                  _taskController.updateDeadlineListTime();
-                }
+                _taskController.updateDeadlineListTime();
+                // 重新规划
+                _flowController.removeFlowInFlowList();
+                DateTime now = DateTime.now();
+                DateTime startsAt = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+                _flowController.generateNewFlowList(startsAt);
                 _taskController.taskList.refresh();
               }
             },

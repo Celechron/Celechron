@@ -3,6 +3,7 @@ import 'package:celechron/design/sub_title.dart';
 import 'package:celechron/model/task.dart';
 import 'package:celechron/page/task/task_controller.dart';
 import 'package:celechron/page/task/task_edit_page.dart';
+import 'package:celechron/page/flow/flow_controller.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -19,6 +20,7 @@ class CalendarPage extends StatelessWidget {
   CalendarPage({super.key});
   final _calendarController = Get.put(CalendarController());
   final _taskController = Get.put(TaskController());
+  final _flowController = Get.put(FlowController());
   final deadlineList = Get.find<RxList<Task>>(tag: 'taskList');
 
   @override
@@ -281,12 +283,14 @@ class CalendarPage extends StatelessWidget {
                         },
                       ) ??
                       deadline;
-                  bool needUpdate = deadline.differentForFlow(res);
                   deadline.copy(res);
                   _taskController.updateDeadlineList();
-                  if (needUpdate) {
-                    _taskController.updateDeadlineListTime();
-                  }
+                  _taskController.updateDeadlineListTime();
+                  // 重新规划
+                  _flowController.removeFlowInFlowList();
+                  DateTime now = DateTime.now();
+                  DateTime startsAt = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+                  _flowController.generateNewFlowList(startsAt);
                   _taskController.taskList.refresh();
                 },
                 child: const Text('编辑'),
