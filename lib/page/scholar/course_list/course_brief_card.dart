@@ -55,11 +55,10 @@ class CourseBriefCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                          // 显示学分，如果没有则显示"学分未知"
                           Text(
                               course.credit > 0 
                                   ? '  ${course.credit.toStringAsFixed(1)} 学分'
-                                  : '  学分未知',
+                                  : '  待更新',
                               style: CupertinoTheme.of(context)
                                   .textTheme
                                   .textStyle
