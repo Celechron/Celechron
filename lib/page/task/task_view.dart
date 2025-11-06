@@ -179,42 +179,59 @@ class TaskPage extends StatelessWidget {
           direction: deadline.type == TaskType.deadline
               ? DismissDirection.horizontal
               : DismissDirection.endToStart,
-          movementDuration: const Duration(milliseconds: 200),
-          resizeDuration: const Duration(milliseconds: 200),
+          movementDuration: const Duration(milliseconds: 300),
+          resizeDuration: const Duration(milliseconds: 300),
           dismissThresholds: const {
-            DismissDirection.startToEnd: 0.4,
-            DismissDirection.endToStart: 0.4,
+            DismissDirection.startToEnd: 0.25,
+            DismissDirection.endToStart: 0.25,
           },
+          crossAxisEndOffset: 0.0,
           background: deadline.type == TaskType.deadline
               ? Container(
-                  alignment: Alignment.centerRight,
-                  padding: const EdgeInsets.only(right: 20),
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 16),
                   decoration: BoxDecoration(
                     color: deadline.status == TaskStatus.completed
                         ? CupertinoColors.systemOrange
                         : CupertinoColors.systemGreen,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    deadline.status == TaskStatus.completed
-                        ? CupertinoIcons.arrow_counterclockwise
-                        : CupertinoIcons.check_mark_circled_solid,
-                    color: CupertinoColors.white,
-                    size: 28,
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      deadline.status == TaskStatus.completed
+                          ? CupertinoIcons.arrow_counterclockwise
+                          : CupertinoIcons.check_mark_circled_solid,
+                      color: CupertinoColors.white,
+                      size: 20,
+                    ),
                   ),
                 )
               : null,
           secondaryBackground: Container(
-            alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.only(left: 20),
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 16),
             decoration: BoxDecoration(
               color: CupertinoColors.systemRed,
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(
-              CupertinoIcons.delete,
-              color: CupertinoColors.white,
-              size: 28,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: CupertinoColors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                CupertinoIcons.delete,
+                color: CupertinoColors.white,
+                size: 20,
+              ),
             ),
           ),
           confirmDismiss: (direction) async {
