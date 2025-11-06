@@ -966,8 +966,7 @@ class ScholarPage extends StatelessWidget {
                   child: Column(children: [
                     const Spacer(),
                     Text(_scholarController.scholar.isLogan ? '下拉刷新' : '未登录',
-                        style:
-                            CupertinoTheme.of(context).textTheme.textStyle),
+                        style: CupertinoTheme.of(context).textTheme.textStyle),
                     const Spacer()
                   ]));
             }

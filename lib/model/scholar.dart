@@ -322,7 +322,8 @@ class Scholar {
     pt2 = json.containsKey('pt2') ? (json['pt2'] as num).toDouble() : 0.0;
     pt3 = json.containsKey('pt3') ? (json['pt3'] as num).toDouble() : 0.0;
     pt4 = json.containsKey('pt4') ? (json['pt4'] as num).toDouble() : 0.0;
-    isSztzGet = json.containsKey('isSztzGet') ? (json['isSztzGet'] as bool) : false;
+    isSztzGet =
+        json.containsKey('isSztzGet') ? (json['isSztzGet'] as bool) : false;
     isLogan = true;
     if (gpa.length == 3) {
       gpa.insert(2, 0);

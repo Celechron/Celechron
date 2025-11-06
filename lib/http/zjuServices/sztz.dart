@@ -44,10 +44,9 @@ class Sztz {
     var cookies = <Cookie>[iPlanetDirectoryPro];
 
     Future<Cookie?> followRedirects(String url) async {
-      var req = await httpClient
-          .getUrl(Uri.parse(url))
-          .timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      var req = await httpClient.getUrl(Uri.parse(url)).timeout(
+          const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("请求超时"));
       req.followRedirects = false;
       req.cookies.addAll(cookies);
       var res = await req.close().timeout(const Duration(seconds: 8),
@@ -98,8 +97,8 @@ class Sztz {
         throw ExceptionWithMessage("未登录");
       }
       request = await httpClient
-          .getUrl(Uri.parse(
-              "https://sztz.zju.edu.cn/dekt/student/home/getMyInfo"))
+          .getUrl(
+              Uri.parse("https://sztz.zju.edu.cn/dekt/student/home/getMyInfo"))
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
       request.cookies.add(_session!);
@@ -126,13 +125,11 @@ class Sztz {
           }
         }
       } catch (e) {
-        return Tuple(
-            ExceptionWithMessage("解析响应失败: $e"),
+        return Tuple(ExceptionWithMessage("解析响应失败: $e"),
             {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0}); // 解析失败，返回默认值
       }
       // 如果响应格式不对，返回默认值
-      return Tuple(
-          ExceptionWithMessage("无法获取实践学分信息"),
+      return Tuple(ExceptionWithMessage("无法获取实践学分信息"),
           {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0});
     } catch (e) {
       var exception =
@@ -168,4 +165,3 @@ class Sztz {
     _session = null;
   }
 }
-
