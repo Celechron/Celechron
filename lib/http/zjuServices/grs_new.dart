@@ -222,6 +222,106 @@ class GrsNew {
     }
   }
 
+  // Helper method to map semester code to semester name
+  String _getSemesterName(int semester) {
+    // 11: spring, 15: spring-summer -> "春夏学期"
+    // 12: summer, 13: autumn, 14: winter, 16: autumn-winter -> "秋冬学期"
+    if (semester == 11 || semester == 15) {
+      return "春夏学期";
+    } else {
+      return "秋冬学期";
+    }
+  }
+
+  // Fetch course details from detail API and update sessions
+  Future<void> _fetchCourseDetails(
+      HttpClient httpClient,
+      int year,
+      int semester,
+      List<Session> sessions) async {
+    if (_token == null) return;
+
+    // Group sessions by sessionId (course ID)
+    Map<String, List<Session>> sessionsByCourse = {};
+    for (var session in sessions) {
+      if (session.id != null) {
+        sessionsByCourse.putIfAbsent(session.id!, () => []).add(session);
+      }
+    }
+
+    String semesterName = _getSemesterName(semester);
+    await Future.wait(sessionsByCourse.entries.map((entry) async {
+      String sessionId = entry.key;
+      List<Session> courseSessions = entry.value;
+      String? teacherId = courseSessions.first.teacherId;
+
+      // Skip if no teacher ID available
+      if (teacherId == null || teacherId.isEmpty) return;
+
+      try {
+        // Build URL with parameters
+        // 对应研究生教务系统的查询全校开课情况接口
+        String url = "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryKcbjDetailInfoPage?";
+        url += "_t=${DateTime.now().millisecondsSinceEpoch}";
+        url += "&xns=$year";
+        url += "&xq=$semester";
+        url += "&xqMc=${Uri.encodeComponent(semesterName)}";
+        url += "&kcbh=${Uri.encodeComponent(sessionId)}";
+        url += "&kcmc=${Uri.encodeComponent(courseSessions.first.name)}";
+        url += "&zjjsJzgId=${Uri.encodeComponent(teacherId)}";
+        url +=
+            "&column=xn,pkxq_dictText&order=desc&queryMode=0&field=id,,xn,pkxq_dictText,bjbh,kckId_dictText,pkyx_dictText,xf,zxs,bjrl,zjjsJzgId_dictText,skyy_dictText,skxq_dictText,sjddBz,xzrs,bz&pageNo=1&pageSize=30";
+
+        var req = await httpClient
+            .getUrl(Uri.parse(url))
+            .timeout(const Duration(seconds: 8),
+                onTimeout: () => throw ExceptionWithMessage("request timeout"));
+        req.headers.add("X-Access-Token", _token!);
+        var res = await req.close().timeout(const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("request timeout"));
+        
+        final resultJson = await res.transform(utf8.decoder).join();
+        final result = jsonDecode(resultJson) as Map<String, dynamic>;
+        if (result["success"] == true) {
+          final records = result["result"]?["records"] as List?;
+          if (records != null && records.isNotEmpty) {
+            var detail = records[0] as Map<String, dynamic>;
+
+            // Extract credit (xf)
+            if (detail["xf"] != null) {
+              double creditValue = (detail["xf"] as num).toDouble();
+              for (var session in courseSessions) {
+                session.credit = creditValue;
+              }
+            }
+
+            // Extract online status from bz (similar to getGrade method)
+            if (detail["bz"] != null) {
+              String comments = detail["bz"] as String;
+              bool isOnline = comments.contains("线上") ||
+                  comments.contains("录播") ||
+                  comments.contains("直播");
+              for (var session in courseSessions) {
+                session.online = isOnline;
+              }
+            }
+
+            // Extract course type (kcxzDm_dictText)
+            if (detail["kcxzDm_dictText"] != null) {
+              String courseType = detail["kcxzDm_dictText"] as String;
+              for (var session in courseSessions) {
+                session.type = courseType;
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // If detail API call fails, continue with original session data
+        // No need to log or throw - just keep the original information
+      }
+    }));
+  }
+
   Future<Tuple<Exception?, Iterable<Session>>> getTimetable(
       HttpClient httpClient, int year, int semester) async {
     /*
@@ -291,6 +391,7 @@ class GrsNew {
               newSession.name = rawClass["kcmc"] as String;
               // TODO teacher name
               newSession.teacher = rawClass["xm"] as String;
+              newSession.teacherId = rawClass["jzgId"] as String?;
               newSession.location = rawClass["cdmc"] as String?;
               newSession.confirmed = true;
               newSession.dayOfWeek = i;
@@ -338,6 +439,10 @@ class GrsNew {
 
         sessions.addAll(sessionThisDay.values);
       }
+
+      // Fetch course details for each unique course
+      await _fetchCourseDetails(httpClient, year, semester, sessions);
+
       return Tuple(null, sessions);
     } catch (e) {
       var exception =
