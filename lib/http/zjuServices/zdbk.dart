@@ -201,7 +201,7 @@ class Zdbk {
       if (timetableJson == null) throw ExceptionWithMessage("无法解析");
 
       var sessions = (jsonDecode(timetableJson) as List<dynamic>)
-          .where((e) => e['kcb'] != null)
+          .where((e) => e['kcb'] != null && (e['sfyjskc'] != "1"))
           .map((e) => Session.fromZdbk(e));
       _db?.setCachedWebPage('zdbk_Timetable$year$semester', timetableJson);
       return Tuple(null, sessions);
@@ -212,7 +212,7 @@ class Zdbk {
           exception,
           (jsonDecode((_db?.getCachedWebPage('zdbk_Timetable$year$semester') ??
                   '[]')) as List<dynamic>)
-              .where((e) => e['kcb'] != null)
+              .where((e) => e['kcb'] != null && (e['sfyjskc'] != "1"))
               .map((e) => Session.fromZdbk(e)));
     }
   }
