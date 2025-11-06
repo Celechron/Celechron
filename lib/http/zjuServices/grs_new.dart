@@ -208,7 +208,6 @@ class GrsNew {
         newExam.time = [startTime, endTime];
         newExamDto.id = (rawExam["kcbh"] as String).substring(0, 7);
         newExamDto.name = rawExam["kcmc"] as String;
-        // TODO credit
         newExamDto.credit = 0;
         newExamDto.exams.add(newExam);
 
@@ -233,7 +232,18 @@ class GrsNew {
     }
   }
 
-  // Fetch course details from detail API and update sessions
+  /// 根据课程列表 sessions，通过研究生教务系统课程详情 API 补全每门课程的学分、上课方式（线上/线下）、课程类型等详细信息。
+  /// 
+  /// 参数说明：
+  /// [httpClient] - Dart 的 HttpClient 实例，用于发起 API 请求。
+  /// [year] - 学年（如 2023），等同于 API 参数 xns。
+  /// [semester] - 学期代码，Semester 枚举值（11/12/13/14/15/16），等同于 API 参数 pkxq。
+  /// [sessions] - 课程 Session 对象列表，需要补全详细信息的课程列表。
+  /// 
+  /// 用法示例：
+  ///   await _fetchCourseDetails(httpClient, 2023, 13, sessions);
+  ///
+  /// 注意：必须先登录获取 _token，否则不会进行任何操作。
   Future<void> _fetchCourseDetails(
       HttpClient httpClient,
       int year,
@@ -241,7 +251,7 @@ class GrsNew {
       List<Session> sessions) async {
     if (_token == null) return;
 
-    // Group sessions by sessionId (course ID)
+    // 将 sessions 按课程 id 归类，以便批量更新同一课程可能出现的多条 session 信息
     Map<String, List<Session>> sessionsByCourse = {};
     for (var session in sessions) {
       if (session.id != null) {
@@ -255,23 +265,18 @@ class GrsNew {
       List<Session> courseSessions = entry.value;
       String? teacherId = courseSessions.first.teacherId;
 
-      // Skip if no teacher ID available
+      // 没有教师信息的不查（课表 API 异常情况下可出现）
       if (teacherId == null || teacherId.isEmpty) return;
 
       try {
         // Build URL with parameters
         // 对应研究生教务系统的查询全校开课情况接口
         String url = "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryKcbjDetailInfoPage?";
-        url += "_t=${DateTime.now().millisecondsSinceEpoch}";
         url += "&xns=$year";
-        url += "&xq=$semester";
-        url += "&xqMc=${Uri.encodeComponent(semesterName)}";
-        url += "&kcbh=${Uri.encodeComponent(sessionId)}";
-        url += "&kcmc=${Uri.encodeComponent(courseSessions.first.name)}";
-        url += "&zjjsJzgId=${Uri.encodeComponent(teacherId)}";
-        url +=
-            "&column=xn,pkxq_dictText&order=desc&queryMode=0&field=id,,xn,pkxq_dictText,bjbh,kckId_dictText,pkyx_dictText,xf,zxs,bjrl,zjjsJzgId_dictText,skyy_dictText,skxq_dictText,sjddBz,xzrs,bz&pageNo=1&pageSize=30";
-
+        url += "&xqMc=${Uri.encodeComponent(semesterName)}"; // 学期名称
+        url += "&kcbh=${Uri.encodeComponent(sessionId)}"; // 课程ID
+        url += "&kcmc=${Uri.encodeComponent(courseSessions.first.name)}"; // 课程名称
+        url += "&zjjsJzgId=${Uri.encodeComponent(teacherId)}"; // 教师ID
         var req = await httpClient
             .getUrl(Uri.parse(url))
             .timeout(const Duration(seconds: 8),
@@ -279,7 +284,7 @@ class GrsNew {
         req.headers.add("X-Access-Token", _token!);
         var res = await req.close().timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("request timeout"));
-        
+
         final resultJson = await res.transform(utf8.decoder).join();
         final result = jsonDecode(resultJson) as Map<String, dynamic>;
         if (result["success"] == true) {
@@ -287,7 +292,7 @@ class GrsNew {
           if (records != null && records.isNotEmpty) {
             var detail = records[0] as Map<String, dynamic>;
 
-            // Extract credit (xf)
+            // 抓取学分
             if (detail["xf"] != null) {
               double creditValue = (detail["xf"] as num).toDouble();
               for (var session in courseSessions) {
@@ -295,7 +300,7 @@ class GrsNew {
               }
             }
 
-            // Extract online status from bz (similar to getGrade method)
+            // 抓取是否线上课程
             if (detail["bz"] != null) {
               String comments = detail["bz"] as String;
               bool isOnline = comments.contains("线上") ||
@@ -306,7 +311,7 @@ class GrsNew {
               }
             }
 
-            // Extract course type (kcxzDm_dictText)
+            // 抓取课程类型（专业学位课、公共学位课、专业必修课、公共必修课、专业选修课、公共选修课）
             if (detail["kcxzDm_dictText"] != null) {
               String courseType = detail["kcxzDm_dictText"] as String;
               for (var session in courseSessions) {
@@ -316,8 +321,7 @@ class GrsNew {
           }
         }
       } catch (e) {
-        // If detail API call fails, continue with original session data
-        // No need to log or throw - just keep the original information
+        // 若接口访问或解包异常，课程信息维持原值，不做抛出
       }
     }));
   }
@@ -389,7 +393,6 @@ class GrsNew {
               var newSession = Session.empty();
               newSession.id = sessionId;
               newSession.name = rawClass["kcmc"] as String;
-              // TODO teacher name
               newSession.teacher = rawClass["xm"] as String;
               newSession.teacherId = rawClass["jzgId"] as String?;
               newSession.location = rawClass["cdmc"] as String?;
