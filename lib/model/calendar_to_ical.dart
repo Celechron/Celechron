@@ -173,7 +173,8 @@ class CalendarToIcal {
   }
 
   /// 计算分享位置（iPad 必需）
-  static Future<Rect?> _calculateSharePositionOrigin(BuildContext? context) async {
+  static Future<Rect?> _calculateSharePositionOrigin(
+      BuildContext? context) async {
     if (!(await _isIPad()) || context == null) return null;
     final box = context.findRenderObject() as RenderBox?;
     if (box != null && box.hasSize) {
@@ -410,7 +411,8 @@ class CalendarToIcal {
           ...semesters.map((semester) => CupertinoActionSheetAction(
                 onPressed: () {
                   Navigator.pop(popupContext);
-                  exportSpecificSemester(scholar, semester, context: popupContext);
+                  exportSpecificSemester(scholar, semester,
+                      context: popupContext);
                 },
                 child: Text(semester),
               )),
