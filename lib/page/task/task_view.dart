@@ -161,7 +161,13 @@ class TaskPage extends StatelessWidget {
     );
     if (res != null && res.status != TaskStatus.deleted) {
       _taskController.taskList.add(res);
+      _taskController.updateDeadlineList();
       _taskController.updateDeadlineListTime();
+      // 重新规划
+      _flowController.removeFlowInFlowList();
+      DateTime now = DateTime.now();
+      DateTime startsAt = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+      _flowController.generateNewFlowList(startsAt);
       _taskController.taskList.refresh();
     }
   }
@@ -174,9 +180,131 @@ class TaskPage extends StatelessWidget {
         title == null
             ? const SizedBox(height: 0)
             : SubtitleRow(subtitle: title),
-        RoundRectangleCard(
-          onTap: () => showCardDialog(context, deadline),
-          child: Padding(
+        Dismissible(
+          key: Key(deadline.uid),
+          direction: deadline.type == TaskType.deadline
+              ? DismissDirection.horizontal
+              : DismissDirection.endToStart,
+          movementDuration: const Duration(milliseconds: 300),
+          resizeDuration: const Duration(milliseconds: 300),
+          dismissThresholds: const {
+            DismissDirection.startToEnd: 0.25,
+            DismissDirection.endToStart: 0.25,
+          },
+          crossAxisEndOffset: 0.0,
+          background: deadline.type == TaskType.deadline
+              ? Container(
+                  alignment: Alignment.centerLeft,
+                  padding: const EdgeInsets.only(left: 16),
+                  decoration: BoxDecoration(
+                    color: deadline.status == TaskStatus.completed
+                        ? CupertinoColors.systemOrange
+                        : CupertinoColors.systemGreen,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: CupertinoColors.white.withOpacity(0.2),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      deadline.status == TaskStatus.completed
+                          ? CupertinoIcons.arrow_counterclockwise
+                          : CupertinoIcons.check_mark_circled_solid,
+                      color: CupertinoColors.white,
+                      size: 20,
+                    ),
+                  ),
+                )
+              : null,
+          secondaryBackground: Container(
+            alignment: Alignment.centerRight,
+            padding: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: CupertinoColors.systemRed,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: CupertinoColors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                CupertinoIcons.delete,
+                color: CupertinoColors.white,
+                size: 20,
+              ),
+            ),
+          ),
+          confirmDismiss: (direction) async {
+            if (direction == DismissDirection.startToEnd) {
+              // 向右滑（从左到右）：完成 - 不真正 dismiss，只更新状态
+              if (deadline.type == TaskType.deadline) {
+                if (deadline.status == TaskStatus.completed) {
+                  // 如果已完成，恢复为未完成状态，并重置计时
+                  deadline.timeSpent = const Duration(minutes: 0);
+                  deadline.forceRefreshStatus();
+                } else {
+                  // 标记为完成，完成度设为100%
+                  deadline.timeSpent = deadline.timeNeeded;
+                  deadline.status = TaskStatus.completed;
+                }
+                _taskController.updateDeadlineList();
+                _taskController.updateDeadlineListTime();
+                // 重新规划
+                _flowController.removeFlowInFlowList();
+                DateTime now = DateTime.now();
+                DateTime startsAt = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+                _flowController.generateNewFlowList(startsAt);
+                _taskController.taskList.refresh();
+              }
+              return false; // 阻止真正的 dismiss
+            } else if (direction == DismissDirection.endToStart) {
+              // 向左滑（从右到左）：删除 - 允许 dismiss
+              return true;
+            }
+            return false;
+          },
+          onDismissed: (direction) {
+            // 只有删除操作会真正 dismiss
+            if (direction == DismissDirection.endToStart) {
+              // 向左滑（从右到左）：删除
+              deadline.status = TaskStatus.deleted;
+              _taskController.updateDeadlineList();
+              _taskController.updateDeadlineListTime();
+              // 重新规划
+              _flowController.removeFlowInFlowList();
+              DateTime now = DateTime.now();
+              DateTime startsAt = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+              _flowController.generateNewFlowList(startsAt);
+              _taskController.taskList.refresh();
+            }
+          },
+          child: RoundRectangleCard(
+            onTap: () async {
+              // 直接导航到编辑页面
+              Task? res = await Navigator.of(context).push(
+                CupertinoPageRoute(
+                  builder: (context) => TaskEditPage(deadline),
+                ),
+              );
+              if (res != null && res.status != TaskStatus.deleted) {
+                deadline.copy(res);
+                _taskController.updateDeadlineList();
+                _taskController.updateDeadlineListTime();
+                // 重新规划
+                _flowController.removeFlowInFlowList();
+                DateTime now = DateTime.now();
+                DateTime startsAt = DateTime(now.year, now.month, now.day, now.hour, now.minute);
+                _flowController.generateNewFlowList(startsAt);
+                _taskController.taskList.refresh();
+              }
+            },
+            child: Padding(
             padding: const EdgeInsets.only(left: 8, right: 8),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -374,6 +502,7 @@ class TaskPage extends StatelessWidget {
                 ],
               ],
             ),
+          ),
           ),
         ),
       ],
