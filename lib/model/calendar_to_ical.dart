@@ -8,7 +8,6 @@ import 'package:celechron/model/period.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/semester.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/rendering.dart';
 import 'package:get/get.dart';
 
 /// iCal日历格式转换器
@@ -163,7 +162,6 @@ class CalendarToIcal {
       barrierDismissible: true,
     );
   }
-
   /// 判断是否为 iPad
   static Future<bool> _isIPad() async {
     if (!Platform.isIOS) return false;
@@ -175,14 +173,16 @@ class CalendarToIcal {
   /// 计算分享位置（iPad 必需）
   static Future<Rect?> _calculateSharePositionOrigin(
       BuildContext? context) async {
-    if (!(await _isIPad()) || context == null) return null;
+    if (context == null) return null;
+    if (!(await _isIPad())) return null;
+    // 检查 context 是否仍然有效（避免在 async gap 后使用无效的 context）
+    if (!context.mounted) return null;
     final box = context.findRenderObject() as RenderBox?;
     if (box != null && box.hasSize) {
       return box.localToGlobal(Offset.zero) & box.size;
     }
     return null;
   }
-
   /// 从Scholar对象生成iCal
   static String generateIcalFromScholar({
     required Scholar scholar,
@@ -240,6 +240,9 @@ class CalendarToIcal {
         return;
       }
 
+      // 在异步操作前计算分享位置，避免跨异步间隙使用 BuildContext
+      final sharePositionOrigin = await _calculateSharePositionOrigin(context);
+
       // 生成iCal内容
       final icalContent = generateIcalFromScholar(
         scholar: scholar,
@@ -262,7 +265,7 @@ class CalendarToIcal {
           files: [XFile(tempFile.path)],
           subject: '浙大课程表',
           text: '从 Celechron 导出的课程表文件，可导入到其他日历应用中使用。',
-          sharePositionOrigin: await _calculateSharePositionOrigin(context),
+          sharePositionOrigin: sharePositionOrigin,
         ),
       );
 
@@ -279,6 +282,9 @@ class CalendarToIcal {
     BuildContext? context,
   }) async {
     try {
+      // 在异步操作前计算分享位置，避免跨异步间隙使用 BuildContext
+      final sharePositionOrigin = await _calculateSharePositionOrigin(context);
+
       final icalContent = generateIcalFromScholar(
         scholar: scholar,
         semesterName: semesterName,
@@ -298,7 +304,7 @@ class CalendarToIcal {
           files: [XFile(tempFile.path)],
           subject: '浙大课程表-$semesterName',
           text: '从 Celechron 导出的 $semesterName 课程表文件。',
-          sharePositionOrigin: await _calculateSharePositionOrigin(context),
+          sharePositionOrigin: sharePositionOrigin,
         ),
       );
 
@@ -314,6 +320,9 @@ class CalendarToIcal {
     BuildContext? context,
   }) async {
     try {
+      // 在异步操作前计算分享位置，避免跨异步间隙使用 BuildContext
+      final sharePositionOrigin = await _calculateSharePositionOrigin(context);
+
       final icalContent = generateIcalFromScholar(
         scholar: scholar,
         calendarName: "课程表-完整版",
@@ -333,7 +342,7 @@ class CalendarToIcal {
           files: [XFile(tempFile.path)],
           subject: '浙大课程表-完整版',
           text: '从 Celechron 导出的完整课程表文件，包含所有学期。',
-          sharePositionOrigin: await _calculateSharePositionOrigin(context),
+          sharePositionOrigin: sharePositionOrigin,
         ),
       );
 
