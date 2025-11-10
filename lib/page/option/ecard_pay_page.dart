@@ -105,6 +105,48 @@ class ECardPayPage extends StatelessWidget {
                   return Text(
                       '付款码：${_barcode.value.isNotEmpty ? _barcode.value : '加载失败'}');
                 }),
+                const SizedBox(
+                  height: 30,
+                ),
+                Obx(() {
+                  if (_loading.value) {
+                    return const SizedBox.shrink();
+                  }
+                  return CupertinoButton(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                    color: CupertinoColors.activeBlue,
+                    borderRadius: BorderRadius.circular(20),
+                    onPressed: () {
+                      _loading.value = true;
+                      _requestNewCode().then((value) {
+                        _loading.value = false;
+                        _barcode.value = value ?? '';
+                      });
+                    },
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          CupertinoIcons.refresh,
+                          size: 18,
+                          color: CupertinoColors.white,
+                        ),
+                        SizedBox(width: 8),
+                        Text(
+                          '刷新二维码',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                            color: CupertinoColors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }),
                 const Spacer(
                   flex: 6,
                 ),
