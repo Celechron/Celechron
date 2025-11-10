@@ -207,7 +207,7 @@ class TaskPage extends StatelessWidget {
                     width: 36,
                     height: 36,
                     decoration: BoxDecoration(
-                      color: CupertinoColors.white.withOpacity(0.2),
+                      color: CupertinoColors.white.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
@@ -231,7 +231,7 @@ class TaskPage extends StatelessWidget {
               width: 36,
               height: 36,
               decoration: BoxDecoration(
-                color: CupertinoColors.white.withOpacity(0.2),
+                color: CupertinoColors.white.withValues(alpha: 0.2),
                 shape: BoxShape.circle,
               ),
               child: const Icon(

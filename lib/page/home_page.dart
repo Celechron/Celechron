@@ -107,7 +107,7 @@ class _HomePageState extends State<HomePage> {
           onPanStart: (details) {
             // 记录滑动开始位置，用于判断是否从边缘开始
             final screenWidth = MediaQuery.of(context).size.width;
-            final edgeThreshold = screenWidth * 0.12; // 屏幕宽度的10%作为边缘区域
+            final edgeThreshold = screenWidth * 0.10; // 屏幕宽度的10%作为边缘区域
 
             // 如果滑动不是从屏幕边缘开始，则不处理（让子组件处理）
             if (details.localPosition.dx > edgeThreshold &&
@@ -124,7 +124,7 @@ class _HomePageState extends State<HomePage> {
               return;
             }
 
-            int sensitivity = 8; // 增加灵敏度阈值，需要更明确的滑动
+            int sensitivity = 10; // 增加灵敏度阈值，需要更明确的滑动
             // 检查垂直滑动，如果垂直滑动较大，则不处理水平滑动
             if (details.delta.dy.abs() > sensitivity / 2) {
               swipeDirection = null;
