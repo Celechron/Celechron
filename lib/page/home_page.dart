@@ -25,6 +25,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _indexNum = 0;
   final CupertinoTabController _controller = CupertinoTabController();
+  double _horizontalDragDistance = 0.0; // 跟踪水平拖动距离
 
   @override
   void initState() {
@@ -98,62 +99,47 @@ class _HomePageState extends State<HomePage> {
       SearchPage(), // 缓存一下
     ];
 
-    String? swipeDirection;
     return Offstage(
       offstage: _indexNum != index,
       child: TickerMode(
         enabled: _indexNum == index,
         child: GestureDetector(
-          onPanStart: (details) {
-            // 记录滑动开始位置，用于判断是否从边缘开始
+          // 使用 onHorizontalDrag 专门处理水平滑动，不会干扰垂直滚动
+          onHorizontalDragStart: (_) {
+            // 初始化拖动距离
+            _horizontalDragDistance = 0.0;
+          },
+          onHorizontalDragUpdate: (details) {
+            // 累积水平拖动距离
+            _horizontalDragDistance += details.delta.dx;
+          },
+          onHorizontalDragEnd: (details) {
+            // 根据滑动速度和距离判断是否切换页面
             final screenWidth = MediaQuery.of(context).size.width;
-            final edgeThreshold = screenWidth * 0.10; // 屏幕宽度的10%作为边缘区域
+            final velocity = details.primaryVelocity ?? 0;
+            final threshold = screenWidth * 0.15; // 滑动距离阈值（屏幕宽度的15%）
 
-            // 如果滑动不是从屏幕边缘开始，则不处理（让子组件处理）
-            if (details.localPosition.dx > edgeThreshold &&
-                details.localPosition.dx < screenWidth - edgeThreshold) {
-              swipeDirection = null; // 标记为不处理
-            } else {
-              // 从边缘开始，初始化方向
-              swipeDirection = '';
-            }
-          },
-          onPanUpdate: (details) {
-            // 如果已经设置为不处理，则直接返回
-            if (swipeDirection == null) {
-              return;
-            }
-
-            int sensitivity = 10; // 增加灵敏度阈值，需要更明确的滑动
-            // 检查垂直滑动，如果垂直滑动较大，则不处理水平滑动
-            if (details.delta.dy.abs() > sensitivity / 2) {
-              swipeDirection = null;
-              return;
-            }
-            // 需要累积足够的水平滑动距离才触发
-            if (details.delta.dx > sensitivity) {
-              swipeDirection = 'right';
-            } else if (details.delta.dx < -sensitivity) {
-              swipeDirection = 'left';
-            }
-          },
-          onPanEnd: (details) {
-            if (swipeDirection == null || swipeDirection!.isEmpty) {
-              swipeDirection = null;
-              return;
-            }
-            if (swipeDirection == 'left') {
-              if (_indexNum < 4) {
-                changeIndex(_indexNum + 1);
-              }
-            }
-            if (swipeDirection == 'right') {
+            // 向右滑动（显示左侧页面）- 向右滑动意味着显示前一个页面
+            if (velocity > 200 || _horizontalDragDistance > threshold) {
               if (_indexNum > 0) {
                 changeIndex(_indexNum - 1);
               }
             }
-            swipeDirection = null; // 重置方向
+            // 向左滑动（显示右侧页面）- 向左滑动意味着显示后一个页面
+            else if (velocity < -200 || _horizontalDragDistance < -threshold) {
+              if (_indexNum < 4) {
+                changeIndex(_indexNum + 1);
+              }
+            }
+            // 重置状态
+            _horizontalDragDistance = 0.0;
           },
+          onHorizontalDragCancel: () {
+            // 取消时重置状态
+            _horizontalDragDistance = 0.0;
+          },
+          // 使用 deferToChild 让子组件的垂直滚动优先处理
+          behavior: HitTestBehavior.deferToChild,
           child: widgetList[index],
         ),
       ),
