@@ -11,13 +11,13 @@ class TaskController extends GetxController {
   List<Task> get todoDeadlineList => taskList
       .where((element) => (element.type == TaskType.deadline &&
           (element.status == TaskStatus.running ||
-              element.status == TaskStatus.suspended)))
+              element.status == TaskStatus.suspended ||
+              element.status == TaskStatus.failed)))
       .toList();
 
   List<Task> get doneDeadlineList => taskList
       .where((element) => (element.type == TaskType.deadline &&
-          (element.status == TaskStatus.completed ||
-              element.status == TaskStatus.failed)))
+          element.status == TaskStatus.completed))
       .toList();
 
   List<Task> get fixedDeadlineList =>
