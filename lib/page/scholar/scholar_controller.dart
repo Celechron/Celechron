@@ -22,17 +22,17 @@ class ScholarController extends GetxController {
   // Getter 保持纯净，不包含任何副作用（不修改状态）
   Semester get selectedSemester {
     final index = semesterIndex.value;
-    
+
     // 如果学期列表为空，返回当前学期
     if (semesters.isEmpty) {
       return _scholar.value.thisSemester;
     }
-    
+
     // 如果索引无效，返回当前学期
     if (index < 0 || index >= semesters.length) {
       return _scholar.value.thisSemester;
     }
-    
+
     // 索引有效，返回对应的学期
     return semesters[index];
   }
@@ -53,22 +53,25 @@ class ScholarController extends GetxController {
   // 获取当前学期的未完成作业
   List<Todo> get currentSemesterPendingTodos {
     final thisSemester = _scholar.value.thisSemester;
-    final currentSemesterCourseNames = thisSemester.courses.values
-        .map((course) => course.name)
-        .toSet();
+    final currentSemesterCourseNames =
+        thisSemester.courses.values.map((course) => course.name).toSet();
 
     return todos.where((todo) {
       // 检查作业是否属于当前学期的课程
-      final isCurrentSemester = currentSemesterCourseNames.contains(todo.course);
+      final isCurrentSemester =
+          currentSemesterCourseNames.contains(todo.course);
       // 检查作业是否未完成（截止时间未过或没有截止时间）
-      final isPending = todo.endTime == null || !todo.endTime!.isBefore(DateTime.now());
+      final isPending =
+          todo.endTime == null || !todo.endTime!.isBefore(DateTime.now());
       return isCurrentSemester && isPending;
     }).toList();
   }
 
-  List<Todo> get todosInOneDay => currentSemesterPendingTodos.where((e) => e.isInOneDay()).toList();
+  List<Todo> get todosInOneDay =>
+      currentSemesterPendingTodos.where((e) => e.isInOneDay()).toList();
 
-  List<Todo> get todosInOneWeek => currentSemesterPendingTodos.where((e) => e.isInOneWeek()).toList();
+  List<Todo> get todosInOneWeek =>
+      currentSemesterPendingTodos.where((e) => e.isInOneWeek()).toList();
 
   Future<List<String?>> fetchData() async {
     return await _scholar.value.refresh().then((value) {
@@ -83,10 +86,10 @@ class ScholarController extends GetxController {
   void onReady() {
     super.onReady();
     // 在生命周期方法中正确初始化 semesterIndex
-    final thisSemesterIndex = semesters
-        .indexWhere((e) => e.name == _scholar.value.thisSemester.name);
+    final thisSemesterIndex =
+        semesters.indexWhere((e) => e.name == _scholar.value.thisSemester.name);
     semesterIndex.value = thisSemesterIndex >= 0 ? thisSemesterIndex : 0;
-    
+
     Timer.periodic(const Duration(seconds: 1), (timer) {
       _durationToLastUpdate.value =
           DateTime.now().difference(_scholar.value.lastUpdateTime);
