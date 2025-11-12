@@ -162,6 +162,7 @@ class CalendarToIcal {
       barrierDismissible: true,
     );
   }
+
   /// 判断是否为 iPad
   static Future<bool> _isIPad() async {
     if (!Platform.isIOS) return false;
@@ -183,6 +184,7 @@ class CalendarToIcal {
     }
     return null;
   }
+
   /// 从Scholar对象生成iCal
   static String generateIcalFromScholar({
     required Scholar scholar,
