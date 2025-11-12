@@ -55,6 +55,11 @@ class CalendarToSystemManager {
 
   /// 获取设备日历权限
   Future<bool> checkPermissions() async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      _hasCalendarPermission.value = false;
+      return false;
+    }
     try {
       var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
       if (permissionsGranted.isSuccess && permissionsGranted.data!) {
@@ -72,6 +77,11 @@ class CalendarToSystemManager {
 
   /// 获取设备日历权限
   Future<bool> requestPermissions() async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      _hasCalendarPermission.value = false;
+      return false;
+    }
     try {
       var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
       if (permissionsGranted.isSuccess && permissionsGranted.data!) {
@@ -92,6 +102,10 @@ class CalendarToSystemManager {
 
   /// 获取或创建Celechron专用日历
   Future<String?> getOrCreateCelechronCalendar() async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      return null;
+    }
     try {
       // 如果已有缓存的日历ID，先验证是否仍然存在
       if (_celechronCalendarId != null) {
@@ -138,6 +152,10 @@ class CalendarToSystemManager {
     Semester? semester,
     bool syncAllSemesters = false,
   }) async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      return false;
+    }
     try {
       // 检查权限
       if (!await requestPermissions()) {
@@ -262,6 +280,10 @@ class CalendarToSystemManager {
 
   /// 清除所有已同步的事件（可选功能）
   Future<bool> clearSyncedEvents() async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      return false;
+    }
     try {
       if (_celechronCalendarId == null) {
         return true;
@@ -314,6 +336,10 @@ class CalendarToSystemManager {
   /// 删除整个Celechron日历
   /// 这将完全删除Celechron日历及其所有事件
   Future<bool> deleteCelechronCalendar() async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      return false;
+    }
     try {
       // 如果没有缓存的日历ID，先尝试查找
       if (_celechronCalendarId == null) {
@@ -385,6 +411,11 @@ class CalendarToSystemManager {
 
   /// 强制重新同步课程（先清除后同步）
   Future<void> resyncCalendarEvents(BuildContext context) async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      _showAlert(context, '不支持', 'macOS 平台暂不支持日历同步功能');
+      return;
+    }
     try {
       if (!await requestPermissions()) {
         if (context.mounted) {
@@ -420,6 +451,11 @@ class CalendarToSystemManager {
   /// 同步指定学期的课程
   Future<void> syncSpecificSemester(
       BuildContext context, String semesterName) async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      _showAlert(context, '不支持', 'macOS 平台暂不支持日历同步功能');
+      return;
+    }
     try {
       if (!await requestPermissions()) {
         if (context.mounted) {
@@ -464,6 +500,11 @@ class CalendarToSystemManager {
 
   /// 同步所有学期的课程
   Future<void> syncAllSemesters(BuildContext context) async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      _showAlert(context, '不支持', 'macOS 平台暂不支持日历同步功能');
+      return;
+    }
     try {
       if (!await requestPermissions()) {
         if (context.mounted) {
@@ -573,6 +614,12 @@ class CalendarToSystemManager {
 
   /// 检查初始日历同步状态
   Future<void> checkInitialCalendarSyncStatus() async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      _calendarSyncEnabled.value = false;
+      _hasCalendarPermission.value = false;
+      return;
+    }
     try {
       // 先检查权限
       await checkPermissions();
@@ -613,6 +660,11 @@ class CalendarToSystemManager {
 
   /// 切换日历同步功能
   Future<void> toggleCalendarSync(BuildContext context, bool enabled) async {
+    // ✅ macOS 不支持 device_calendar 插件
+    if (Platform.isMacOS) {
+      _showAlert(context, '不支持', 'macOS 平台暂不支持日历同步功能');
+      return;
+    }
     if (enabled) {
       // 如果要开启同步，先检查权限
       if (!await requestPermissions()) {
