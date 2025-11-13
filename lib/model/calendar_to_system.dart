@@ -387,7 +387,9 @@ class CalendarToSystemManager {
   Future<void> resyncCalendarEvents(BuildContext context) async {
     try {
       if (!await requestPermissions()) {
-        _showAlert(context, '权限获取失败', '请在系统设置中手动开启日历权限');
+        if (context.mounted) {
+          _showAlert(context, '权限获取失败', '请在系统设置中手动开启日历权限');
+        }
         return;
       }
 
@@ -399,13 +401,19 @@ class CalendarToSystemManager {
 
       if (syncSuccess) {
         var stats = getSyncStats();
-        _showAlert(context, '重新同步成功',
-            '已重新同步 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+        if (context.mounted) {
+          _showAlert(context, '重新同步成功',
+              '已重新同步 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+        }
       } else {
-        _showAlert(context, '重新同步失败', '无法重新同步课程到系统日历');
+        if (context.mounted) {
+          _showAlert(context, '重新同步失败', '无法重新同步课程到系统日历');
+        }
       }
     } catch (e) {
-      _showAlert(context, '错误', '重新同步时出错: $e', isError: true);
+      if (context.mounted) {
+        _showAlert(context, '错误', '重新同步时出错: $e', isError: true);
+      }
     }
   }
 
@@ -414,13 +422,17 @@ class CalendarToSystemManager {
       BuildContext context, String semesterName) async {
     try {
       if (!await requestPermissions()) {
-        _showAlert(context, '权限获取失败', '请在系统设置中手动开启日历权限');
+        if (context.mounted) {
+          _showAlert(context, '权限获取失败', '请在系统设置中手动开启日历权限');
+        }
         return;
       }
 
       var semester = getSemesterByName(semesterName);
       if (semester == null) {
-        _showAlert(context, '错误', '未找到指定的学期');
+        if (context.mounted) {
+          _showAlert(context, '错误', '未找到指定的学期');
+        }
         return;
       }
 
@@ -434,13 +446,19 @@ class CalendarToSystemManager {
 
       if (syncSuccess) {
         var stats = getSyncStats();
-        _showAlert(context, '同步成功',
-            '已同步 $semesterName 的 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+        if (context.mounted) {
+          _showAlert(context, '同步成功',
+              '已同步 $semesterName 的 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+        }
       } else {
-        _showAlert(context, '同步失败', '无法同步 $semesterName 的课程');
+        if (context.mounted) {
+          _showAlert(context, '同步失败', '无法同步 $semesterName 的课程');
+        }
       }
     } catch (e) {
-      _showAlert(context, '错误', '同步时出错: $e', isError: true);
+      if (context.mounted) {
+        _showAlert(context, '错误', '同步时出错: $e', isError: true);
+      }
     }
   }
 
@@ -448,7 +466,9 @@ class CalendarToSystemManager {
   Future<void> syncAllSemesters(BuildContext context) async {
     try {
       if (!await requestPermissions()) {
-        _showAlert(context, '权限获取失败', '请在系统设置中手动开启日历权限');
+        if (context.mounted) {
+          _showAlert(context, '权限获取失败', '请在系统设置中手动开启日历权限');
+        }
         return;
       }
 
@@ -462,13 +482,19 @@ class CalendarToSystemManager {
 
       if (syncSuccess) {
         var stats = getSyncStats();
-        _showAlert(context, '同步成功',
-            '已同步所有学期的 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+        if (context.mounted) {
+          _showAlert(context, '同步成功',
+              '已同步所有学期的 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+        }
       } else {
-        _showAlert(context, '同步失败', '无法同步所有学期的课程');
+        if (context.mounted) {
+          _showAlert(context, '同步失败', '无法同步所有学期的课程');
+        }
       }
     } catch (e) {
-      _showAlert(context, '错误', '同步时出错: $e', isError: true);
+      if (context.mounted) {
+        _showAlert(context, '错误', '同步时出错: $e', isError: true);
+      }
     }
   }
 
@@ -590,13 +616,17 @@ class CalendarToSystemManager {
     if (enabled) {
       // 如果要开启同步，先检查权限
       if (!await requestPermissions()) {
-        _showAlert(context, '权限获取失败', '请在系统设置中手动开启日历权限');
+        if (context.mounted) {
+          _showAlert(context, '权限获取失败', '请在系统设置中手动开启日历权限');
+        }
         return;
       }
 
       // 检查是否已登录
       if (!scholar.isLogan) {
-        _showAlert(context, '提示', '请先登录后再开启日历同步功能');
+        if (context.mounted) {
+          _showAlert(context, '提示', '请先登录后再开启日历同步功能');
+        }
         return;
       }
 
@@ -606,14 +636,18 @@ class CalendarToSystemManager {
       if (syncSuccess) {
         _calendarSyncEnabled.value = true;
         var stats = getSyncStats();
-        _showAlert(context, '同步成功',
-            '已同步 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+        if (context.mounted) {
+          _showAlert(context, '同步成功',
+              '已同步 ${stats['syncedCourseCount']} 门课程，共计 ${stats['syncedEventCount']} 个日程');
+        }
       } else {
         // For iOS, show different message
-        if (Platform.isIOS) {
-          _showAlert(context, '同步失败', '无法同步课程到系统日历，从日历中移除Google账户后重试');
-        } else {
-          _showAlert(context, '同步失败', '无法同步课程到系统日历，请检查权限和网络连接');
+        if (context.mounted) {
+          if (Platform.isIOS) {
+            _showAlert(context, '同步失败', '无法同步课程到系统日历，从日历中移除Google账户后重试');
+          } else {
+            _showAlert(context, '同步失败', '无法同步课程到系统日历，请检查权限和网络连接');
+          }
         }
       }
     } else {
@@ -624,12 +658,18 @@ class CalendarToSystemManager {
       try {
         bool deleteSuccess = await deleteCelechronCalendar();
         if (deleteSuccess) {
-          _showAlert(context, '成功', '日历同步功能已关闭，已删除课表数据和Celechron日历');
+          if (context.mounted) {
+            _showAlert(context, '成功', '日历同步功能已关闭，已删除课表数据和Celechron日历');
+          }
         } else {
-          _showAlert(context, '成功', '日历同步功能已关闭，但删除日历时遇到问题');
+          if (context.mounted) {
+            _showAlert(context, '成功', '日历同步功能已关闭，但删除日历时遇到问题');
+          }
         }
       } catch (e) {
-        _showAlert(context, '成功', '日历同步功能已关闭，但删除日历时出错: $e');
+        if (context.mounted) {
+          _showAlert(context, '成功', '日历同步功能已关闭，但删除日历时出错: $e');
+        }
       }
     }
   }
