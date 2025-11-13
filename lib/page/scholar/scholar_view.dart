@@ -593,6 +593,113 @@ class ScholarPage extends StatelessWidget {
         ));
   }
 
+  Widget _buildPractice(BuildContext context) {
+    return RoundRectangleCard(
+        padding: const EdgeInsets.all(0),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                    child: RoundRectangleCardWithForehead(
+                        animate: false,
+                        foreheadColor: CustomCupertinoDynamicColors
+                            .peach.darkColor
+                            .withValues(alpha: 0.25),
+                        forehead: Obx(() => Row(children: [
+                              Padding(
+                                padding: const EdgeInsets.only(
+                                    left: 12, top: 6, bottom: 6),
+                                child: Icon(
+                                  Icons.star_rounded,
+                                  color: CupertinoDynamicColor.resolve(
+                                      CupertinoColors.label, context),
+                                  size: 18,
+                                ),
+                              ),
+                              Padding(
+                                  padding: const EdgeInsets.only(
+                                      left: 6, top: 6, bottom: 6),
+                                  child: Text('实践',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        overflow: TextOverflow.ellipsis,
+                                        color: CupertinoDynamicColor.resolve(
+                                            CupertinoColors.label, context),
+                                      ))),
+                              const Spacer(),
+                              if (!_scholarController
+                                  .scholar.isPracticeScoresGet)
+                                Padding(
+                                  padding:
+                                      const EdgeInsets.only(top: 4, bottom: 4),
+                                  child: Icon(
+                                    CupertinoIcons.exclamationmark_circle_fill,
+                                    color: CupertinoDynamicColor.resolve(
+                                        CupertinoColors.label, context),
+                                    size: 14,
+                                  ),
+                                ),
+                              if (!_scholarController
+                                  .scholar.isPracticeScoresGet)
+                                Padding(
+                                    padding: const EdgeInsets.only(
+                                        left: 4, top: 4, bottom: 4, right: 16),
+                                    child: Text('获取实践分数时遇到问题',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.bold,
+                                          overflow: TextOverflow.ellipsis,
+                                          color: CupertinoDynamicColor.resolve(
+                                              CupertinoColors.label, context),
+                                        ))),
+                            ])),
+                        child: Column(
+                          children: [
+                            const SizedBox(height: 16),
+                            MultipleColumns(
+                              contents: [
+                                Obx(() => Text(
+                                    _scholarController.scholar.pt2
+                                        .toStringAsFixed(2),
+                                    style: CupertinoTheme.of(context)
+                                        .textTheme
+                                        .navTitleTextStyle
+                                        .copyWith(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold))),
+                                Obx(() => Text(
+                                    _scholarController.scholar.pt3
+                                        .toStringAsFixed(2),
+                                    style: CupertinoTheme.of(context)
+                                        .textTheme
+                                        .navTitleTextStyle
+                                        .copyWith(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold))),
+                                Obx(() => Text(
+                                    _scholarController.scholar.pt4
+                                        .toStringAsFixed(2),
+                                    style: CupertinoTheme.of(context)
+                                        .textTheme
+                                        .navTitleTextStyle
+                                        .copyWith(
+                                            fontSize: 18,
+                                            fontWeight: FontWeight.bold))),
+                              ],
+                              titles: const ["二课分", "三课分", "四课分"],
+                              onTaps: [() {}, () {}, () {}],
+                            ),
+                            const SizedBox(height: 16),
+                          ],
+                        ))),
+              ],
+            ),
+          ],
+        ));
+  }
+
   @override
   Widget build(BuildContext context) {
     return CupertinoPageScaffold(
@@ -798,10 +905,10 @@ class ScholarPage extends StatelessWidget {
               }
             },
           ),
-        Obx(() {
-          if (_scholarController.scholar.semesters.isNotEmpty) {
-            return SliverToBoxAdapter(
-              child: Padding(
+        SliverToBoxAdapter(
+          child: Obx(() {
+            if (_scholarController.scholar.semesters.isNotEmpty) {
+              return Padding(
                 padding: EdgeInsets.only(
                     top: 8,
                     right: 16,
@@ -842,24 +949,31 @@ class ScholarPage extends StatelessWidget {
                           ),
                           const SizedBox(height: 12),
                           _buildTodos(context),
+                          const SizedBox(height: 12),
+                          Divider(
+                            thickness: 0,
+                            color: CupertinoDynamicColor.resolve(
+                                CupertinoColors.separator, context),
+                            height: 14,
+                          ),
+                          const SizedBox(height: 12),
+                          _buildPractice(context),
                           const SizedBox(height: 20),
                         ],
                 ),
-              ),
-            );
-          } else {
-            return SliverToBoxAdapter(
-                child: SizedBox(
-                    height: 500,
-                    child: Column(children: [
-                      const Spacer(),
-                      Text(_scholarController.scholar.isLogan ? '下拉刷新' : '未登录',
-                          style:
-                              CupertinoTheme.of(context).textTheme.textStyle),
-                      const Spacer()
-                    ])));
-          }
-        }),
+              );
+            } else {
+              return SizedBox(
+                  height: 500,
+                  child: Column(children: [
+                    const Spacer(),
+                    Text(_scholarController.scholar.isLogan ? '下拉刷新' : '未登录',
+                        style: CupertinoTheme.of(context).textTheme.textStyle),
+                    const Spacer()
+                  ]));
+            }
+          }),
+        ),
       ],
     ));
   }

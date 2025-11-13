@@ -28,6 +28,8 @@ class UgrsSpider implements Spider {
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
   bool fetchGrs = false;
+  Map<String, double>? _practiceScores;
+  bool _isPracticeScoresGet = false; // 是否成功获取到二三四课堂分数
 
   UgrsSpider(String username, String password) {
     _httpClient = HttpClient();
@@ -109,7 +111,12 @@ class UgrsSpider implements Spider {
     // _appService.logout();
     _zdbk.logout();
     _grsNew.logout();
+    _practiceScores = null;
+    _isPracticeScoresGet = false;
   }
+
+  Map<String, double>? get practiceScores => _practiceScores;
+  bool get isPracticeScoresGet => _isPracticeScoresGet;
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override
@@ -124,7 +131,7 @@ class UgrsSpider implements Spider {
           List<Todo>>> getEverything() async {
     // 请求顺序
     var fetches = <Future<String?>>[];
-    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业'];
+    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业', '实践'];
 
     // 返回值初始化
     var outSemesters = <Semester>[];
@@ -362,6 +369,22 @@ class UgrsSpider implements Spider {
       outTodos.addAll(value.item2);
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
+
+    // 实践学分（第二三四课堂）- 使用zdbk获取
+    fetches.add(_zdbk.getPracticeScores(_httpClient, _username).then((value) {
+      // 只有当没有错误时，才设置为 true
+      if (value.item1 == null) {
+        _practiceScores = value.item2;
+        _isPracticeScoresGet = true;
+      } else {
+        _practiceScores = value.item2;
+        _isPracticeScoresGet = false;
+      }
+      return value.item1?.toString();
+    }).catchError((e) {
+      _isPracticeScoresGet = false;
+      return e.toString();
+    }));
 
     // 等待所有请求完成。然后，删除不包含考试、成绩、课程的全空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
