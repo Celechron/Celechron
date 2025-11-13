@@ -319,10 +319,11 @@ class Zdbk {
       }
 
       // If we didn't find any scores, try alternative pattern
-      if (scores['pt2'] == 0.0 && scores['pt3'] == 0.0 && scores['pt4'] == 0.0) {
+      if (scores['pt2'] == 0.0 &&
+          scores['pt3'] == 0.0 &&
+          scores['pt4'] == 0.0) {
         // Try matching rows more directly
-        var altPattern = RegExp(
-            r'<td[^>]*>第二课堂</td>.*?<td[^>]*>([0-9.]+)</td>',
+        var altPattern = RegExp(r'<td[^>]*>第二课堂</td>.*?<td[^>]*>([0-9.]+)</td>',
             dotAll: true);
         var pt2Match = altPattern.firstMatch(html);
         if (pt2Match != null) {
