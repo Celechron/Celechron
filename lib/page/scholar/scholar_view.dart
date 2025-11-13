@@ -629,7 +629,8 @@ class ScholarPage extends StatelessWidget {
                                             CupertinoColors.label, context),
                                       ))),
                               const Spacer(),
-                              if (!_scholarController.scholar.isSztzGet)
+                              if (!_scholarController
+                                  .scholar.isPracticeScoresGet)
                                 Padding(
                                   padding:
                                       const EdgeInsets.only(top: 4, bottom: 4),
@@ -640,7 +641,8 @@ class ScholarPage extends StatelessWidget {
                                     size: 14,
                                   ),
                                 ),
-                              if (!_scholarController.scholar.isSztzGet)
+                              if (!_scholarController
+                                  .scholar.isPracticeScoresGet)
                                 Padding(
                                     padding: const EdgeInsets.only(
                                         left: 4, top: 4, bottom: 4, right: 16),
