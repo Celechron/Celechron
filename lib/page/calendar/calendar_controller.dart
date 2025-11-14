@@ -106,10 +106,12 @@ class CalendarController extends GetxController {
   String getCurrentSemesterDisplayName() {
     final semester = getCurrentSemester();
     if (semester == null) return '无学期信息';
-    
+
     final isFirstHalf = isFirstHalfSemester(semester);
-    final semesterName = '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}';
-    final halfName = isFirstHalf ? semester.firstHalfName : semester.secondHalfName;
+    final semesterName =
+        '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}';
+    final halfName =
+        isFirstHalf ? semester.firstHalfName : semester.secondHalfName;
     return '$semesterName $halfName学期';
   }
 }
