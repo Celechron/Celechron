@@ -319,4 +319,3 @@ class ScheduleView extends StatelessWidget {
     );
   }
 }
-
