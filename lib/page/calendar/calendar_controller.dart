@@ -4,6 +4,12 @@ import 'package:get/get.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/scholar.dart';
+import 'package:celechron/model/semester.dart';
+
+enum CalendarViewMode {
+  calendar,
+  schedule,
+}
 
 class CalendarController extends GetxController {
   final selectedDay = DateTime.now().obs;
@@ -12,6 +18,7 @@ class CalendarController extends GetxController {
   final events = <DateTime, List<Period>>{}.obs;
   final scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final taskList = Get.find<RxList<Task>>(tag: 'taskList');
+  final viewMode = CalendarViewMode.calendar.obs;
 
   static List<String> numToChinese = ['一', '二', '三', '四', '五', '六', '七', '八'];
 
@@ -75,5 +82,36 @@ class CalendarController extends GetxController {
     }
     eventsOfDay.sort((a, b) => a.startTime.compareTo(b.startTime));
     return eventsOfDay;
+  }
+
+  void toggleViewMode() {
+    viewMode.value = viewMode.value == CalendarViewMode.calendar
+        ? CalendarViewMode.schedule
+        : CalendarViewMode.calendar;
+  }
+
+  Semester? getCurrentSemester() {
+    final now = DateTime.now();
+    return scholar.value.semesters.firstWhereOrNull(
+      (e) => !now.isBefore(e.firstDay) && !now.isAfter(e.lastDay),
+    );
+  }
+
+  bool isFirstHalfSemester(Semester semester) {
+    final now = DateTime.now();
+    final toFirstWeek = now.difference(semester.firstDay).inDays ~/ 7;
+    return toFirstWeek < 8;
+  }
+
+  String getCurrentSemesterDisplayName() {
+    final semester = getCurrentSemester();
+    if (semester == null) return '无学期信息';
+
+    final isFirstHalf = isFirstHalfSemester(semester);
+    final semesterName =
+        '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}';
+    final halfName =
+        isFirstHalf ? semester.firstHalfName : semester.secondHalfName;
+    return '$semesterName $halfName学期';
   }
 }
