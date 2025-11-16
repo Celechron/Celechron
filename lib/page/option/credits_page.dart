@@ -1,9 +1,114 @@
+import 'dart:io';
 import 'package:flutter/cupertino.dart';
 import 'package:celechron/design/persistent_headers.dart';
+import 'package:celechron/http/github_service.dart';
 
-class CreditsPage extends StatelessWidget {
+class CreditsPage extends StatefulWidget {
   final String version;
   const CreditsPage({required this.version, super.key});
+
+  @override
+  State<CreditsPage> createState() => _CreditsPageState();
+}
+
+class _CreditsPageState extends State<CreditsPage> {
+  List<String> _contributors = [];
+  bool _isLoading = true;
+  final _githubService = GitHubService();
+  final _httpClient = HttpClient();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadContributors();
+  }
+
+  Future<void> _loadContributors() async {
+    try {
+      var result = await _githubService.getContributors(_httpClient);
+      // 无论是否有错误，都使用返回的 contributors 列表
+      // GitHubService 保证即使出错也会返回默认作者名单
+      setState(() {
+        _contributors = result.item2;
+        _isLoading = false;
+      });
+    } catch (e) {
+      // 如果 GitHubService 本身抛出异常
+      // 则使用 GitHubService 中的默认名单
+      setState(() {
+        _contributors = GitHubService.defaultContributors;
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _httpClient.close();
+    super.dispose();
+  }
+
+  Widget _buildContributorsList() {
+    if (_isLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 16),
+        child: CupertinoActivityIndicator(),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 32),
+      child: Column(
+        children: _buildContributorRows(),
+      ),
+    );
+  }
+
+  List<Widget> _buildContributorRows() {
+    List<Widget> rows = [];
+    for (int i = 0; i < _contributors.length; i += 2) {
+      List<Widget> children = [];
+
+      // 第一个contributor
+      children.add(
+        Expanded(
+          child: Text(
+            _contributors[i],
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+
+      // 如果有第二个contributor，添加它
+      if (i + 1 < _contributors.length) {
+        children.add(
+          Expanded(
+            child: Text(
+              _contributors[i + 1],
+              textAlign: TextAlign.center,
+            ),
+          ),
+        );
+      }
+
+      rows.add(
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          mainAxisSize: MainAxisSize.max,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          verticalDirection: VerticalDirection.down,
+          children: children,
+        ),
+      );
+
+      // 如果不是最后一行，添加间距
+      if (i + 2 < _contributors.length) {
+        rows.add(const SizedBox(height: 12));
+      }
+    }
+
+    return rows;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +144,7 @@ class CreditsPage extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            '$version 版本',
+                            '${widget.version} 版本',
                             textAlign: TextAlign.center,
                             style: const TextStyle(
                               fontSize: 12,
@@ -111,96 +216,7 @@ class CreditsPage extends StatelessWidget {
                   const SizedBox(
                     height: 16,
                   ),
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32),
-                    child: Column(
-                      children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          verticalDirection: VerticalDirection.down,
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                'nosig',
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                'iotang',
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: 12,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          verticalDirection: VerticalDirection.down,
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                'cxz66666',
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                'Azuk 443',
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: 12,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          verticalDirection: VerticalDirection.down,
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                'FoggyDawn',
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                            Expanded(
-                              child: Text(
-                                'poormonitor',
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(
-                          height: 12,
-                        ),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          mainAxisSize: MainAxisSize.max,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          verticalDirection: VerticalDirection.down,
-                          children: <Widget>[
-                            Expanded(
-                              child: Text(
-                                'heddxh',
-                                textAlign: TextAlign.center,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+                  _buildContributorsList(),
                 ],
               ),
             ),
