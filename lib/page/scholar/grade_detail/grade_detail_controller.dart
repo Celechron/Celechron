@@ -62,8 +62,7 @@ class GradeDetailController extends GetxController {
 
   /// 检查指定学期的所有课程是否已全选
   bool isSemesterAllSelected(int semesterIndex) {
-    if (semesterIndex < 0 ||
-        semesterIndex >= semestersWithGrades.length) {
+    if (semesterIndex < 0 || semesterIndex >= semestersWithGrades.length) {
       return false;
     }
     final semester = semestersWithGrades[semesterIndex];
@@ -80,8 +79,7 @@ class GradeDetailController extends GetxController {
 
   /// 全选指定学期的所有课程
   void selectAllGradesInSemester(int semesterIndex) {
-    if (semesterIndex < 0 ||
-        semesterIndex >= semestersWithGrades.length) {
+    if (semesterIndex < 0 || semesterIndex >= semestersWithGrades.length) {
       return;
     }
     final semester = semestersWithGrades[semesterIndex];
@@ -93,8 +91,7 @@ class GradeDetailController extends GetxController {
 
   /// 清空指定学期的所有课程选择
   void clearGradesInSemester(int semesterIndex) {
-    if (semesterIndex < 0 ||
-        semesterIndex >= semestersWithGrades.length) {
+    if (semesterIndex < 0 || semesterIndex >= semestersWithGrades.length) {
       return;
     }
     final semester = semestersWithGrades[semesterIndex];

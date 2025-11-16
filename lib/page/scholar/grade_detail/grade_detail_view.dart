@@ -312,7 +312,8 @@ class GradeDetailPage extends StatelessWidget {
                                           ? () {
                                               _gradeDetailController
                                                   .semesterIndex.value = index;
-                                              _gradeDetailController.semesterIndex
+                                              _gradeDetailController
+                                                  .semesterIndex
                                                   .refresh();
                                               _gradeDetailController
                                                   .toggleSemesterSelection(
@@ -403,7 +404,8 @@ class GradeDetailPage extends StatelessWidget {
                       padding: EdgeInsets.zero,
                       child: Icon(
                         _gradeDetailController.customGpaMode.value
-                            ? CupertinoIcons.square_fill_line_vertical_square_fill
+                            ? CupertinoIcons
+                                .square_fill_line_vertical_square_fill
                             : CupertinoIcons.square_line_vertical_square,
                         semanticLabel: 'Custom GPA',
                       ),
