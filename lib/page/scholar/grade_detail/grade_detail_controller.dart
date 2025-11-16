@@ -59,4 +59,57 @@ class GradeDetailController extends GetxController {
 
     return GpaHelper.calculateGpa(majorGrades);
   }
+
+  /// 检查指定学期的所有课程是否已全选
+  bool isSemesterAllSelected(int semesterIndex) {
+    if (semesterIndex < 0 ||
+        semesterIndex >= semestersWithGrades.length) {
+      return false;
+    }
+    final semester = semestersWithGrades[semesterIndex];
+    if (semester.grades.isEmpty) {
+      return false;
+    }
+    for (var grade in semester.grades) {
+      if (customGpaSelected[grade.id] != true) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /// 全选指定学期的所有课程
+  void selectAllGradesInSemester(int semesterIndex) {
+    if (semesterIndex < 0 ||
+        semesterIndex >= semestersWithGrades.length) {
+      return;
+    }
+    final semester = semestersWithGrades[semesterIndex];
+    for (var grade in semester.grades) {
+      customGpaSelected[grade.id] = true;
+    }
+    refreshCustomGpa();
+  }
+
+  /// 清空指定学期的所有课程选择
+  void clearGradesInSemester(int semesterIndex) {
+    if (semesterIndex < 0 ||
+        semesterIndex >= semestersWithGrades.length) {
+      return;
+    }
+    final semester = semestersWithGrades[semesterIndex];
+    for (var grade in semester.grades) {
+      customGpaSelected[grade.id] = false;
+    }
+    refreshCustomGpa();
+  }
+
+  /// 切换指定学期的选择状态：如果已全选则清空，否则全选
+  void toggleSemesterSelection(int semesterIndex) {
+    if (isSemesterAllSelected(semesterIndex)) {
+      clearGradesInSemester(semesterIndex);
+    } else {
+      selectAllGradesInSemester(semesterIndex);
+    }
+  }
 }

@@ -306,6 +306,18 @@ class GradeDetailPage extends StatelessWidget {
                                         _gradeDetailController.semesterIndex
                                             .refresh();
                                       },
+                                      onLongPress: _gradeDetailController
+                                              .customGpaMode.value
+                                          ? () {
+                                              _gradeDetailController
+                                                  .semesterIndex.value = index;
+                                              _gradeDetailController.semesterIndex
+                                                  .refresh();
+                                              _gradeDetailController
+                                                  .toggleSemesterSelection(
+                                                      index);
+                                            }
+                                          : null,
                                       backgroundColor: _gradeDetailController
                                                   .semesterIndex.value ==
                                               index
