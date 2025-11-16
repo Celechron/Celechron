@@ -10,6 +10,7 @@ import 'package:celechron/design/persistent_headers.dart';
 import 'grade_card.dart';
 import 'grade_detail_controller.dart';
 import 'package:celechron/utils/gpa_helper.dart';
+import 'weighted_gpa_view.dart';
 
 class GradeDetailPage extends StatelessWidget {
   final _gradeDetailController = Get.put(GradeDetailController());
@@ -358,39 +359,61 @@ class GradeDetailPage extends StatelessWidget {
           CelechronSliverTextHeader(
             subtitle: '成绩',
             right: Obx(
-              () => Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  if (_gradeDetailController.customGpaMode.value)
-                    GestureDetector(
-                      child: CupertinoButton(
-                        padding: EdgeInsets.zero,
-                        child: const Text('长按清空'),
-                        onPressed: () {},
+              () => Padding(
+                padding: const EdgeInsets.only(right: 18),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    if (_gradeDetailController.customGpaMode.value)
+                      GestureDetector(
+                        child: CupertinoButton(
+                          padding: EdgeInsets.zero,
+                          child: const Text('长按清空'),
+                          onPressed: () {},
+                        ),
+                        onLongPress: () {
+                          _gradeDetailController.customGpaSelected.value = {};
+                          _gradeDetailController.refreshCustomGpa();
+                        },
                       ),
-                      onLongPress: () {
-                        _gradeDetailController.customGpaSelected.value = {};
-                        _gradeDetailController.refreshCustomGpa();
+                    if (_gradeDetailController.customGpaMode.value)
+                      const SizedBox(width: 8),
+                    // 加权绩点入口按钮（仅在非自定义GPA模式下显示）
+                    // 点击后跳转到加权绩点页面，可设置各课程的加权比例（0.8-1.2）
+                    if (!_gradeDetailController.customGpaMode.value)
+                      CupertinoButton(
+                        padding: EdgeInsets.zero,
+                        child: const Icon(
+                          CupertinoIcons.chart_bar_alt_fill,
+                          semanticLabel: 'Weighted GPA',
+                        ),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            CupertinoPageRoute(
+                              builder: (context) => WeightedGpaPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    // if (!_gradeDetailController.customGpaMode.value)
+                    //   const SizedBox(width: 8),
+                    CupertinoButton(
+                      padding: EdgeInsets.zero,
+                      child: Icon(
+                        _gradeDetailController.customGpaMode.value
+                            ? CupertinoIcons.square_fill_line_vertical_square_fill
+                            : CupertinoIcons.square_line_vertical_square,
+                        semanticLabel: 'Custom GPA',
+                      ),
+                      onPressed: () {
+                        _gradeDetailController.customGpaMode.value =
+                            !_gradeDetailController.customGpaMode.value;
                       },
                     ),
-                  const SizedBox(
-                    width: 16,
-                  ),
-                  CupertinoButton(
-                    padding: EdgeInsets.zero,
-                    child: Icon(
-                      _gradeDetailController.customGpaMode.value
-                          ? CupertinoIcons.square_fill_line_vertical_square_fill
-                          : CupertinoIcons.square_line_vertical_square,
-                      semanticLabel: 'Custom GPA',
-                    ),
-                    onPressed: () {
-                      _gradeDetailController.customGpaMode.value =
-                          !_gradeDetailController.customGpaMode.value;
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),

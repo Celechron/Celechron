@@ -296,6 +296,7 @@ class DatabaseHelper {
   }
 
   final String dbCustomGpa = 'dbCustomGpa';
+  final String dbWeightedGpa = 'dbWeightedGpa';
 
   Map<String, bool> getCustomGpa() {
     return Map<String, bool>.from(customGpaBox.get('selectList') ?? {});
@@ -303,5 +304,23 @@ class DatabaseHelper {
 
   Future<void> setCustomGpa(Map<String, bool> selectList) async {
     await customGpaBox.put('selectList', selectList);
+  }
+
+  /// 获取加权绩点的加权比例数据
+  /// 
+  /// 返回值：
+  /// - Map<String, double>: key为grade.id，value为加权比例（默认1.0）
+  Map<String, double> getWeightedGpa() {
+    final data = customGpaBox.get('weightedGpa') as Map?;
+    if (data == null) {
+      return {};
+    }
+    return Map<String, double>.from(
+        data.map((key, value) => MapEntry(key.toString(), (value as num).toDouble())));
+  }
+
+  /// 保存加权绩点的加权比例数据
+  Future<void> setWeightedGpa(Map<String, double> weightedMap) async {
+    await customGpaBox.put('weightedGpa', weightedMap);
   }
 }
