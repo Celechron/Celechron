@@ -7,6 +7,7 @@ class TwoLineCard extends StatefulWidget {
   final bool withColoredFont;
   final bool animate;
   final VoidCallback? onTap;
+  final VoidCallback? onLongPress;
   final CupertinoDynamicColor backgroundColor;
   final bool transparent;
   final double? height;
@@ -20,6 +21,7 @@ class TwoLineCard extends StatefulWidget {
     this.animate = false,
     this.withColoredFont = false,
     this.onTap,
+    this.onLongPress,
     this.backgroundColor = CupertinoColors.systemBackground,
     this.transparent = false,
     this.height,
@@ -235,12 +237,14 @@ class _TwoLineCardState extends State<TwoLineCard>
             },
             onTapCancel: () => _animationController.reverse(),
             onTap: widget.onTap,
+            onLongPress: widget.onLongPress,
             child: ScaleTransition(scale: _scaleAnimation, child: core),
           )
-        : widget.onTap == null
+        : (widget.onTap == null && widget.onLongPress == null)
             ? core
             : GestureDetector(
-                onTap: () => widget.onTap!.call(),
+                onTap: widget.onTap != null ? () => widget.onTap!.call() : null,
+                onLongPress: widget.onLongPress,
                 child: core,
               );
   }
