@@ -25,6 +25,8 @@ class Todo {
         .toList();
   }
 
+  // TODO: 对于助教/老师，是否需要将批改作业当作 todo 来显示？
+
   bool isInOneDay() => endTime != null
       ? endTime!.subtract(const Duration(days: 1)).isBefore(DateTime.now())
       : false;
