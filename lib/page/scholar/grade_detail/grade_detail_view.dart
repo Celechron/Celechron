@@ -217,8 +217,8 @@ class GradeDetailPage extends StatelessWidget {
                         children: [
                           Expanded(
                             child: Obx(() => TwoLineCard(
-                                title: '未选学分',
-                                content: notGpa.item2.toStringAsFixed(1),
+                                title: '已选百分制',
+                                content: inGpa.item1[3].toStringAsFixed(2),
                                 backgroundColor:
                                     CustomCupertinoDynamicColors.peach)),
                           ),
