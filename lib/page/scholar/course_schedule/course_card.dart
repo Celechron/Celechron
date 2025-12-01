@@ -152,43 +152,64 @@ class _SessionCardState extends State<SessionCard>
             right: 1.4,
           ),
           child: Container(
-            alignment: Alignment.center,
+            alignment: Alignment.topCenter,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(4),
               color: CupertinoDynamicColor.resolve(
                   widget.backgroundColor, context),
             ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text(
-                  sessionName,
-                  textAlign: TextAlign.center,
-                  maxLines: widget.sessionList.length * 5,
-                  overflow: TextOverflow.ellipsis,
-                  style:
-                      CupertinoTheme.of(context).textTheme.textStyle.copyWith(
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            color: const Color.fromRGBO(255, 255, 255, 1.0),
-                          ),
-                ),
-                const SizedBox(height: 8),
-                Flexible(
-                  child: Text(
-                    sessionLocation,
-                    maxLines: 4,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
-                    style:
-                        CupertinoTheme.of(context).textTheme.textStyle.copyWith(
+            child: ClipRect(
+              child: Padding(
+                padding: const EdgeInsets.only(
+                    left: 2.0, right: 2.0, top: 2.0, bottom: 2.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    Flexible(
+                      fit: FlexFit.loose,
+                      child: Text(
+                        sessionName,
+                        textAlign: TextAlign.center,
+                        maxLines: widget.sessionList.length == 1
+                            ? 3 // 单课程最多3行
+                            : (widget.sessionList.length * 2)
+                                .clamp(2, 6), // 冲突课程最多6行
+                        overflow: TextOverflow.ellipsis,
+                        style: CupertinoTheme.of(context)
+                            .textTheme
+                            .textStyle
+                            .copyWith(
                               fontSize: 10,
+                              fontWeight: FontWeight.bold,
                               color: const Color.fromRGBO(255, 255, 255, 1.0),
                             ),
-                  ),
+                      ),
+                    ),
+                    if (!widget.hideInfomation &&
+                        sessionLocation.isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Flexible(
+                        fit: FlexFit.loose,
+                        child: Text(
+                          sessionLocation,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: CupertinoTheme.of(context)
+                              .textTheme
+                              .textStyle
+                              .copyWith(
+                                fontSize: 9,
+                                color: const Color.fromRGBO(255, 255, 255, 0.9),
+                              ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),
