@@ -39,14 +39,17 @@ class ExamListPage extends StatelessWidget {
                           Container(
                             width: 12.0,
                             height: 12.0,
-                            decoration: const BoxDecoration(
+                            decoration: BoxDecoration(
                               color: CupertinoColors.systemPink,
-                              shape: BoxShape.rectangle,
+                              shape: exams[0].type == ExamType.midterm
+                                  ? BoxShape.circle
+                                  : BoxShape.rectangle,
                             ),
                           ),
                           const SizedBox(width: 8.0),
                           Expanded(
-                              child: Text(exams[0].name,
+                              child: Text(
+                                  '${exams[0].name}${exams[0].type == ExamType.midterm ? "（期中）" : ""}',
                                   style: CupertinoTheme.of(context)
                                       .textTheme
                                       .textStyle
@@ -145,14 +148,17 @@ class ExamListPage extends StatelessWidget {
                             Container(
                               width: 12.0,
                               height: 12.0,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: CupertinoColors.systemPink,
-                                shape: BoxShape.rectangle,
+                                shape: exams[i].type == ExamType.midterm
+                                    ? BoxShape.circle
+                                    : BoxShape.rectangle,
                               ),
                             ),
                             const SizedBox(width: 8.0),
                             Expanded(
-                                child: Text(exams[i].name,
+                                child: Text(
+                                    '${exams[i].name}${exams[i].type == ExamType.midterm ? "（期中）" : ""}',
                                     style: CupertinoTheme.of(context)
                                         .textTheme
                                         .textStyle
