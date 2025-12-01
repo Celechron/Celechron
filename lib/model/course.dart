@@ -17,6 +17,7 @@ class Course {
   List<Exam> exams = [];
 
   bool? online = false; // only used for grs
+  String? type; // GRS-specific course type (e.g., "专业学位课")
 
   String get realId {
     if (id == null) return '未知';
@@ -40,6 +41,15 @@ class Course {
     name = session.name;
     confirmed = session.confirmed;
     teacher = session.teacher;
+    if (session.credit != null) {
+      credit = session.credit!;
+    }
+    if (session.online != null) {
+      online = session.online!;
+    }
+    if (session.type != null) {
+      type = session.type!;
+    }
     sessions.add(session);
   }
   // used for zdbk
@@ -97,6 +107,16 @@ class Course {
     id ??= session.id;
     session.id = id;
     teacher ??= session.teacher;
+    // Transfer metadata from Session if available
+    if (session.credit != null && credit == 0.0) {
+      credit = session.credit!;
+    }
+    if (session.online != null && online == false) {
+      online = session.online!;
+    }
+    if (session.type != null && type == null) {
+      type = session.type!;
+    }
     if (sessions.any((e) =>
         e.dayOfWeek == session.dayOfWeek &&
         e.oddWeek == session.oddWeek &&
@@ -162,6 +182,8 @@ class Course {
       'teacher': teacher,
       'sessions': sessions.map((e) => e.toJson()).toList(),
       'exams': exams.map((e) => e.toJson()).toList(),
+      'online': online,
+      'type': type,
     };
   }
 
@@ -179,5 +201,7 @@ class Course {
             .toList(),
         exams = (json['exams'] as List<dynamic>)
             .map((e) => Exam.fromJson(e as Map<String, dynamic>))
-            .toList();
+            .toList(),
+        online = json['online'] as bool?,
+        type = json['type'] as String?;
 }
