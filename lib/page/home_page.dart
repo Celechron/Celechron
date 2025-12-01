@@ -25,6 +25,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   int _indexNum = 0;
   final CupertinoTabController _controller = CupertinoTabController();
+  double _horizontalDragDistance = 0.0; // 跟踪水平拖动距离
 
   @override
   void initState() {
@@ -98,39 +99,47 @@ class _HomePageState extends State<HomePage> {
       SearchPage(), // 缓存一下
     ];
 
-    String? swipeDirection;
     return Offstage(
       offstage: _indexNum != index,
       child: TickerMode(
         enabled: _indexNum == index,
         child: GestureDetector(
-          onPanUpdate: (details) {
-            int sensitivity = 4;
-            if (details.delta.dy > sensitivity / 2 ||
-                details.delta.dy < -sensitivity / 2) {
-              return;
-            }
-            if (details.delta.dx > sensitivity) {
-              swipeDirection = 'right';
-            } else if (details.delta.dx < -sensitivity) {
-              swipeDirection = 'left';
-            }
+          // 使用 onHorizontalDrag 专门处理水平滑动，不会干扰垂直滚动
+          onHorizontalDragStart: (_) {
+            // 初始化拖动距离
+            _horizontalDragDistance = 0.0;
           },
-          onPanEnd: (details) {
-            if (swipeDirection == null) {
-              return;
-            }
-            if (swipeDirection == 'left') {
-              if (_indexNum < 4) {
-                changeIndex(_indexNum + 1);
-              }
-            }
-            if (swipeDirection == 'right') {
+          onHorizontalDragUpdate: (details) {
+            // 累积水平拖动距离
+            _horizontalDragDistance += details.delta.dx;
+          },
+          onHorizontalDragEnd: (details) {
+            // 根据滑动速度和距离判断是否切换页面
+            final screenWidth = MediaQuery.of(context).size.width;
+            final velocity = details.primaryVelocity ?? 0;
+            final threshold = screenWidth * 0.15; // 滑动距离阈值（屏幕宽度的15%）
+
+            // 向右滑动（显示左侧页面）- 向右滑动意味着显示前一个页面
+            if (velocity > 200 || _horizontalDragDistance > threshold) {
               if (_indexNum > 0) {
                 changeIndex(_indexNum - 1);
               }
             }
+            // 向左滑动（显示右侧页面）- 向左滑动意味着显示后一个页面
+            else if (velocity < -200 || _horizontalDragDistance < -threshold) {
+              if (_indexNum < 4) {
+                changeIndex(_indexNum + 1);
+              }
+            }
+            // 重置状态
+            _horizontalDragDistance = 0.0;
           },
+          onHorizontalDragCancel: () {
+            // 取消时重置状态
+            _horizontalDragDistance = 0.0;
+          },
+          // 使用 deferToChild 让子组件的垂直滚动优先处理
+          behavior: HitTestBehavior.deferToChild,
           child: widgetList[index],
         ),
       ),
