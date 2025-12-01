@@ -20,9 +20,13 @@ class Todo {
 
   static List<Todo> getAllFromCourses(Map<String, dynamic> json) {
     return (json["todo_list"] as List)
+        .where(
+            (e) => e["is_student"] == true) // 只显示用户身份为学生的作业，对于用户身份为助教/老师的不显示为作业
         .map<Todo>((e) => Todo.fromJson(e))
         .toList();
   }
+
+  // TODO: 对于助教/老师，是否需要将批改作业当作 todo 来显示？
 
   bool isInOneDay() => endTime != null
       ? endTime!.subtract(const Duration(days: 1)).isBefore(DateTime.now())
