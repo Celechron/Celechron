@@ -39,7 +39,7 @@ void main() async {
     scholar.value
         .login()
         .then((value) => scholar.value.refresh())
-        .then((value) => scholar.refresh());
+        .whenComplete(() => scholar.refresh());
   }
 
   ECardWidgetMessenger.update();

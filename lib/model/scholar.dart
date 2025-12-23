@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:io';
+
 import 'package:get/get.dart';
 
 import 'package:celechron/page/option/option_controller.dart';
@@ -25,6 +28,9 @@ class Scholar {
   // 登录状态
   bool isLogan = false;
   DateTime lastUpdateTime = DateTime.parse("20010101");
+
+  // 最后一次同步错误信息（null 表示同步成功）
+  String? lastSyncError;
 
   // 爬虫区
   String? username;
@@ -145,30 +151,49 @@ class Scholar {
           if (value.item1.every((e) => e == null) &&
               value.item2.every((e) => e == null)) {
             lastUpdateTime = DateTime.now();
+            lastSyncError = null;
+          } else {
+            lastSyncError = '数据同步失败';
           }
-          semesters = value.item3;
-          grades = value.item4.fold(<String, List<Grade>>{}, (p, e) {
-            // 体育课
-            var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
-            var key = matchClass?.group(2) ?? e.id.substring(14, 22);
-            if (key.startsWith('PPAE') || key.startsWith('401')) {
-              key = matchClass?.group(1) ?? e.id.substring(0, 22);
-            }
-            var courseIdMappingList =
-                Get.find<OptionController>(tag: 'optionController')
-                    .courseIdMappingList;
-            var courseIdMappingMap = {
-              for (var e in courseIdMappingList) e.id1: e.id2
-            };
-            if (courseIdMappingMap.containsKey(key)) {
-              key = courseIdMappingMap[key]!;
-            }
-            p.putIfAbsent(key, () => <Grade>[]).add(e);
-            return p;
-          });
-          majorGpaAndCredit = value.item5;
-          specialDates = value.item6;
-          todos = value.item7;
+
+          // 获取失败时不覆盖本地数据
+          if (value.item2.every((e) => e == null) || value.item3.isNotEmpty) {
+            semesters = value.item3;
+          }
+
+          if (value.item2.every((e) => e == null) || value.item4.isNotEmpty) {
+            grades = value.item4.fold(<String, List<Grade>>{}, (p, e) {
+              // 体育课
+              var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
+              var key = matchClass?.group(2) ?? e.id.substring(14, 22);
+              if (key.startsWith('PPAE') || key.startsWith('401')) {
+                key = matchClass?.group(1) ?? e.id.substring(0, 22);
+              }
+              var courseIdMappingList =
+                  Get.find<OptionController>(tag: 'optionController')
+                      .courseIdMappingList;
+              var courseIdMappingMap = {
+                for (var e in courseIdMappingList) e.id1: e.id2
+              };
+              if (courseIdMappingMap.containsKey(key)) {
+                key = courseIdMappingMap[key]!;
+              }
+              p.putIfAbsent(key, () => <Grade>[]).add(e);
+              return p;
+            });
+          }
+
+          if (value.item2.every((e) => e == null) || value.item5.isNotEmpty) {
+            majorGpaAndCredit = value.item5;
+          }
+
+          if (value.item2.every((e) => e == null) || value.item6.isNotEmpty) {
+            specialDates = value.item6;
+          }
+
+          if (value.item2.every((e) => e == null) || value.item7.isNotEmpty) {
+            todos = value.item7;
+          }
 
           // 保研成绩，只取第一次
           var netGrades = grades.values.map((e) => e.first);
@@ -193,6 +218,14 @@ class Scholar {
           return value.item1.every((e) => e == null)
               ? value.item2
               : value.item1;
+        }).catchError((e) {
+          lastSyncError = '数据同步失败';
+          if (e is SocketException) {
+            return <String?>['无法连接到教务网，请检查网络连接'];
+          } else if (e is TimeoutException) {
+            return <String?>['连接教务网超时，请稍后重试'];
+          }
+          return <String?>['获取数据时发生错误：$e'];
         }).whenComplete(() => _mutex--) ??
         ['未登录'];
   }

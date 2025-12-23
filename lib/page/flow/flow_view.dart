@@ -597,6 +597,39 @@ class FlowPage extends StatelessWidget {
                 ],
               ),
             ),
+
+            SliverToBoxAdapter(
+              child: Obx(() {
+                final syncError = _flowController.scholar.value.lastSyncError;
+                if (syncError != null) {
+                  return MaterialBanner(
+                    backgroundColor: CupertinoDynamicColor.resolve(
+                        CupertinoColors.systemRed.withOpacity(0.1), context),
+                    dividerColor: Colors.transparent,
+                    content: Text(syncError),
+                    contentTextStyle: TextStyle(
+                      fontSize: 16,
+                      color:
+                          CupertinoTheme.of(context).textTheme.textStyle.color!,
+                    ),
+                    leading: const Icon(
+                      CupertinoIcons.wifi_slash,
+                      color: CupertinoColors.systemRed,
+                    ),
+                    actions: [
+                      CupertinoButton(
+                        child: const Text('知道了'),
+                        onPressed: () {
+                          _flowController.scholar.value.lastSyncError = null;
+                          _flowController.scholar.refresh();
+                        },
+                      ),
+                    ],
+                  );
+                }
+                return const SizedBox();
+              }),
+            ),
             SliverToBoxAdapter(
               child: Obx(() {
                 if (_flowController.isFlowListOutdated()) {
