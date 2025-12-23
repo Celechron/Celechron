@@ -24,7 +24,9 @@ class Scholar {
 
   // 登录状态
   bool isLogan = false;
-  DateTime lastUpdateTime = DateTime.parse("20010101");
+  DateTime lastUpdateTimeGrade = DateTime.parse("20010101");
+  DateTime lastUpdateTimeCourse = DateTime.parse("20010101");
+  DateTime lastUpdateTimeHomework = DateTime.parse("20010101");
 
   // 爬虫区
   String? username;
@@ -121,7 +123,9 @@ class Scholar {
     pt4 = 0.0;
     isPracticeScoresGet = false;
     isLogan = false;
-    lastUpdateTime = DateTime.parse("20010101");
+    lastUpdateTimeGrade = DateTime.parse("20010101");
+    lastUpdateTimeCourse = DateTime.parse("20010101");
+    lastUpdateTimeHomework = DateTime.parse("20010101");
     _spider?.logout();
     await _db?.removeScholar();
     await _db?.removeAllCachedWebPage();
@@ -152,12 +156,11 @@ class Scholar {
             // ignore: avoid_print
             if (e != null) print(e);
           }
-          if (value.item1.every((e) => e == null) &&
-              value.item2.every((e) => e == null)) {
-            lastUpdateTime = DateTime.now();
+          if (value.item1.every((e) => e == null)) {
+            updateLastUpdateTime(value.item2);
           }
-          semesters = value.item3;
-          grades = value.item4.fold(<String, List<Grade>>{}, (p, e) {
+          var tempSemester = value.item3;
+          var tempGrades = value.item4.fold(<String, List<Grade>>{}, (p, e) {
             // 体育课
             var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
             var key = matchClass?.group(2) ?? e.id.substring(14, 22);
@@ -176,9 +179,38 @@ class Scholar {
             p.putIfAbsent(key, () => <Grade>[]).add(e);
             return p;
           });
-          majorGpaAndCredit = value.item5;
-          specialDates = value.item6;
-          todos = value.item7;
+          var tempMajorGpaAndCredit = value.item5;
+          var tempSpecialDates = value.item6;
+          var tempTodos = value.item7;
+
+          var tempIsPracticeScoresGet = false;
+          var tempPt2 = 0.0, tempPt3 = 0.0, tempPt4 = 0.0;
+          // 获取实践学分数据（仅本科生）
+          if (_spider is UgrsSpider && !isGrs) {
+            var ugrsSpider = _spider as UgrsSpider;
+            tempIsPracticeScoresGet = ugrsSpider.isPracticeScoresGet;
+            if (tempIsPracticeScoresGet) {
+              var practiceScores = ugrsSpider.practiceScores;
+              if (practiceScores != null) {
+                tempPt2 = practiceScores['pt2'] ?? 0.0;
+                tempPt3 = practiceScores['pt3'] ?? 0.0;
+                tempPt4 = practiceScores['pt4'] ?? 0.0;
+              }
+            }
+          } else {
+            tempIsPracticeScoresGet = false;
+          }
+
+          setScholar(
+              tempSemester,
+              tempGrades,
+              tempMajorGpaAndCredit,
+              tempSpecialDates,
+              tempTodos,
+              tempIsPracticeScoresGet,
+              tempPt2,
+              tempPt3,
+              tempPt4);
 
           // 保研成绩，只取第一次
           var netGrades = grades.values.map((e) => e.first);
@@ -199,38 +231,69 @@ class Scholar {
             credit = 0.0;
           }
 
-          // 获取实践学分数据（仅本科生）
-          if (_spider is UgrsSpider && !isGrs) {
-            var ugrsSpider = _spider as UgrsSpider;
-            isPracticeScoresGet = ugrsSpider.isPracticeScoresGet;
-            try {
-              var practiceScores = ugrsSpider.practiceScores;
-              if (practiceScores != null) {
-                pt2 = practiceScores['pt2'] ?? 0.0;
-                pt3 = practiceScores['pt3'] ?? 0.0;
-                pt4 = practiceScores['pt4'] ?? 0.0;
-              } else {
-                // 数据为空，保持默认值 0.0
-                pt2 = 0.0;
-                pt3 = 0.0;
-                pt4 = 0.0;
-              }
-            } catch (e) {
-              // 解析失败，保持默认值 0.0
-              pt2 = 0.0;
-              pt3 = 0.0;
-              pt4 = 0.0;
-            }
-          } else {
-            isPracticeScoresGet = false;
-          }
-
           await _db?.setScholar(this);
           return value.item1.every((e) => e == null)
               ? value.item2
               : value.item1;
         }).whenComplete(() => _mutex--) ??
         ['未登录'];
+  }
+
+  void updateLastUpdateTime(List<String?> errorMessage) {
+    var errorItems = ["成绩", "课表", "作业"];
+    var errorResult = [false, false, false];
+
+    for (int i = 0; i < errorItems.length; i++) {
+      for (var e in errorMessage) {
+        if (e != null && e.contains(errorItems[i])) {
+          errorResult[i] = true;
+          break;
+        }
+      }
+
+    }
+    if (!errorResult[0]) {
+      lastUpdateTimeGrade = DateTime.now();
+    }
+    if (!errorResult[1]) {
+      lastUpdateTimeCourse = DateTime.now();
+    }
+    if (!errorResult[2]) {
+      lastUpdateTimeHomework = DateTime.now();
+    }
+  }
+
+  void setScholar(
+      List<Semester> tempSemesters,
+      Map<String, List<Grade>> tempGrades,
+      List<double> tempMajorGpaAndCredit,
+      Map<DateTime, String> tempSpecialDates,
+      List<Todo> tempTodos,
+      bool tempIsPracticeScoresGet,
+      double tempPt2,
+      double tempPt3,
+      double tempPt4) {
+    if (tempSemesters.isNotEmpty) {
+      semesters = tempSemesters;
+    }
+    if (tempGrades.isNotEmpty) {
+      grades = tempGrades;
+    }
+    if (tempMajorGpaAndCredit.isNotEmpty) {
+      majorGpaAndCredit = tempMajorGpaAndCredit;
+    }
+    if (tempSpecialDates.isNotEmpty) {
+      specialDates = tempSpecialDates;
+    }
+    if (tempTodos.isNotEmpty) {
+      todos = tempTodos;
+    }
+    isPracticeScoresGet = tempIsPracticeScoresGet;
+    if (tempIsPracticeScoresGet) {
+      pt2 = tempPt2;
+      pt3 = tempPt3;
+      pt4 = tempPt4;
+    }
   }
 
   Map<String, dynamic> toJson() {
@@ -243,7 +306,9 @@ class Scholar {
       'majorGpaAndCredit': majorGpaAndCredit,
       'specialDates':
           specialDates.map((k, v) => MapEntry(k.toIso8601String(), v)),
-      'lastUpdateTime': lastUpdateTime.toIso8601String(),
+      'lastUpdateTimeGrade': lastUpdateTimeGrade.toIso8601String(),
+      'lastUpdateTimeCourse': lastUpdateTimeCourse.toIso8601String(),
+      'lastUpdateTimeHomework': lastUpdateTimeHomework.toIso8601String(),
       'todos': todos,
       'pt2': pt2,
       'pt3': pt3,
@@ -315,7 +380,9 @@ class Scholar {
     majorGpaAndCredit = List<double>.from(json['majorGpaAndCredit']);
     specialDates = ((json['specialDates'] ?? {}) as Map)
         .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
-    lastUpdateTime = DateTime.parse(json['lastUpdateTime']);
+    lastUpdateTimeGrade = DateTime.parse(json['lastUpdateTimeGrade'] ?? "20010101");
+    lastUpdateTimeCourse = DateTime.parse(json['lastUpdateTimeCourse'] ?? "20010101");
+    lastUpdateTimeHomework = DateTime.parse(json['lastUpdateTimeHomework'] ?? "20010101");
     todos = json.containsKey('todos') // back compatibility
         ? (json['todos'] as List).map((e) => Todo.fromJson(e)).toList()
         : [];

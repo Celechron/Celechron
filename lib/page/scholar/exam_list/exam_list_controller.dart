@@ -44,7 +44,7 @@ class ExamListController extends GetxController {
     super.onReady();
     Timer.periodic(const Duration(seconds: 1), (timer) {
       _durationToLastUpdate.value =
-          DateTime.now().difference(_scholar.value.lastUpdateTime);
+          DateTime.now().difference(_scholar.value.lastUpdateTimeCourse);
     });
   }
 }
