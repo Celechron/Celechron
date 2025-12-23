@@ -250,7 +250,6 @@ class Scholar {
           break;
         }
       }
-
     }
     if (!errorResult[0]) {
       lastUpdateTimeGrade = DateTime.now();
@@ -380,9 +379,12 @@ class Scholar {
     majorGpaAndCredit = List<double>.from(json['majorGpaAndCredit']);
     specialDates = ((json['specialDates'] ?? {}) as Map)
         .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
-    lastUpdateTimeGrade = DateTime.parse(json['lastUpdateTimeGrade'] ?? "20010101");
-    lastUpdateTimeCourse = DateTime.parse(json['lastUpdateTimeCourse'] ?? "20010101");
-    lastUpdateTimeHomework = DateTime.parse(json['lastUpdateTimeHomework'] ?? "20010101");
+    lastUpdateTimeGrade =
+        DateTime.parse(json['lastUpdateTimeGrade'] ?? "20010101");
+    lastUpdateTimeCourse =
+        DateTime.parse(json['lastUpdateTimeCourse'] ?? "20010101");
+    lastUpdateTimeHomework =
+        DateTime.parse(json['lastUpdateTimeHomework'] ?? "20010101");
     todos = json.containsKey('todos') // back compatibility
         ? (json['todos'] as List).map((e) => Todo.fromJson(e)).toList()
         : [];
