@@ -1,12 +1,14 @@
 import 'dart:convert';
 import 'dart:io';
 import 'package:celechron/utils/tuple.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 
 import 'package:celechron/database/database_helper.dart';
-import 'package:celechron/model/grade.dart';
 import 'package:celechron/utils/gpa_helper.dart';
+import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/session.dart';
-import '../../model/exams_dto.dart';
+import 'package:celechron/model/exams_dto.dart';
 import 'exceptions.dart';
 
 class Zdbk {
@@ -181,30 +183,42 @@ class Zdbk {
       if (_jSessionId == null || _route == null) {
         throw ExceptionWithMessage("未登录");
       }
-      request = await httpClient
-          .postUrl(Uri.parse(
-              "https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXsKb.html"))
-          .timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("请求超时"));
-      request.cookies.add(_jSessionId!);
-      request.cookies.add(_route!);
-      request.headers.contentType =
-          ContentType('application', 'x-www-form-urlencoded', charset: 'utf-8');
-      request.add(utf8.encode('xnm=$year&xqm=$semester'));
-      response = await request.close().timeout(const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-      var html = await response.transform(utf8.decoder).join();
-      var timetableJson = RegExp('(?<="kbList":)\\[(.*?)\\](?=,"xh")')
-          .firstMatch(html)
-          ?.group(0);
-      if (timetableJson == null) throw ExceptionWithMessage("无法解析");
+      String? captcha;
+      for (var i = 0; i < 2; i++) {
+        request = await httpClient
+            .postUrl(Uri.parse(
+                "https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXsKb.html"))
+            .timeout(const Duration(seconds: 8),
+                onTimeout: () => throw ExceptionWithMessage("请求超时"));
+        request.cookies.add(_jSessionId!);
+        request.cookies.add(_route!);
+        request.headers.contentType = ContentType(
+            'application', 'x-www-form-urlencoded',
+            charset: 'utf-8');
+        request.add(utf8.encode(
+            'xnm=$year&xqm=$semester${captcha != null ? '&captcha_value=$captcha' : ''}'));
+        response = await request.close().timeout(const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-      var sessions = (jsonDecode(timetableJson) as List<dynamic>)
-          .where((e) => e['kcb'] != null)
-          .map((e) => Session.fromZdbk(e));
-      _db?.setCachedWebPage('zdbk_Timetable$year$semester', timetableJson);
-      return Tuple(null, sessions);
+        var responseText = await response.transform(utf8.decoder).join();
+        if (responseText.contains("captcha_error")) {
+          captcha = await getCaptcha(httpClient);
+          continue;
+        }
+
+        var timetableJson = RegExp('(?<="kbList":)\\[(.*?)\\](?=,"xh")')
+            .firstMatch(responseText)
+            ?.group(0);
+        if (timetableJson == null) throw ExceptionWithMessage("无法解析");
+
+        var sessions = (jsonDecode(timetableJson) as List<dynamic>)
+            .where((e) => e['kcb'] != null)
+            .map((e) => Session.fromZdbk(e));
+        _db?.setCachedWebPage('zdbk_Timetable$year$semester', timetableJson);
+        return Tuple(null, sessions);
+      }
+      throw ExceptionWithMessage("验证码识别失败");
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
@@ -388,5 +402,34 @@ class Zdbk {
       }
       return Tuple(exception, {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0});
     }
+  }
+
+  Future<String> getCaptcha(HttpClient httpClient) async {
+    late HttpClientRequest request;
+    late HttpClientResponse response;
+
+    if (_jSessionId == null || _route == null) {
+      throw ExceptionWithMessage("未登录");
+    }
+    request = await httpClient
+        .getUrl(Uri.parse(
+            "https://zdbk.zju.edu.cn/jwglxt/kaptcha?time=${DateTime.now().millisecondsSinceEpoch}"))
+        .timeout(const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    request.cookies.add(_jSessionId!);
+    request.followRedirects = false;
+    response = await request.close().timeout(const Duration(seconds: 8),
+        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    // Content type is image/jpeg. Save it to a temporary file and run OCR
+    var bytes = await consolidateHttpClientResponseBytes(response);
+    var tempDir = Directory.systemTemp;
+    var tempFile = File('${tempDir.path}/captcha_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    await tempFile.writeAsBytes(bytes);
+    var ocrResult = await FlutterTesseractOcr.extractText(tempFile.path, language: 'eng', args: {
+      "tessedit_char_whitelist": "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+      "preserve_interword_spaces": "1",
+    });
+    await tempFile.delete();
+    return ocrResult.trim();
   }
 }

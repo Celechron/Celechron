@@ -33,7 +33,8 @@ class GrsSpider implements Spider {
     '本科生课考试',
     '本科生课成绩',
     '研究生课考试',
-    '研究生课成绩'
+    '研究生课成绩',
+    '作业'
   ];
 
   GrsSpider(String username, String password) {
@@ -368,6 +369,7 @@ class GrsSpider implements Spider {
       return value.item1?.toString();
     }).catchError((e) => 'grsGrade $e'));
 
+    // 学在浙大
     fetches.add(_courses.getTodo(_httpClient).then((value) {
       outTodos.clear();
       outTodos.addAll(value.item2);

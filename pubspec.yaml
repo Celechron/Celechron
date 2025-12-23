@@ -29,7 +29,7 @@ dependencies:
       ref: main
       path: workmanager
   flutter_local_notifications: ^17.2.4
-  flutter_secure_storage:
+  flutter_secure_storage: ^9.2.4
   qr_flutter:
   app_links:
   crypto: 
@@ -38,6 +38,7 @@ dependencies:
   device_calendar:
   timezone:
   device_info_plus:
+  flutter_tesseract_ocr:
 
 dev_dependencies:
   flutter_test:
