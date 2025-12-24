@@ -32,13 +32,17 @@ class ImageCodePortal {
                 color: CupertinoColors.systemBackground.resolveFrom(context),
                 width: double.infinity,
                 padding: EdgeInsets.only(
-                  left: 24, right: 24, top: 20,
+                  left: 24,
+                  right: 24,
+                  top: 20,
                   bottom: MediaQuery.of(context).viewInsets.bottom + 40,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Text("安全验证", style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold)),
+                    const Text("安全验证",
+                        style: TextStyle(
+                            fontSize: 17, fontWeight: FontWeight.bold)),
                     const SizedBox(height: 20),
 
                     // 图片展示与刷新
@@ -51,13 +55,19 @@ class ImageCodePortal {
                         borderRadius: BorderRadius.circular(8),
                         child: Image.memory(
                           currentImage,
-                          height: 60, width: 160, fit: BoxFit.cover,
-                          errorBuilder: (c, e, s) => const Icon(CupertinoIcons.refresh_thick),
+                          height: 60,
+                          width: 160,
+                          fit: BoxFit.cover,
+                          errorBuilder: (c, e, s) =>
+                              const Icon(CupertinoIcons.refresh_thick),
                         ),
                       ),
                     ),
                     const SizedBox(height: 8),
-                    const Text("点击图片刷新", style: TextStyle(fontSize: 12, color: CupertinoColors.secondaryLabel)),
+                    const Text("点击图片刷新",
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: CupertinoColors.secondaryLabel)),
 
                     const SizedBox(height: 20),
 
@@ -66,7 +76,8 @@ class ImageCodePortal {
                       controller: _inputController,
                       placeholder: "请输入验证码",
                       autofocus: true,
-                      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                      padding: const EdgeInsets.symmetric(
+                          vertical: 12, horizontal: 10),
                       textAlign: TextAlign.center,
                       decoration: BoxDecoration(
                         color: CupertinoColors.quaternarySystemFill,
@@ -84,7 +95,8 @@ class ImageCodePortal {
                             child: const Text("取消"),
                             onPressed: () {
                               Navigator.pop(context);
-                              if (!completer.isCompleted) completer.complete(null);
+                              if (!completer.isCompleted)
+                                completer.complete(null);
                             },
                           ),
                         ),
@@ -95,7 +107,8 @@ class ImageCodePortal {
                             onPressed: () {
                               final text = _inputController.text;
                               Navigator.pop(context);
-                              if (!completer.isCompleted) completer.complete(text);
+                              if (!completer.isCompleted)
+                                completer.complete(text);
                             },
                           ),
                         ),
