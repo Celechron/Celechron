@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:celechron/utils/tuple.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter_tesseract_ocr/flutter_tesseract_ocr.dart';
 
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/utils/gpa_helper.dart';
@@ -15,6 +14,7 @@ import 'exceptions.dart';
 class Zdbk {
   Cookie? _jSessionId;
   Cookie? _route;
+  String? _captcha;
   DatabaseHelper? _db;
 
   set db(DatabaseHelper? db) {
@@ -185,7 +185,6 @@ class Zdbk {
         throw ExceptionWithMessage("未登录");
       }
 
-      String? captcha;
       for (var i = 0; i < 3; i++) {
         request = await httpClient
             .postUrl(Uri.parse(
@@ -198,8 +197,8 @@ class Zdbk {
             'application', 'x-www-form-urlencoded',
             charset: 'utf-8');
         request.headers.add('X-Requested-With', 'XMLHttpRequest');
-        request.add(utf8.encode(
-            'xnm=$year&xqm=$semester${captcha != null ? '&captcha_value=$captcha' : ''}'));
+        request.add(
+            utf8.encode('xnm=$year&xqm=$semester&captcha_value=$_captcha'));
         response = await request.close().timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
@@ -207,7 +206,7 @@ class Zdbk {
 
         if (responseText.contains("captcha_error")) {
           var imageBytes = await getCaptcha(httpClient);
-          captcha = await ImageCodePortal.show(
+          var captcha = await ImageCodePortal.show(
               imageBytes: imageBytes,
               onRefresh: () async {
                 return await getCaptcha(httpClient);
@@ -215,11 +214,12 @@ class Zdbk {
           if (captcha == null) {
             throw ExceptionWithMessage("验证码未填写");
           }
-          captcha = captcha.trim();
+          _captcha = captcha.trim();
           // captcha = await solveCaptcha(httpClient);
           continue;
         }
 
+        if (responseText == "null") return Tuple(null, []);
         var timetableJson = RegExp('(?<="kbList":)\\[(.*?)\\](?=,"xh")')
             .firstMatch(responseText)
             ?.group(0);
@@ -440,19 +440,6 @@ class Zdbk {
   }
 
   Future<String> solveCaptcha(HttpClient httpClient) async {
-    var bytes = await getCaptcha(httpClient);
-    var tempDir = Directory.systemTemp;
-    var tempFile = File(
-        '${tempDir.path}/captcha_${DateTime.now().millisecondsSinceEpoch}.jpg');
-    await tempFile.writeAsBytes(bytes);
-    var ocrResult = await FlutterTesseractOcr.extractText(tempFile.path,
-        language: 'eng',
-        args: {
-          "tessedit_char_whitelist":
-              "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
-          "preserve_interword_spaces": "1",
-        });
-    await tempFile.delete();
-    return ocrResult.trim();
+    throw UnimplementedError("验证码识别功能未开发");
   }
 }

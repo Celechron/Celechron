@@ -241,7 +241,6 @@ class GrsSpider implements Spider {
           if (value.item1.toString().contains("验证码")) {
             cancelTimetableFetch = true;
           }
-          await Future.delayed(const Duration(milliseconds: 2250));
         } catch (e) {
           timetableFetches.add(Future.value(e.toString()));
         }
