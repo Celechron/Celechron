@@ -10,7 +10,10 @@ import 'package:celechron/model/option.dart';
 class ScholarController extends GetxController {
   final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   final _option = Get.find<Option>(tag: 'option');
-  final Rx<Duration> _durationToLastUpdate = const Duration().obs;
+
+  final Rx<Duration> _durationToLastUpdateGrade = const Duration().obs;
+  final Rx<Duration> _durationToLastUpdateCourse = const Duration().obs;
+  final Rx<Duration> _durationToLastUpdateHomework = const Duration().obs;
 
   // 直接初始化为 0，避免 late final 的初始化时机问题
   final RxInt semesterIndex = 0.obs;
@@ -37,7 +40,10 @@ class ScholarController extends GetxController {
     return semesters[index];
   }
 
-  Duration get durationToLastUpdate => _durationToLastUpdate.value;
+  Duration get durationToLastUpdateGrade => _durationToLastUpdateGrade.value;
+  Duration get durationToLastUpdateCourse => _durationToLastUpdateCourse.value;
+  Duration get durationToLastUpdateHomework =>
+      _durationToLastUpdateHomework.value;
 
   List<double> get gpa => _option.gpaStrategy.value == GpaStrategy.first
       ? _scholar.value.gpa
@@ -76,8 +82,13 @@ class ScholarController extends GetxController {
   Future<List<String?>> fetchData() async {
     return await _scholar.value.refresh().then((value) {
       _scholar.refresh();
-      _durationToLastUpdate.value =
-          DateTime.now().difference(_scholar.value.lastUpdateTime);
+
+      _durationToLastUpdateGrade.value =
+          DateTime.now().difference(_scholar.value.lastUpdateTimeGrade);
+      _durationToLastUpdateCourse.value =
+          DateTime.now().difference(_scholar.value.lastUpdateTimeCourse);
+      _durationToLastUpdateHomework.value =
+          DateTime.now().difference(_scholar.value.lastUpdateTimeHomework);
       return value;
     });
   }
@@ -91,8 +102,12 @@ class ScholarController extends GetxController {
     semesterIndex.value = thisSemesterIndex >= 0 ? thisSemesterIndex : 0;
 
     Timer.periodic(const Duration(seconds: 1), (timer) {
-      _durationToLastUpdate.value =
-          DateTime.now().difference(_scholar.value.lastUpdateTime);
+      _durationToLastUpdateGrade.value =
+          DateTime.now().difference(_scholar.value.lastUpdateTimeGrade);
+      _durationToLastUpdateCourse.value =
+          DateTime.now().difference(_scholar.value.lastUpdateTimeCourse);
+      _durationToLastUpdateHomework.value =
+          DateTime.now().difference(_scholar.value.lastUpdateTimeHomework);
     });
   }
 }

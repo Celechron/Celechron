@@ -17,6 +17,8 @@ import 'package:celechron/page/option/ecard_pay_page.dart';
 import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:celechron/database/database_helper.dart';
 
+final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
 void main() async {
   // 初始化数据库
   await Hive.initFlutter();
@@ -116,6 +118,7 @@ class _CelechronAppState extends State<CelechronApp>
             '/ecardpaypage': (context) => ECardPayPage(),
           },
           debugShowCheckedModeBanner: false,
+          navigatorKey: navigatorKey,
         ));
   }
 

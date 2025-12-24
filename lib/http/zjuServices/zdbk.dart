@@ -9,6 +9,7 @@ import 'package:celechron/utils/gpa_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/session.dart';
 import 'package:celechron/model/exams_dto.dart';
+import 'package:celechron/design/captcha_input.dart';
 import 'exceptions.dart';
 
 class Zdbk {
@@ -185,7 +186,7 @@ class Zdbk {
       }
 
       String? captcha;
-      for (var i = 0; i < 2; i++) {
+      for (var i = 0; i < 3; i++) {
         request = await httpClient
             .postUrl(Uri.parse(
                 "https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXsKb.html"))
@@ -196,14 +197,26 @@ class Zdbk {
         request.headers.contentType = ContentType(
             'application', 'x-www-form-urlencoded',
             charset: 'utf-8');
+        request.headers.add('X-Requested-With', 'XMLHttpRequest');
         request.add(utf8.encode(
             'xnm=$year&xqm=$semester${captcha != null ? '&captcha_value=$captcha' : ''}'));
         response = await request.close().timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
         var responseText = await response.transform(utf8.decoder).join();
+
         if (responseText.contains("captcha_error")) {
-          captcha = await getCaptcha(httpClient);
+          var imageBytes = await getCaptcha(httpClient);
+          captcha = await ImageCodePortal.show(
+              imageBytes: imageBytes,
+              onRefresh: () async {
+                return await getCaptcha(httpClient);
+              });
+          if (captcha == null) {
+            throw ExceptionWithMessage("验证码未填写");
+          }
+          captcha = captcha.trim();
+          // captcha = await solveCaptcha(httpClient);
           continue;
         }
 
@@ -404,7 +417,7 @@ class Zdbk {
     }
   }
 
-  Future<String> getCaptcha(HttpClient httpClient) async {
+  Future<Uint8List> getCaptcha(HttpClient httpClient) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
 
@@ -417,18 +430,28 @@ class Zdbk {
         .timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
     request.cookies.add(_jSessionId!);
+    request.cookies.add(_route!);
     request.followRedirects = false;
     response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
     // Content type is image/jpeg. Save it to a temporary file and run OCR
     var bytes = await consolidateHttpClientResponseBytes(response);
+    return bytes;
+  }
+
+  Future<String> solveCaptcha(HttpClient httpClient) async {
+    var bytes = await getCaptcha(httpClient);
     var tempDir = Directory.systemTemp;
-    var tempFile = File('${tempDir.path}/captcha_${DateTime.now().millisecondsSinceEpoch}.jpg');
+    var tempFile = File(
+        '${tempDir.path}/captcha_${DateTime.now().millisecondsSinceEpoch}.jpg');
     await tempFile.writeAsBytes(bytes);
-    var ocrResult = await FlutterTesseractOcr.extractText(tempFile.path, language: 'eng', args: {
-      "tessedit_char_whitelist": "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
-      "preserve_interword_spaces": "1",
-    });
+    var ocrResult = await FlutterTesseractOcr.extractText(tempFile.path,
+        language: 'eng',
+        args: {
+          "tessedit_char_whitelist":
+              "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
+          "preserve_interword_spaces": "1",
+        });
     await tempFile.delete();
     return ocrResult.trim();
   }

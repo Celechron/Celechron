@@ -146,7 +146,8 @@ class ScholarPage extends StatelessWidget {
                                     padding: const EdgeInsets.only(
                                         top: 4, bottom: 4),
                                     child: Icon(
-                                      _scholarController.durationToLastUpdate
+                                      _scholarController
+                                                  .durationToLastUpdateGrade
                                                   .inMinutes <
                                               5
                                           ? CupertinoIcons
@@ -166,11 +167,11 @@ class ScholarPage extends StatelessWidget {
                                           right: 16),
                                       child: Text(
                                           _scholarController
-                                                      .durationToLastUpdate
+                                                      .durationToLastUpdateGrade
                                                       .inMinutes >
                                                   10000000
                                               ? '获取数据时遇到问题'
-                                              : '更新于 ${_scholarController.durationToLastUpdate.inMinutes} 分钟前',
+                                              : '更新于 ${_scholarController.durationToLastUpdateGrade.inMinutes} 分钟前',
                                           style: TextStyle(
                                             fontSize: 14,
                                             fontWeight: FontWeight.bold,
@@ -314,8 +315,8 @@ class ScholarPage extends StatelessWidget {
                                 padding:
                                     const EdgeInsets.only(top: 4, bottom: 4),
                                 child: Icon(
-                                  _scholarController
-                                              .durationToLastUpdate.inMinutes <
+                                  _scholarController.durationToLastUpdateCourse
+                                              .inMinutes <
                                           5
                                       ? CupertinoIcons.check_mark_circled_solid
                                       : CupertinoIcons
@@ -329,11 +330,12 @@ class ScholarPage extends StatelessWidget {
                                   padding: const EdgeInsets.only(
                                       left: 4, top: 4, bottom: 4, right: 16),
                                   child: Text(
-                                      _scholarController.durationToLastUpdate
+                                      _scholarController
+                                                  .durationToLastUpdateCourse
                                                   .inMinutes >
                                               10000000
                                           ? '获取数据时遇到问题'
-                                          : '更新于 ${_scholarController.durationToLastUpdate.inMinutes} 分钟前',
+                                          : '更新于 ${_scholarController.durationToLastUpdateCourse.inMinutes} 分钟前',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
@@ -507,7 +509,8 @@ class ScholarPage extends StatelessWidget {
                                     const EdgeInsets.only(top: 4, bottom: 4),
                                 child: Icon(
                                   _scholarController
-                                              .durationToLastUpdate.inMinutes <
+                                              .durationToLastUpdateHomework
+                                              .inMinutes <
                                           5
                                       ? CupertinoIcons.check_mark_circled_solid
                                       : CupertinoIcons
@@ -521,11 +524,12 @@ class ScholarPage extends StatelessWidget {
                                   padding: const EdgeInsets.only(
                                       left: 4, top: 4, bottom: 4, right: 16),
                                   child: Text(
-                                      _scholarController.durationToLastUpdate
+                                      _scholarController
+                                                  .durationToLastUpdateHomework
                                                   .inMinutes >
                                               10000000
                                           ? '获取数据时遇到问题'
-                                          : '更新于 ${_scholarController.durationToLastUpdate.inMinutes} 分钟前',
+                                          : '更新于 ${_scholarController.durationToLastUpdateHomework.inMinutes} 分钟前',
                                       style: TextStyle(
                                         fontSize: 14,
                                         fontWeight: FontWeight.bold,
