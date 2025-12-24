@@ -202,6 +202,7 @@ class Scholar {
           }
 
           setScholar(
+              value.item2,
               tempSemester,
               tempGrades,
               tempMajorGpaAndCredit,
@@ -263,6 +264,7 @@ class Scholar {
   }
 
   void setScholar(
+      List<String?> errorMessage,
       List<Semester> tempSemesters,
       Map<String, List<Grade>> tempGrades,
       List<double> tempMajorGpaAndCredit,
@@ -272,23 +274,35 @@ class Scholar {
       double tempPt2,
       double tempPt3,
       double tempPt4) {
-    if (tempSemesters.isNotEmpty) {
-      semesters = tempSemesters;
+    var errorItems = ["成绩", "主修", "课表", "作业", "实践"];
+    var errorResult = [false, false, false, false, false];
+
+    for (int i = 0; i < errorItems.length; i++) {
+      for (var e in errorMessage) {
+        if (e != null && e.contains(errorItems[i])) {
+          errorResult[i] = true;
+          break;
+        }
+      }
     }
-    if (tempGrades.isNotEmpty) {
-      grades = tempGrades;
-    }
-    if (tempMajorGpaAndCredit.isNotEmpty) {
-      majorGpaAndCredit = tempMajorGpaAndCredit;
-    }
+
     if (tempSpecialDates.isNotEmpty) {
       specialDates = tempSpecialDates;
     }
-    if (tempTodos.isNotEmpty) {
+    if (errorResult[0] == false && tempGrades.isNotEmpty) {
+      grades = tempGrades;
+    }
+    if (errorResult[1] == false && tempMajorGpaAndCredit.isNotEmpty) {
+      majorGpaAndCredit = tempMajorGpaAndCredit;
+    }
+    if (errorResult[2] == false && tempSemesters.isNotEmpty) {
+      semesters = tempSemesters;
+    }
+    if (errorResult[3] == false && tempTodos.isNotEmpty) {
       todos = tempTodos;
     }
     isPracticeScoresGet = tempIsPracticeScoresGet;
-    if (tempIsPracticeScoresGet) {
+    if (errorResult[4] == false && tempIsPracticeScoresGet) {
       pt2 = tempPt2;
       pt3 = tempPt3;
       pt4 = tempPt4;

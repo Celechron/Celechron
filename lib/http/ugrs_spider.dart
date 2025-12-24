@@ -166,6 +166,7 @@ class UgrsSpider implements Spider {
     var semesterConfigFetches = <Future<String?>>[];
     // 查课表
     var timetableFetches = <Future<String?>>[];
+    var cancelTimetableFetch = false;
 
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
       var yearStr = '$yearEnroll-${yearEnroll + 1}';
@@ -231,38 +232,25 @@ class UgrsSpider implements Spider {
       }).catchError((e) => e.toString()));*/
 
       // 本科生课
-      timetableFetches
-          .add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addSession(e, '$yearStr-1');
+      // 顺序获取课表
+      for (var season in ['1|秋', '1|冬', '2|春', '2|夏']) {
+        if (cancelTimetableFetch) {
+          timetableFetches.add(Future.value("已取消"));
+          continue;
         }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      timetableFetches
-          .add(_zdbk.getTimetable(_httpClient, yearStr, "1|冬").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addSession(e, '$yearStr-1');
+        try {
+          var value = await _zdbk.getTimetable(_httpClient, yearStr, season);
+          var semKey = season.startsWith('1') ? '$yearStr-1' : '$yearStr-2';
+          for (var e in value.item2) {
+            outSemesters[semesterIndexMap[semKey]!].addSession(e, semKey);
+          }
+          timetableFetches.add(Future.value(value.item1?.toString()));
+          if (value.item1.toString().contains("验证码")) cancelTimetableFetch = true;
+          await Future.delayed(const Duration(milliseconds: 2250));
+        } catch (e) {
+          timetableFetches.add(Future.value(e.toString()));
         }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      timetableFetches
-          .add(_zdbk.getTimetable(_httpClient, yearStr, "2|春").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addSession(e, '$yearStr-2');
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      timetableFetches
-          .add(_zdbk.getTimetable(_httpClient, yearStr, "2|夏").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addSession(e, '$yearStr-2');
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }
 
       // 研究生课与考试
       if (fetchGrs) {
