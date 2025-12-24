@@ -95,8 +95,9 @@ class ImageCodePortal {
                             child: const Text("取消"),
                             onPressed: () {
                               Navigator.pop(context);
-                              if (!completer.isCompleted)
+                              if (!completer.isCompleted) {
                                 completer.complete(null);
+                              }
                             },
                           ),
                         ),
@@ -107,8 +108,9 @@ class ImageCodePortal {
                             onPressed: () {
                               final text = _inputController.text;
                               Navigator.pop(context);
-                              if (!completer.isCompleted)
+                              if (!completer.isCompleted) {
                                 completer.complete(text);
+                              }
                             },
                           ),
                         ),
