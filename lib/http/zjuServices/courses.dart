@@ -26,7 +26,7 @@ class Courses {
       // Return cached data on any error
       var todos = Todo.getAllFromCourses(
           (jsonDecode(_db?.getCachedWebPage("courses_todo") ?? '{}')));
-      return Tuple(e as Exception, todos);
+      return Tuple(e is Exception ? e : ExceptionWithMessage(e.toString()), todos);
     }
   }
 
@@ -55,6 +55,10 @@ class Courses {
   }
 
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
+    return await _loginInternal(httpClient, iPlanetDirectoryPro);
+  }
+
+  Future<bool> _loginInternal(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
     return HttpErrorHandler.handleErrors(() async {
       late HttpClientRequest request;
       late HttpClientResponse response;

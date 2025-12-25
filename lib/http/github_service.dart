@@ -28,7 +28,9 @@ class GitHubService {
       return Tuple(null, contributors);
     } catch (e) {
       // 网络错误或其他异常时返回默认作者名单
-      return Tuple(e as Exception, defaultContributors);
+      return Tuple(
+          e is Exception ? e : ExceptionWithMessage(e.toString()),
+          defaultContributors);
     }
   }
 

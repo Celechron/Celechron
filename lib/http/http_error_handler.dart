@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'exceptions.dart';
+import 'zjuServices/exceptions.dart';
 
 /// Centralized error handling for HTTP operations.
 /// This module provides utilities to:
@@ -12,8 +12,7 @@ class HttpErrorHandler {
   /// Wraps an async operation with timeout and comprehensive error handling.
   /// 
   /// This function:
-  /// - Applies a timeout to the operation
-  /// - Converts TimeoutException to ExceptionWithMessage
+  /// - Applies a timeout to the operation via the .timeout() method
   /// - Converts SocketException to ExceptionWithMessage("网络错误")
   /// - Converts any Error types to ExceptionWithMessage
   /// - Allows Exceptions to bubble up as-is

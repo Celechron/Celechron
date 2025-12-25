@@ -22,7 +22,7 @@ class GrsNew {
   }
 
   Future<void> login(HttpClient httpClient, Cookie? ssoCookie) async {
-    return HttpErrorHandler.handleErrors(() async {
+    await HttpErrorHandler.handleErrors(() async {
       late HttpClientRequest req;
       late HttpClientResponse res;
 
@@ -83,7 +83,7 @@ class GrsNew {
       final grades = await _getGradeInternal(httpClient);
       return Tuple(null, grades);
     } catch (e) {
-      return Tuple(e as Exception, []);
+      return Tuple(e is Exception ? e : ExceptionWithMessage(e.toString()), []);
     }
   }
 
@@ -164,7 +164,7 @@ class GrsNew {
       final exams = await _getExamsDtoInternal(httpClient, year, semester);
       return Tuple(null, exams);
     } catch (e) {
-      return Tuple(e as Exception, []);
+      return Tuple(e is Exception ? e : ExceptionWithMessage(e.toString()), []);
     }
   }
 
