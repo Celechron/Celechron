@@ -217,6 +217,8 @@ class Zdbk {
           _captcha = captcha.trim();
           // captcha = await solveCaptcha(httpClient);
           continue;
+        } else if (_captcha != null) {
+          await Future.delayed(const Duration(milliseconds: 2250));
         }
 
         if (responseText == "null") return Tuple(null, []);
