@@ -257,7 +257,6 @@ class UgrsSpider implements Spider {
           return Future.value(value.item1?.toString());
         } catch (e) {
           return Future.value(e.toString());
-
         }
       }
 
