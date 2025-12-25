@@ -26,7 +26,7 @@ class Courses {
       // Return cached data on any error
       var todos = Todo.getAllFromCourses(
           (jsonDecode(_db?.getCachedWebPage("courses_todo") ?? '{}')));
-      return Tuple(e is Exception ? e : ExceptionWithMessage(e.toString()), todos);
+      return Tuple(HttpErrorHandler.toException(e), todos);
     }
   }
 

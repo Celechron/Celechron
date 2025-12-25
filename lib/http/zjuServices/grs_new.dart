@@ -83,7 +83,7 @@ class GrsNew {
       final grades = await _getGradeInternal(httpClient);
       return Tuple(null, grades);
     } catch (e) {
-      return Tuple(e is Exception ? e : ExceptionWithMessage(e.toString()), []);
+      return Tuple(HttpErrorHandler.toException(e), []);
     }
   }
 
@@ -164,7 +164,7 @@ class GrsNew {
       final exams = await _getExamsDtoInternal(httpClient, year, semester);
       return Tuple(null, exams);
     } catch (e) {
-      return Tuple(e is Exception ? e : ExceptionWithMessage(e.toString()), []);
+      return Tuple(HttpErrorHandler.toException(e), []);
     }
   }
 

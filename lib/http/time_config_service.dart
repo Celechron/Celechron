@@ -22,7 +22,7 @@ class TimeConfigService {
     } catch (e) {
       // Return cached data on any error
       return Tuple(
-          e is Exception ? e : ExceptionWithMessage(e.toString()),
+          HttpErrorHandler.toException(e),
           _db?.getCachedWebPage('timeConfig_$semesterId'));
     }
   }
