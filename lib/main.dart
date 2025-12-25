@@ -40,7 +40,7 @@ void main() async {
   if (scholar.value.isLogan) {
     scholar.value
         .login()
-        .then((value) => scholar.value.refresh())
+        // .then((value) => scholar.value.refresh())
         .then((value) => scholar.refresh());
   }
 
