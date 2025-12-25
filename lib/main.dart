@@ -38,10 +38,11 @@ void main() async {
 
   var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   if (scholar.value.isLogan) {
-    scholar.value
-        .login()
-        // .then((value) => scholar.value.refresh())
-        .then((value) => scholar.refresh());
+    var req = scholar.value.login();
+    if (scholar.value.isNearExamWeek) {
+      req.then((value) => scholar.value.refresh());
+    }
+    req.then((value) => scholar.refresh());
   }
 
   ECardWidgetMessenger.update();

@@ -89,6 +89,18 @@ class Scholar {
     }
   }
 
+  bool get isNearExamWeek {
+    var thisSem = thisSemester;
+    for (var exam in thisSem.exams) {
+      var now = DateTime.now();
+      if (now.isAfter(exam.time[0].subtract(const Duration(days: 3))) &&
+          now.isBefore(exam.time[0].add(const Duration(days: 3)))) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   // 初始化以获取Cookies，并刷新数据
   Future<List<String?>> login() async {
     if (username == null || password == null) {
