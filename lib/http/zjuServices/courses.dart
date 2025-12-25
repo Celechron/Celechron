@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/http/http_error_handler.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/model/todo.dart';
@@ -18,10 +19,22 @@ class Courses {
   }
 
   Future<Tuple<Exception?, List<Todo>>> getTodo(HttpClient httpClient) async {
-    late HttpClientRequest request;
-    late HttpClientResponse response;
-
     try {
+      final todos = await _getTodoInternal(httpClient);
+      return Tuple(null, todos);
+    } catch (e) {
+      // Return cached data on any error
+      var todos = Todo.getAllFromCourses(
+          (jsonDecode(_db?.getCachedWebPage("courses_todo") ?? '{}')));
+      return Tuple(e as Exception, todos);
+    }
+  }
+
+  Future<List<Todo>> _getTodoInternal(HttpClient httpClient) async {
+    return HttpErrorHandler.handleErrors(() async {
+      late HttpClientRequest request;
+      late HttpClientResponse response;
+
       if (_session == null) {
         throw ExceptionWithMessage("未登录");
       }
@@ -37,54 +50,49 @@ class Courses {
 
       _db?.setCachedWebPage("courses_todo", body);
 
-      return Tuple(null,
-          Todo.getAllFromCourses((jsonDecode(body) as Map<String, dynamic>)));
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      var todos = Todo.getAllFromCourses(
-          (jsonDecode(_db?.getCachedWebPage("courses_todo") ?? '{}')));
-      return Tuple(exception, todos);
-    }
+      return Todo.getAllFromCourses((jsonDecode(body) as Map<String, dynamic>));
+    });
   }
 
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
-    late HttpClientRequest request;
-    late HttpClientResponse response;
+    return HttpErrorHandler.handleErrors(() async {
+      late HttpClientRequest request;
+      late HttpClientResponse response;
 
-    if (iPlanetDirectoryPro == null) {
-      throw ExceptionWithMessage("iPlanetDirectoryPro无效");
-    }
-    var cookies = <Cookie>[iPlanetDirectoryPro];
-
-    Future<void> getWithCookies(String url) async {
-      request = await httpClient.getUrl(Uri.parse(url)).timeout(
-          const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("请求超时"));
-      request.followRedirects = false;
-      request.cookies.addAll(cookies);
-      response = await request.close().timeout(const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("请求超时"));
-      cookies.addAll(response.cookies);
-      response.drain();
-      if (response.isRedirect) {
-        if (response.headers.value(HttpHeaders.locationHeader)! ==
-            ("https://courses.zju.edu.cn/user/index")) {
-          _session =
-              response.cookies.firstWhere((cookie) => cookie.name == "session");
-          return;
-        }
-        return await getWithCookies(
-            response.headers.value(HttpHeaders.locationHeader) as String);
+      if (iPlanetDirectoryPro == null) {
+        throw ExceptionWithMessage("iPlanetDirectoryPro无效");
       }
-    }
+      var cookies = <Cookie>[iPlanetDirectoryPro];
 
-    await getWithCookies("https://courses.zju.edu.cn/user/index");
-    if (_session == null) {
-      throw ExceptionWithMessage("无法获取session");
-    }
+      Future<void> getWithCookies(String url) async {
+        request = await httpClient.getUrl(Uri.parse(url)).timeout(
+            const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("请求超时"));
+        request.followRedirects = false;
+        request.cookies.addAll(cookies);
+        response = await request.close().timeout(const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("请求超时"));
+        cookies.addAll(response.cookies);
+        response.drain();
+        if (response.isRedirect) {
+          if (response.headers.value(HttpHeaders.locationHeader)! ==
+              ("https://courses.zju.edu.cn/user/index")) {
+            _session = response.cookies
+                .firstWhere((cookie) => cookie.name == "session");
+            return;
+          }
+          return await getWithCookies(
+              response.headers.value(HttpHeaders.locationHeader) as String);
+        }
+      }
 
-    return true;
+      await getWithCookies("https://courses.zju.edu.cn/user/index");
+      if (_session == null) {
+        throw ExceptionWithMessage("无法获取session");
+      }
+
+      return true;
+    });
   }
 
   void logout() {

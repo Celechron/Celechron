@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:celechron/http/http_error_handler.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/utils/tuple.dart';
 
@@ -19,6 +20,21 @@ class GitHubService {
   Future<Tuple<Exception?, List<String>>> getContributors(
       HttpClient httpClient) async {
     try {
+      final contributors = await _getContributorsInternal(httpClient);
+      // 如果抓取到的列表为空，返回默认作者名单
+      if (contributors.isEmpty) {
+        return Tuple(null, defaultContributors);
+      }
+      return Tuple(null, contributors);
+    } catch (e) {
+      // 网络错误或其他异常时返回默认作者名单
+      return Tuple(e as Exception, defaultContributors);
+    }
+  }
+
+  Future<List<String>> _getContributorsInternal(
+      HttpClient httpClient) async {
+    return HttpErrorHandler.handleErrors(() async {
       var request = await httpClient
           .getUrl(Uri.parse(
               'https://api.github.com/repos/Celechron/Celechron/contributors'))
@@ -34,25 +50,11 @@ class GitHubService {
       if (response.statusCode == 200) {
         var jsonString = await response.transform(utf8.decoder).join();
         var data = jsonDecode(jsonString) as List<dynamic>;
-        var logins = data.map((item) => item['login'] as String).toList();
-
-        // 如果抓取到的列表为空，返回默认作者名单
-        if (logins.isEmpty) {
-          return Tuple(null, defaultContributors);
-        }
-
-        return Tuple(null, logins);
+        return data.map((item) => item['login'] as String).toList();
       } else {
-        // 请求失败时返回默认作者名单
-        return Tuple(
-            ExceptionWithMessage("获取contributors失败: ${response.statusCode}"),
-            defaultContributors);
+        // 请求失败时抛出异常
+        throw ExceptionWithMessage("获取contributors失败: ${response.statusCode}");
       }
-    } catch (e) {
-      // 网络错误或其他异常时返回默认作者名单
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      return Tuple(exception, defaultContributors);
-    }
+    });
   }
 }

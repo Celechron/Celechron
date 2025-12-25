@@ -1,15 +1,16 @@
 import 'dart:convert';
 import 'dart:io';
 
+import '../http_error_handler.dart';
 import 'exceptions.dart';
 
 class ZjuAm {
   static Future<Cookie?> getSsoCookie(
       HttpClient httpClient, String username, String password) async {
-    late HttpClientRequest request;
-    late HttpClientResponse response;
+    return HttpErrorHandler.handleErrors(() async {
+      late HttpClientRequest request;
+      late HttpClientResponse response;
 
-    try {
       request = await httpClient
           .getUrl(Uri.parse('https://zjuam.zju.edu.cn/cas/login'))
           .timeout(const Duration(seconds: 8),
@@ -77,8 +78,6 @@ class ZjuAm {
       } else {
         throw LoginException("学号或密码错误");
       }
-    } on SocketException {
-      throw ExceptionWithMessage('网络错误');
-    }
+    });
   }
 }

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:celechron/http/http_error_handler.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/utils/tuple.dart';
 
@@ -16,6 +17,17 @@ class TimeConfigService {
   Future<Tuple<Exception?, String?>> getConfig(
       HttpClient httpClient, String semesterId) async {
     try {
+      final config = await _getConfigInternal(httpClient, semesterId);
+      return Tuple(null, config);
+    } catch (e) {
+      // Return cached data on any error
+      return Tuple(e as Exception, _db?.getCachedWebPage('timeConfig_$semesterId'));
+    }
+  }
+
+  Future<String?> _getConfigInternal(
+      HttpClient httpClient, String semesterId) async {
+    return HttpErrorHandler.handleErrors(() async {
       var response = await httpClient
           .getUrl(Uri.parse('http://calendar.celechron.top/$semesterId.json'))
           .then((request) => request.close())
@@ -25,14 +37,10 @@ class TimeConfigService {
       if (response.statusCode == 200) {
         var config = await response.transform(utf8.decoder).join();
         _db?.setCachedWebPage('timeConfig_$semesterId', config);
-        return Tuple(null, config);
+        return config;
       } else {
-        return Tuple(null, null);
+        return null;
       }
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      return Tuple(exception, _db?.getCachedWebPage('timeConfig_$semesterId'));
-    }
+    });
   }
 }
