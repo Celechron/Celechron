@@ -8,9 +8,9 @@ import 'zjuServices/exceptions.dart';
 /// 1. Convert Errors to Exceptions for proper handling
 /// 2. Normalize error messages across different error types
 class HttpErrorHandler {
-  /// Wraps an async operation with error normalization only (no timeout).
+  /// Wraps an async operation with error normalization.
   /// 
-  /// Use this to wrap operations that handle errors consistently:
+  /// Converts errors consistently:
   /// - Converts SocketException to ExceptionWithMessage("网络错误")
   /// - Converts any Error types to ExceptionWithMessage
   /// - Allows Exceptions to bubble up as-is
@@ -27,6 +27,8 @@ class HttpErrorHandler {
   /// Converts a caught error to an Exception safely.
   /// Use this in catch blocks that return Tuple<Exception?, Data>
   static Exception toException(dynamic e) {
-    return e is Exception ? e : ExceptionWithMessage(e.toString());
+    if (e is Exception) return e;
+    if (e is Error) return ExceptionWithMessage("内部错误: ${e.toString()}");
+    return ExceptionWithMessage(e.toString());
   }
 }
