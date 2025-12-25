@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/http/http_error_handler.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/model/session.dart';
@@ -21,53 +22,55 @@ class GrsNew {
   }
 
   Future<void> login(HttpClient httpClient, Cookie? ssoCookie) async {
-    late HttpClientRequest req;
-    late HttpClientResponse res;
+    return HttpErrorHandler.handleErrors(() async {
+      late HttpClientRequest req;
+      late HttpClientResponse res;
 
-    if (ssoCookie == null) {
-      throw ExceptionWithMessage("Invalid ssoCookie");
-    }
+      if (ssoCookie == null) {
+        throw ExceptionWithMessage("Invalid ssoCookie");
+      }
 
-    req = await httpClient
-        .getUrl(Uri.parse(
-            "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F"))
-        .timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("request timeout"));
-    req.followRedirects = false;
-    req.cookies.add(ssoCookie);
-    res = await req.close().timeout(const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("request timeout"));
-    res.drain();
+      req = await httpClient
+          .getUrl(Uri.parse(
+              "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F"))
+          .timeout(const Duration(seconds: 8),
+              onTimeout: () => throw ExceptionWithMessage("request timeout"));
+      req.followRedirects = false;
+      req.cookies.add(ssoCookie);
+      res = await req.close().timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("request timeout"));
+      res.drain();
 
-    final headerLoc = res.headers.value("location");
-    if (headerLoc == null) {
-      throw ExceptionWithMessage("Invalid location header");
-    }
-    final ticketLoc = headerLoc.indexOf("ticket=");
-    if (ticketLoc < 0) {
-      throw ExceptionWithMessage("Invalid location header");
-    }
-    final ticket = headerLoc.substring(ticketLoc + 7);
+      final headerLoc = res.headers.value("location");
+      if (headerLoc == null) {
+        throw ExceptionWithMessage("Invalid location header");
+      }
+      final ticketLoc = headerLoc.indexOf("ticket=");
+      if (ticketLoc < 0) {
+        throw ExceptionWithMessage("Invalid location header");
+      }
+      final ticket = headerLoc.substring(ticketLoc + 7);
 
-    req = await httpClient
-        .getUrl(Uri.parse(
-            "https://yjsy.zju.edu.cn/dataapi/sys/cas/client/validateLogin?ticket=$ticket&service=https:%2F%2Fyjsy.zju.edu.cn%2F"))
-        .timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("request timeout"));
-    res = await req.close().timeout(const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("request timeout"));
-    final loginJson = await res.transform(utf8.decoder).join();
+      req = await httpClient
+          .getUrl(Uri.parse(
+              "https://yjsy.zju.edu.cn/dataapi/sys/cas/client/validateLogin?ticket=$ticket&service=https:%2F%2Fyjsy.zju.edu.cn%2F"))
+          .timeout(const Duration(seconds: 8),
+              onTimeout: () => throw ExceptionWithMessage("request timeout"));
+      res = await req.close().timeout(const Duration(seconds: 8),
+          onTimeout: () => throw ExceptionWithMessage("request timeout"));
+      final loginJson = await res.transform(utf8.decoder).join();
 
-    // parse loginJson body
-    final loginInfo = jsonDecode(loginJson) as Map<String, dynamic>;
-    if (loginInfo["success"] != true) {
-      throw ExceptionWithMessage("Invalid login info");
-    }
-    final loginResult = loginInfo["result"] as Map<String, dynamic>;
-    _token = loginResult["token"] as String?;
-    if (_token == null) {
-      throw ExceptionWithMessage("Invalid token");
-    }
+      // parse loginJson body
+      final loginInfo = jsonDecode(loginJson) as Map<String, dynamic>;
+      if (loginInfo["success"] != true) {
+        throw ExceptionWithMessage("Invalid login info");
+      }
+      final loginResult = loginInfo["result"] as Map<String, dynamic>;
+      _token = loginResult["token"] as String?;
+      if (_token == null) {
+        throw ExceptionWithMessage("Invalid token");
+      }
+    });
   }
 
   void logout() {
@@ -76,12 +79,22 @@ class GrsNew {
 
   Future<Tuple<Exception?, Iterable<Grade>>> getGrade(
       HttpClient httpClient) async {
-    /*
+    try {
+      final grades = await _getGradeInternal(httpClient);
+      return Tuple(null, grades);
+    } catch (e) {
+      return Tuple(e as Exception, []);
+    }
+  }
+
+  Future<Iterable<Grade>> _getGradeInternal(HttpClient httpClient) async {
+    return HttpErrorHandler.handleErrors(() async {
+      /*
     不需要参数，但是注意是post
      */
-    late HttpClientRequest req;
-    late HttpClientResponse res;
-    try {
+      late HttpClientRequest req;
+      late HttpClientResponse res;
+
       if (_token == null) {
         throw ExceptionWithMessage("not logged in");
       }
@@ -141,23 +154,30 @@ class GrsNew {
         newGrade.creditIncluded = true;
         grades.add(newGrade);
       }
-      return Tuple(null, grades);
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      return Tuple(exception, []);
-    }
+      return grades;
+    });
   }
 
   Future<Tuple<Exception?, Iterable<ExamDto>>> getExamsDto(
       HttpClient httpClient, int year, int semester) async {
-    /*
+    try {
+      final exams = await _getExamsDtoInternal(httpClient, year, semester);
+      return Tuple(null, exams);
+    } catch (e) {
+      return Tuple(e as Exception, []);
+    }
+  }
+
+  Future<Iterable<ExamDto>> _getExamsDtoInternal(
+      HttpClient httpClient, int year, int semester) async {
+    return HttpErrorHandler.handleErrors(() async {
+      /*
     * 11 srping-summer
     * 12 autum-winter
      */
-    late HttpClientRequest req;
-    late HttpClientResponse res;
-    try {
+      late HttpClientRequest req;
+      late HttpClientResponse res;
+
       if (_token == null) {
         throw ExceptionWithMessage("not logged in");
       }
@@ -213,12 +233,8 @@ class GrsNew {
 
         exams.add(newExamDto);
       }
-      return Tuple(null, exams);
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      return Tuple(exception, []);
-    }
+      return exams;
+    });
   }
 
   Future<Tuple<Exception?, Iterable<Session>>> getTimetable(
