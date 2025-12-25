@@ -10,10 +10,10 @@ import 'zjuServices/exceptions.dart';
 class HttpErrorHandler {
   /// Wraps an async operation with error normalization.
   /// 
-  /// Converts errors consistently:
-  /// - Converts SocketException to ExceptionWithMessage("网络错误")
-  /// - Converts any Error types to ExceptionWithMessage
-  /// - Allows Exceptions to bubble up as-is
+  /// Converts specific error types to ExceptionWithMessage:
+  /// - SocketException → ExceptionWithMessage("网络错误")
+  /// - Error types → ExceptionWithMessage("内部错误: ...")
+  /// - Other Exceptions pass through unchanged
   ///
   /// Type parameters:
   /// - `T`: The return type of the operation
@@ -22,7 +22,7 @@ class HttpErrorHandler {
   /// - `operation`: An async function to execute with error handling
   ///
   /// Returns: The result of the operation
-  /// Throws: ExceptionWithMessage for network and internal errors
+  /// Throws: ExceptionWithMessage for SocketException and Error; other Exceptions unchanged
   static Future<T> handleErrors<T>(Future<T> Function() operation) async {
     try {
       return await operation();

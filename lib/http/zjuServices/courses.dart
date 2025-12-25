@@ -55,7 +55,7 @@ class Courses {
   }
 
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
-    return await _loginInternal(httpClient, iPlanetDirectoryPro);
+    return _loginInternal(httpClient, iPlanetDirectoryPro);
   }
 
   Future<bool> _loginInternal(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
