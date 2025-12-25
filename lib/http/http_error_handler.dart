@@ -14,6 +14,15 @@ class HttpErrorHandler {
   /// - Converts SocketException to ExceptionWithMessage("网络错误")
   /// - Converts any Error types to ExceptionWithMessage
   /// - Allows Exceptions to bubble up as-is
+  ///
+  /// Type parameters:
+  /// - `T`: The return type of the operation
+  ///
+  /// Parameters:
+  /// - `operation`: An async function to execute with error handling
+  ///
+  /// Returns: The result of the operation
+  /// Throws: ExceptionWithMessage for network and internal errors
   static Future<T> handleErrors<T>(Future<T> Function() operation) async {
     try {
       return await operation();
