@@ -30,6 +30,9 @@ class HttpErrorHandler {
       throw ExceptionWithMessage("网络错误");
     } on Error catch (error) {
       throw ExceptionWithMessage("内部错误: ${error.toString()}");
+    } on Exception {
+      // Rethrow other exceptions (like ExceptionWithMessage, LoginException, etc.)
+      rethrow;
     }
   }
 
