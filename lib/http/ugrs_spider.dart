@@ -264,9 +264,9 @@ class UgrsSpider implements Spider {
         if (timetableFetches.isEmpty) {
           timetableFetches.add(handleTimetable(season));
         } else {
-          timetableFetches.add(timetableFetches.first.then((_) {
+          timetableFetches.first = timetableFetches.first.then((_) {
             return handleTimetable(season);
-          }));
+          });
         }
       }
 
