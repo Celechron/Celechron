@@ -9,6 +9,7 @@ import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/session.dart';
 import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/design/captcha_input.dart';
+import 'package:celechron/utils/global.dart';
 import 'exceptions.dart';
 
 class Zdbk {
@@ -205,6 +206,9 @@ class Zdbk {
         var responseText = await response.transform(utf8.decoder).join();
 
         if (responseText.contains("captcha_error")) {
+          if (globalStatus['isFirstScreenReq']) {
+            throw ExceptionWithMessage("需要验证码");
+          }
           var imageBytes = await getCaptcha(httpClient);
           var captcha = await ImageCodePortal.show(
               imageBytes: imageBytes,
@@ -217,8 +221,6 @@ class Zdbk {
           _captcha = captcha.trim();
           // captcha = await solveCaptcha(httpClient);
           continue;
-        } else if (_captcha != null) {
-          await Future.delayed(const Duration(milliseconds: 2250));
         }
 
         if (responseText == "null") return Tuple(null, []);
