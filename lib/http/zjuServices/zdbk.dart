@@ -206,7 +206,7 @@ class Zdbk {
         var responseText = await response.transform(utf8.decoder).join();
 
         if (responseText.contains("captcha_error")) {
-          if (globalStatus['isFirstScreenReq']) {
+          if (GlobalStatus.isFirstScreenReq) {
             throw ExceptionWithMessage("需要验证码");
           }
           var imageBytes = await getCaptcha(httpClient);

@@ -38,9 +38,9 @@ void main() async {
   var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   if (scholar.value.isLogan) {
     scholar.value.login().then((value) async {
-      globalStatus['isFirstScreenReq'] = true;
+      GlobalStatus.isFirstScreenReq = true;
       await scholar.value.refresh();
-      globalStatus['isFirstScreenReq'] = false;
+      GlobalStatus.isFirstScreenReq = false;
     }).then((value) => scholar.refresh());
   }
 

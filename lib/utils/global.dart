@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-final Map<String, dynamic> globalStatus = {"isFirstScreenReq": false};
+
+final class GlobalStatus {
+  static bool isFirstScreenReq = false;
+}
