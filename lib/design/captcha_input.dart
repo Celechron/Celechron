@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:typed_data';
 
 import 'package:flutter/cupertino.dart';
-import 'package:celechron/main.dart' show navigatorKey;
+import 'package:celechron/utils/global.dart';
 
 class ImageCodePortal {
   static final TextEditingController _inputController = TextEditingController();

@@ -226,23 +226,41 @@ class GrsSpider implements Spider {
       }).catchError((e) => e.toString()));*/
 
       // 本科生课
-      for (var season in ['1|秋', '1|冬', '2|春', '2|夏']) {
+      Future<String?> handleTimetable(season) async {
         if (cancelTimetableFetch) {
-          timetableFetches.add(Future.value("已取消"));
-          continue;
+          return Future.value("已取消");
         }
         try {
           var value = await _zdbk.getTimetable(_httpClient, yearStr, season);
           var semKey = season.startsWith('1') ? '$yearStr-1' : '$yearStr-2';
-          for (var e in value.item2) {
+          var sessions = value.item2.toList();
+          sessions.sort((a, b) {
+            if (a.dayOfWeek != b.dayOfWeek) {
+              return a.dayOfWeek.compareTo(b.dayOfWeek);
+            } else {
+              return a.time.first.compareTo(b.time.first);
+            }
+          });
+          for (var e in sessions) {
             outSemesters[semesterIndexMap[semKey]!].addSession(e, semKey);
           }
-          timetableFetches.add(Future.value(value.item1?.toString()));
           if (value.item1.toString().contains("验证码")) {
             cancelTimetableFetch = true;
           }
+          return Future.value(value.item1?.toString());
         } catch (e) {
-          timetableFetches.add(Future.value(e.toString()));
+          return Future.value(e.toString());
+        }
+      }
+
+      for (var season in ['1|秋', '1|冬', '2|春', '2|夏']) {
+        if (timetableFetches.isEmpty) {
+          timetableFetches.add(handleTimetable(season));
+        } else {
+          timetableFetches.first = timetableFetches.first.then((value) async {
+            var res = await handleTimetable(season);
+            return value ?? res;
+          });
         }
       }
 
