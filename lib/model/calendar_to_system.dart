@@ -608,7 +608,7 @@ class CalendarToSystemManager {
       _showAlert(context, '暂不支持', 'macOS 系统暂不支持日历同步功能');
       return;
     }
-    
+
     if (enabled) {
       // 如果要开启同步，先检查权限
       if (!await requestPermissions()) {
