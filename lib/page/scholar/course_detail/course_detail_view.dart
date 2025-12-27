@@ -182,9 +182,11 @@ class CourseDetailPage extends StatelessWidget {
                             Container(
                               width: 12.0,
                               height: 12.0,
-                              decoration: const BoxDecoration(
+                              decoration: BoxDecoration(
                                 color: CupertinoColors.systemPink,
-                                shape: BoxShape.rectangle,
+                                shape: exams[0].type == ExamType.midterm
+                                    ? BoxShape.circle
+                                    : BoxShape.rectangle,
                               ),
                             ),
                             const SizedBox(width: 8.0),
@@ -247,6 +249,30 @@ class CourseDetailPage extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   )))
                         ]),
+                        if (exams[0].type == ExamType.midterm)
+                          Row(children: [
+                            Icon(
+                              CupertinoIcons.doc_text,
+                              size: 14,
+                              color: CupertinoTheme.of(context)
+                                  .textTheme
+                                  .textStyle
+                                  .color!
+                                  .withValues(alpha: 0.5),
+                            ),
+                            Expanded(
+                                child: Text(' 类型：期中',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.normal,
+                                      color: CupertinoTheme.of(context)
+                                          .textTheme
+                                          .textStyle
+                                          .color!
+                                          .withValues(alpha: 0.75),
+                                      overflow: TextOverflow.ellipsis,
+                                    )))
+                          ]),
                       ],
                     ),
                     for (var i = 1; i < exams.length; i++)
@@ -265,9 +291,11 @@ class CourseDetailPage extends StatelessWidget {
                               Container(
                                 width: 12.0,
                                 height: 12.0,
-                                decoration: const BoxDecoration(
+                                decoration: BoxDecoration(
                                   color: CupertinoColors.systemPink,
-                                  shape: BoxShape.rectangle,
+                                  shape: exams[i].type == ExamType.midterm
+                                      ? BoxShape.circle
+                                      : BoxShape.rectangle,
                                 ),
                               ),
                               const SizedBox(width: 8.0),
@@ -330,6 +358,30 @@ class CourseDetailPage extends StatelessWidget {
                                       overflow: TextOverflow.ellipsis,
                                     )))
                           ]),
+                          if (exams[i].type == ExamType.midterm)
+                            Row(children: [
+                              Icon(
+                                CupertinoIcons.doc_text,
+                                size: 14,
+                                color: CupertinoTheme.of(context)
+                                    .textTheme
+                                    .textStyle
+                                    .color!
+                                    .withValues(alpha: 0.5),
+                              ),
+                              Expanded(
+                                  child: Text(' 类型：期中',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.normal,
+                                        color: CupertinoTheme.of(context)
+                                            .textTheme
+                                            .textStyle
+                                            .color!
+                                            .withValues(alpha: 0.75),
+                                        overflow: TextOverflow.ellipsis,
+                                      )))
+                            ]),
                         ],
                       ),
                   ],
