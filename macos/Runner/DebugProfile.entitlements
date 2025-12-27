@@ -10,5 +10,9 @@
     <true/>
 	<key>com.apple.security.network.client</key>
 	<true/>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)group.top.celechron.celechron.debug</string>
+	</array>
 </dict>
 </plist>
