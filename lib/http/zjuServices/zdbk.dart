@@ -228,9 +228,10 @@ class Zdbk {
             .firstMatch(responseText)
             ?.group(0);
         if (timetableJson == null) throw ExceptionWithMessage("无法解析");
-
         var sessions = (jsonDecode(timetableJson) as List<dynamic>)
-            .where((e) => e['kcb'] != null)
+            .where((e) =>
+                e['kcb'] != null &&
+                (e['sfyjskc'] != "1")) // 本科生教务网忽略所有研究生课程，即忽略字段sfyjskc为"1"的课程
             .map((e) => Session.fromZdbk(e));
         _db?.setCachedWebPage('zdbk_Timetable$year$semester', timetableJson);
         return Tuple(null, sessions);
@@ -243,7 +244,9 @@ class Zdbk {
           exception,
           (jsonDecode((_db?.getCachedWebPage('zdbk_Timetable$year$semester') ??
                   '[]')) as List<dynamic>)
-              .where((e) => e['kcb'] != null)
+              .where((e) =>
+                  e['kcb'] != null &&
+                  (e['sfyjskc'] != "1")) // 本科生教务网忽略所有研究生课程，即忽略字段sfyjskc为"1"的课程
               .map((e) => Session.fromZdbk(e)));
     }
   }

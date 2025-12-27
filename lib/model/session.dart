@@ -2,6 +2,7 @@ class Session {
   String? id;
   late String name;
   late String teacher;
+  String? teacherId; // GRS teacher ID for detail API calls
   String? location;
   bool confirmed;
   int dayOfWeek;
@@ -22,6 +23,11 @@ class Session {
   // 自定义单双周。目前仅在研究生课程中出现。
   bool customRepeat = false;
   List<int> customRepeatWeeks = [];
+
+  // GRS course metadata (used when creating Course)
+  double? credit;
+  bool? online;
+  String? type;
 
   String get semesterId => id!.substring(1, 12);
   bool get showOnTimetable => !customRepeat || customRepeatWeeks.length >= 3;
@@ -92,6 +98,7 @@ class Session {
         'id': id,
         'name': name,
         'teacher': teacher,
+        'teacherId': teacherId,
         'confirmed': confirmed,
         'firstHalf': firstHalf,
         'secondHalf': secondHalf,
@@ -102,12 +109,16 @@ class Session {
         'location': location,
         'customRepeat': customRepeat,
         'customRepeatWeeks': customRepeatWeeks,
+        'credit': credit,
+        'online': online,
+        'type': type,
       };
 
   Session.fromJson(Map<String, dynamic> json)
       : id = json['id'],
         name = json['name'],
         teacher = json['teacher'],
+        teacherId = json['teacherId'] as String?,
         confirmed = json['confirmed'],
         firstHalf = json['firstHalf'],
         secondHalf = json['secondHalf'],
@@ -117,7 +128,10 @@ class Session {
         time = List<int>.from(json['time']),
         location = json['location'],
         customRepeat = json['customRepeat'] ?? false,
-        customRepeatWeeks = List<int>.from(json['customRepeatWeeks'] ?? []);
+        customRepeatWeeks = List<int>.from(json['customRepeatWeeks'] ?? []),
+        credit = json['credit'] as double?,
+        online = json['online'] as bool?,
+        type = json['type'] as String?;
 
   String get chineseTime {
     var timeString =
