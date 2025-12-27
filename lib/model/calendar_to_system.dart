@@ -55,6 +55,11 @@ class CalendarToSystemManager {
 
   /// 获取设备日历权限
   Future<bool> checkPermissions() async {
+    // device_calendar plugin doesn't support macOS
+    if (Platform.isMacOS) {
+      _hasCalendarPermission.value = false;
+      return false;
+    }
     try {
       var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
       if (permissionsGranted.isSuccess && permissionsGranted.data!) {
@@ -72,6 +77,11 @@ class CalendarToSystemManager {
 
   /// 获取设备日历权限
   Future<bool> requestPermissions() async {
+    // device_calendar plugin doesn't support macOS
+    if (Platform.isMacOS) {
+      _hasCalendarPermission.value = false;
+      return false;
+    }
     try {
       var permissionsGranted = await _deviceCalendarPlugin.hasPermissions();
       if (permissionsGranted.isSuccess && permissionsGranted.data!) {
@@ -547,6 +557,12 @@ class CalendarToSystemManager {
 
   /// 检查初始日历同步状态
   Future<void> checkInitialCalendarSyncStatus() async {
+    // device_calendar plugin doesn't support macOS
+    if (Platform.isMacOS) {
+      _calendarSyncEnabled.value = false;
+      _hasCalendarPermission.value = false;
+      return;
+    }
     try {
       // 先检查权限
       await checkPermissions();
@@ -587,6 +603,12 @@ class CalendarToSystemManager {
 
   /// 切换日历同步功能
   Future<void> toggleCalendarSync(BuildContext context, bool enabled) async {
+    // macOS 暂不支持系统日历同步功能
+    if (Platform.isMacOS) {
+      _showAlert(context, '暂不支持', 'macOS 系统暂不支持日历同步功能');
+      return;
+    }
+
     if (enabled) {
       // 如果要开启同步，先检查权限
       if (!await requestPermissions()) {

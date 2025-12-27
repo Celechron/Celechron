@@ -189,6 +189,7 @@ class _CelechronAppState extends State<CelechronApp>
     const initializationSettings = InitializationSettings(
       android: initializationSettingsAndroid,
       iOS: initializationSettingsDarwin,
+      macOS: initializationSettingsDarwin,
       // windows: initializationSettingsWindows);
     );
     flutterLocalNotificationsPlugin.initialize(initializationSettings);
