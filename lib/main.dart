@@ -16,6 +16,7 @@ import 'package:celechron/page/home_page.dart';
 import 'package:celechron/page/option/ecard_pay_page.dart';
 import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/utils/global.dart';
 
 void main() async {
   // 初始化数据库
@@ -36,10 +37,11 @@ void main() async {
 
   var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   if (scholar.value.isLogan) {
-    scholar.value
-        .login()
-        .then((value) => scholar.value.refresh())
-        .then((value) => scholar.refresh());
+    scholar.value.login().then((value) async {
+      GlobalStatus.isFirstScreenReq = true;
+      await scholar.value.refresh();
+      GlobalStatus.isFirstScreenReq = false;
+    }).then((value) => scholar.refresh());
   }
 
   ECardWidgetMessenger.update();
@@ -116,6 +118,7 @@ class _CelechronAppState extends State<CelechronApp>
             '/ecardpaypage': (context) => ECardPayPage(),
           },
           debugShowCheckedModeBanner: false,
+          navigatorKey: navigatorKey,
         ));
   }
 

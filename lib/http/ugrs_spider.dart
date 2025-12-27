@@ -28,6 +28,8 @@ class UgrsSpider implements Spider {
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
   bool fetchGrs = false;
+  Map<String, double>? _practiceScores;
+  bool _isPracticeScoresGet = false; // 是否成功获取到二三四课堂分数
 
   UgrsSpider(String username, String password) {
     _httpClient = HttpClient();
@@ -109,7 +111,12 @@ class UgrsSpider implements Spider {
     // _appService.logout();
     _zdbk.logout();
     _grsNew.logout();
+    _practiceScores = null;
+    _isPracticeScoresGet = false;
   }
+
+  Map<String, double>? get practiceScores => _practiceScores;
+  bool get isPracticeScoresGet => _isPracticeScoresGet;
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override
@@ -124,7 +131,7 @@ class UgrsSpider implements Spider {
           List<Todo>>> getEverything() async {
     // 请求顺序
     var fetches = <Future<String?>>[];
-    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业'];
+    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业', '实践'];
 
     // 返回值初始化
     var outSemesters = <Semester>[];
@@ -159,6 +166,7 @@ class UgrsSpider implements Spider {
     var semesterConfigFetches = <Future<String?>>[];
     // 查课表
     var timetableFetches = <Future<String?>>[];
+    var cancelTimetableFetch = false;
 
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
       var yearStr = '$yearEnroll-${yearEnroll + 1}';
@@ -224,38 +232,44 @@ class UgrsSpider implements Spider {
       }).catchError((e) => e.toString()));*/
 
       // 本科生课
-      timetableFetches
-          .add(_zdbk.getTimetable(_httpClient, yearStr, "1|秋").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addSession(e, '$yearStr-1');
+      // 顺序获取课表
+      Future<String?> handleTimetable(season) async {
+        if (cancelTimetableFetch) {
+          return Future.value("已取消");
         }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      timetableFetches
-          .add(_zdbk.getTimetable(_httpClient, yearStr, "1|冬").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addSession(e, '$yearStr-1');
+        try {
+          var value = await _zdbk.getTimetable(_httpClient, yearStr, season);
+          var semKey = season.startsWith('1') ? '$yearStr-1' : '$yearStr-2';
+          var sessions = value.item2.toList();
+          sessions.sort((a, b) {
+            if (a.dayOfWeek != b.dayOfWeek) {
+              return a.dayOfWeek.compareTo(b.dayOfWeek);
+            } else {
+              return a.time.first.compareTo(b.time.first);
+            }
+          });
+          for (var e in sessions) {
+            outSemesters[semesterIndexMap[semKey]!].addSession(e, semKey);
+          }
+          if (value.item1.toString().contains("验证码")) {
+            cancelTimetableFetch = true;
+          }
+          return Future.value(value.item1?.toString());
+        } catch (e) {
+          return Future.value(e.toString());
         }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      timetableFetches
-          .add(_zdbk.getTimetable(_httpClient, yearStr, "2|春").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addSession(e, '$yearStr-2');
+      }
+
+      for (var season in ['1|秋', '1|冬', '2|春', '2|夏']) {
+        if (timetableFetches.isEmpty) {
+          timetableFetches.add(handleTimetable(season));
+        } else {
+          timetableFetches.first = timetableFetches.first.then((value) async {
+            var res = await handleTimetable(season);
+            return value ?? res;
+          });
         }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      timetableFetches
-          .add(_zdbk.getTimetable(_httpClient, yearStr, "2|夏").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addSession(e, '$yearStr-2');
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }
 
       // 研究生课与考试
       if (fetchGrs) {
@@ -362,6 +376,22 @@ class UgrsSpider implements Spider {
       outTodos.addAll(value.item2);
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
+
+    // 实践学分（第二三四课堂）- 使用zdbk获取
+    fetches.add(_zdbk.getPracticeScores(_httpClient, _username).then((value) {
+      // 只有当没有错误时，才设置为 true
+      if (value.item1 == null) {
+        _practiceScores = value.item2;
+        _isPracticeScoresGet = true;
+      } else {
+        _practiceScores = value.item2;
+        _isPracticeScoresGet = false;
+      }
+      return value.item1?.toString();
+    }).catchError((e) {
+      _isPracticeScoresGet = false;
+      return e.toString();
+    }));
 
     // 等待所有请求完成。然后，删除不包含考试、成绩、课程的全空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {

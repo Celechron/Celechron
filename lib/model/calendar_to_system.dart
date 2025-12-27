@@ -242,7 +242,7 @@ class CalendarToSystemManager {
       case PeriodType.test:
         // 考试 - 设置为忙碌状态，并在标题前加标识
         event.availability = Availability.Busy;
-        event.title = '🏆 ${period.summary}';
+        event.title = '💯 ${period.summary}';
         break;
       default:
         event.availability = Availability.Free;
