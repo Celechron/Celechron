@@ -218,16 +218,17 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                       onDateTimeChanged: (DateTime newTime) {
                                         setState(() {
                                           now.startTime = newTime;
-                                          if (now.endTime
-                                              .isBefore(now.startTime)) {
-                                            now.endTime = now.startTime;
-                                          }
                                         });
                                       },
                                     ),
                                   ),
                                 );
                               });
+                          if (now.endTime.isBefore(now.startTime)) {
+                            setState(() {
+                              now.endTime = now.startTime;
+                            });
+                          }
                         },
                       ),
                     CupertinoTextFormFieldRow(
@@ -256,17 +257,18 @@ class _TaskEditPageState extends State<TaskEditPage> {
                                     onDateTimeChanged: (DateTime newTime) {
                                       setState(() {
                                         now.endTime = newTime;
-                                        if (now.type == TaskType.fixed &&
-                                            now.startTime
-                                                .isAfter(now.endTime)) {
-                                          now.startTime = now.endTime;
-                                        }
                                       });
                                     },
                                   ),
                                 ),
                               );
                             });
+                        if (now.type == TaskType.fixed &&
+                            now.startTime.isAfter(now.endTime)) {
+                          setState(() {
+                            now.startTime = now.endTime;
+                          });
+                        }
                       },
                     ),
                   ],
