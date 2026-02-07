@@ -41,6 +41,9 @@ void main() async {
       GlobalStatus.isFirstScreenReq = true;
       await scholar.value.refresh();
       GlobalStatus.isFirstScreenReq = false;
+    }).catchError((e) {
+      // 离线或网络异常时不崩溃，保留缓存数据
+      GlobalStatus.isFirstScreenReq = false;
     }).then((value) => scholar.refresh());
   }
 

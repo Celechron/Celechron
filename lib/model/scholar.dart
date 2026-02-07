@@ -240,9 +240,8 @@ class Scholar {
             aboardGpa = result.item1;
             // 所获学分，不包括挂科的。
             credit = result.item2;
-          } else {
-            credit = 0.0;
           }
+          // 无成绩数据时不重置学分，保留之前的缓存值
 
           await _db?.setScholar(this);
           return value.item1.every((e) => e == null)
@@ -301,20 +300,30 @@ class Scholar {
     if (tempSpecialDates.isNotEmpty) {
       specialDates = tempSpecialDates;
     }
-    if (errorResult[0] == false && tempGrades.isNotEmpty) {
+    // 无错误时更新数据；有错误但当前数据为空时，使用缓存数据作为回退
+    if (tempGrades.isNotEmpty &&
+        (errorResult[0] == false || grades.isEmpty)) {
       grades = tempGrades;
     }
-    if (errorResult[1] == false && tempMajorGpaAndCredit.isNotEmpty) {
+    if (tempMajorGpaAndCredit.isNotEmpty &&
+        (errorResult[1] == false ||
+            (majorGpaAndCredit[0] == 0.0 && majorGpaAndCredit[1] == 0.0))) {
       majorGpaAndCredit = tempMajorGpaAndCredit;
     }
-    if (errorResult[2] == false && tempSemesters.isNotEmpty) {
+    if (tempSemesters.isNotEmpty &&
+        (errorResult[2] == false || semesters.isEmpty)) {
       semesters = tempSemesters;
     }
-    if (errorResult[3] == false && tempTodos.isNotEmpty) {
+    if (tempTodos.isNotEmpty &&
+        (errorResult[3] == false || todos.isEmpty)) {
       todos = tempTodos;
     }
-    isPracticeScoresGet = tempIsPracticeScoresGet;
-    if (errorResult[4] == false && tempIsPracticeScoresGet) {
+    if (errorResult[4] == false) {
+      isPracticeScoresGet = tempIsPracticeScoresGet;
+    }
+    if (tempIsPracticeScoresGet &&
+        (errorResult[4] == false ||
+            (!isPracticeScoresGet && pt2 == 0.0 && pt3 == 0.0 && pt4 == 0.0))) {
       pt2 = tempPt2;
       pt3 = tempPt3;
       pt4 = tempPt4;

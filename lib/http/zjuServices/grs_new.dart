@@ -13,7 +13,6 @@ import 'package:quiver/time.dart';
 
 class GrsNew {
   String? _token;
-  // ignore: unused_field
   DatabaseHelper? _db;
 
   set db(DatabaseHelper? db) {
@@ -103,51 +102,60 @@ class GrsNew {
       if (rawGrades.isEmpty) {
         return Tuple(null, <Grade>[]);
       }
-      List<Grade> grades = [];
-
-      for (var rawGradeDyn in rawGrades) {
-        var rawGrade = rawGradeDyn as Map<String, dynamic>;
-        // TODO: 增加额外的需要跳过的课程
-        if (rawGrade["xkztMc"] == "未处理") {
-          continue;
-        }
-        var newGrade = Grade.empty();
-        //这里使用的id和其他的不一样，直接使用sjddBz字段，
-        // e.g.: 2023-2024学年冬学期<br/>班级编号xxxxx
-        newGrade.id =
-            rawGrade["sjddBz"] == null ? "" : rawGrade["sjddBz"] as String;
-        newGrade.name = rawGrade["kcmc"] as String;
-        newGrade.credit = rawGrade["xf"] as double;
-
-        if (rawGrade["bz"] != null) {
-          var comments = rawGrade["bz"] as String;
-          if (comments.contains("线上") ||
-              comments.contains("录播") ||
-              comments.contains("直播")) {
-            newGrade.isOnline = true;
-          } else {
-            newGrade.isOnline = false;
-          }
-        } else {
-          newGrade.isOnline = false;
-        }
-        newGrade.fivePoint = 0.0;
-        newGrade.fourPoint = 0.0;
-        newGrade.fourPointLegacy = 0.0;
-        newGrade.hundredPoint =
-            rawGrade["zf"] == null ? 0 : (rawGrade["zf"] as double).toInt();
-        newGrade.major = true;
-        // 研究生应该没法算gpa吧
-        newGrade.gpaIncluded = false;
-        newGrade.creditIncluded = true;
-        grades.add(newGrade);
-      }
+      List<Grade> grades = _parseGrsGrades(rawGrades);
+      // 缓存研究生成绩数据
+      _db?.setCachedWebPage('grsNew_Grade', jsonEncode(rawGrades));
       return Tuple(null, grades);
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      // 从缓存中恢复研究生成绩数据
+      var cachedJson = _db?.getCachedWebPage('grsNew_Grade');
+      if (cachedJson != null) {
+        try {
+          var rawGrades = jsonDecode(cachedJson) as List;
+          return Tuple(exception, _parseGrsGrades(rawGrades));
+        } catch (_) {}
+      }
       return Tuple(exception, []);
     }
+  }
+
+  List<Grade> _parseGrsGrades(List<dynamic> rawGrades) {
+    List<Grade> grades = [];
+    for (var rawGradeDyn in rawGrades) {
+      var rawGrade = rawGradeDyn as Map<String, dynamic>;
+      if (rawGrade["xkztMc"] == "未处理") {
+        continue;
+      }
+      var newGrade = Grade.empty();
+      newGrade.id =
+          rawGrade["sjddBz"] == null ? "" : rawGrade["sjddBz"] as String;
+      newGrade.name = rawGrade["kcmc"] as String;
+      newGrade.credit = (rawGrade["xf"] as num).toDouble();
+      if (rawGrade["bz"] != null) {
+        var comments = rawGrade["bz"] as String;
+        if (comments.contains("线上") ||
+            comments.contains("录播") ||
+            comments.contains("直播")) {
+          newGrade.isOnline = true;
+        } else {
+          newGrade.isOnline = false;
+        }
+      } else {
+        newGrade.isOnline = false;
+      }
+      newGrade.fivePoint = 0.0;
+      newGrade.fourPoint = 0.0;
+      newGrade.fourPointLegacy = 0.0;
+      newGrade.hundredPoint =
+          rawGrade["zf"] == null ? 0 : (rawGrade["zf"] as num).toInt();
+      newGrade.major = true;
+      newGrade.gpaIncluded = false;
+      newGrade.creditIncluded = true;
+      grades.add(newGrade);
+    }
+    return grades;
   }
 
   Future<Tuple<Exception?, Iterable<ExamDto>>> getExamsDto(
@@ -213,10 +221,51 @@ class GrsNew {
 
         exams.add(newExamDto);
       }
+      // 缓存研究生考试数据
+      _db?.setCachedWebPage(
+          'grsNew_Exams_${year}_$semester', jsonEncode(rawExams));
       return Tuple(null, exams);
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      // 从缓存中恢复研究生考试数据
+      var cachedJson =
+          _db?.getCachedWebPage('grsNew_Exams_${year}_$semester');
+      if (cachedJson != null) {
+        try {
+          var rawExams = jsonDecode(cachedJson) as List<dynamic>;
+          List<ExamDto> exams = [];
+          final formatter = DateFormat('yyyy-MM-dd');
+          for (var rawExamDyn in rawExams) {
+            var rawExam = rawExamDyn as Map<String, dynamic>;
+            if (rawExam["xn"] as String != year.toString()) continue;
+            var newExamDto = ExamDto.empty();
+            var newExam = Exam.empty();
+            newExam.id = (rawExam["kcbh"] as String).substring(0, 7);
+            newExam.name = rawExam["kcmc"] as String;
+            newExam.type = ExamType.finalExam;
+            newExam.location = (rawExam["mc"] as String?) ?? "未知地点";
+            newExam.seat = (rawExam["zwh"] as int).toString();
+            int day = (rawExam["rq"] as int?) ?? 19700101;
+            int start = (rawExam["kssj"] as int?) ?? 800;
+            int end = (rawExam["jssj"] as int?) ?? 2200;
+            String dayFormat =
+                '${day.toString().substring(0, 4)}-${day.toString().substring(4, 6)}-${day.toString().substring(6, 8)}';
+            DateTime dayTime = formatter.parse(dayFormat);
+            DateTime startTime = dayTime
+                .add(anHour * (start ~/ 100) + aMinute * (start % 100));
+            DateTime endTime =
+                dayTime.add(anHour * (end ~/ 100) + aMinute * (end % 100));
+            newExam.time = [startTime, endTime];
+            newExamDto.id = (rawExam["kcbh"] as String).substring(0, 7);
+            newExamDto.name = rawExam["kcmc"] as String;
+            newExamDto.credit = 0;
+            newExamDto.exams.add(newExam);
+            exams.add(newExamDto);
+          }
+          return Tuple(exception, exams);
+        } catch (_) {}
+      }
       return Tuple(exception, []);
     }
   }
@@ -444,17 +493,105 @@ class GrsNew {
       // Fetch course details for each unique course
       await _fetchCourseDetails(httpClient, year, semester, sessions);
 
+      // 缓存研究生课表原始数据
+      _db?.setCachedWebPage(
+          'grsNew_Timetable_${year}_$semester', resultJson);
       return Tuple(null, sessions);
     } catch (e) {
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      // 从缓存中恢复研究生课表数据
+      var cachedJson =
+          _db?.getCachedWebPage('grsNew_Timetable_${year}_$semester');
+      if (cachedJson != null) {
+        try {
+          var sessions = _parseTimetableJson(cachedJson, semester);
+          return Tuple(exception, sessions);
+        } catch (_) {}
+      }
       return Tuple(exception, []);
     }
   }
-}
 
-void main() async {
-  // const str = "https://yjsy.zju.edu.cn/?ticket=ST-399";
-  // int ticketLoc = str.indexOf("ticket=");
-  // print(str.substring(ticketLoc + 7, 2));
+  List<Session> _parseTimetableJson(String resultJson, int semester) {
+    final result = jsonDecode(resultJson) as Map<String, dynamic>;
+    if (result["success"] != true) return [];
+
+    Map<String, dynamic> defaultMap = {};
+    final kcbMap = result["result"] as Map<String, dynamic>;
+    final dayWithClasses = kcbMap["kcbMap"] as Map<String, dynamic>;
+
+    List<Session> sessions = [];
+    for (int i = 1; i <= 7; ++i) {
+      var classesThisDay =
+          (dayWithClasses["$i"] ?? defaultMap) as Map<String, dynamic>;
+      Map<String, Session> sessionThisDay = {};
+      for (int j = 1; j <= 15; ++j) {
+        var wrapper =
+            (classesThisDay["$j"] ?? defaultMap) as Map<String, dynamic>;
+        var classesThisPeriod =
+            (wrapper["pyKcbjSjddVOList"] ?? []) as List<dynamic>;
+
+        for (var rawClassDyn in classesThisPeriod) {
+          try {
+            var rawClass = rawClassDyn as Map<String, dynamic>;
+            String classId = rawClass["bjbh"] as String;
+            String sessionId = classId.substring(0, 7);
+
+            if (sessionThisDay.containsKey(classId)) {
+              sessionThisDay[classId]!.time.add(j);
+              continue;
+            }
+            if (rawClass["xkzt"] == "12") continue;
+
+            int classSemester = int.parse(rawClass["pkxq"] ?? "$semester");
+            var newSession = Session.empty();
+            newSession.id = sessionId;
+            newSession.name = rawClass["kcmc"] as String;
+            newSession.teacher = rawClass["xm"] as String;
+            newSession.teacherId = rawClass["jzgId"] as String?;
+            newSession.location = rawClass["cdmc"] as String?;
+            newSession.confirmed = true;
+            newSession.dayOfWeek = i;
+            newSession.time = [j];
+
+            if (semester == 11 || semester == 13) {
+              newSession.firstHalf = true;
+            } else {
+              newSession.secondHalf = true;
+            }
+            if (classSemester == 15 || classSemester == 16) {
+              newSession.firstHalf = newSession.secondHalf = true;
+            }
+
+            String weekExtra = rawClass["zc"] as String;
+            weekExtra = weekExtra.replaceAll(RegExp(r"[^\d,]"), "");
+            List<int> weekExtraList =
+                weekExtra.split(",").map(int.parse).toList();
+
+            newSession.customRepeat = true;
+            newSession.customRepeatWeeks = weekExtraList;
+
+            var threshold =
+                (newSession.firstHalf && newSession.secondHalf) ? 8 : 4;
+            if (weekExtraList.length > threshold) {
+              newSession.oddWeek = newSession.evenWeek = true;
+            } else {
+              int oddWeekCount =
+                  weekExtraList.where((e) => e % 2 == 1).length;
+              if (oddWeekCount > weekExtraList.length / 2) {
+                newSession.oddWeek = true;
+              } else {
+                newSession.evenWeek = true;
+              }
+            }
+
+            sessionThisDay[classId] = newSession;
+          } catch (_) {}
+        }
+      }
+      sessions.addAll(sessionThisDay.values);
+    }
+    return sessions;
+  }
 }
