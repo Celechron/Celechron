@@ -131,58 +131,68 @@ class UgrsSpider implements Spider {
   Map<String, double>? get practiceScores => _practiceScores;
   bool get isPracticeScoresGet => _isPracticeScoresGet;
 
-  // 【终极修改】自带最大重试次数的循环重试机制，并拦截底层私吞的错误
+  // 【终极修改】自带最大重试次数的循环重试机制，并正确拦截底层私吞的错误
   Future<T> _fetchWithRetry<T>(Future<T> Function() operation, {int maxRetries = 2}) async {
     int attempts = 0;
     while (true) {
       try {
         var result = await operation(); // 尝试执行请求
         
-        // 【新增逻辑】：拦截底层 Zdbk 类私吞的异常
-        // Zdbk 会把网络崩溃等错误放进 Tuple.item1 偷偷返回。我们需要强行把它揪出来抛出！
+        // 【修正】：将判断和抛出异常分开，防止抛出的异常被安全检查的 catch 吃掉
+        bool hasHiddenError = false;
+        dynamic hiddenErrorToThrow;
+        
         try {
           dynamic res = result;
-          // 检查返回值是否包含了错误信息
           if (res != null && res.item1 != null) {
-            String errStr = res.item1.toString();
-            // 如果是被强行关闭的连接、超时、解析失败或未登录，手动抛出以激活下面的重试
-            if (errStr.contains("Connection closed") || 
-                errStr.contains("HttpException") || 
+            String errStr = res.item1.toString().toLowerCase();
+            if (errStr.contains("connection closed") || 
+                errStr.contains("httpexception") || 
                 errStr.contains("网络错误") ||
                 errStr.contains("未登录") ||
-                errStr.contains("请求超时") ||
-                errStr.contains("type 'Null'") ||
-                errStr.contains("无法解析")) {
-              throw res.item1; // 强制抛出异常！
+                errStr.contains("超时") ||
+                errStr.contains("timeout") ||
+                errStr.contains("type 'null'") ||
+                errStr.contains("无法解析") ||
+                errStr.contains("wisportalid无效")) {
+              hasHiddenError = true;
+              hiddenErrorToThrow = res.item1;
             }
           }
-        } catch (_) {} // 忽略判断过程中的错误（安全处理）
+        } catch (_) {} // 这里只负责捕获 res.item1 的类型转换报错
+
+        // 如果发现了隐藏的错误，在 try-catch 外部将其抛出！
+        if (hasHiddenError) {
+          throw hiddenErrorToThrow;
+        }
 
         return result; // 如果没有错误，正常返回
         
       } catch (e) {
         attempts++;
-        String errStr = e.toString();
+        String errStr = e.toString().toLowerCase(); // 转小写方便匹配
         
-        // 如果错误符合条件，且还没达到最大重试次数
+        // 判断是否符合重试条件（加入更全的关键字）
         if (attempts <= maxRetries && (
             e is SessionExpiredException || 
             errStr.contains("未登录") || 
-            errStr.contains("wisportalId无效") ||
+            errStr.contains("wisportalid无效") ||
             errStr.contains("无法解析") ||
-            errStr.contains("type 'Null'") || 
-            errStr.contains("Connection closed") || 
+            errStr.contains("type 'null'") || 
+            errStr.contains("connection closed") || 
             errStr.contains("timeout") || 
-            errStr.contains("HttpException") ||
-            errStr.contains("网络错误")
+            errStr.contains("超时") || 
+            errStr.contains("httpexception") ||
+            errStr.contains("网络错误") ||
+            errStr.contains("socketexception")
         )) {
-          print("⚡️⚡️ 第 $attempts 次自动修复：检测到异常($errStr)，正在重试... ⚡️⚡️");
+          print("⚡️⚡️ 第 $attempts 次自动修复：检测到异常(${e.toString()})，正在重试... ⚡️⚡️");
           await login(); // 重建 HttpClient 并登录
-          await Future.delayed(const Duration(milliseconds: 1000)); // 延长至1秒，确保死连接彻底断开
-          continue; // 继续 while 循环进行下一次尝试
+          await Future.delayed(const Duration(milliseconds: 1000)); // 给服务器1秒缓冲
+          continue; // 继续下一次尝试
         }
         
-        // 如果重试次数耗尽，或者是不认识的致命错误，才真正报错给界面
+        // 如果重试次数耗尽，或者是不认识的致命错误，才真正报错
         rethrow;
       }
     }
