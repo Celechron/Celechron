@@ -131,29 +131,35 @@ class UgrsSpider implements Spider {
   Map<String, double>? get practiceScores => _practiceScores;
   bool get isPracticeScoresGet => _isPracticeScoresGet;
 
-  // 【关键修改】增强重试机制
-  Future<T> _fetchWithRetry<T>(Future<T> Function() operation) async {
-    try {
-      return await operation();
-    } catch (e) {
-      // 只要是这些错误，统统重试
-      if (e is SessionExpiredException || 
-          e.toString().contains("未登录") || 
-          e.toString().contains("wisportalId无效") ||
-          e.toString().contains("无法解析")) { // 包含“无法解析”
+  // 【终极修改】自带最大重试次数的循环重试机制，捕获更多异常
+  Future<T> _fetchWithRetry<T>(Future<T> Function() operation, {int maxRetries = 2}) async {
+    int attempts = 0;
+    while (true) {
+      try {
+        return await operation(); // 尝试执行请求
+      } catch (e) {
+        attempts++;
+        String errStr = e.toString();
         
-        print("⚡️⚡️ 自动修复：检测到异常(${e.toString()})，正在重建连接并重试... ⚡️⚡️");
-        
-        // 1. 重新登录（会重置 HttpClient）
-        await login();
-        
-        // 2. 【关键】稍微等待一下，给服务器一点反应时间，也确保本地状态同步
-        await Future.delayed(const Duration(milliseconds: 500));
-        
-        // 3. 再次尝试
-        return await operation();
+        // 如果还没有达到最大重试次数，并且是网络/解析/会话相关的错误，则重试
+        if (attempts <= maxRetries && (
+            e is SessionExpiredException || 
+            errStr.contains("未登录") || 
+            errStr.contains("wisportalId无效") ||
+            errStr.contains("无法解析") ||
+            errStr.contains("type 'Null'") || // 捕获“作业查询”中因过期导致的 null 解析错误
+            errStr.contains("Connection closed") || // 捕获并发导致 HttpClient 强制关闭的错误
+            errStr.contains("timeout") || // 捕获超时
+            errStr.contains("HttpException") // 捕获底层网络异常
+        )) {
+          print("⚡️⚡️ 第 $attempts 次自动修复：检测到异常($errStr)，正在重试... ⚡️⚡️");
+          await login(); // 等待登录（获取新Cookie并重建HttpClient）
+          await Future.delayed(const Duration(milliseconds: 800)); // 给服务器一点喘息时间
+          continue; // 继续 while 循环，重新执行 operation()
+        }
+        // 超过重试次数，或者遇到不认识的错误，才真正报错抛出
+        rethrow;
       }
-      rethrow;
     }
   }
 
@@ -380,7 +386,8 @@ if (fetchGrs) {
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    fetches.add(_courses.getTodo(_httpClient).then((value) {
+    // 作业（学在浙大）- 加上重试包装
+    fetches.add(_fetchWithRetry(() => _courses.getTodo(_httpClient)).then((value) {
       outTodos.clear();
       outTodos.addAll(value.item2);
       return value.item1?.toString();
@@ -451,7 +458,7 @@ class MockSpider extends UgrsSpider {
 
   @override
   void logout() {}
-  
+
   @override
   Future<
       Tuple7<
