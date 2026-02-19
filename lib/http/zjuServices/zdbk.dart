@@ -12,6 +12,11 @@ import 'package:celechron/design/captcha_input.dart';
 import 'package:celechron/utils/global.dart';
 import 'exceptions.dart';
 
+// 定义一个特定的会话过期异常，方便上层捕获重试
+class SessionExpiredException extends ExceptionWithMessage {
+  SessionExpiredException() : super("会话已过期");
+}
+
 class Zdbk {
   Cookie? _jSessionId;
   Cookie? _route;
@@ -25,6 +30,8 @@ class Zdbk {
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
+
+    _captcha = null;
 
     if (iPlanetDirectoryPro == null) {
       throw ExceptionWithMessage("iPlanetDirectoryPro无效");
@@ -75,6 +82,20 @@ class Zdbk {
   void logout() {
     _jSessionId = null;
     _route = null;
+    _captcha = null;
+  }
+
+  void _checkSessionExpired(HttpClientResponse response, String responseText) {
+    if (response.statusCode == HttpStatus.movedTemporarily || 
+        response.statusCode == HttpStatus.movedPermanently ||
+        response.statusCode == HttpStatus.found) {
+      throw SessionExpiredException();
+    }
+    if (responseText.contains("login_ssologin") || 
+        responseText.contains("cas/login") ||
+        responseText.contains("统一身份认证")) {
+      throw SessionExpiredException();
+    }
   }
 
   Future<Tuple<Exception?, Tuple<List<double>, String>>> getMajorGrade(
@@ -84,13 +105,15 @@ class Zdbk {
 
     try {
       if (_jSessionId == null || _route == null) {
-        throw ExceptionWithMessage("未登录");
+        throw SessionExpiredException();
       }
       request = await httpClient
           .postUrl(Uri.parse(
               "https://zdbk.zju.edu.cn/jwglxt/zycjtj/xszgkc_cxXsZgkcIndex.html?doType=query&queryModel.showCount=5000"))
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      // 【关键修改】添加 Referer
+      request.headers.add("Referer", "https://zdbk.zju.edu.cn/jwglxt/xtgl/index_initMenu.html");
       request.cookies.add(_jSessionId!);
       request.cookies.add(_route!);
       request.followRedirects = false;
@@ -98,17 +121,18 @@ class Zdbk {
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
       var responseText = await response.transform(utf8.decoder).join();
+      _checkSessionExpired(response, responseText);
+
       var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
           .firstMatch(responseText)
           ?.group(0);
-      if (transcriptJson == null) throw ExceptionWithMessage("无法解析");
+      if (transcriptJson == null) throw ExceptionWithMessage("无法解析主修成绩");
 
-      // 创建成绩对象并标记为主修课程
       var grades = (jsonDecode(transcriptJson) as List<dynamic>)
           .where((e) => e['xkkh'] != null)
           .map((e) {
         var grade = Grade(e);
-        grade.major = true; // 标记为主修课程
+        grade.major = true;
         return grade;
       });
       var majorGpa = GpaHelper.calculateGpa(grades);
@@ -116,6 +140,8 @@ class Zdbk {
       return Tuple(
           null, Tuple([majorGpa.item1[0], majorGpa.item2], responseText));
     } catch (e) {
+      if (e is SessionExpiredException) rethrow;
+
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       var cachedJson = _db?.getCachedWebPage('zdbk_MajorGrade') ?? '[]';
@@ -123,7 +149,7 @@ class Zdbk {
           .where((e) => e['xkkh'] != null)
           .map((e) {
         var grade = Grade(e);
-        grade.major = true; // 标记为主修课程
+        grade.major = true;
         return grade;
       });
       var majorGpa = GpaHelper.calculateGpa(grades);
@@ -141,23 +167,28 @@ class Zdbk {
 
     try {
       if (_jSessionId == null || _route == null) {
-        throw ExceptionWithMessage("未登录");
+        throw SessionExpiredException();
       }
       request = await httpClient
           .postUrl(Uri.parse(
               "https://zdbk.zju.edu.cn/jwglxt/cxdy/xscjcx_cxXscjIndex.html?doType=query&queryModel.showCount=5000"))
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      // 【关键修改】添加 Referer
+      request.headers.add("Referer", "https://zdbk.zju.edu.cn/jwglxt/xtgl/index_initMenu.html");
       request.cookies.add(_jSessionId!);
       request.cookies.add(_route!);
       request.followRedirects = false;
       response = await request.close().timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
+      var responseText = await response.transform(utf8.decoder).join();
+      _checkSessionExpired(response, responseText);
+
       var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
-          .firstMatch(await response.transform(utf8.decoder).join())
+          .firstMatch(responseText)
           ?.group(0);
-      if (transcriptJson == null) throw ExceptionWithMessage("无法解析");
+      if (transcriptJson == null) throw ExceptionWithMessage("无法解析成绩");
 
       var grades = (jsonDecode(transcriptJson) as List<dynamic>)
           .where((e) => e['xkkh'] != null)
@@ -165,6 +196,7 @@ class Zdbk {
       _db?.setCachedWebPage('zdbk_Transcript', transcriptJson);
       return Tuple(null, grades);
     } catch (e) {
+      if (e is SessionExpiredException) rethrow;
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(
@@ -183,7 +215,7 @@ class Zdbk {
 
     try {
       if (_jSessionId == null || _route == null) {
-        throw ExceptionWithMessage("未登录");
+        throw SessionExpiredException();
       }
 
       for (var i = 0; i < 3; i++) {
@@ -192,6 +224,8 @@ class Zdbk {
                 "https://zdbk.zju.edu.cn/jwglxt/kbcx/xskbcx_cxXsKb.html"))
             .timeout(const Duration(seconds: 8),
                 onTimeout: () => throw ExceptionWithMessage("请求超时"));
+        // 【关键修改】添加 Referer
+        request.headers.add("Referer", "https://zdbk.zju.edu.cn/jwglxt/xtgl/index_initMenu.html");
         request.cookies.add(_jSessionId!);
         request.cookies.add(_route!);
         request.headers.contentType = ContentType(
@@ -204,8 +238,10 @@ class Zdbk {
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
         var responseText = await response.transform(utf8.decoder).join();
+        _checkSessionExpired(response, responseText);
 
         if (responseText.contains("captcha_error")) {
+          _captcha = null;
           if (GlobalStatus.isFirstScreenReq) {
             throw ExceptionWithMessage("需要验证码");
           }
@@ -219,7 +255,6 @@ class Zdbk {
             throw ExceptionWithMessage("验证码未填写");
           }
           _captcha = captcha.trim();
-          // captcha = await solveCaptcha(httpClient);
           continue;
         }
 
@@ -227,17 +262,18 @@ class Zdbk {
         var timetableJson = RegExp('(?<="kbList":)\\[(.*?)\\](?=,"xh")')
             .firstMatch(responseText)
             ?.group(0);
-        if (timetableJson == null) throw ExceptionWithMessage("无法解析");
+        if (timetableJson == null) throw ExceptionWithMessage("无法解析课表");
         var sessions = (jsonDecode(timetableJson) as List<dynamic>)
             .where((e) =>
                 e['kcb'] != null &&
-                (e['sfyjskc'] != "1")) // 本科生教务网忽略所有研究生课程，即忽略字段sfyjskc为"1"的课程
+                (e['sfyjskc'] != "1"))
             .map((e) => Session.fromZdbk(e));
         _db?.setCachedWebPage('zdbk_Timetable$year$semester', timetableJson);
         return Tuple(null, sessions);
       }
       throw ExceptionWithMessage("验证码识别失败");
     } catch (e) {
+      if (e is SessionExpiredException) rethrow;
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(
@@ -246,7 +282,7 @@ class Zdbk {
                   '[]')) as List<dynamic>)
               .where((e) =>
                   e['kcb'] != null &&
-                  (e['sfyjskc'] != "1")) // 本科生教务网忽略所有研究生课程，即忽略字段sfyjskc为"1"的课程
+                  (e['sfyjskc'] != "1"))
               .map((e) => Session.fromZdbk(e)));
     }
   }
@@ -258,23 +294,28 @@ class Zdbk {
 
     try {
       if (_jSessionId == null || _route == null) {
-        throw ExceptionWithMessage("未登录");
+        throw SessionExpiredException();
       }
       request = await httpClient
           .postUrl(Uri.parse(
               "https://zdbk.zju.edu.cn/jwglxt/xskscx/kscx_cxXsgrksIndex.html?doType=query&queryModel.showCount=5000"))
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      // 【关键修改】添加 Referer
+      request.headers.add("Referer", "https://zdbk.zju.edu.cn/jwglxt/xtgl/index_initMenu.html");
       request.cookies.add(_jSessionId!);
       request.cookies.add(_route!);
       request.followRedirects = false;
       response = await request.close().timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
+      var responseText = await response.transform(utf8.decoder).join();
+      _checkSessionExpired(response, responseText);
+
       var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
-          .firstMatch(await response.transform(utf8.decoder).join())
+          .firstMatch(responseText)
           ?.group(0);
-      if (transcriptJson == null) throw ExceptionWithMessage("无法解析");
+      if (transcriptJson == null) throw ExceptionWithMessage("无法解析考试信息");
 
       var exams = (jsonDecode(transcriptJson) as List<dynamic>)
           .where((e) => e['xkkh'] != null)
@@ -282,6 +323,7 @@ class Zdbk {
       _db?.setCachedWebPage('zdbk_exams', transcriptJson);
       return Tuple(null, exams);
     } catch (e) {
+      if (e is SessionExpiredException) rethrow;
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
       return Tuple(
@@ -300,13 +342,15 @@ class Zdbk {
 
     try {
       if (_jSessionId == null || _route == null) {
-        throw ExceptionWithMessage("未登录");
+        throw SessionExpiredException();
       }
       request = await httpClient
           .getUrl(Uri.parse(
               "https://zdbk.zju.edu.cn/jwglxt/dessktgl/dessktcx_cxDessktcxIndex.html?gnmkdm=N108001&layout=default&su=$studentId"))
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
+      // 【关键修改】添加 Referer
+      request.headers.add("Referer", "https://zdbk.zju.edu.cn/jwglxt/xtgl/index_initMenu.html");
       request.cookies.add(_jSessionId!);
       request.cookies.add(_route!);
       request.followRedirects = false;
@@ -314,17 +358,16 @@ class Zdbk {
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
       var html = await response.transform(utf8.decoder).join();
+      _checkSessionExpired(response, html);
+
       _db?.setCachedWebPage("zdbk_practiceScores", html);
 
-      // Parse HTML to extract scores from table
-      // Look for table rows with 第二课堂, 第三课堂, 第四课堂
       var scores = <String, double>{
         'pt2': 0.0,
         'pt3': 0.0,
         'pt4': 0.0,
       };
 
-      // Match table rows: <tr>...</tr> containing the classroom types
       var rowPattern = RegExp(
           r'<tr>.*?<td[^>]*>.*?</td>.*?<td[^>]*>(.*?)</td>.*?<td[^>]*>(.*?)</td>.*?</tr>',
           dotAll: true);
@@ -352,11 +395,9 @@ class Zdbk {
         }
       }
 
-      // If we didn't find any scores, try alternative pattern
       if (scores['pt2'] == 0.0 &&
           scores['pt3'] == 0.0 &&
           scores['pt4'] == 0.0) {
-        // Try matching rows more directly
         var altPattern = RegExp(r'<td[^>]*>第二课堂</td>.*?<td[^>]*>([0-9.]+)</td>',
             dotAll: true);
         var pt2Match = altPattern.firstMatch(html);
@@ -381,9 +422,11 @@ class Zdbk {
 
       return Tuple(null, scores);
     } catch (e) {
+      if (e is SessionExpiredException) rethrow;
+
       var exception =
           e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      // Try to parse from cache
+      
       var cachedHtml = _db?.getCachedWebPage("zdbk_practiceScores");
       if (cachedHtml != null) {
         try {
@@ -392,7 +435,6 @@ class Zdbk {
             'pt3': 0.0,
             'pt4': 0.0,
           };
-
           var altPattern = RegExp(
               r'<td[^>]*>第二课堂</td>.*?<td[^>]*>([0-9.]+)</td>',
               dotAll: true);
@@ -414,11 +456,8 @@ class Zdbk {
           if (pt4Match != null) {
             scores['pt4'] = double.tryParse(pt4Match.group(1) ?? '0') ?? 0.0;
           }
-
           return Tuple(exception, scores);
-        } catch (_) {
-          // Cache parsing failed
-        }
+        } catch (_) {}
       }
       return Tuple(exception, {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0});
     }
@@ -441,7 +480,6 @@ class Zdbk {
     request.followRedirects = false;
     response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
-    // Content type is image/jpeg. Save it to a temporary file and run OCR
     var bytes = await consolidateHttpClientResponseBytes(response);
     return bytes;
   }
