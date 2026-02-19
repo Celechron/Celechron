@@ -186,7 +186,7 @@ class UgrsSpider implements Spider {
             errStr.contains("网络错误") ||
             errStr.contains("socketexception")
         )) {
-          print("⚡️⚡️ 第 $attempts 次自动修复：检测到异常(${e.toString()})，正在重试... ⚡️⚡️");
+          // print("第 $attempts 次自动修复：检测到异常(${e.toString()})，正在重试...");
           await login(); // 重建 HttpClient 并登录
           await Future.delayed(const Duration(milliseconds: 1000)); // 给服务器1秒缓冲
           continue; // 继续下一次尝试
@@ -328,7 +328,6 @@ class UgrsSpider implements Spider {
       }
 
 if (fetchGrs) {
-        // ... (保持原研究生逻辑，此处省略以节省篇幅，请保留你原文件中的逻辑)
         // 注意：如果原逻辑使用了 _httpClient，它会自动使用新的实例，因为是字段访问
         timetableFetches.add(
             _grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
