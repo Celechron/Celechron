@@ -27,7 +27,7 @@ class UgrsSpider implements Spider {
   DateTime _lastUpdateTime = DateTime(0);
   bool fetchGrs = false;
   Map<String, double>? _practiceScores;
-  bool _isPracticeScoresGet = false; 
+  bool _isPracticeScoresGet = false;
 
   Future<void>? _reloginFuture;
 
@@ -87,30 +87,29 @@ class UgrsSpider implements Spider {
       return null;
     });
     if (_iPlanetDirectoryPro == null) return loginErrorMessages;
-    loginErrorMessages.addAll(await Future.wait(
-        [
-          _courses
-              .login(_httpClient, _iPlanetDirectoryPro)
-              // ignore: unnecessary_cast
-              .then((value) => null as String?)
-              .timeout(const Duration(seconds: 8))
-              .catchError((e) => "无法登录学在浙大，$e"),
-          _zdbk
-              .login(_httpClient, _iPlanetDirectoryPro)
-              // ignore: unnecessary_cast
-              .then((value) => null as String?)
-              .timeout(const Duration(seconds: 8))
-              .catchError((e) => "无法登录教务网，$e"),
-          _grsNew
-              .login(_httpClient, _iPlanetDirectoryPro)
-              .then((value) {
-                fetchGrs = true;
-                // ignore: unnecessary_cast
-                return null as String?;
-              })
-              .timeout(const Duration(seconds: 8))
-              .catchError((e) => null as String?),
-        ]).then((value) {
+    loginErrorMessages.addAll(await Future.wait([
+      _courses
+          .login(_httpClient, _iPlanetDirectoryPro)
+          // ignore: unnecessary_cast
+          .then((value) => null as String?)
+          .timeout(const Duration(seconds: 8))
+          .catchError((e) => "无法登录学在浙大，$e"),
+      _zdbk
+          .login(_httpClient, _iPlanetDirectoryPro)
+          // ignore: unnecessary_cast
+          .then((value) => null as String?)
+          .timeout(const Duration(seconds: 8))
+          .catchError((e) => "无法登录教务网，$e"),
+      _grsNew
+          .login(_httpClient, _iPlanetDirectoryPro)
+          .then((value) {
+            fetchGrs = true;
+            // ignore: unnecessary_cast
+            return null as String?;
+          })
+          .timeout(const Duration(seconds: 8))
+          .catchError((e) => null as String?),
+    ]).then((value) {
       if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
       return value;
     }));
@@ -132,22 +131,23 @@ class UgrsSpider implements Spider {
   bool get isPracticeScoresGet => _isPracticeScoresGet;
 
   // 【终极修改】自带最大重试次数的循环重试机制，并正确拦截底层私吞的错误
-  Future<T> _fetchWithRetry<T>(Future<T> Function() operation, {int maxRetries = 2}) async {
+  Future<T> _fetchWithRetry<T>(Future<T> Function() operation,
+      {int maxRetries = 2}) async {
     int attempts = 0;
     while (true) {
       try {
         var result = await operation(); // 尝试执行请求
-        
+
         // 【修正】：将判断和抛出异常分开，防止抛出的异常被安全检查的 catch 吃掉
         bool hasHiddenError = false;
         dynamic hiddenErrorToThrow;
-        
+
         try {
           dynamic res = result;
           if (res != null && res.item1 != null) {
             String errStr = res.item1.toString().toLowerCase();
-            if (errStr.contains("connection closed") || 
-                errStr.contains("httpexception") || 
+            if (errStr.contains("connection closed") ||
+                errStr.contains("httpexception") ||
                 errStr.contains("网络错误") ||
                 errStr.contains("未登录") ||
                 errStr.contains("超时") ||
@@ -167,31 +167,29 @@ class UgrsSpider implements Spider {
         }
 
         return result; // 如果没有错误，正常返回
-        
       } catch (e) {
         attempts++;
         String errStr = e.toString().toLowerCase(); // 转小写方便匹配
-        
+
         // 判断是否符合重试条件（加入更全的关键字）
-        if (attempts <= maxRetries && (
-            e is SessionExpiredException || 
-            errStr.contains("未登录") || 
-            errStr.contains("wisportalid无效") ||
-            errStr.contains("无法解析") ||
-            errStr.contains("type 'null'") || 
-            errStr.contains("connection closed") || 
-            errStr.contains("timeout") || 
-            errStr.contains("超时") || 
-            errStr.contains("httpexception") ||
-            errStr.contains("网络错误") ||
-            errStr.contains("socketexception")
-        )) {
+        if (attempts <= maxRetries &&
+            (e is SessionExpiredException ||
+                errStr.contains("未登录") ||
+                errStr.contains("wisportalid无效") ||
+                errStr.contains("无法解析") ||
+                errStr.contains("type 'null'") ||
+                errStr.contains("connection closed") ||
+                errStr.contains("timeout") ||
+                errStr.contains("超时") ||
+                errStr.contains("httpexception") ||
+                errStr.contains("网络错误") ||
+                errStr.contains("socketexception"))) {
           // print("第 $attempts 次自动修复：检测到异常(${e.toString()})，正在重试...");
           await login(); // 重建 HttpClient 并登录
           await Future.delayed(const Duration(milliseconds: 1000)); // 给服务器1秒缓冲
           continue; // 继续下一次尝试
         }
-        
+
         // 如果重试次数耗尽，或者是不认识的致命错误，才真正报错
         rethrow;
       }
@@ -242,59 +240,59 @@ class UgrsSpider implements Spider {
 
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
       var yearStr = '$yearEnroll-${yearEnroll + 1}';
-      
+
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-1').then((value) {
-             if (value.item2 != null) {
-                outSemesters[semesterIndexMap['$yearStr-1']!]
-                    .addZjuCalendar(jsonDecode(value.item2!));
-                outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
-                    .map((k, v) =>
-                        MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-                outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-                    .map((k, v) => MapEntry(
-                        DateTime.parse((k as String).substring(0, 8)),
-                        '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
-                outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-                    .map((k, v) => MapEntry(
-                        DateTime.parse((k as String).substring(8, 16)),
-                        '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
-                outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
-                    (k, v) =>
-                        MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-              }
-             return value.item1?.toString();
-          }).catchError((e) => e.toString()));
-          
+        if (value.item2 != null) {
+          outSemesters[semesterIndexMap['$yearStr-1']!]
+              .addZjuCalendar(jsonDecode(value.item2!));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
+              .map((k, v) =>
+                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
+              .map((k, v) => MapEntry(
+                  DateTime.parse((k as String).substring(0, 8)),
+                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
+              .map((k, v) => MapEntry(
+                  DateTime.parse((k as String).substring(8, 16)),
+                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
+              (k, v) =>
+                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+        }
+        return value.item1?.toString();
+      }).catchError((e) => e.toString()));
+
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-2').then((value) {
-              if (value.item2 != null) {
-                outSemesters[semesterIndexMap['$yearStr-2']!]
-                    .addZjuCalendar(jsonDecode(value.item2!));
-                outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
-                    .map((k, v) =>
-                        MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-                outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-                    .map((k, v) => MapEntry(
-                        DateTime.parse((k as String).substring(0, 8)),
-                        '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
-                outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-                    .map((k, v) => MapEntry(
-                        DateTime.parse((k as String).substring(8, 16)),
-                        '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
-                outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
-                    (k, v) =>
-                        MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-              }
-              return value.item1?.toString();
-          }).catchError((e) => e.toString()));
-
+        if (value.item2 != null) {
+          outSemesters[semesterIndexMap['$yearStr-2']!]
+              .addZjuCalendar(jsonDecode(value.item2!));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
+              .map((k, v) =>
+                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
+              .map((k, v) => MapEntry(
+                  DateTime.parse((k as String).substring(0, 8)),
+                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
+              .map((k, v) => MapEntry(
+                  DateTime.parse((k as String).substring(8, 16)),
+                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
+          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
+              (k, v) =>
+                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+        }
+        return value.item1?.toString();
+      }).catchError((e) => e.toString()));
 
       Future<String?> handleTimetable(season) async {
         if (cancelTimetableFetch) return Future.value("已取消");
         try {
-          var value = await _fetchWithRetry(() => _zdbk.getTimetable(_httpClient, yearStr, season));
-          
+          var value = await _fetchWithRetry(
+              () => _zdbk.getTimetable(_httpClient, yearStr, season));
+
           var semKey = season.startsWith('1') ? '$yearStr-1' : '$yearStr-2';
           var sessions = value.item2.toList();
           sessions.sort((a, b) {
@@ -327,10 +325,9 @@ class UgrsSpider implements Spider {
         }
       }
 
-if (fetchGrs) {
-        // 注意：如果原逻辑使用了 _httpClient，它会自动使用新的实例，因为是字段访问
+      if (fetchGrs) {
         timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
+            _fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 13)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-1']!]
                 .addSession(e, '$yearStr-1', true);
@@ -338,7 +335,7 @@ if (fetchGrs) {
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
         timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
+            _fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 14)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-1']!]
                 .addSession(e, '$yearStr-1', true);
@@ -346,7 +343,7 @@ if (fetchGrs) {
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
         timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
+            _fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 11)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-2']!]
                 .addSession(e, '$yearStr-2', true);
@@ -354,15 +351,16 @@ if (fetchGrs) {
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
         timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 12).then((value) {
+            _fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 12)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-2']!]
                 .addSession(e, '$yearStr-2', true);
           }
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
+        // 研究生课的【考试】
         timetableFetches
-            .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 12).then((value) {
+            .add(_fetchWithRetry(() => _grsNew.getExamsDto(_httpClient, yearEnroll, 12)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-1']!]
                 .addExamWithSemester(e, '$yearStr-1');
@@ -370,7 +368,7 @@ if (fetchGrs) {
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
         timetableFetches
-            .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 11).then((value) {
+            .add(_fetchWithRetry(() => _grsNew.getExamsDto(_httpClient, yearEnroll, 11)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-2']!]
                 .addExamWithSemester(e, '$yearStr-2');
@@ -385,15 +383,17 @@ if (fetchGrs) {
         .then((value) => value.firstWhereOrNull((e) => e != null)));
     fetches.add(Future.wait(timetableFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
-        
-    fetches.add(_fetchWithRetry(() => _zdbk.getExamsDto(_httpClient)).then((value) {
+
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getExamsDto(_httpClient)).then((value) {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
       }
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    fetches.add(_fetchWithRetry(() => _zdbk.getTranscript(_httpClient)).then((value) {
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getTranscript(_httpClient)).then((value) {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addGrade(e);
         outGrades.add(e);
@@ -404,7 +404,8 @@ if (fetchGrs) {
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    fetches.add(_fetchWithRetry(() => _zdbk.getMajorGrade(_httpClient)).then((value) {
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getMajorGrade(_httpClient)).then((value) {
       outMajorGrade.clear();
       outMajorGrade.addAll(value.item2.item1);
 
@@ -421,13 +422,16 @@ if (fetchGrs) {
     }).catchError((e) => e.toString()));
 
     // 作业（学在浙大）- 加上重试包装
-    fetches.add(_fetchWithRetry(() => _courses.getTodo(_httpClient)).then((value) {
+    fetches
+        .add(_fetchWithRetry(() => _courses.getTodo(_httpClient)).then((value) {
       outTodos.clear();
       outTodos.addAll(value.item2);
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    fetches.add(_fetchWithRetry(() => _zdbk.getPracticeScores(_httpClient, _username)).then((value) {
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getPracticeScores(_httpClient, _username))
+            .then((value) {
       if (value.item1 == null) {
         _practiceScores = value.item2;
         _isPracticeScoresGet = true;
