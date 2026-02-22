@@ -113,6 +113,69 @@ class GrsSpider implements Spider {
     _grsNew.logout();
   }
 
+  // ===== 新增开始 =====
+  // 自动重试机制：遇到Cookie过期等错误时，自动重新登录再重试
+  Future<T> _fetchWithRetry<T>(Future<T> Function() operation,
+      {int maxRetries = 2}) async {
+    int attempts = 0;
+    while (true) {
+      try {
+        var result = await operation();
+
+        // 检查返回结果中是否隐藏了错误
+        bool hasHiddenError = false;
+        dynamic hiddenErrorToThrow;
+        try {
+          dynamic res = result;
+          if (res != null && res.item1 != null) {
+            String errStr = res.item1.toString().toLowerCase();
+            if (errStr.contains("connection closed") ||
+                errStr.contains("httpexception") ||
+                errStr.contains("网络错误") ||
+                errStr.contains("未登录") ||
+                errStr.contains("超时") ||
+                errStr.contains("timeout") ||
+                errStr.contains("type 'null'") ||
+                errStr.contains("iplanetdirectorypro无效") ||
+                errStr.contains("会话已过期")) {
+              hasHiddenError = true;
+              hiddenErrorToThrow = res.item1;
+            }
+          }
+        } catch (_) {}
+
+        if (hasHiddenError) {
+          throw hiddenErrorToThrow;
+        }
+
+        return result;
+      } catch (e) {
+        attempts++;
+        String errStr = e.toString().toLowerCase();
+
+        // 判断是否是可以通过重新登录解决的错误
+        if (attempts <= maxRetries &&
+            (e is SessionExpiredException ||
+                errStr.contains("未登录") ||
+                errStr.contains("iplanetdirectorypro无效") ||
+                errStr.contains("会话已过期") ||
+                errStr.contains("connection closed") ||
+                errStr.contains("timeout") ||
+                errStr.contains("超时") ||
+                errStr.contains("httpexception") ||
+                errStr.contains("网络错误") ||
+                errStr.contains("socketexception"))) {
+          await login(); // 重新获取 iPlanetDirectoryPro
+          await Future.delayed(const Duration(milliseconds: 1000));
+          continue;
+        }
+
+        rethrow;
+      }
+    }
+  }
+  // ===== 新增结束 =====
+
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override
   Future<
@@ -231,7 +294,8 @@ class GrsSpider implements Spider {
           return Future.value("已取消");
         }
         try {
-          var value = await _zdbk.getTimetable(_httpClient, yearStr, season);
+          var value = await _fetchWithRetry(
+              () => _zdbk.getTimetable(_httpClient, yearStr, season));
           var semKey = season.startsWith('1') ? '$yearStr-1' : '$yearStr-2';
           var sessions = value.item2.toList();
           sessions.sort((a, b) {
@@ -328,7 +392,8 @@ class GrsSpider implements Spider {
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
     // 本科生课考试
-    fetches.add(_zdbk.getExamsDto(_httpClient).then((value) {
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getExamsDto(_httpClient)).then((value) {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
       }
@@ -336,7 +401,8 @@ class GrsSpider implements Spider {
     }).catchError((e) => 'zdbkExam $e'));
 
     // 查成绩
-    fetches.add(_zdbk.getTranscript(_httpClient).then((value) {
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getTranscript(_httpClient)).then((value) {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addGrade(e);
         outGrades.add(e);
@@ -349,7 +415,8 @@ class GrsSpider implements Spider {
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
     // 研究生课成绩
-    fetches.add(_grsNew.getGrade(_httpClient).then((value) {
+    fetches
+        .add(_fetchWithRetry(() => _grsNew.getGrade(_httpClient)).then((value) {
       for (var e in value.item2) {
         if (e.id.length < 6) {
           continue;
@@ -376,7 +443,8 @@ class GrsSpider implements Spider {
     }).catchError((e) => 'grsGrade $e'));
 
     // 学在浙大
-    fetches.add(_courses.getTodo(_httpClient).then((value) {
+    fetches
+        .add(_fetchWithRetry(() => _courses.getTodo(_httpClient)).then((value) {
       outTodos.clear();
       outTodos.addAll(value.item2);
       return value.item1?.toString();
