@@ -12,15 +12,13 @@ import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/semester.dart';
 
-// import 'zjuServices/appservice.dart';
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
 
 class UgrsSpider implements Spider {
-  late HttpClient _httpClient;
+  late HttpClient _httpClient; // HTTP 客户端
   late String _username;
   late String _password;
-  // late AppService _appService;
   late Courses _courses;
   late Zdbk _zdbk;
   late GrsNew _grsNew;
@@ -29,13 +27,12 @@ class UgrsSpider implements Spider {
   DateTime _lastUpdateTime = DateTime(0);
   bool fetchGrs = false;
   Map<String, double>? _practiceScores;
-  bool _isPracticeScoresGet = false; // 是否成功获取到二三四课堂分数
+  bool _isPracticeScoresGet = false;
+
+  Future<List<String?>>? _reloginFuture;
 
   UgrsSpider(String username, String password) {
-    _httpClient = HttpClient();
-    _httpClient.userAgent =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
-    // _appService = AppService(db: _db);
+    _initHttpClient(); // 初始化客户端移到单独方法
     _courses = Courses();
     _zdbk = Zdbk();
     _grsNew = GrsNew();
@@ -44,9 +41,17 @@ class UgrsSpider implements Spider {
     _password = password;
   }
 
+  // 初始化或重置 HttpClient
+  void _initHttpClient() {
+    _httpClient = HttpClient();
+    _httpClient.userAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
+    // 强制不保存 Cookies，完全由 Zdbk 手动管理，避免冲突
+    // 同时也避免重定向时 HttpClient 自动携带旧 Cookie
+  }
+
   @override
   set db(DatabaseHelper? db) {
-    // _appService.db = db;
     _courses.db = db;
     _zdbk.db = db;
     _grsNew.db = db;
@@ -55,6 +60,25 @@ class UgrsSpider implements Spider {
 
   @override
   Future<List<String?>> login() async {
+    if (_reloginFuture != null) {
+      return await _reloginFuture!;
+    }
+
+    _reloginFuture = _doLogin();
+    try {
+      return await _reloginFuture!;
+    } finally {
+      _reloginFuture = null;
+    }
+  }
+
+  Future<List<String?>> _doLogin() async {
+    // 【关键修改】登录前先销毁旧的 HttpClient，防止旧 Cookie 或死连接干扰
+    try {
+      _httpClient.close(force: true);
+    } catch (_) {}
+    _initHttpClient(); // 创建全新的客户端
+
     var loginErrorMessages = <String?>[null];
     _iPlanetDirectoryPro =
         await ZjuAm.getSsoCookie(_httpClient, _username, _password)
@@ -64,39 +88,29 @@ class UgrsSpider implements Spider {
       return null;
     });
     if (_iPlanetDirectoryPro == null) return loginErrorMessages;
-    loginErrorMessages.addAll(await Future.wait(
-        // 本科生需要登录钉钉工作台、教务网、研究生院网（为了看研究生课）
-        [
-          /*_appService
-              .login(_httpClient, _iPlanetDirectoryPro)
-              // ignore: unnecessary_cast
-              .then((value) => null as String?)
-              .timeout(const Duration(seconds: 8))
-              .catchError((e) => "无法登录钉钉工作台，$e"),*/
-          _courses
-              .login(_httpClient, _iPlanetDirectoryPro)
-              // ignore: unnecessary_cast
-              .then((value) => null as String?)
-              .timeout(const Duration(seconds: 8))
-              .catchError((e) => "无法登录学在浙大，$e"),
-          _zdbk
-              .login(_httpClient, _iPlanetDirectoryPro)
-              // ignore: unnecessary_cast
-              .then((value) => null as String?)
-              .timeout(const Duration(seconds: 8))
-              .catchError((e) => "无法登录教务网，$e"),
-          _grsNew
-              .login(_httpClient, _iPlanetDirectoryPro)
-              .then((value) {
-                fetchGrs = true;
-                // ignore: unnecessary_cast
-                return null as String?;
-              })
-              .timeout(const Duration(seconds: 8))
-              // 本科生一般不需要登录研究生院，所以不管登录成功与否都不会报错
-              // ignore: unnecessary_cast
-              .catchError((e) => null as String?),
-        ]).then((value) {
+    loginErrorMessages.addAll(await Future.wait([
+      _courses
+          .login(_httpClient, _iPlanetDirectoryPro)
+          // ignore: unnecessary_cast
+          .then((value) => null as String?)
+          .timeout(const Duration(seconds: 8))
+          .catchError((e) => "无法登录学在浙大，$e"),
+      _zdbk
+          .login(_httpClient, _iPlanetDirectoryPro)
+          // ignore: unnecessary_cast
+          .then((value) => null as String?)
+          .timeout(const Duration(seconds: 8))
+          .catchError((e) => "无法登录教务网，$e"),
+      _grsNew
+          .login(_httpClient, _iPlanetDirectoryPro)
+          .then((value) {
+            fetchGrs = true;
+            // ignore: unnecessary_cast
+            return null as String?;
+          })
+          .timeout(const Duration(seconds: 8))
+          .catchError((e) => null as String?),
+    ]).then((value) {
       if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
       return value;
     }));
@@ -108,7 +122,6 @@ class UgrsSpider implements Spider {
     _username = "";
     _password = "";
     _iPlanetDirectoryPro = null;
-    // _appService.logout();
     _zdbk.logout();
     _grsNew.logout();
     _practiceScores = null;
@@ -118,7 +131,72 @@ class UgrsSpider implements Spider {
   Map<String, double>? get practiceScores => _practiceScores;
   bool get isPracticeScoresGet => _isPracticeScoresGet;
 
-  // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
+  // 【终极修改】自带最大重试次数的循环重试机制，并正确拦截底层私吞的错误
+  Future<T> _fetchWithRetry<T>(Future<T> Function() operation,
+      {int maxRetries = 2}) async {
+    int attempts = 0;
+    while (true) {
+      try {
+        var result = await operation(); // 尝试执行请求
+
+        // 【修正】：将判断和抛出异常分开，防止抛出的异常被安全检查的 catch 吃掉
+        bool hasHiddenError = false;
+        dynamic hiddenErrorToThrow;
+
+        try {
+          dynamic res = result;
+          if (res != null && res.item1 != null) {
+            String errStr = res.item1.toString().toLowerCase();
+            if (errStr.contains("connection closed") ||
+                errStr.contains("httpexception") ||
+                errStr.contains("网络错误") ||
+                errStr.contains("未登录") ||
+                errStr.contains("超时") ||
+                errStr.contains("timeout") ||
+                errStr.contains("type 'null'") ||
+                errStr.contains("无法解析") ||
+                errStr.contains("wisportalid无效")) {
+              hasHiddenError = true;
+              hiddenErrorToThrow = res.item1;
+            }
+          }
+        } catch (_) {} // 这里只负责捕获 res.item1 的类型转换报错
+
+        // 如果发现了隐藏的错误，在 try-catch 外部将其抛出！
+        if (hasHiddenError) {
+          throw hiddenErrorToThrow;
+        }
+
+        return result; // 如果没有错误，正常返回
+      } catch (e) {
+        attempts++;
+        String errStr = e.toString().toLowerCase(); // 转小写方便匹配
+
+        // 判断是否符合重试条件（加入更全的关键字）
+        if (attempts <= maxRetries &&
+            (e is SessionExpiredException ||
+                errStr.contains("未登录") ||
+                errStr.contains("wisportalid无效") ||
+                errStr.contains("无法解析") ||
+                errStr.contains("type 'null'") ||
+                errStr.contains("connection closed") ||
+                errStr.contains("timeout") ||
+                errStr.contains("超时") ||
+                errStr.contains("httpexception") ||
+                errStr.contains("网络错误") ||
+                errStr.contains("socketexception"))) {
+          // print("第 $attempts 次自动修复：检测到异常(${e.toString()})，正在重试...");
+          await login(); // 重建 HttpClient 并登录
+          await Future.delayed(const Duration(milliseconds: 1000)); // 给服务器1秒缓冲
+          continue; // 继续下一次尝试
+        }
+
+        // 如果重试次数耗尽，或者是不认识的致命错误，才真正报错
+        rethrow;
+      }
+    }
+  }
+
   @override
   Future<
       Tuple7<
@@ -129,26 +207,21 @@ class UgrsSpider implements Spider {
           List<double>,
           Map<DateTime, String>,
           List<Todo>>> getEverything() async {
-    // 请求顺序
     var fetches = <Future<String?>>[];
     List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业', '实践'];
 
-    // 返回值初始化
     var outSemesters = <Semester>[];
     var outGrades = <Grade>[];
     var outMajorGrade = <double>[];
     var outSpecialDates = <DateTime, String>{};
     var outTodos = <Todo>[];
     var loginErrorMessages = <String?>[null, null, null];
-    // 暂存主修课程ID集合，待所有请求完成后再打标记
     var majorCourseIds = <String>{};
 
-    // 如果Cookie过期了，就重新登录
     if (DateTime.now().difference(_lastUpdateTime).inMinutes > 15) {
       loginErrorMessages = await login();
     }
 
-    // 建立学期编号与“入学以来第几个学期”的映射。如"2022-2023-1"对应第22年入学同学的第1个学期，即"2022-2023秋冬"。
     var yearNow = DateTime.now().year;
     var yearEnroll = int.parse(_username.substring(1, 3)) + 2000;
     var yearGraduate = yearEnroll + 7;
@@ -162,14 +235,13 @@ class UgrsSpider implements Spider {
       outSemesters.add(Semester('${yearEnroll + i}-${yearEnroll + i + 1}秋冬'));
     }
 
-    // 查校历（存在CDN上，JSON格式的，内含学期起止日期、单日时间表、放假调休等信息）
     var semesterConfigFetches = <Future<String?>>[];
-    // 查课表
     var timetableFetches = <Future<String?>>[];
     var cancelTimetableFetch = false;
 
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
       var yearStr = '$yearEnroll-${yearEnroll + 1}';
+
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-1').then((value) {
         if (value.item2 != null) {
@@ -192,6 +264,7 @@ class UgrsSpider implements Spider {
         }
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
+
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-2').then((value) {
         if (value.item2 != null) {
@@ -215,30 +288,12 @@ class UgrsSpider implements Spider {
         return value.item1?.toString();
       }).catchError((e) => e.toString()));
 
-      // 查考试
-      /*examFetches
-          .add(_appService.getExamsDto(_httpClient, yearStr, "1").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));
-      examFetches
-          .add(_appService.getExamsDto(_httpClient, yearStr, "2").then((value) {
-        for (var e in value.item2) {
-          outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
-        }
-        return value.item1?.toString();
-      }).catchError((e) => e.toString()));*/
-
-      // 本科生课
-      // 顺序获取课表
       Future<String?> handleTimetable(season) async {
-        if (cancelTimetableFetch) {
-          return Future.value("已取消");
-        }
+        if (cancelTimetableFetch) return Future.value("已取消");
         try {
-          var value = await _zdbk.getTimetable(_httpClient, yearStr, season);
+          var value = await _fetchWithRetry(
+              () => _zdbk.getTimetable(_httpClient, yearStr, season));
+
           var semKey = season.startsWith('1') ? '$yearStr-1' : '$yearStr-2';
           var sessions = value.item2.toList();
           sessions.sort((a, b) {
@@ -271,10 +326,9 @@ class UgrsSpider implements Spider {
         }
       }
 
-      // 研究生课与考试
       if (fetchGrs) {
         timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
+            _fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 13)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-1']!]
                 .addSession(e, '$yearStr-1', true);
@@ -282,7 +336,7 @@ class UgrsSpider implements Spider {
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
         timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
+            _fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 14)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-1']!]
                 .addSession(e, '$yearStr-1', true);
@@ -290,7 +344,7 @@ class UgrsSpider implements Spider {
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
         timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
+            _fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 11)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-2']!]
                 .addSession(e, '$yearStr-2', true);
@@ -298,7 +352,7 @@ class UgrsSpider implements Spider {
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
         timetableFetches.add(
-            _grsNew.getTimetable(_httpClient, yearEnroll, 12).then((value) {
+            _fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 12)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-2']!]
                 .addSession(e, '$yearStr-2', true);
@@ -307,7 +361,7 @@ class UgrsSpider implements Spider {
         }).catchError((e) => e.toString()));
         // 研究生课的【考试】
         timetableFetches
-            .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 12).then((value) {
+            .add(_fetchWithRetry(() => _grsNew.getExamsDto(_httpClient, yearEnroll, 12)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-1']!]
                 .addExamWithSemester(e, '$yearStr-1');
@@ -315,7 +369,7 @@ class UgrsSpider implements Spider {
           return value.item1?.toString();
         }).catchError((e) => e.toString()));
         timetableFetches
-            .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 11).then((value) {
+            .add(_fetchWithRetry(() => _grsNew.getExamsDto(_httpClient, yearEnroll, 11)).then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$yearStr-2']!]
                 .addExamWithSemester(e, '$yearStr-2');
@@ -326,22 +380,21 @@ class UgrsSpider implements Spider {
       yearEnroll++;
     }
 
-    // 配置
     fetches.add(Future.wait(semesterConfigFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
-    // 课表
     fetches.add(Future.wait(timetableFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
-    // 考试
-    fetches.add(_zdbk.getExamsDto(_httpClient).then((value) {
+
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getExamsDto(_httpClient)).then((value) {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
       }
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    // 成绩
-    fetches.add(_zdbk.getTranscript(_httpClient).then((value) {
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getTranscript(_httpClient)).then((value) {
       for (var e in value.item2) {
         outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addGrade(e);
         outGrades.add(e);
@@ -352,12 +405,11 @@ class UgrsSpider implements Spider {
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    // 主修
-    fetches.add(_zdbk.getMajorGrade(_httpClient).then((value) {
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getMajorGrade(_httpClient)).then((value) {
       outMajorGrade.clear();
       outMajorGrade.addAll(value.item2.item1);
 
-      // 获取主修课程的课程号列表并暂存
       var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
               .firstMatch(value.item2.item2)
               ?.group(0) ??
@@ -370,16 +422,17 @@ class UgrsSpider implements Spider {
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    // 作业（学在浙大）
-    fetches.add(_courses.getTodo(_httpClient).then((value) {
+    // 作业（学在浙大）- 加上重试包装
+    fetches
+        .add(_fetchWithRetry(() => _courses.getTodo(_httpClient)).then((value) {
       outTodos.clear();
       outTodos.addAll(value.item2);
       return value.item1?.toString();
     }).catchError((e) => e.toString()));
 
-    // 实践学分（第二三四课堂）- 使用zdbk获取
-    fetches.add(_zdbk.getPracticeScores(_httpClient, _username).then((value) {
-      // 只有当没有错误时，才设置为 true
+    fetches.add(
+        _fetchWithRetry(() => _zdbk.getPracticeScores(_httpClient, _username))
+            .then((value) {
       if (value.item1 == null) {
         _practiceScores = value.item2;
         _isPracticeScoresGet = true;
@@ -393,7 +446,6 @@ class UgrsSpider implements Spider {
       return e.toString();
     }));
 
-    // 等待所有请求完成。然后，删除不包含考试、成绩、课程的全空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
       outSemesters.removeWhere((e) =>
           e.grades.isEmpty &&
@@ -401,7 +453,6 @@ class UgrsSpider implements Spider {
           e.exams.isEmpty &&
           e.courses.isEmpty);
 
-      // 所有请求完成后，统一给主修课程打标记
       for (var grade in outGrades) {
         if (majorCourseIds.contains(grade.id)) {
           grade.major = true;
@@ -409,7 +460,6 @@ class UgrsSpider implements Spider {
       }
     });
 
-    // 检查是否有查询失败的情况
     if (fetchErrorMessages.every((e) => e == null)) {
       _lastUpdateTime = DateTime.now();
     }
