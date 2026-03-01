@@ -27,6 +27,7 @@ class GrsSpider implements Spider {
   late TimeConfigService _timeConfigService;
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
+  Future<List<String?>>? _reloginFuture;
   static List<String> fetchSequenceGrs = [
     '配置',
     '课表',
@@ -38,9 +39,7 @@ class GrsSpider implements Spider {
   ];
 
   GrsSpider(String username, String password) {
-    _httpClient = HttpClient();
-    _httpClient.userAgent =
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
+    _initHttpClient();
     // _appService = AppService();
     _courses = Courses();
     _zdbk = Zdbk();
@@ -48,6 +47,12 @@ class GrsSpider implements Spider {
     _timeConfigService = TimeConfigService();
     _username = username;
     _password = password;
+  }
+
+  void _initHttpClient() {
+    _httpClient = HttpClient();
+    _httpClient.userAgent =
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
   }
 
   @override
@@ -61,6 +66,24 @@ class GrsSpider implements Spider {
 
   @override
   Future<List<String?>> login() async {
+    if (_reloginFuture != null) {
+      return await _reloginFuture!;
+    }
+
+    _reloginFuture = _doLogin();
+    try {
+      return await _reloginFuture!;
+    } finally {
+      _reloginFuture = null;
+    }
+  }
+
+  Future<List<String?>> _doLogin() async {
+    try {
+      _httpClient.close(force: true);
+    } catch (_) {}
+    _initHttpClient();
+
     var loginErrorMessages = <String?>[null];
     _iPlanetDirectoryPro =
         await ZjuAm.getSsoCookie(_httpClient, _username, _password)
@@ -108,6 +131,9 @@ class GrsSpider implements Spider {
     _username = "";
     _password = "";
     _iPlanetDirectoryPro = null;
+    try {
+      _httpClient.close(force: true);
+    } catch (_) {}
     // _appService.logout();
     _zdbk.logout();
     _grsNew.logout();
@@ -131,6 +157,7 @@ class GrsSpider implements Spider {
             String errStr = res.item1.toString().toLowerCase();
             if (errStr.contains("connection closed") ||
                 errStr.contains("httpexception") ||
+              errStr.contains("请求超时") ||
                 errStr.contains("网络错误") ||
                 errStr.contains("未登录") ||
                 errStr.contains("超时") ||
@@ -162,6 +189,7 @@ class GrsSpider implements Spider {
                 errStr.contains("connection closed") ||
                 errStr.contains("timeout") ||
                 errStr.contains("超时") ||
+                errStr.contains("请求超时") ||
                 errStr.contains("httpexception") ||
                 errStr.contains("网络错误") ||
                 errStr.contains("socketexception"))) {
@@ -330,7 +358,7 @@ class GrsSpider implements Spider {
 
       // 研究生课
       timetableFetches
-          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 13).then((value) {
+          .add(_fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 13)).then((value) {
         for (var e in value.item2) {
           outSemesters[semesterIndexMap['$yearStr-1']!]
               .addSession(e, '$yearStr-1', true);
@@ -338,7 +366,7 @@ class GrsSpider implements Spider {
         return value.item1?.toString();
       }).catchError((e) => 'grsNew($yearStr-1, 13) $e'));
       timetableFetches
-          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 14).then((value) {
+          .add(_fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 14)).then((value) {
         for (var e in value.item2) {
           outSemesters[semesterIndexMap['$yearStr-1']!]
               .addSession(e, '$yearStr-1', true);
@@ -346,7 +374,7 @@ class GrsSpider implements Spider {
         return value.item1?.toString();
       }).catchError((e) => 'grsNew($yearStr-1, 14) $e'));
       timetableFetches
-          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 11).then((value) {
+          .add(_fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 11)).then((value) {
         for (var e in value.item2) {
           outSemesters[semesterIndexMap['$yearStr-2']!]
               .addSession(e, '$yearStr-2', true);
@@ -354,7 +382,7 @@ class GrsSpider implements Spider {
         return value.item1?.toString();
       }).catchError((e) => 'grsNew($yearStr-2, 11) $e'));
       timetableFetches
-          .add(_grsNew.getTimetable(_httpClient, yearEnroll, 12).then((value) {
+          .add(_fetchWithRetry(() => _grsNew.getTimetable(_httpClient, yearEnroll, 12)).then((value) {
         for (var e in value.item2) {
           outSemesters[semesterIndexMap['$yearStr-2']!]
               .addSession(e, '$yearStr-2', true);
@@ -364,7 +392,7 @@ class GrsSpider implements Spider {
 
       // 研究生课考试
       examFetches
-          .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 12).then((value) {
+          .add(_fetchWithRetry(() => _grsNew.getExamsDto(_httpClient, yearEnroll, 12)).then((value) {
         for (var e in value.item2) {
           outSemesters[semesterIndexMap['$yearStr-1']!]
               .addExamWithSemester(e, '$yearStr-1');
@@ -372,7 +400,7 @@ class GrsSpider implements Spider {
         return value.item1?.toString();
       }).catchError((e) => 'grsExam($yearStr-1) $e'));
       examFetches
-          .add(_grsNew.getExamsDto(_httpClient, yearEnroll, 11).then((value) {
+          .add(_fetchWithRetry(() => _grsNew.getExamsDto(_httpClient, yearEnroll, 11)).then((value) {
         for (var e in value.item2) {
           outSemesters[semesterIndexMap['$yearStr-2']!]
               .addExamWithSemester(e, '$yearStr-2');

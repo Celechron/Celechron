@@ -29,7 +29,7 @@ class UgrsSpider implements Spider {
   Map<String, double>? _practiceScores;
   bool _isPracticeScoresGet = false;
 
-  Future<void>? _reloginFuture;
+  Future<List<String?>>? _reloginFuture;
 
   UgrsSpider(String username, String password) {
     _initHttpClient(); // 初始化客户端移到单独方法
@@ -61,14 +61,15 @@ class UgrsSpider implements Spider {
   @override
   Future<List<String?>> login() async {
     if (_reloginFuture != null) {
-      await _reloginFuture;
-      return [null];
+      return await _reloginFuture!;
     }
 
     _reloginFuture = _doLogin();
-    var result = await _reloginFuture;
-    _reloginFuture = null;
-    return result as List<String?>;
+    try {
+      return await _reloginFuture!;
+    } finally {
+      _reloginFuture = null;
+    }
   }
 
   Future<List<String?>> _doLogin() async {
