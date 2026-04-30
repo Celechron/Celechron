@@ -23,14 +23,20 @@ class BuildingAlias {
 /// 日历地点映射器
 /// 将 zdbk 中的上课地址缩写转换为详细地址，避免日历/地图定位失败。
 ///
-/// 教务网中的地址规范为：[校区+教学楼]-[教室]，如“紫金港西1-101”表示“紫金港西1教学楼-101教室”，详细地址为“浙江大学紫金港校区西一教学楼”（根据apple地图）
-/// 映射实现方式（暂定）：
+/// 教务网中的地址一般形式为：[校区+教学楼]-[教室]，如“紫金港西1-101”表示“紫金港西1教学楼-101教室”，详细地址为“浙江大学紫金港校区西一教学楼”（根据apple地图）
+/// 
+/// 目前映射实现方式：
 /// 1. 定位字符串中的'-'符号，将其前后部分分开
 /// 2. 前半部分（如“紫金港西1”）进行教学楼的解析，转换成更详细的描述（如“浙江大学紫金港校区西一教学楼”）
 /// 3. 后半部分（如“101”）直接保留
 /// 4. 最终组合成完整的地址字符串（如“浙江大学紫金港校区西一教学楼-101”）
 /// 
-/// 可能存在不包含'-'符号的地址，目前已知存在这种情况的地址较少，且定位较为准确，因此可以直接保留原始字符串
+/// 可能存在不包含'-'符号的地址，目前已知存在这种情况的地址为：
+/// - 紫金港田径场（东）
+/// - 紫金港风雨操场（羽毛球场）
+/// - 紫金港游泳馆
+/// - 紫金港机房
+/// 目前只有紫金港机房无法定位到海洋大楼，其他地址在地图上均可定位，因此暂时不对这类地址进行特殊处理。
 class CalendarLocationMapper {
   static const List<CampusAlias> _campusAliases = [
     CampusAlias(campusName: '紫金港', aliases: ['紫金港']),
@@ -65,12 +71,9 @@ class CalendarLocationMapper {
     BuildingAlias(campusName: '紫金港', aliases: ['北4'], fullName: '北四教学楼'),
       // 其他
     BuildingAlias(campusName: '紫金港', aliases: ['蒙民伟'], fullName: '蒙民伟楼'),
-
-    // 玉泉
-    BuildingAlias(campusName: '玉泉', aliases: ['教1'], fullName: '第一教学楼'),
-    BuildingAlias(campusName: '玉泉', aliases: ['教2'], fullName: '第二教学楼'),
-    BuildingAlias(campusName: '玉泉', aliases: ['教3'], fullName: '第三教学楼'),
-    BuildingAlias(campusName: '玉泉', aliases: ['教4'], fullName: '第四教学楼'),
+    BuildingAlias(campusName: '紫金港', aliases: ['机房'], fullName: '海洋大楼'),
+    
+    // TODO: 其他校区的教学楼映射
   ];
 
   static String mapForCalendar(String? rawLocation) {
