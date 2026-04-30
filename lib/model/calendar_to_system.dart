@@ -489,28 +489,28 @@ class CalendarToSystemManager {
   void showCalendarSyncDialog(BuildContext context) {
     showCupertinoModalPopup(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext actionSheetContext) {
         return CupertinoActionSheet(
           title: const Text('同步日历选项'),
           message: const Text('选择日历同步操作'),
           actions: <Widget>[
             CupertinoActionSheetAction(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(actionSheetContext);
                 resyncCalendarEvents(context);
               },
               child: const Text('更新当前课表'),
             ),
             CupertinoActionSheetAction(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(actionSheetContext);
                 _showSemesterSelectionDialog(context);
               },
               child: const Text('选择学期同步'),
             ),
           ],
           cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(actionSheetContext),
             child: const Text('取消'),
           ),
         );
@@ -529,28 +529,28 @@ class CalendarToSystemManager {
 
     showCupertinoModalPopup(
       context: context,
-      builder: (BuildContext context) {
+      builder: (BuildContext actionSheetContext) {
         return CupertinoActionSheet(
           title: const Text('选择学期'),
           message: const Text('选择要同步的学期'),
           actions: [
             ...semesters.map((semester) => CupertinoActionSheetAction(
                   onPressed: () {
-                    Navigator.pop(context);
+                    Navigator.pop(actionSheetContext);
                     syncSpecificSemester(context, semester);
                   },
                   child: Text(semester),
                 )),
             CupertinoActionSheetAction(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(actionSheetContext);
                 syncAllSemesters(context);
               },
               child: const Text('同步所有学期'),
             ),
           ],
           cancelButton: CupertinoActionSheetAction(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(actionSheetContext),
             child: const Text('取消'),
           ),
         );
