@@ -4,6 +4,7 @@ import 'package:device_calendar/device_calendar.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'package:celechron/model/location_mapper.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/semester.dart';
@@ -239,8 +240,9 @@ class CalendarToSystemManager {
         tz.TZDateTime.from(period.endTime, tz.getLocation('Asia/Shanghai'));
 
     // 设置地点
-    if (period.location.isNotEmpty) {
-      event.location = period.location;
+    final mappedLocation = CalendarLocationMapper.mapForCalendar(period.location);
+    if (mappedLocation.isNotEmpty) {
+      event.location = mappedLocation;
     }
 
     // 根据类型设置不同的属性
@@ -264,9 +266,10 @@ class CalendarToSystemManager {
   /// 生成事件的唯一标识符
   /// 基于期间的关键信息生成，确保相同的课程不会重复添加
   String _generateEventId(Period period) {
+    final mappedLocation = CalendarLocationMapper.mapForCalendar(period.location);
     // 使用摘要、开始时间、结束时间和地点生成唯一ID
     var key =
-        '${period.summary}_${period.startTime.toIso8601String()}_${period.endTime.toIso8601String()}_${period.location}';
+        '${period.summary}_${period.startTime.toIso8601String()}_${period.endTime.toIso8601String()}_$mappedLocation';
     return key.hashCode.toString();
   }
 
