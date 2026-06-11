@@ -21,22 +21,17 @@ class ExamListController extends GetxController {
 
   List<List<Exam>> get exams {
     semester.sortExams();
-    var exams = semester.exams.fold(<List<Exam>>[], (previousValue, element) {
-      if (previousValue.isEmpty) {
-        previousValue.add([element]);
-      } else {
-        if (previousValue.last[0].time[0].year == element.time[0].year &&
-            previousValue.last[0].time[0].month == element.time[0].month &&
-            previousValue.last[0].time[0].day == element.time[0].day) {
-          previousValue.last.add(element);
-        } else {
-          previousValue.add([element]);
-        }
-      }
-      return previousValue;
-    });
-    exams.sort((a, b) => a[0].time[0].compareTo(b[0].time[0]));
-    return exams;
+    final groupedExams = <String, List<Exam>>{};
+    for (final exam in semester.exams) {
+      groupedExams.putIfAbsent(_examDayKey(exam), () => []).add(exam);
+    }
+    return groupedExams.values.toList();
+  }
+
+  String _examDayKey(Exam exam) {
+    if (exam.dateLabel != null) return 'label:${exam.dateLabel}';
+    final date = exam.time[0];
+    return 'date:${date.year}-${date.month}-${date.day}';
   }
 
   @override
