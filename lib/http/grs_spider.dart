@@ -236,44 +236,36 @@ class GrsSpider implements Spider {
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-1').then((value) {
         if (value.item2 != null) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addZjuCalendar(jsonDecode(value.item2!));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
-              .map((k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(0, 8)),
-                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(8, 16)),
-                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
-              (k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          final config = jsonDecode(value.item2!);
+          outSemesters[semesterIndexMap['$yearStr-1']!].addZjuCalendar(config);
+          outSpecialDates.addAll((config['holiday'] as Map).map((k, v) =>
+              MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((config['exchange'] as Map).map((k, v) => MapEntry(
+              DateTime.parse((k as String).substring(0, 8)),
+              '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
+          outSpecialDates.addAll((config['exchange'] as Map).map((k, v) => MapEntry(
+              DateTime.parse((k as String).substring(8, 16)),
+              '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
+          outSpecialDates.addAll((config['dummy'] as Map).map((k, v) =>
+              MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
       }).catchError((e) => 'semesterConf($yearStr-1) $e'));
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-2').then((value) {
         if (value.item2 != null) {
-          outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addZjuCalendar(jsonDecode(value.item2!));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
-              .map((k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(0, 8)),
-                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(8, 16)),
-                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
-              (k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          final config = jsonDecode(value.item2!);
+          outSemesters[semesterIndexMap['$yearStr-2']!].addZjuCalendar(config);
+          outSpecialDates.addAll((config['holiday'] as Map).map((k, v) =>
+              MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((config['exchange'] as Map).map((k, v) => MapEntry(
+              DateTime.parse((k as String).substring(0, 8)),
+              '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
+          outSpecialDates.addAll((config['exchange'] as Map).map((k, v) => MapEntry(
+              DateTime.parse((k as String).substring(8, 16)),
+              '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
+          outSpecialDates.addAll((config['dummy'] as Map).map((k, v) =>
+              MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
       }).catchError((e) => 'semesterConf($yearStr-2) $e'));

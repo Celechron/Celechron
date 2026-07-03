@@ -18,6 +18,8 @@ class ScholarController extends GetxController {
   // 直接初始化为 0，避免 late final 的初始化时机问题
   final RxInt semesterIndex = 0.obs;
 
+  Timer? _timer;
+
   Scholar get scholar => _scholar.value;
 
   List<Semester> get semesters => _scholar.value.semesters;
@@ -101,7 +103,7 @@ class ScholarController extends GetxController {
         semesters.indexWhere((e) => e.name == _scholar.value.thisSemester.name);
     semesterIndex.value = thisSemesterIndex >= 0 ? thisSemesterIndex : 0;
 
-    Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _durationToLastUpdateGrade.value =
           DateTime.now().difference(_scholar.value.lastUpdateTimeGrade);
       _durationToLastUpdateCourse.value =
@@ -109,5 +111,11 @@ class ScholarController extends GetxController {
       _durationToLastUpdateHomework.value =
           DateTime.now().difference(_scholar.value.lastUpdateTimeHomework);
     });
+  }
+
+  @override
+  void onClose() {
+    _timer?.cancel();
+    super.onClose();
   }
 }
