@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:celechron/http/retry_helper.dart';
 import 'package:celechron/http/zjuServices/courses.dart';
 import 'package:celechron/model/todo.dart';
 import 'package:get/get.dart';
@@ -30,6 +31,7 @@ class UgrsSpider implements Spider {
   bool _isPracticeScoresGet = false;
 
   Future<List<String?>>? _reloginFuture;
+  static const _retryableFetchErrors = <String>["无法解析", "iplanetdirectorypro无效"];
 
   UgrsSpider(String username, String password) {
     _initHttpClient(); // 初始化客户端移到单独方法
@@ -44,6 +46,9 @@ class UgrsSpider implements Spider {
   // 初始化或重置 HttpClient
   void _initHttpClient() {
     _httpClient = HttpClient();
+    // 建立连接（TCP/TLS握手）5秒内不成功视为网络不可用，快速失败；
+    // 已建立的连接传输慢则交给各请求自己的总超时兜底
+    _httpClient.connectionTimeout = const Duration(seconds: 5);
     _httpClient.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     // 强制不保存 Cookies，完全由 Zdbk 手动管理，避免冲突
@@ -73,11 +78,11 @@ class UgrsSpider implements Spider {
   }
 
   Future<List<String?>> _doLogin() async {
-    // 【关键修改】登录前先销毁旧的 HttpClient，防止旧 Cookie 或死连接干扰
     try {
       _httpClient.close(force: true);
     } catch (_) {}
-    _initHttpClient(); // 创建全新的客户端
+    _initHttpClient();
+    fetchGrs = false;
 
     var loginErrorMessages = <String?>[null];
     _iPlanetDirectoryPro =
@@ -122,6 +127,12 @@ class UgrsSpider implements Spider {
     _username = "";
     _password = "";
     _iPlanetDirectoryPro = null;
+    _reloginFuture = null;
+    try {
+      _httpClient.close(force: true);
+    } catch (_) {}
+    fetchGrs = false;
+    _courses.logout();
     _zdbk.logout();
     _grsNew.logout();
     _practiceScores = null;
@@ -131,67 +142,34 @@ class UgrsSpider implements Spider {
   Map<String, double>? get practiceScores => _practiceScores;
   bool get isPracticeScoresGet => _isPracticeScoresGet;
 
-  // 【终极修改】自带最大重试次数的循环重试机制，并正确拦截底层私吞的错误
-  Future<T> _fetchWithRetry<T>(Future<T> Function() operation,
-      {int maxRetries = 2}) async {
+  Future<T> _fetchWithRetry<T>(
+    Future<T> Function() operation, {
+    int maxRetries = 1,
+  }) async {
     int attempts = 0;
     while (true) {
       try {
-        var result = await operation(); // 尝试执行请求
+        var result = await operation();
+        final hiddenError = getRetryableTupleError(
+          result,
+          extraMessages: _retryableFetchErrors,
+        );
 
-        // 【修正】：将判断和抛出异常分开，防止抛出的异常被安全检查的 catch 吃掉
-        bool hasHiddenError = false;
-        dynamic hiddenErrorToThrow;
-
-        try {
-          dynamic res = result;
-          if (res != null && res.item1 != null) {
-            String errStr = res.item1.toString().toLowerCase();
-            if (errStr.contains("connection closed") ||
-                errStr.contains("httpexception") ||
-                errStr.contains("网络错误") ||
-                errStr.contains("未登录") ||
-                errStr.contains("超时") ||
-                errStr.contains("timeout") ||
-                errStr.contains("type 'null'") ||
-                errStr.contains("无法解析") ||
-                errStr.contains("wisportalid无效")) {
-              hasHiddenError = true;
-              hiddenErrorToThrow = res.item1;
-            }
-          }
-        } catch (_) {} // 这里只负责捕获 res.item1 的类型转换报错
-
-        // 如果发现了隐藏的错误，在 try-catch 外部将其抛出！
-        if (hasHiddenError) {
-          throw hiddenErrorToThrow;
+        if (hiddenError != null) {
+          throw hiddenError;
         }
 
-        return result; // 如果没有错误，正常返回
+        return result;
       } catch (e) {
         attempts++;
-        String errStr = e.toString().toLowerCase(); // 转小写方便匹配
 
-        // 判断是否符合重试条件（加入更全的关键字）
         if (attempts <= maxRetries &&
-            (e is SessionExpiredException ||
-                errStr.contains("未登录") ||
-                errStr.contains("wisportalid无效") ||
-                errStr.contains("无法解析") ||
-                errStr.contains("type 'null'") ||
-                errStr.contains("connection closed") ||
-                errStr.contains("timeout") ||
-                errStr.contains("超时") ||
-                errStr.contains("httpexception") ||
-                errStr.contains("网络错误") ||
-                errStr.contains("socketexception"))) {
-          // print("第 $attempts 次自动修复：检测到异常(${e.toString()})，正在重试...");
-          await login(); // 重建 HttpClient 并登录
-          await Future.delayed(const Duration(milliseconds: 1000)); // 给服务器1秒缓冲
-          continue; // 继续下一次尝试
+            shouldRetryAfterLogin(e, extraMessages: _retryableFetchErrors)) {
+          await login();
+          await Future.delayed(const Duration(milliseconds: 300));
+          continue;
         }
 
-        // 如果重试次数耗尽，或者是不认识的致命错误，才真正报错
         rethrow;
       }
     }

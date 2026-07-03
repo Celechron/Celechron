@@ -22,3 +22,7 @@ class ExceptionWithMessage implements Exception {
     return "$message";
   }
 }
+
+class SessionExpiredException extends ExceptionWithMessage {
+  SessionExpiredException() : super("会话已过期");
+}

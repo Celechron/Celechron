@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:celechron/http/retry_helper.dart';
 import 'package:celechron/http/spider.dart';
 import 'package:celechron/http/time_config_service.dart';
 import 'package:celechron/http/zjuServices/courses.dart';
@@ -28,6 +29,10 @@ class GrsSpider implements Spider {
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
   Future<List<String?>>? _reloginFuture;
+  static const _retryableFetchErrors = <String>[
+    "iplanetdirectorypro无效",
+    "会话已过期",
+  ];
   static List<String> fetchSequenceGrs = [
     '配置',
     '课表',
@@ -51,6 +56,9 @@ class GrsSpider implements Spider {
 
   void _initHttpClient() {
     _httpClient = HttpClient();
+    // 建立连接（TCP/TLS握手）5秒内不成功视为网络不可用，快速失败；
+    // 已建立的连接传输慢则交给各请求自己的总超时兜底
+    _httpClient.connectionTimeout = const Duration(seconds: 5);
     _httpClient.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
   }
@@ -131,70 +139,41 @@ class GrsSpider implements Spider {
     _username = "";
     _password = "";
     _iPlanetDirectoryPro = null;
+    _reloginFuture = null;
     try {
       _httpClient.close(force: true);
     } catch (_) {}
     // _appService.logout();
+    _courses.logout();
     _zdbk.logout();
     _grsNew.logout();
   }
 
-  // ===== 新增开始 =====
-  // 自动重试机制：遇到Cookie过期等错误时，自动重新登录再重试
-  Future<T> _fetchWithRetry<T>(Future<T> Function() operation,
-      {int maxRetries = 2}) async {
+  Future<T> _fetchWithRetry<T>(
+    Future<T> Function() operation, {
+    int maxRetries = 1,
+  }) async {
     int attempts = 0;
     while (true) {
       try {
         var result = await operation();
+        final hiddenError = getRetryableTupleError(
+          result,
+          extraMessages: _retryableFetchErrors,
+        );
 
-        // 检查返回结果中是否隐藏了错误
-        bool hasHiddenError = false;
-        dynamic hiddenErrorToThrow;
-        try {
-          dynamic res = result;
-          if (res != null && res.item1 != null) {
-            String errStr = res.item1.toString().toLowerCase();
-            if (errStr.contains("connection closed") ||
-                errStr.contains("httpexception") ||
-                errStr.contains("请求超时") ||
-                errStr.contains("网络错误") ||
-                errStr.contains("未登录") ||
-                errStr.contains("超时") ||
-                errStr.contains("timeout") ||
-                errStr.contains("type 'null'") ||
-                errStr.contains("iplanetdirectorypro无效") ||
-                errStr.contains("会话已过期")) {
-              hasHiddenError = true;
-              hiddenErrorToThrow = res.item1;
-            }
-          }
-        } catch (_) {}
-
-        if (hasHiddenError) {
-          throw hiddenErrorToThrow;
+        if (hiddenError != null) {
+          throw hiddenError;
         }
 
         return result;
       } catch (e) {
         attempts++;
-        String errStr = e.toString().toLowerCase();
 
-        // 判断是否是可以通过重新登录解决的错误
         if (attempts <= maxRetries &&
-            (e is SessionExpiredException ||
-                errStr.contains("未登录") ||
-                errStr.contains("iplanetdirectorypro无效") ||
-                errStr.contains("会话已过期") ||
-                errStr.contains("connection closed") ||
-                errStr.contains("timeout") ||
-                errStr.contains("超时") ||
-                errStr.contains("请求超时") ||
-                errStr.contains("httpexception") ||
-                errStr.contains("网络错误") ||
-                errStr.contains("socketexception"))) {
-          await login(); // 重新获取 iPlanetDirectoryPro
-          await Future.delayed(const Duration(milliseconds: 1000));
+            shouldRetryAfterLogin(e, extraMessages: _retryableFetchErrors)) {
+          await login();
+          await Future.delayed(const Duration(milliseconds: 300));
           continue;
         }
 
@@ -202,7 +181,6 @@ class GrsSpider implements Spider {
       }
     }
   }
-  // ===== 新增结束 =====
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override

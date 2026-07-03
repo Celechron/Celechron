@@ -12,17 +12,13 @@ import 'package:celechron/design/captcha_input.dart';
 import 'package:celechron/utils/global.dart';
 import 'exceptions.dart';
 
-// 定义一个特定的会话过期异常，方便上层捕获重试
-class SessionExpiredException extends ExceptionWithMessage {
-  SessionExpiredException() : super("会话已过期");
-}
-
 class Zdbk {
   Cookie? _jSessionId;
   Cookie? _route;
-  Cookie? _iPlanetDirectoryPro; // 新增：保存登录凭据
+  Cookie? _iPlanetDirectoryPro;
   String? _captcha;
   DatabaseHelper? _db;
+  Future<void>? _reloginFuture;
 
   set db(DatabaseHelper? db) {
     _db = db;
@@ -32,12 +28,14 @@ class Zdbk {
     late HttpClientRequest request;
     late HttpClientResponse response;
 
-    _captcha = null;
-    _iPlanetDirectoryPro = iPlanetDirectoryPro; // 保存以便自动重登
-
     if (iPlanetDirectoryPro == null) {
       throw ExceptionWithMessage("iPlanetDirectoryPro无效");
     }
+    _jSessionId = null;
+    _route = null;
+    _captcha = null;
+    _iPlanetDirectoryPro = iPlanetDirectoryPro;
+
     request = await httpClient
         .getUrl(Uri.parse(
             "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fzdbk.zju.edu.cn%2Fjwglxt%2Fxtgl%2Flogin_ssologin.html"))
@@ -84,7 +82,9 @@ class Zdbk {
   void logout() {
     _jSessionId = null;
     _route = null;
+    _iPlanetDirectoryPro = null;
     _captcha = null;
+    _reloginFuture = null;
   }
 
   void _checkSessionExpired(HttpClientResponse response, String responseText) {
@@ -100,11 +100,49 @@ class Zdbk {
     }
   }
 
+  Exception _toException(Object error) {
+    if (error is SocketException) return ExceptionWithMessage("网络错误");
+    if (error is Exception) return error;
+    return ExceptionWithMessage(error.toString());
+  }
+
+  List<Map<String, dynamic>> _getCachedJsonMaps(String key) {
+    try {
+      final cached = _db?.getCachedWebPage(key);
+      if (cached == null) return [];
+
+      final decoded = jsonDecode(cached);
+      if (decoded is! List) return [];
+      return decoded.whereType<Map<String, dynamic>>().toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
   Future<void> _relogin(HttpClient httpClient) async {
-    if (_iPlanetDirectoryPro == null) {
+    final iPlanetDirectoryPro = _iPlanetDirectoryPro;
+    if (iPlanetDirectoryPro == null) {
       throw ExceptionWithMessage("会话已过期，请重新登录");
     }
-    await login(httpClient, _iPlanetDirectoryPro);
+
+    final future = _reloginFuture ??= _doRelogin(
+      httpClient,
+      iPlanetDirectoryPro,
+    );
+    try {
+      await future;
+    } finally {
+      if (identical(_reloginFuture, future)) {
+        _reloginFuture = null;
+      }
+    }
+  }
+
+  Future<void> _doRelogin(
+    HttpClient httpClient,
+    Cookie iPlanetDirectoryPro,
+  ) async {
+    await login(httpClient, iPlanetDirectoryPro);
   }
 
   Future<T> _withAutoRelogin<T>(
@@ -169,18 +207,15 @@ class Zdbk {
             null, Tuple([majorGpa.item1[0], majorGpa.item2], responseText));
       } catch (e) {
         if (e is SessionExpiredException) rethrow;
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
-        var cachedJson = _db?.getCachedWebPage('zdbk_MajorGrade') ?? '[]';
-        var grades = (jsonDecode(cachedJson) as List<dynamic>)
-            .where((e) => e['xkkh'] != null)
-            .map((e) {
+        var exception = _toException(e);
+        var cachedItems = _getCachedJsonMaps('zdbk_MajorGrade');
+        var grades = cachedItems.where((e) => e['xkkh'] != null).map((e) {
           var grade = Grade(e);
           grade.major = true;
           return grade;
         });
         var majorGpa = GpaHelper.calculateGpa(grades);
+        var cachedJson = jsonEncode(cachedItems);
         return Tuple(
             exception,
             Tuple([majorGpa.item1[0], majorGpa.item2],
@@ -230,13 +265,10 @@ class Zdbk {
         return Tuple(null, grades);
       } catch (e) {
         if (e is SessionExpiredException) rethrow;
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
+        var exception = _toException(e);
         return Tuple(
             exception,
-            (jsonDecode((_db?.getCachedWebPage('zdbk_Transcript') ?? '[]'))
-                    as List<dynamic>)
+            _getCachedJsonMaps('zdbk_Transcript')
                 .where((e) => e['xkkh'] != null)
                 .map((e) => Grade(e)));
       }
@@ -309,15 +341,11 @@ class Zdbk {
         throw ExceptionWithMessage("验证码识别失败");
       } catch (e) {
         if (e is SessionExpiredException) rethrow;
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
+        var exception = _toException(e);
         return Tuple(
             exception,
-            (jsonDecode(
-                    (_db?.getCachedWebPage('zdbk_Timetable$year$semester') ??
-                        '[]')) as List<dynamic>)
-                .where((e) => e['kcb'] != null && (e['sfyjskc'] != "1"))
+            _getCachedJsonMaps('zdbk_Timetable$year$semester')
+                .where((e) => e['kcb'] != null && e['sfyjskc'] != "1")
                 .map((e) => Session.fromZdbk(e)));
       }
     });
@@ -364,13 +392,10 @@ class Zdbk {
         return Tuple(null, exams);
       } catch (e) {
         if (e is SessionExpiredException) rethrow;
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
+        var exception = _toException(e);
         return Tuple(
             exception,
-            (jsonDecode((_db?.getCachedWebPage('zdbk_exams') ?? '[]'))
-                    as List<dynamic>)
+            _getCachedJsonMaps('zdbk_exams')
                 .where((e) => e['xkkh'] != null)
                 .map((e) => ExamDto.fromZdbk(e)));
       }
@@ -471,9 +496,7 @@ class Zdbk {
       } catch (e) {
         if (e is SessionExpiredException) rethrow;
 
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
+        var exception = _toException(e);
 
         var cachedHtml = _db?.getCachedWebPage("zdbk_practiceScores");
         if (cachedHtml != null) {
