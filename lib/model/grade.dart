@@ -1,3 +1,5 @@
+import 'package:celechron/utils/json_utils.dart';
+
 class Grade {
   String id; // 课程号
   String name; // 课程名
@@ -71,18 +73,31 @@ class Grade {
         fivePoint = 0.0;
 
   // 从所有成绩查询处爬取，因此不含主修标记
-  Grade(Map<String, dynamic> json)
-      : id = json['xkkh'] as String,
-        name =
-            (json['kcmc'] as String).replaceAll('(', '（').replaceAll(')', '）'),
-        credit = double.parse(json['xf'] as String),
-        original = json['cj'] as String,
-        fivePoint = double.parse(json['jd'] as String) {
-    // 匹配第一组连续的数字，如果没有则返回-100000
+  factory Grade(Map<String, dynamic> json) {
+    final id = asString(json['xkkh']);
+    if (id == null || id.isEmpty) {
+      throw const FormatException('成绩缺少选课课号 xkkh');
+    }
+    final grade = Grade.empty()
+      ..id = id
+      ..name = (asString(json['kcmc']) ?? '未知课程')
+          .replaceAll('(', '（')
+          .replaceAll(')', '）')
+      ..credit = asDouble(json['xf']) ?? 0.0
+      ..original = asString(json['cj']) ?? ''
+      ..fivePoint = asDouble(json['jd']) ?? 0.0;
+    grade._completeDerivedFields();
+    return grade;
+  }
+
+  void _completeDerivedFields() {
+    final numericScore =
+        RegExp(r'\d+').firstMatch(original)?.group(0);
     hundredPoint = _toHundredPoint[original] ??
-        int.tryParse(
-            RegExp(r'\d+').firstMatch(original)!.group(0) ?? "-100000")!;
-    fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
+        int.tryParse(numericScore ?? '') ??
+        0;
+    fourPoint =
+        fivePoint > 4.0 ? (_toFourPoint[fivePoint] ?? 4.0) : fivePoint;
     fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
     creditIncluded = original != "弃修" &&
         original != "待录" &&
@@ -95,22 +110,10 @@ class Grade {
   }
 
   // 从主修成绩查询处爬取，因此打上主修标记
-  Grade.fromMajor(Map<String, dynamic> json)
-      : id = json['xkkh'] as String,
-        name =
-            (json['kcmc'] as String).replaceAll('(', '（').replaceAll(')', '）'),
-        credit = double.parse(json['xf'] as String),
-        original = json['cj'] as String,
-        fivePoint = double.parse(json['jd'] as String) {
-    hundredPoint = _toHundredPoint[original] ?? int.parse(original);
-    fourPoint = fivePoint > 4.0 ? _toFourPoint[fivePoint]! : fivePoint;
-    fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
-    creditIncluded = original != "弃修" &&
-        original != "待录" &&
-        original != "缓考" &&
-        original != "无效";
-    gpaIncluded = creditIncluded && original != "合格" && original != "不合格";
-    major = true;
+  factory Grade.fromMajor(Map<String, dynamic> json) {
+    final grade = Grade(json)
+      ..major = true;
+    return grade;
   }
 
   Map<String, dynamic> toJson() => {
@@ -127,14 +130,14 @@ class Grade {
       };
 
   Grade.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        name = json['name'],
-        credit = json['credit'],
-        original = json['original'],
-        fivePoint = json['fivePoint'],
-        fourPoint = json['fourPoint'],
-        fourPointLegacy = json['fourPointLegacy'] ?? 0.0,
-        hundredPoint = json['hundredPoint'],
-        gpaIncluded = json['gpaIncluded'],
-        creditIncluded = json['creditIncluded'];
+      : id = asString(json['id']) ?? '',
+        name = asString(json['name']) ?? '未知课程',
+        credit = asDouble(json['credit']) ?? 0.0,
+        original = asString(json['original']) ?? '',
+        fivePoint = asDouble(json['fivePoint']) ?? 0.0,
+        fourPoint = asDouble(json['fourPoint']) ?? 0.0,
+        fourPointLegacy = asDouble(json['fourPointLegacy']) ?? 0.0,
+        hundredPoint = asInt(json['hundredPoint']) ?? 0,
+        gpaIncluded = asBool(json['gpaIncluded']) ?? false,
+        creditIncluded = asBool(json['creditIncluded']) ?? false;
 }

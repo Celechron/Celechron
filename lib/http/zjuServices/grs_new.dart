@@ -2,18 +2,20 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/database/database_helper.dart';
-import 'package:celechron/http/zjuServices/exceptions.dart';
-import 'package:celechron/utils/tuple.dart';
-import 'package:celechron/model/session.dart';
-import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/model/exam.dart';
+import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/model/grade.dart';
-import 'package:intl/intl.dart';
-import 'package:quiver/time.dart';
+import 'package:celechron/model/session.dart';
+import 'package:celechron/utils/tuple.dart';
+import 'package:flutter/foundation.dart';
+
+import 'exceptions.dart';
+import 'response_utils.dart';
 
 class GrsNew {
   String? _token;
-  Cookie? _ssoCookie; // ← 【新增】保存登录凭据，以便自动重登
+  Cookie? _ssoCookie;
+  Future<void>? _loginFuture;
   // ignore: unused_field
   DatabaseHelper? _db;
 
@@ -22,543 +24,514 @@ class GrsNew {
   }
 
   Future<void> login(HttpClient httpClient, Cookie? ssoCookie) async {
-    late HttpClientRequest req;
-    late HttpClientResponse res;
-
     if (ssoCookie == null) {
-      throw ExceptionWithMessage("Invalid ssoCookie");
+      throw AuthenticationExpiredException("研究生院：统一身份认证凭据无效");
+    }
+    _ssoCookie = ssoCookie;
+
+    final pending = _loginFuture;
+    if (pending != null) {
+      await pending;
+      return;
+    }
+    final login = _doLogin(httpClient, ssoCookie);
+    _loginFuture = login;
+    try {
+      await login;
+    } finally {
+      if (identical(_loginFuture, login)) _loginFuture = null;
+    }
+  }
+
+  Future<void> _doLogin(HttpClient httpClient, Cookie ssoCookie) async {
+    _token = null;
+    final casUri = Uri.parse(
+        "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F");
+    final request = await httpClient.getUrl(casUri).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    request.followRedirects = false;
+    request.cookies.add(ssoCookie);
+    final response = await request.close().timeout(const Duration(seconds: 8),
+        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    final body =
+        await readResponseBody(response, context: '研究生院 CAS 登录');
+    final location = response.headers.value(HttpHeaders.locationHeader);
+
+    if (!response.isRedirect || location == null) {
+      throw AuthenticationExpiredException(
+          '研究生院登录：未获得 CAS ticket；HTTP ${response.statusCode}'
+          '；Content-Type ${response.headers.value(HttpHeaders.contentTypeHeader) ?? '<缺失>'}'
+          '${location == null ? '' : '；Location $location'}'
+          '；响应摘要：${responseSummary(body)}');
+    }
+    final ticketUri = casUri.resolve(location);
+    final ticket = ticketUri.queryParameters['ticket'];
+    if (ticket == null || ticket.isEmpty) {
+      throw AuthenticationExpiredException(
+          '研究生院登录：Location 中缺少 ticket；HTTP ${response.statusCode}'
+          '；Location $location；响应摘要：${responseSummary(body)}');
     }
 
-    _ssoCookie = ssoCookie; // ← 【新增】保存凭据
-
-    req = await httpClient
-        .getUrl(Uri.parse(
-            "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F"))
-        .timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("request timeout"));
-    req.followRedirects = false;
-    req.cookies.add(ssoCookie);
-    res = await req.close().timeout(const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("request timeout"));
-    res.drain();
-
-    final headerLoc = res.headers.value("location");
-    if (headerLoc == null) {
-      throw ExceptionWithMessage("Invalid location header");
+    final validateUri = Uri.https(
+      'yjsy.zju.edu.cn',
+      '/dataapi/sys/cas/client/validateLogin',
+      {
+        'ticket': ticket,
+        'service': 'https://yjsy.zju.edu.cn/',
+      },
+    );
+    final validateRequest = await httpClient.getUrl(validateUri).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    validateRequest.followRedirects = false;
+    final validateResponse = await validateRequest.close().timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    final loginJson = await readResponseText(validateResponse,
+        context: '研究生院 CAS 校验接口', expectJson: true);
+    final loginInfo = decodeJsonMap(loginJson,
+        context: '研究生院 CAS 校验接口；HTTP ${validateResponse.statusCode}');
+    if (jsonIndicatesAuthenticationFailure(loginInfo) ||
+        asBool(loginInfo["success"]) != true) {
+      throw AuthenticationExpiredException(
+          '研究生院登录认证失败；HTTP ${validateResponse.statusCode}'
+          '；错误信息 ${asString(loginInfo["message"]) ?? '<缺失>'}'
+          '；响应摘要：${responseSummary(loginJson)}');
     }
-    final ticketLoc = headerLoc.indexOf("ticket=");
-    if (ticketLoc < 0) {
-      throw ExceptionWithMessage("Invalid location header");
+    final loginResult = asStringMap(loginInfo["result"]);
+    final token = asString(loginResult?["token"]);
+    if (token == null || token.isEmpty) {
+      throw AuthenticationExpiredException(
+          '研究生院登录成功响应缺少 token；HTTP ${validateResponse.statusCode}'
+          '；响应摘要：${responseSummary(loginJson)}');
     }
-    final ticket = headerLoc.substring(ticketLoc + 7);
-
-    req = await httpClient
-        .getUrl(Uri.parse(
-            "https://yjsy.zju.edu.cn/dataapi/sys/cas/client/validateLogin?ticket=$ticket&service=https:%2F%2Fyjsy.zju.edu.cn%2F"))
-        .timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("request timeout"));
-    res = await req.close().timeout(const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("request timeout"));
-    final loginJson = await res.transform(utf8.decoder).join();
-
-    // parse loginJson body
-    final loginInfo = jsonDecode(loginJson) as Map<String, dynamic>;
-    if (loginInfo["success"] != true) {
-      throw ExceptionWithMessage("Invalid login info");
-    }
-    final loginResult = loginInfo["result"] as Map<String, dynamic>;
-    _token = loginResult["token"] as String?;
-    if (_token == null) {
-      throw ExceptionWithMessage("Invalid token");
-    }
+    _token = token;
   }
 
   void logout() {
     _token = null;
-    _ssoCookie = null; // ← 【新增】退出时也清除
+    _ssoCookie = null;
   }
 
-  // ===== 【新增】自动重登辅助方法 =====
-  // 当 _token 失效时，用保存的 _ssoCookie 自动重新登录
   Future<void> _relogin(HttpClient httpClient) async {
-    if (_ssoCookie == null) {
-      throw ExceptionWithMessage("会话已过期，请重新登录");
+    final cookie = _ssoCookie;
+    if (cookie == null) {
+      throw AuthenticationExpiredException("研究生院登录态已失效，请重新登录");
     }
-    _token = null; // 清掉旧的失效token
-    await login(httpClient, _ssoCookie);
+    await login(httpClient, cookie);
   }
 
-  // 检查API返回结果是否表示token已失效
-  bool _isTokenExpired(Map<String, dynamic> result) {
-    if (result["success"] == false) {
-      String msg = (result["message"] ?? "").toString().toLowerCase();
-      if (msg.contains("token") ||
-          msg.contains("登录") ||
-          msg.contains("unauthorized") ||
-          msg.contains("认证") ||
-          msg.contains("过期")) {
-        return true;
-      }
-      // 研究生教务系统在token过期时返回code 401或500
-      var code = result["code"];
-      if (code == 401 || code == 500) {
-        return true;
+  Future<Map<String, dynamic>> _fetchApi(
+    HttpClient httpClient,
+    Uri uri, {
+    required String context,
+    bool post = false,
+  }) async {
+    for (var attempt = 0; attempt < 2; attempt++) {
+      String? requestToken;
+      try {
+        if (_token == null) await _relogin(httpClient);
+        requestToken = _token!;
+        final request = post
+            ? await httpClient.postUrl(uri).timeout(const Duration(seconds: 8),
+                onTimeout: () => throw ExceptionWithMessage("请求超时"))
+            : await httpClient.getUrl(uri).timeout(const Duration(seconds: 8),
+                onTimeout: () => throw ExceptionWithMessage("请求超时"));
+        request.followRedirects = false;
+        request.headers.add("X-Access-Token", requestToken);
+        final response = await request.close().timeout(
+            const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("请求超时"));
+        final body = await readResponseText(response,
+            context: context, expectJson: true);
+        final result = decodeJsonMap(body,
+            context: '$context；HTTP ${response.statusCode}');
+        if (jsonIndicatesAuthenticationFailure(result)) {
+          throw AuthenticationExpiredException(
+              '$context：token 已过期；HTTP ${response.statusCode}'
+              '；响应摘要：${responseSummary(body)}');
+        }
+        return result;
+      } on AuthenticationExpiredException catch (error) {
+        // 其它并发请求可能已完成重登；直接用新 token 重试，避免再次登录
+        // 使刚签发的 token 失效。
+        if (_token != null &&
+            _token != requestToken &&
+            attempt == 0) {
+          continue;
+        }
+        _token = null;
+        if (attempt == 0) {
+          await _relogin(httpClient);
+          continue;
+        }
+        throw AuthenticationExpiredException('$context：自动重登后仍失败；$error');
       }
     }
-    return false;
+    throw AuthenticationExpiredException('$context：登录态已失效');
   }
-  // ===== 【新增结束】 =====
+
+  void _requireSuccess(Map<String, dynamic> result, String context) {
+    if (asBool(result["success"]) == true) return;
+    final message = asString(result["message"]) ??
+        asString(result["msg"]) ??
+        '服务端未提供错误信息';
+    throw ExceptionWithMessage(
+        '$context：接口返回失败；code=${asString(result["code"]) ?? '<缺失>'}'
+        '；message=$message；响应摘要：${responseSummary(jsonEncode(result))}');
+  }
 
   Future<Tuple<Exception?, Iterable<Grade>>> getGrade(
       HttpClient httpClient) async {
-    late HttpClientRequest req;
-    late HttpClientResponse res;
+    const context = '研究生院成绩接口（请求类型 成绩）';
     try {
-      if (_token == null) {
-        // 【改动】不再直接报错，而是尝试自动重登
-        if (_ssoCookie != null) {
-          await _relogin(httpClient);
-        } else {
-          throw ExceptionWithMessage("not logged in");
-        }
-      }
-      req = await httpClient
-          .postUrl(Uri.parse(
-              "https://yjsy.zju.edu.cn/dataapi/py/pyXsxk/queryXsxkByXnxqXs"))
-          .timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("request timeout"));
-      req.headers.add("X-Access-Token", _token!);
-      res = await req.close().timeout(const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("request timeout"));
-      final resultJson = await res.transform(utf8.decoder).join();
-      final result = jsonDecode(resultJson) as Map<String, dynamic>;
-
-      // 【新增】检查token是否过期，过期则自动重登再重试一次
-      if (_isTokenExpired(result)) {
-        await _relogin(httpClient);
-        req = await httpClient
-            .postUrl(Uri.parse(
-                "https://yjsy.zju.edu.cn/dataapi/py/pyXsxk/queryXsxkByXnxqXs"))
-            .timeout(const Duration(seconds: 8),
-                onTimeout: () => throw ExceptionWithMessage("request timeout"));
-        req.headers.add("X-Access-Token", _token!);
-        res = await req.close().timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("request timeout"));
-        final retryJson = await res.transform(utf8.decoder).join();
-        final retryResult = jsonDecode(retryJson) as Map<String, dynamic>;
-        if (retryResult["success"] != true) {
-          throw ExceptionWithMessage(
-              '获取成绩api错误，错误信息为 ${retryResult["message"]}');
-        }
-        return _parseGrades(retryResult);
-      }
-
-      if (result["success"] != true) {
-        throw ExceptionWithMessage('获取成绩api错误，错误信息为 ${result["message"]}');
-      }
-
-      return _parseGrades(result);
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      return Tuple(exception, []);
+      final result = await _fetchApi(
+        httpClient,
+        Uri.parse(
+            "https://yjsy.zju.edu.cn/dataapi/py/pyXsxk/queryXsxkByXnxqXs"),
+        context: context,
+        post: true,
+      );
+      _requireSuccess(result, context);
+      return Tuple(null, _parseGrades(result, context));
+    } catch (error) {
+      return Tuple(exceptionFrom(error, context: context), <Grade>[]);
     }
   }
 
-  // 【新增】把成绩解析提取成单独方法，避免重复代码
-  Tuple<Exception?, Iterable<Grade>> _parseGrades(Map<String, dynamic> result) {
-    final rawGrades = (result["result"]?["xxjhnList"] as List?) ?? [];
-    if (rawGrades.isEmpty) {
-      return Tuple(null, <Grade>[]);
-    }
-    List<Grade> grades = [];
+  List<Grade> _parseGrades(Map<String, dynamic> result, String context) {
+    final resultMap = asStringMap(result["result"]);
+    final rawGrades = asDynamicList(resultMap?["xxjhnList"]) ?? const [];
+    final grades = <Grade>[];
 
-    for (var rawGradeDyn in rawGrades) {
-      var rawGrade = rawGradeDyn as Map<String, dynamic>;
-      if (rawGrade["xkztMc"] == "未处理") {
+    for (var index = 0; index < rawGrades.length; index++) {
+      final rawGrade = asStringMap(rawGrades[index]);
+      if (rawGrade == null || asString(rawGrade["xkztMc"]) == "未处理") {
         continue;
       }
-      var newGrade = Grade.empty();
-      newGrade.id =
-          rawGrade["sjddBz"] == null ? "" : rawGrade["sjddBz"] as String;
-      newGrade.name = rawGrade["kcmc"] as String;
-      newGrade.credit = rawGrade["xf"] as double;
-
-      if (rawGrade["bz"] != null) {
-        var comments = rawGrade["bz"] as String;
-        if (comments.contains("线上") ||
-            comments.contains("录播") ||
-            comments.contains("直播")) {
-          newGrade.isOnline = true;
-        } else {
-          newGrade.isOnline = false;
+      try {
+        final id = asString(rawGrade["sjddBz"]);
+        if (id == null || id.isEmpty) {
+          throw const FormatException('缺少学期/班级标识 sjddBz');
         }
-      } else {
-        newGrade.isOnline = false;
+        final comments = asString(rawGrade["bz"]) ?? '';
+        final newGrade = Grade.empty()
+          ..id = id
+          ..name = asString(rawGrade["kcmc"]) ?? '未知课程'
+          ..credit = asDouble(rawGrade["xf"]) ?? 0.0
+          ..original = asString(rawGrade["zf"]) ?? ''
+          ..fivePoint = 0.0
+          ..fourPoint = 0.0
+          ..fourPointLegacy = 0.0
+          ..hundredPoint = asInt(rawGrade["zf"]) ?? 0
+          ..major = true
+          ..gpaIncluded = false
+          ..creditIncluded = true
+          ..isOnline = comments.contains("线上") ||
+              comments.contains("录播") ||
+              comments.contains("直播");
+        grades.add(newGrade);
+      } catch (error) {
+        debugPrint('$context：跳过第 ${index + 1} 条成绩：$error');
       }
-      newGrade.fivePoint = 0.0;
-      newGrade.fourPoint = 0.0;
-      newGrade.fourPointLegacy = 0.0;
-      newGrade.hundredPoint =
-          rawGrade["zf"] == null ? 0 : (rawGrade["zf"] as double).toInt();
-      newGrade.major = true;
-      newGrade.gpaIncluded = false;
-      newGrade.creditIncluded = true;
-      grades.add(newGrade);
     }
-    return Tuple(null, grades);
+    return grades;
   }
 
   Future<Tuple<Exception?, Iterable<ExamDto>>> getExamsDto(
       HttpClient httpClient, int year, int semester) async {
-    late HttpClientRequest req;
-    late HttpClientResponse res;
+    final context =
+        '研究生院考试接口（学年 $year，学期 $semester，请求类型 考试）';
     try {
-      if (_token == null) {
-        // 【改动】不再直接报错，而是尝试自动重登
-        if (_ssoCookie != null) {
-          await _relogin(httpClient);
-        } else {
-          throw ExceptionWithMessage("not logged in");
-        }
-      }
-
-      req = await httpClient
-          .getUrl(Uri.parse(
-              "https://yjsy.zju.edu.cn/dataapi/py/pyKsxsxx/queryPageByXs?dm=py_grks&mode=2&role=1&column=createTime&order=desc&queryMode=1&field=id,,kcbh,kcmc,rq,ksTime,xn,xq_dictText,ksdd,zwh&pageNo=1&pageSize=100&xn=$year&xq=$semester"))
-          .timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("request timeout"));
-      req.headers.add("X-Access-Token", _token!);
-      res = await req.close().timeout(const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("request timeout"));
-      final resultJson = await res.transform(utf8.decoder).join();
-      final result = jsonDecode(resultJson) as Map<String, dynamic>;
-
-      // 【新增】检查token是否过期
-      if (_isTokenExpired(result)) {
-        await _relogin(httpClient);
-        req = await httpClient
-            .getUrl(Uri.parse(
-                "https://yjsy.zju.edu.cn/dataapi/py/pyKsxsxx/queryPageByXs?dm=py_grks&mode=2&role=1&column=createTime&order=desc&queryMode=1&field=id,,kcbh,kcmc,rq,ksTime,xn,xq_dictText,ksdd,zwh&pageNo=1&pageSize=100&xn=$year&xq=$semester"))
-            .timeout(const Duration(seconds: 8),
-                onTimeout: () => throw ExceptionWithMessage("request timeout"));
-        req.headers.add("X-Access-Token", _token!);
-        res = await req.close().timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("request timeout"));
-        final retryJson = await res.transform(utf8.decoder).join();
-        final retryResult = jsonDecode(retryJson) as Map<String, dynamic>;
-        if (retryResult["success"] != true) {
-          throw ExceptionWithMessage(
-              "获取考试api错误，错误信息为 ${retryResult["message"]}");
-        }
-        return _parseExams(retryResult, year);
-      }
-
-      if (result["success"] != true) {
-        throw ExceptionWithMessage("获取考试api错误，错误信息为 ${result["message"]}");
-      }
-
-      return _parseExams(result, year);
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      return Tuple(exception, []);
+      final uri = Uri.parse(
+          "https://yjsy.zju.edu.cn/dataapi/py/pyKsxsxx/queryPageByXs"
+          "?dm=py_grks&mode=2&role=1&column=createTime&order=desc"
+          "&queryMode=1&field=id,,kcbh,kcmc,rq,ksTime,xn,xq_dictText,ksdd,zwh"
+          "&pageNo=1&pageSize=100&xn=$year&xq=$semester");
+      final result =
+          await _fetchApi(httpClient, uri, context: context);
+      _requireSuccess(result, context);
+      return Tuple(null, _parseExams(result, year, context));
+    } catch (error) {
+      return Tuple(exceptionFrom(error, context: context), <ExamDto>[]);
     }
   }
 
-  // 【新增】把考试解析提取成单独方法
-  Tuple<Exception?, Iterable<ExamDto>> _parseExams(
-      Map<String, dynamic> result, int year) {
-    final rawExams = result["result"] as List<dynamic>;
-    List<ExamDto> exams = [];
-    final formatter = DateFormat('yyyy-MM-dd');
+  List<ExamDto> _parseExams(
+      Map<String, dynamic> result, int year, String context) {
+    final directResult = asDynamicList(result["result"]);
+    final resultMap = asStringMap(result["result"]);
+    final rawExams =
+        directResult ?? asDynamicList(resultMap?["records"]) ?? const [];
+    final exams = <ExamDto>[];
 
-    for (var rawExamDyn in rawExams) {
-      var rawExam = rawExamDyn as Map<String, dynamic>;
-      if (rawExam["xn"] as String != year.toString()) {
-        continue;
+    for (var index = 0; index < rawExams.length; index++) {
+      final rawExam = asStringMap(rawExams[index]);
+      if (rawExam == null) continue;
+      try {
+        if (asString(rawExam["xn"]) != year.toString()) continue;
+        final courseCode = asString(rawExam["kcbh"]);
+        if (courseCode == null || courseCode.length < 7) {
+          throw const FormatException('缺少有效课程编号 kcbh');
+        }
+        final name = asString(rawExam["kcmc"]) ?? '未知课程';
+        final day = _parseExamDay(rawExam["rq"]);
+        final combinedTimes = RegExp(r'\d{1,2}\s*:\s*\d{2}')
+            .allMatches(asString(rawExam["ksTime"]) ?? '')
+            .map((match) => match.group(0))
+            .whereType<String>()
+            .toList();
+        final start = _parseClock(
+            rawExam["kssj"] ??
+                (combinedTimes.isEmpty ? null : combinedTimes.first),
+            fallback: 800);
+        final end = _parseClock(
+            rawExam["jssj"] ??
+                (combinedTimes.length < 2 ? null : combinedTimes[1]),
+            fallback: 2200);
+        if (day == null) throw const FormatException('考试日期 rq 无效');
+
+        final exam = Exam.empty()
+          ..id = courseCode.substring(0, 7)
+          ..name = name
+          ..type = ExamType.finalExam
+          ..location =
+              asString(rawExam["mc"]) ?? asString(rawExam["ksdd"]) ?? "未知地点"
+          ..seat = asString(rawExam["zwh"])
+          ..time = [
+            day.add(Duration(hours: start.$1, minutes: start.$2)),
+            day.add(Duration(hours: end.$1, minutes: end.$2)),
+          ];
+        final dto = ExamDto.empty()
+          ..id = exam.id
+          ..name = name
+          ..credit = 0.0
+          ..exams.add(exam);
+        exams.add(dto);
+      } catch (error) {
+        debugPrint('$context：跳过第 ${index + 1} 条考试：$error');
       }
-      var newExamDto = ExamDto.empty();
-      var newExam = Exam.empty();
-      newExam.id = (rawExam["kcbh"] as String).substring(0, 7);
-      newExam.name = rawExam["kcmc"] as String;
-      newExam.type = ExamType.finalExam;
-      newExam.location = (rawExam["mc"] as String?) ?? "未知地点";
-      newExam.seat = (rawExam["zwh"] as int).toString();
-      int day = (rawExam["rq"] as int?) ?? 19700101;
-      int start = (rawExam["kssj"] as int?) ?? 800;
-      int end = (rawExam["jssj"] as int?) ?? 2200;
-      String dayFromat =
-          '${day.toString().substring(0, 4)}-${day.toString().substring(4, 6)}-${day.toString().substring(6, 8)}';
-      DateTime dayTime = formatter.parse(dayFromat);
-      DateTime startTime =
-          dayTime.add(anHour * (start ~/ 100) + aMinute * (start % 100));
-      DateTime endTime =
-          dayTime.add(anHour * (end ~/ 100) + aMinute * (end % 100));
-      newExam.time = [startTime, endTime];
-      newExamDto.id = (rawExam["kcbh"] as String).substring(0, 7);
-      newExamDto.name = rawExam["kcmc"] as String;
-      newExamDto.credit = 0;
-      newExamDto.exams.add(newExam);
-
-      exams.add(newExamDto);
     }
-    return Tuple(null, exams);
+    return exams;
   }
 
-  // Helper method to map semester code to semester name
-  String _getSemesterName(int semester) {
-    if (semester == 11 || semester == 15) {
-      return "春夏学期";
-    } else {
-      return "秋冬学期";
+  DateTime? _parseExamDay(Object? value) {
+    final digits = asString(value)?.replaceAll(RegExp(r'\D'), '');
+    if (digits == null || digits.length < 8) return null;
+    final raw = digits.substring(0, 8);
+    return DateTime.tryParse(
+        '${raw.substring(0, 4)}-${raw.substring(4, 6)}-${raw.substring(6, 8)}');
+  }
+
+  (int, int) _parseClock(Object? value, {required int fallback}) {
+    final text = asString(value) ?? '';
+    final clockMatch =
+        RegExp(r'(\d{1,2})\s*:\s*(\d{2})').firstMatch(text);
+    if (clockMatch != null) {
+      final hour = int.tryParse(clockMatch.group(1) ?? '');
+      final minute = int.tryParse(clockMatch.group(2) ?? '');
+      if (hour != null &&
+          minute != null &&
+          hour >= 0 &&
+          hour <= 23 &&
+          minute >= 0 &&
+          minute <= 59) {
+        return (hour, minute);
+      }
     }
+    final numeric = asInt(value) ?? fallback;
+    final hour = numeric ~/ 100;
+    final minute = numeric % 100;
+    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
+      return (fallback ~/ 100, fallback % 100);
+    }
+    return (hour, minute);
   }
 
   Future<void> _fetchCourseDetails(HttpClient httpClient, int year,
       int semester, List<Session> sessions) async {
-    if (_token == null) return;
-
-    Map<String, List<Session>> sessionsByCourse = {};
-    for (var session in sessions) {
-      if (session.id != null) {
-        sessionsByCourse.putIfAbsent(session.id!, () => []).add(session);
+    final sessionsByCourse = <String, List<Session>>{};
+    for (final session in sessions) {
+      final id = session.id;
+      if (id != null && id.isNotEmpty) {
+        sessionsByCourse.putIfAbsent(id, () => []).add(session);
       }
     }
 
-    String semesterName = _getSemesterName(semester);
+    final semesterName =
+        (semester == 11 || semester == 15) ? "春夏学期" : "秋冬学期";
     await Future.wait(sessionsByCourse.entries.map((entry) async {
-      String sessionId = entry.key;
-      List<Session> courseSessions = entry.value;
-      String? teacherId = courseSessions.first.teacherId;
-
+      final courseSessions = entry.value;
+      final teacherId = courseSessions.first.teacherId;
       if (teacherId == null || teacherId.isEmpty) return;
-
+      final context =
+          '研究生院课程详情接口（学年 $year，学期 $semester，课程 ${entry.key}）';
       try {
-        String url =
-            "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryKcbjDetailInfoPage?";
-        url += "&xns=$year";
-        url += "&xqMc=${Uri.encodeComponent(semesterName)}";
-        url += "&kcbh=${Uri.encodeComponent(sessionId)}";
-        url += "&kcmc=${Uri.encodeComponent(courseSessions.first.name)}";
-        url += "&zjjsJzgId=${Uri.encodeComponent(teacherId)}";
-        var req = await httpClient.getUrl(Uri.parse(url)).timeout(
-            const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("request timeout"));
-        req.headers.add("X-Access-Token", _token!);
-        var res = await req.close().timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("request timeout"));
-
-        final resultJson = await res.transform(utf8.decoder).join();
-        final result = jsonDecode(resultJson) as Map<String, dynamic>;
-
-        // 【新增】如果token过期，尝试重登再重试
-        if (_isTokenExpired(result) && _ssoCookie != null) {
-          await _relogin(httpClient);
-          req = await httpClient.getUrl(Uri.parse(url)).timeout(
-              const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("request timeout"));
-          req.headers.add("X-Access-Token", _token!);
-          res = await req.close().timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("request timeout"));
-          final retryJson = await res.transform(utf8.decoder).join();
-          final retryResult = jsonDecode(retryJson) as Map<String, dynamic>;
-          if (retryResult["success"] == true) {
-            _applyCourseDetails(retryResult, courseSessions);
-          }
-          return;
-        }
-
-        if (result["success"] == true) {
-          _applyCourseDetails(result, courseSessions);
-        }
-      } catch (e) {
-        // 若接口访问或解包异常，课程信息维持原值，不做抛出
+        final uri = Uri.https(
+          'yjsy.zju.edu.cn',
+          '/dataapi/py/pyKcbj/queryKcbjDetailInfoPage',
+          {
+            'xns': year.toString(),
+            'xqMc': semesterName,
+            'kcbh': entry.key,
+            'kcmc': courseSessions.first.name,
+            'zjjsJzgId': teacherId,
+          },
+        );
+        final result =
+            await _fetchApi(httpClient, uri, context: context);
+        _requireSuccess(result, context);
+        _applyCourseDetails(result, courseSessions, context);
+      } catch (error) {
+        debugPrint('$context：保留课表中的原始字段：$error');
       }
     }));
   }
 
-  // 【新增】把课程详情解析提取成独立方法
-  void _applyCourseDetails(
-      Map<String, dynamic> result, List<Session> courseSessions) {
-    final records = result["result"]?["records"] as List?;
-    if (records != null && records.isNotEmpty) {
-      var detail = records[0] as Map<String, dynamic>;
+  void _applyCourseDetails(Map<String, dynamic> result,
+      List<Session> courseSessions, String context) {
+    final resultMap = asStringMap(result["result"]);
+    final records = asDynamicList(resultMap?["records"]);
+    if (records == null || records.isEmpty) return;
+    final detail = asStringMap(records.first);
+    if (detail == null) {
+      debugPrint('$context：详情 records[0] 不是对象');
+      return;
+    }
 
-      if (detail["xf"] != null) {
-        double creditValue = (detail["xf"] as num).toDouble();
-        for (var session in courseSessions) {
-          session.credit = creditValue;
-        }
-      }
-
-      if (detail["bz"] != null) {
-        String comments = detail["bz"] as String;
-        bool isOnline = comments.contains("线上") ||
+    final credit = asDouble(detail["xf"]);
+    final comments = asString(detail["bz"]);
+    final courseType = asString(detail["kcxzDm_dictText"]);
+    for (final session in courseSessions) {
+      if (credit != null) session.credit = credit;
+      if (comments != null) {
+        session.online = comments.contains("线上") ||
             comments.contains("录播") ||
             comments.contains("直播");
-        for (var session in courseSessions) {
-          session.online = isOnline;
-        }
       }
-
-      if (detail["kcxzDm_dictText"] != null) {
-        String courseType = detail["kcxzDm_dictText"] as String;
-        for (var session in courseSessions) {
-          session.type = courseType;
-        }
-      }
+      if (courseType != null) session.type = courseType;
     }
   }
 
   Future<Tuple<Exception?, Iterable<Session>>> getTimetable(
       HttpClient httpClient, int year, int semester) async {
-    late HttpClientRequest req;
-    late HttpClientResponse res;
+    final context =
+        '研究生院课表接口（学年 $year，学期 $semester，请求类型 课表）';
     try {
-      if (_token == null) {
-        // 【改动】不再直接报错，而是尝试自动重登
-        if (_ssoCookie != null) {
-          await _relogin(httpClient);
-        } else {
-          throw ExceptionWithMessage("not logged in");
-        }
-      }
-
-      req = await httpClient
-          .getUrl(Uri.parse(
-              "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryXskbByLoginUser?xn=$year&pkxq=$semester"))
-          .timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("request timeout"));
-      req.headers.add("X-Access-Token", _token!);
-      res = await req.close().timeout(const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("request timeout"));
-      final resultJson = await res.transform(utf8.decoder).join();
-
-      final result = jsonDecode(resultJson) as Map<String, dynamic>;
-
-      // 【新增】检查token是否过期
-      if (_isTokenExpired(result)) {
-        await _relogin(httpClient);
-        req = await httpClient
-            .getUrl(Uri.parse(
-                "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryXskbByLoginUser?xn=$year&pkxq=$semester"))
-            .timeout(const Duration(seconds: 8),
-                onTimeout: () => throw ExceptionWithMessage("request timeout"));
-        req.headers.add("X-Access-Token", _token!);
-        res = await req.close().timeout(const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("request timeout"));
-        final retryJson = await res.transform(utf8.decoder).join();
-        final retryResult = jsonDecode(retryJson) as Map<String, dynamic>;
-        if (retryResult["success"] != true) {
-          throw ExceptionWithMessage(
-              "获取课程api错误，错误信息为 ${retryResult["message"]}");
-        }
-        return _parseTimetable(httpClient, retryResult, year, semester);
-      }
-
-      if (result["success"] != true) {
-        throw ExceptionWithMessage("获取课程api错误，错误信息为 ${result["message"]}");
-      }
-
-      return _parseTimetable(httpClient, result, year, semester);
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      return Tuple(exception, []);
+      final uri = Uri.parse(
+          "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryXskbByLoginUser"
+          "?xn=$year&pkxq=$semester");
+      final result =
+          await _fetchApi(httpClient, uri, context: context);
+      _requireSuccess(result, context);
+      final sessions = _parseTimetable(result, semester, context);
+      await _fetchCourseDetails(httpClient, year, semester, sessions);
+      return Tuple(null, sessions);
+    } catch (error) {
+      return Tuple(exceptionFrom(error, context: context), <Session>[]);
     }
   }
 
-  // 【新增】把课表解析提取成独立方法
-  Future<Tuple<Exception?, Iterable<Session>>> _parseTimetable(
-      HttpClient httpClient,
-      Map<String, dynamic> result,
-      int year,
-      int semester) async {
-    Map<String, dynamic> defaultMap = {};
-    final kcbMap = result["result"] as Map<String, dynamic>;
-    final dayWithClasses = kcbMap["kcbMap"] as Map<String, dynamic>;
+  List<Session> _parseTimetable(
+      Map<String, dynamic> result, int semester, String context) {
+    final resultMap = asStringMap(result["result"]);
+    final dayWithClasses = asStringMap(resultMap?["kcbMap"]);
+    if (dayWithClasses == null) {
+      throw ExceptionWithMessage('$context：返回数据缺少 result.kcbMap 对象');
+    }
 
-    List<Session> sessions = [];
-    for (int i = 1; i <= 7; ++i) {
-      var classesThisDay =
-          (dayWithClasses["$i"] ?? defaultMap) as Map<String, dynamic>;
-      Map<String, Session> sessionThisDay = {};
-      for (int j = 1; j <= 15; ++j) {
-        var wrapper =
-            (classesThisDay["$j"] ?? defaultMap) as Map<String, dynamic>;
-        var classesThisPeriod =
-            (wrapper["pyKcbjSjddVOList"] ?? []) as List<dynamic>;
-
-        for (var rawClassDyn in classesThisPeriod) {
+    final sessions = <Session>[];
+    for (var day = 1; day <= 7; day++) {
+      final classesThisDay = asStringMap(dayWithClasses["$day"]);
+      if (classesThisDay == null) continue;
+      final sessionsThisDay = <String, Session>{};
+      for (var period = 1; period <= 15; period++) {
+        final wrapper = asStringMap(classesThisDay["$period"]);
+        final classes =
+            asDynamicList(wrapper?["pyKcbjSjddVOList"]) ?? const [];
+        for (var index = 0; index < classes.length; index++) {
+          final rawClass = asStringMap(classes[index]);
+          if (rawClass == null) continue;
           try {
-            var rawClass = rawClassDyn as Map<String, dynamic>;
-            String classId = rawClass["bjbh"] as String;
-            String sessionId = classId.substring(0, 7);
-
-            if (sessionThisDay.containsKey(classId)) {
-              sessionThisDay[classId]!.time.add(j);
+            final classId = asString(rawClass["bjbh"]);
+            if (classId == null || classId.length < 7) {
+              throw const FormatException('缺少有效班级编号 bjbh');
+            }
+            final existing = sessionsThisDay[classId];
+            if (existing != null) {
+              if (!existing.time.contains(period)) existing.time.add(period);
               continue;
             }
-            if (rawClass["xkzt"] == "12") {
-              continue;
-            }
+            if (asString(rawClass["xkzt"]) == "12") continue;
 
-            int classSemester = int.parse(rawClass["pkxq"] ?? "$semester");
-            var newSession = Session.empty();
-            newSession.id = sessionId;
-            newSession.name = rawClass["kcmc"] as String;
-            newSession.teacher = rawClass["xm"] as String;
-            newSession.teacherId = rawClass["jzgId"] as String?;
-            newSession.location = rawClass["cdmc"] as String?;
-            newSession.confirmed = true;
-            newSession.dayOfWeek = i;
-            newSession.time = [j];
+            final classSemester = asInt(rawClass["pkxq"]) ?? semester;
+            final session = Session.empty()
+              ..id = classId.substring(0, 7)
+              ..name = asString(rawClass["kcmc"]) ?? '未知课程'
+              ..teacher = asString(rawClass["xm"]) ?? '未知教师'
+              ..teacherId = asString(rawClass["jzgId"])
+              ..location = asString(rawClass["cdmc"])
+              ..confirmed = true
+              ..dayOfWeek = day
+              ..time = [period];
 
             if (semester == 11 || semester == 13) {
-              newSession.firstHalf = true;
+              session.firstHalf = true;
             } else {
-              newSession.secondHalf = true;
+              session.secondHalf = true;
             }
             if (classSemester == 15 || classSemester == 16) {
-              newSession.firstHalf = newSession.secondHalf = true;
+              session.firstHalf = session.secondHalf = true;
             }
 
-            String weekExtra = rawClass["zc"] as String;
-            weekExtra = weekExtra.replaceAll(RegExp(r"[^\d,]"), "");
-            List<int> weekExtraList =
-                weekExtra.split(",").map(int.parse).toList();
-
-            newSession.customRepeat = true;
-            newSession.customRepeatWeeks = weekExtraList;
-
-            var threshold =
-                (newSession.firstHalf && newSession.secondHalf) ? 8 : 4;
-            if (weekExtraList.length > threshold) {
-              newSession.oddWeek = newSession.evenWeek = true;
+            final weeks = _parseWeeks(asString(rawClass["zc"]) ?? '');
+            if (weeks.isEmpty) {
+              session.oddWeek = session.evenWeek = true;
             } else {
-              int oddWeekCount = weekExtraList.where((e) => e % 2 == 1).length;
-              if (oddWeekCount > weekExtraList.length / 2) {
-                newSession.oddWeek = true;
+              session
+                ..customRepeat = true
+                ..customRepeatWeeks = weeks;
+              final threshold =
+                  (session.firstHalf && session.secondHalf) ? 8 : 4;
+              if (weeks.length > threshold) {
+                session.oddWeek = session.evenWeek = true;
               } else {
-                newSession.evenWeek = true;
+                final oddCount = weeks.where((week) => week.isOdd).length;
+                if (oddCount > weeks.length / 2) {
+                  session.oddWeek = true;
+                } else {
+                  session.evenWeek = true;
+                }
               }
             }
-
-            sessionThisDay[classId] = newSession;
-          } finally {
-            // log here?
+            sessionsThisDay[classId] = session;
+          } catch (error) {
+            debugPrint(
+                '$context：跳过星期 $day 第 $period 节的第 ${index + 1} 条课程：$error');
           }
         }
       }
-
-      sessions.addAll(sessionThisDay.values);
+      sessions.addAll(sessionsThisDay.values);
     }
+    return sessions;
+  }
 
-    await _fetchCourseDetails(httpClient, year, semester, sessions);
-
-    return Tuple(null, sessions);
+  List<int> _parseWeeks(String raw) {
+    final weeks = <int>{};
+    final rangePattern = RegExp(r'(\d+)\s*[-~至]\s*(\d+)');
+    for (final match in rangePattern.allMatches(raw)) {
+      final start = int.tryParse(match.group(1) ?? '');
+      final end = int.tryParse(match.group(2) ?? '');
+      if (start == null || end == null || start > end || end > 30) continue;
+      weeks.addAll(List<int>.generate(end - start + 1, (i) => start + i));
+    }
+    final withoutRanges = raw.replaceAll(rangePattern, ' ');
+    for (final match in RegExp(r'\d+').allMatches(withoutRanges)) {
+      final week = int.tryParse(match.group(0) ?? '');
+      if (week != null && week > 0 && week <= 30) weeks.add(week);
+    }
+    final result = weeks.toList()..sort();
+    return result;
   }
 }
-
-void main() async {}

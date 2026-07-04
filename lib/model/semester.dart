@@ -1,6 +1,7 @@
 import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/utils/gpa_helper.dart';
+import 'package:celechron/utils/json_utils.dart';
 import 'package:celechron/utils/list_ext.dart';
 import 'course.dart';
 import 'exam.dart';
@@ -366,25 +367,58 @@ class Semester {
   }
 
   void addZjuCalendar(Map<String, dynamic> json) {
-    List<DateTime> startEnd = (json['startEnd'] as List)
-        .map((e) => DateTime.parse(e as String))
+    final startEnd = (asDynamicList(json['startEnd']) ?? const [])
+        .map(asString)
+        .whereType<String>()
+        .map(asDateTime)
+        .whereType<DateTime>()
         .toList();
-    _sessionToTime = (json['sessionTime'] as List)
-        .map((e) => (e as List)
-            .map((e) => Duration(
-                hours: int.parse((e as String).substring(0, 2)),
-                minutes: int.parse((e).substring(3, 5))))
-            .toList())
-        .toList();
-    _holidays = (json['holiday'] as Map)
-        .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
-    _exchanges = (json['exchange'] as Map).map((k, v) => MapEntry(
-        DateTime.parse((k as String).substring(0, 8)),
-        DateTime.parse((k).substring(8, 16))));
-    // 双向映射
-    _exchanges.addAll((json['exchange'] as Map).map((k, v) => MapEntry(
-        DateTime.parse((k as String).substring(8, 16)),
-        DateTime.parse((k).substring(0, 8)))));
+    if (startEnd.length != 4) {
+      throw const FormatException('校历缺少四个有效的学期起止日期');
+    }
+
+    final sessionToTime = <List<Duration>>[];
+    for (final rawPeriod
+        in asDynamicList(json['sessionTime']) ?? const []) {
+      final period = <Duration>[];
+      for (final rawTime in asDynamicList(rawPeriod) ?? const []) {
+        final parts = (asString(rawTime) ?? '').split(':');
+        if (parts.length < 2) continue;
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+        if (hour != null && minute != null) {
+          period.add(Duration(hours: hour, minutes: minute));
+        }
+      }
+      sessionToTime.add(period);
+    }
+    if (sessionToTime.isEmpty ||
+        sessionToTime.every((period) => period.isEmpty)) {
+      throw const FormatException('校历缺少有效的节次时间');
+    }
+
+    final holidays = <DateTime, String>{};
+    for (final entry
+        in (asStringMap(json['holiday']) ?? const {}).entries) {
+      final date = asDateTime(entry.key);
+      final name = asString(entry.value);
+      if (date != null && name != null) holidays[date] = name;
+    }
+    final exchanges = <DateTime, DateTime>{};
+    for (final key
+        in (asStringMap(json['exchange']) ?? const {}).keys) {
+      if (key.length < 16) continue;
+      final first = asDateTime(key.substring(0, 8));
+      final second = asDateTime(key.substring(8, 16));
+      if (first != null && second != null) {
+        exchanges[first] = second;
+        exchanges[second] = first;
+      }
+    }
+
+    _sessionToTime = sessionToTime;
+    _holidays = holidays;
+    _exchanges = exchanges;
     _dayOfWeekToDays = [
       [
         /*上半学期*/
@@ -459,40 +493,100 @@ class Semester {
     };
   }
 
-  Semester.fromJson(Map<String, dynamic> json)
-      : name = json['name'] ?? DateTime.now().toIso8601String(),
-        _courses = ((json['courses'] ?? {}) as Map).map((k, v) =>
-            MapEntry(k as String, Course.fromJson(v as Map<String, dynamic>))),
-        _exams = ((json['exams'] ?? []) as List)
-            .map((e) => Exam.fromJson(e))
-            .toList(),
-        _sessions = ((json['sessions'] ?? []) as List)
-            .map((e) => Session.fromJson(e))
-            .toList(),
-        _grades = ((json['grades'] ?? []) as List)
-            .map((e) => Grade.fromJson(e))
-            .toList(),
-        gpa = ((json['gpa'] ?? []) as List).map((e) => e as double).toList(),
-        credits = json['credits'] ?? 0.0,
-        _sessionToTime = ((json['sessionToTime'] ?? []) as List)
-            .map((e) =>
-                (e as List).map((e) => Duration(minutes: e as int)).toList())
-            .toList(),
-        _dayOfWeekToDays = ((json['dayOfWeekToDays'] ?? []) as List)
-            .map((e) => (e as List)
-                .map((e) => (e as List)
-                    .map((e) => (e as List)
-                        .map((e) => DateTime.parse(e as String))
-                        .toList())
-                    .toList())
-                .toList())
-            .toList(),
-        _holidays = ((json['holidays'] ?? {}) as Map)
-            .map((k, v) => MapEntry(DateTime.parse(k as String), v as String)),
-        _exchanges = ((json['exchanges'] ?? {}) as Map).map((k, v) => MapEntry(
-            DateTime.parse(k as String), DateTime.parse(v as String))) {
-    if (gpa.length == 3) {
-      gpa.insert(2, 0);
+  factory Semester.fromJson(Map<String, dynamic> json) {
+    final semester = Semester(
+        asString(json['name']) ?? DateTime.now().toIso8601String());
+
+    final courses = asStringMap(json['courses']) ?? const {};
+    for (final entry in courses.entries) {
+      final courseMap = asStringMap(entry.value);
+      if (courseMap == null) continue;
+      try {
+        semester._courses[entry.key] = Course.fromJson(courseMap);
+      } catch (_) {}
     }
+    for (final rawExam in asDynamicList(json['exams']) ?? const []) {
+      final examMap = asStringMap(rawExam);
+      if (examMap == null) continue;
+      try {
+        final exam = Exam.fromJson(examMap);
+        if (exam.time.length >= 2) semester._exams.add(exam);
+      } catch (_) {}
+    }
+    for (final rawSession
+        in asDynamicList(json['sessions']) ?? const []) {
+      final sessionMap = asStringMap(rawSession);
+      if (sessionMap == null) continue;
+      try {
+        final session = Session.fromJson(sessionMap);
+        if (session.time.isNotEmpty) semester._sessions.add(session);
+      } catch (_) {}
+    }
+    for (final rawGrade in asDynamicList(json['grades']) ?? const []) {
+      final gradeMap = asStringMap(rawGrade);
+      if (gradeMap == null) continue;
+      try {
+        final grade = Grade.fromJson(gradeMap);
+        if (grade.id.isNotEmpty) semester._grades.add(grade);
+      } catch (_) {}
+    }
+
+    semester.gpa = (asDynamicList(json['gpa']) ?? const [])
+        .map(asDouble)
+        .whereType<double>()
+        .toList();
+    if (semester.gpa.length == 3) semester.gpa.insert(2, 0);
+    if (semester.gpa.length != 4) {
+      semester.gpa = [0.0, 0.0, 0.0, 0.0];
+    }
+    semester.credits = asDouble(json['credits']) ?? 0.0;
+
+    final sessionTimes = <List<Duration>>[];
+    for (final rawPeriod
+        in asDynamicList(json['sessionToTime']) ?? const []) {
+      sessionTimes.add((asDynamicList(rawPeriod) ?? const [])
+          .map(asInt)
+          .whereType<int>()
+          .map((minutes) => Duration(minutes: minutes))
+          .toList());
+    }
+    if (sessionTimes.isNotEmpty) semester._sessionToTime = sessionTimes;
+
+    final calendar = <List<List<List<DateTime>>>>[];
+    for (final rawHalf
+        in asDynamicList(json['dayOfWeekToDays']) ?? const []) {
+      final half = <List<List<DateTime>>>[];
+      for (final rawOddEven in asDynamicList(rawHalf) ?? const []) {
+        final oddEven = <List<DateTime>>[];
+        for (final rawWeekday
+            in asDynamicList(rawOddEven) ?? const []) {
+          oddEven.add((asDynamicList(rawWeekday) ?? const [])
+              .map(asString)
+              .whereType<String>()
+              .map(asDateTime)
+              .whereType<DateTime>()
+              .toList());
+        }
+        half.add(oddEven);
+      }
+      calendar.add(half);
+    }
+    if (calendar.length == 2) semester._dayOfWeekToDays = calendar;
+
+    semester._holidays = {};
+    for (final entry
+        in (asStringMap(json['holidays']) ?? const {}).entries) {
+      final date = asDateTime(entry.key);
+      final name = asString(entry.value);
+      if (date != null && name != null) semester._holidays[date] = name;
+    }
+    semester._exchanges = {};
+    for (final entry
+        in (asStringMap(json['exchanges']) ?? const {}).entries) {
+      final from = asDateTime(entry.key);
+      final to = asDateTime(entry.value);
+      if (from != null && to != null) semester._exchanges[from] = to;
+    }
+    return semester;
   }
 }

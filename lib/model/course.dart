@@ -1,4 +1,5 @@
 import 'package:celechron/model/exams_dto.dart';
+import 'package:celechron/utils/json_utils.dart';
 
 import 'exam.dart';
 import 'grade.dart';
@@ -26,6 +27,10 @@ class Course {
     key ??= id!.length < 22 ? id : id!.substring(0, 22);
     return key ?? '未知';
   }
+
+  Course._empty()
+      : name = '未知课程',
+        confirmed = true;
 
   Course.fromExam(ExamDto examDto) {
     id = examDto.id;
@@ -187,21 +192,39 @@ class Course {
     };
   }
 
-  Course.fromJson(Map<String, dynamic> json)
-      : id = json['id'] as String?,
-        name = json['name'] as String,
-        confirmed = json['confirmed'] as bool,
-        credit = json['credit'] as double,
-        grade = json['grade'] == null
-            ? null
-            : Grade.fromJson(json['grade'] as Map<String, dynamic>),
-        teacher = json['teacher'] as String?,
-        sessions = (json['sessions'] as List<dynamic>)
-            .map((e) => Session.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        exams = (json['exams'] as List<dynamic>)
-            .map((e) => Exam.fromJson(e as Map<String, dynamic>))
-            .toList(),
-        online = json['online'] as bool?,
-        type = json['type'] as String?;
+  factory Course.fromJson(Map<String, dynamic> json) {
+    final course = Course._empty()
+      ..id = asString(json['id'])
+      ..name = asString(json['name']) ?? '未知课程'
+      ..confirmed = asBool(json['confirmed']) ?? true
+      ..credit = asDouble(json['credit']) ?? 0.0
+      ..teacher = asString(json['teacher'])
+      ..online = asBool(json['online'])
+      ..type = asString(json['type']);
+
+    final gradeMap = asStringMap(json['grade']);
+    if (gradeMap != null) {
+      try {
+        course.grade = Grade.fromJson(gradeMap);
+      } catch (_) {}
+    }
+    for (final rawSession
+        in asDynamicList(json['sessions']) ?? const []) {
+      final sessionMap = asStringMap(rawSession);
+      if (sessionMap == null) continue;
+      try {
+        final session = Session.fromJson(sessionMap);
+        if (session.time.isNotEmpty) course.sessions.add(session);
+      } catch (_) {}
+    }
+    for (final rawExam in asDynamicList(json['exams']) ?? const []) {
+      final examMap = asStringMap(rawExam);
+      if (examMap == null) continue;
+      try {
+        final exam = Exam.fromJson(examMap);
+        if (exam.time.length >= 2) course.exams.add(exam);
+      } catch (_) {}
+    }
+    return course;
+  }
 }

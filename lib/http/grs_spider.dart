@@ -1,13 +1,15 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/http/spider.dart';
+import 'package:celechron/http/calendar_config_parser.dart';
 import 'package:celechron/http/time_config_service.dart';
 import 'package:celechron/http/zjuServices/courses.dart';
 import 'package:celechron/http/zjuServices/grs_new.dart';
+import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/model/todo.dart';
 import 'package:get/get.dart';
+import 'package:flutter/foundation.dart';
 
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
@@ -93,32 +95,29 @@ class GrsSpider implements Spider {
       return null;
     });
     if (_iPlanetDirectoryPro == null) return loginErrorMessages;
-    loginErrorMessages.addAll(await Future.wait([
-      _grsNew
-          .login(_httpClient, _iPlanetDirectoryPro)
-          // ignore: unnecessary_cast
-          .then((value) => null as String?)
-          .timeout(const Duration(seconds: 8))
-          .catchError((e) => "无法登录研究生院网，$e"),
-      _courses
-          .login(_httpClient, _iPlanetDirectoryPro)
-          // ignore: unnecessary_cast
-          .then((value) => null as String?)
-          .timeout(const Duration(seconds: 8))
-          .catchError((e) => "无法登录学在浙大，$e"),
+    Future<String?> captureLogin(
+        Future<dynamic> future, String serviceName,
+        {bool ignoreError = false}) async {
+      try {
+        await future.timeout(const Duration(seconds: 8));
+        return null;
+      } catch (error) {
+        return ignoreError ? null : "无法登录$serviceName，$error";
+      }
+    }
+
+    loginErrorMessages.addAll(await Future.wait<String?>([
+      captureLogin(
+          _grsNew.login(_httpClient, _iPlanetDirectoryPro), "研究生院网"),
+      captureLogin(_courses.login(_httpClient, _iPlanetDirectoryPro), "学在浙大"),
       /* _appService
                     .login(_httpClient, _iPlanetDirectoryPro)
                     // ignore: unnecessary_cast
-                    .then((value) => null as String?)
+                    .then<String?>((value) => null)
                     .timeout(const Duration(seconds: 8))
                     .catchError((e) => "无法登录钉钉工作台，$e"), */
-      _zdbk
-          .login(_httpClient, _iPlanetDirectoryPro)
-          // ignore: unnecessary_cast
-          .then((value) => null as String?)
-          .timeout(const Duration(seconds: 8))
-          // 研究生一般不需要登录zdbk，成功与否都不报错
-          .catchError((e) => null as String?),
+      captureLogin(_zdbk.login(_httpClient, _iPlanetDirectoryPro), "教务网",
+          ignoreError: true),
     ]).then((value) {
       if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
       return value;
@@ -137,6 +136,7 @@ class GrsSpider implements Spider {
     // _appService.logout();
     _zdbk.logout();
     _grsNew.logout();
+    _courses.logout();
   }
 
   // ===== 新增开始 =====
@@ -164,7 +164,9 @@ class GrsSpider implements Spider {
                 errStr.contains("timeout") ||
                 errStr.contains("type 'null'") ||
                 errStr.contains("iplanetdirectorypro无效") ||
-                errStr.contains("会话已过期")) {
+                errStr.contains("会话已过期") ||
+                errStr.contains("登录态已失效") ||
+                errStr.contains("token 已过期")) {
               hasHiddenError = true;
               hiddenErrorToThrow = res.item1;
             }
@@ -180,21 +182,28 @@ class GrsSpider implements Spider {
         attempts++;
         String errStr = e.toString().toLowerCase();
 
-        // 判断是否是可以通过重新登录解决的错误
-        if (attempts <= maxRetries &&
-            (e is SessionExpiredException ||
-                errStr.contains("未登录") ||
-                errStr.contains("iplanetdirectorypro无效") ||
-                errStr.contains("会话已过期") ||
-                errStr.contains("connection closed") ||
-                errStr.contains("timeout") ||
-                errStr.contains("超时") ||
-                errStr.contains("请求超时") ||
-                errStr.contains("httpexception") ||
-                errStr.contains("网络错误") ||
-                errStr.contains("socketexception"))) {
-          await login(); // 重新获取 iPlanetDirectoryPro
-          await Future.delayed(const Duration(milliseconds: 1000));
+        final authenticationError = e is AuthenticationExpiredException ||
+            e is SessionExpiredException ||
+            errStr.contains("未登录") ||
+            errStr.contains("登录态已失效") ||
+            errStr.contains("会话已过期") ||
+            errStr.contains("token 已过期") ||
+            errStr.contains("iplanetdirectorypro无效");
+        final transientError = errStr.contains("connection closed") ||
+            errStr.contains("timeout") ||
+            errStr.contains("超时") ||
+            errStr.contains("httpexception") ||
+            errStr.contains("网络错误") ||
+            errStr.contains("socketexception");
+        if (attempts <= maxRetries && (authenticationError || transientError)) {
+          if (authenticationError) {
+            final loginErrors = await login();
+            if (loginErrors.any((error) => error != null)) {
+              throw ExceptionWithMessage(
+                  '自动重新登录失败：${loginErrors.whereType<String>().join('；')}');
+            }
+          }
+          await Future.delayed(const Duration(milliseconds: 300));
           continue;
         }
 
@@ -230,7 +239,20 @@ class GrsSpider implements Spider {
 
     // 建立学期编号与“入学以来第几个学期”的映射。如"2022-2023-1"对应第22年入学同学的第1个学期，即"2022-2023秋冬"。
     var yearNow = DateTime.now().year;
-    var yearEnroll = int.parse(_username.substring(1, 3)) + 2000;
+    final enrollmentDigits =
+        _username.length >= 3 ? _username.substring(1, 3) : '';
+    final parsedEnrollmentYear = int.tryParse(enrollmentDigits);
+    if (parsedEnrollmentYear == null) {
+      return Tuple7(
+          loginErrorMessages,
+          <String?>['无法解析学号中的入学年份：$_username'],
+          outSemesters,
+          outGrades,
+          outMajorGrade,
+          outSpecialDates,
+          outTodos);
+    }
+    var yearEnroll = parsedEnrollmentYear + 2000;
     // 假设研究生在本科时提前两年选了研究生的课
     yearEnroll -= 2;
     // 岩壁加起来7年+本科2年
@@ -258,44 +280,24 @@ class GrsSpider implements Spider {
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-1').then((value) {
         if (value.item2 != null) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addZjuCalendar(jsonDecode(value.item2!));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
-              .map((k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(0, 8)),
-                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(8, 16)),
-                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
-              (k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          applyCalendarConfig(
+            value.item2!,
+            outSemesters[semesterIndexMap['$yearStr-1']!],
+            outSpecialDates,
+            context: '校历（学年学期 $yearStr-1）',
+          );
         }
         return value.item1?.toString();
       }).catchError((e) => 'semesterConf($yearStr-1) $e'));
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-2').then((value) {
         if (value.item2 != null) {
-          outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addZjuCalendar(jsonDecode(value.item2!));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
-              .map((k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(0, 8)),
-                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(8, 16)),
-                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
-              (k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          applyCalendarConfig(
+            value.item2!,
+            outSemesters[semesterIndexMap['$yearStr-2']!],
+            outSpecialDates,
+            context: '校历（学年学期 $yearStr-2）',
+          );
         }
         return value.item1?.toString();
       }).catchError((e) => 'semesterConf($yearStr-2) $e'));
@@ -427,7 +429,15 @@ class GrsSpider implements Spider {
     fetches.add(
         _fetchWithRetry(() => _zdbk.getExamsDto(_httpClient)).then((value) {
       for (var e in value.item2) {
-        outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addExam(e);
+        try {
+          final index = semesterIndexMap[e.semesterId];
+          if (index == null) {
+            throw FormatException('考试学期不在刷新范围：${e.semesterId}');
+          }
+          outSemesters[index].addExam(e);
+        } catch (error) {
+          debugPrint('跳过无法归入学期的考试 ${e.id}：$error');
+        }
       }
       return value.item1?.toString();
     }).catchError((e) => 'zdbkExam $e'));
@@ -436,8 +446,16 @@ class GrsSpider implements Spider {
     fetches.add(
         _fetchWithRetry(() => _zdbk.getTranscript(_httpClient)).then((value) {
       for (var e in value.item2) {
-        outSemesters[semesterIndexMap[e.id.substring(1, 12)]!].addGrade(e);
-        outGrades.add(e);
+        try {
+          final index = semesterIndexMap[e.semesterId];
+          if (index == null) {
+            throw FormatException('成绩学期不在刷新范围：${e.semesterId}');
+          }
+          outSemesters[index].addGrade(e);
+          outGrades.add(e);
+        } catch (error) {
+          debugPrint('跳过无法归入学期的成绩 ${e.id}：$error');
+        }
       }
       return value.item1?.toString();
     }).catchError((e) => 'zdbkGrade $e'));
@@ -450,26 +468,34 @@ class GrsSpider implements Spider {
     fetches
         .add(_fetchWithRetry(() => _grsNew.getGrade(_httpClient)).then((value) {
       for (var e in value.item2) {
-        if (e.id.length < 6) {
-          continue;
+        try {
+          if (e.id.length < 6) throw const FormatException('缺少学期信息');
+          final year = int.tryParse(e.id.substring(0, 4));
+          if (year == null) throw const FormatException('学年格式无效');
+          String semesterStr;
+          if (e.id.contains("春学") ||
+              e.id.contains("夏学") ||
+              e.id.contains("春夏学")) {
+            semesterStr = "-2";
+          } else if (e.id.contains("秋学") ||
+              e.id.contains("冬学") ||
+              e.id.contains("秋冬学")) {
+            semesterStr = "-1";
+          } else {
+            throw const FormatException('缺少学期名称');
+          }
+          final yearStr = '$year-${year + 1}$semesterStr';
+          final classId =
+              RegExp(r'班级编号(\d{7})').firstMatch(e.id)?.group(1);
+          final index = semesterIndexMap[yearStr];
+          if (classId == null || index == null) {
+            throw FormatException('班级编号或学期映射缺失：$yearStr');
+          }
+          e.id = classId;
+          outSemesters[index].addGradeWithSemester(e, yearStr, true);
+        } catch (error) {
+          debugPrint('跳过无法归入学期的研究生成绩 ${e.id}：$error');
         }
-        int year = int.tryParse(e.id.substring(0, 4)) ?? 0;
-        String semesterStr = "";
-        if (e.id.contains("春学") ||
-            e.id.contains("夏学") ||
-            e.id.contains("春夏学")) {
-          semesterStr = "-2";
-        } else if (e.id.contains("秋学") ||
-            e.id.contains("冬学") ||
-            e.id.contains("秋冬学")) {
-          semesterStr = "-1";
-        } else {
-          continue;
-        }
-        String yearStr = '$year-${year + 1}$semesterStr';
-        e.id = RegExp(r'班级编号(\d{7})').firstMatch(e.id)!.group(1)!;
-        outSemesters[semesterIndexMap[yearStr]!]
-            .addGradeWithSemester(e, yearStr, true);
       }
       return value.item1?.toString();
     }).catchError((e) => 'grsGrade $e'));

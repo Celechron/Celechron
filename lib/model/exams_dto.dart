@@ -1,4 +1,5 @@
 import 'exam.dart';
+import 'package:celechron/utils/json_utils.dart';
 
 class ExamDto {
   String id;
@@ -24,12 +25,19 @@ class ExamDto {
     exams = Exam.parseExams(json, id, name);
   }*/
 
-  ExamDto.fromZdbk(Map<String, dynamic> json)
-      : id = json['xkkh'] as String,
-        name =
-            (json['kcmc'] as String).replaceAll('(', '（').replaceAll(')', '）'),
-        credit = double.parse(json['xf'] as String) {
-    exams = Exam.parseExamsFromZdbk(json, id, name);
+  factory ExamDto.fromZdbk(Map<String, dynamic> json) {
+    final id = asString(json['xkkh']);
+    if (id == null || id.isEmpty) {
+      throw const FormatException('考试条目缺少选课课号 xkkh');
+    }
+    final dto = ExamDto.empty()
+      ..id = id
+      ..name = (asString(json['kcmc']) ?? '未知课程')
+          .replaceAll('(', '（')
+          .replaceAll(')', '）')
+      ..credit = asDouble(json['xf']) ?? 0.0;
+    dto.exams = Exam.parseExamsFromZdbk(json, dto.id, dto.name);
+    return dto;
   }
 
   Map<String, dynamic> toJson() => {
@@ -40,8 +48,12 @@ class ExamDto {
       };
 
   ExamDto.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        name = json['name'],
-        credit = json['credit'],
-        exams = (json['exams'] as List).map((e) => Exam.fromJson(e)).toList();
+      : id = asString(json['id']) ?? '',
+        name = asString(json['name']) ?? '未知课程',
+        credit = asDouble(json['credit']) ?? 0.0,
+        exams = (asDynamicList(json['exams']) ?? const [])
+            .map(asStringMap)
+            .whereType<Map<String, dynamic>>()
+            .map(Exam.fromJson)
+            .toList();
 }

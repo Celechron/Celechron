@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/http/zjuServices/exceptions.dart';
+import 'package:celechron/http/zjuServices/response_utils.dart';
 import 'package:celechron/utils/tuple.dart';
 
 import 'package:celechron/database/database_helper.dart';
@@ -18,20 +18,23 @@ class TimeConfigService {
     try {
       var response = await httpClient
           .getUrl(Uri.parse('http://calendar.celechron.top/$semesterId.json'))
-          .then((request) => request.close())
+          .then((request) {
+            request.followRedirects = false;
+            return request.close();
+          })
           .timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-      if (response.statusCode == 200) {
-        var config = await response.transform(utf8.decoder).join();
-        _db?.setCachedWebPage('timeConfig_$semesterId', config);
-        return Tuple(null, config);
-      } else {
-        return Tuple(null, null);
-      }
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      final context = '校历接口（学年学期 $semesterId，请求类型 配置）';
+      final config = await readResponseText(response,
+          context: context, expectJson: true);
+      decodeJsonMap(config,
+          context: '$context；HTTP ${response.statusCode}');
+      _db?.setCachedWebPage('timeConfig_$semesterId', config);
+      return Tuple(null, config);
+    } catch (error) {
+      final exception = exceptionFrom(error,
+          context: '校历接口（学年学期 $semesterId，请求类型 配置）');
       return Tuple(exception, _db?.getCachedWebPage('timeConfig_$semesterId'));
     }
   }

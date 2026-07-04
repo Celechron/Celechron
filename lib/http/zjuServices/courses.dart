@@ -9,113 +9,159 @@ import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/utils/tuple.dart';
 import 'package:celechron/model/todo.dart';
 
+import 'response_utils.dart';
+
 class Courses {
   DatabaseHelper? _db;
   Cookie? _session;
-  Cookie? _iPlanetDirectoryPro; // ← 新增这一行，保存登录凭据
+  Cookie? _iPlanetDirectoryPro;
+  Future<bool>? _loginFuture;
 
   set db(DatabaseHelper? db) {
     _db = db;
   }
 
   Future<Tuple<Exception?, List<Todo>>> getTodo(HttpClient httpClient) async {
-    late HttpClientRequest request;
-    late HttpClientResponse response;
-
     try {
       if (_session == null) {
-        // ===== 改动：不再直接报错，而是尝试重新登录 =====
         if (_iPlanetDirectoryPro != null) {
           await login(httpClient, _iPlanetDirectoryPro);
         } else {
-          throw ExceptionWithMessage("未登录");
+          throw AuthenticationExpiredException("学在浙大：未登录");
         }
       }
-      request = await httpClient
-          .getUrl(Uri.parse("https://courses.zju.edu.cn/api/todos"))
-          .timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("请求超时"));
-      request.cookies.add(_session!);
-      response = await request.close().timeout(const Duration(seconds: 8),
-          onTimeout: () => throw ExceptionWithMessage("请求超时"));
-
-      var body = await response.transform(utf8.decoder).join();
-
-      // 检查返回内容是否是登录页面（说明session过期了）
-      if (body.contains("cas/login") || body.contains("统一身份认证")) {
-        // session过期了，尝试重新登录
-        _session = null;
-        if (_iPlanetDirectoryPro != null) {
+      Map<String, dynamic> data;
+      final attemptedSession = _session;
+      try {
+        data = await _fetchTodo(httpClient);
+      } on AuthenticationExpiredException {
+        if (_iPlanetDirectoryPro == null) {
+          throw AuthenticationExpiredException("学在浙大：登录态已失效，请重新登录");
+        }
+        if (identical(_session, attemptedSession)) {
+          _session = null;
           await login(httpClient, _iPlanetDirectoryPro);
-          // 重新请求
-          request = await httpClient
-              .getUrl(Uri.parse("https://courses.zju.edu.cn/api/todos"))
-              .timeout(const Duration(seconds: 8),
-                  onTimeout: () => throw ExceptionWithMessage("请求超时"));
-          request.cookies.add(_session!);
-          response = await request.close().timeout(const Duration(seconds: 8),
-              onTimeout: () => throw ExceptionWithMessage("请求超时"));
-          body = await response.transform(utf8.decoder).join();
         }
+        data = await _fetchTodo(httpClient);
       }
-
+      final body = jsonEncode(data);
       _db?.setCachedWebPage("courses_todo", body);
-
-      return Tuple(null,
-          Todo.getAllFromCourses((jsonDecode(body) as Map<String, dynamic>)));
-    } catch (e) {
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
-      // 出错了也不怕，返回缓存数据，用户看不到报错
-      var todos = Todo.getAllFromCourses(
-          (jsonDecode(_db?.getCachedWebPage("courses_todo") ?? '{}')));
+      return Tuple(null, Todo.getAllFromCourses(data));
+    } catch (error) {
+      final exception = exceptionFrom(error, context: '学在浙大作业');
+      final todos = _readCachedTodos();
       return Tuple(exception, todos);
     }
   }
 
-  Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
-    late HttpClientRequest request;
-    late HttpClientResponse response;
-
-    if (iPlanetDirectoryPro == null) {
-      throw ExceptionWithMessage("iPlanetDirectoryPro无效");
+  Future<Map<String, dynamic>> _fetchTodo(HttpClient httpClient) async {
+    final request = await httpClient
+        .getUrl(Uri.parse("https://courses.zju.edu.cn/api/todos"))
+        .timeout(const Duration(seconds: 8),
+            onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    request.followRedirects = false;
+    request.cookies.add(_session!);
+    final response = await request.close().timeout(const Duration(seconds: 8),
+        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+    final body = await readResponseText(response,
+        context: '学在浙大作业接口', expectJson: true);
+    final data = decodeJsonMap(body,
+        context: '学在浙大作业接口；HTTP ${response.statusCode}');
+    if (jsonIndicatesAuthenticationFailure(data)) {
+      throw AuthenticationExpiredException(
+          '学在浙大作业接口：登录态已失效；HTTP ${response.statusCode}'
+          '；响应摘要：${responseSummary(body)}');
     }
+    return data;
+  }
 
-    _iPlanetDirectoryPro = iPlanetDirectoryPro; // ← 新增：保存凭据以便自动重登
+  List<Todo> _readCachedTodos() {
+    final cached = _db?.getCachedWebPage("courses_todo");
+    if (cached == null || cached.trim().isEmpty) return [];
+    try {
+      return Todo.getAllFromCourses(
+          decodeJsonMap(cached, context: '学在浙大作业缓存'));
+    } catch (_) {
+      return [];
+    }
+  }
 
+  Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
+    if (iPlanetDirectoryPro == null) {
+      throw AuthenticationExpiredException("学在浙大：统一身份认证凭据无效");
+    }
+    _iPlanetDirectoryPro = iPlanetDirectoryPro;
+
+    final pending = _loginFuture;
+    if (pending != null) return await pending;
+    final login = _doLogin(httpClient, iPlanetDirectoryPro);
+    _loginFuture = login;
+    try {
+      return await login;
+    } finally {
+      if (identical(_loginFuture, login)) _loginFuture = null;
+    }
+  }
+
+  Future<bool> _doLogin(
+      HttpClient httpClient, Cookie iPlanetDirectoryPro) async {
+    _session = null;
     var cookies = <Cookie>[iPlanetDirectoryPro];
+    var current = Uri.parse("https://courses.zju.edu.cn/user/index");
 
-    Future<void> getWithCookies(String url) async {
-      request = await httpClient.getUrl(Uri.parse(url)).timeout(
+    for (var redirectCount = 0; redirectCount < 10; redirectCount++) {
+      final request = await httpClient.getUrl(current).timeout(
           const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
       request.followRedirects = false;
       request.cookies.addAll(cookies);
-      response = await request.close().timeout(const Duration(seconds: 8),
+      final response = await request.close().timeout(const Duration(seconds: 8),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
       cookies.addAll(response.cookies);
-      response.drain();
-      if (response.isRedirect) {
-        if (response.headers.value(HttpHeaders.locationHeader)! ==
-            ("https://courses.zju.edu.cn/user/index")) {
-          _session =
-              response.cookies.firstWhere((cookie) => cookie.name == "session");
-          return;
-        }
-        return await getWithCookies(
-            response.headers.value(HttpHeaders.locationHeader) as String);
+      final body =
+          await readResponseBody(response, context: '学在浙大登录');
+
+      for (final cookie in response.cookies) {
+        if (cookie.name == "session") _session = cookie;
       }
+      final location =
+          response.headers.value(HttpHeaders.locationHeader);
+      final redirectTarget =
+          location == null ? null : current.resolve(location);
+      if (_session != null &&
+          ((!response.isRedirect &&
+                  current.host == 'courses.zju.edu.cn') ||
+              (redirectTarget?.host == 'courses.zju.edu.cn' &&
+                  redirectTarget?.path == '/user/index'))) {
+        return true;
+      }
+
+      if (response.isRedirect) {
+        if (location == null || location.trim().isEmpty) {
+          throw ExceptionWithMessage(
+              '学在浙大登录：HTTP ${response.statusCode} 跳转但缺少 Location');
+        }
+        current = redirectTarget!;
+        continue;
+      }
+      if (response.statusCode == HttpStatus.unauthorized ||
+          response.statusCode == HttpStatus.forbidden ||
+          bodyIndicatesAuthenticationFailure(body)) {
+        throw AuthenticationExpiredException(
+            '学在浙大登录态失效；HTTP ${response.statusCode}'
+            '；响应摘要：${responseSummary(body)}');
+      }
+      throw ExceptionWithMessage(
+          '学在浙大登录失败；HTTP ${response.statusCode}'
+          '；Content-Type ${response.headers.value(HttpHeaders.contentTypeHeader) ?? '<缺失>'}'
+          '；响应摘要：${responseSummary(body)}');
     }
 
-    await getWithCookies("https://courses.zju.edu.cn/user/index");
-    if (_session == null) {
-      throw ExceptionWithMessage("无法获取session");
-    }
-
-    return true;
+    throw ExceptionWithMessage("学在浙大登录失败：重定向次数过多");
   }
 
   void logout() {
     _session = null;
+    _iPlanetDirectoryPro = null;
   }
 }

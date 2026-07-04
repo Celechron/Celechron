@@ -11,10 +11,11 @@ import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/design/captcha_input.dart';
 import 'package:celechron/utils/global.dart';
 import 'exceptions.dart';
+import 'response_utils.dart';
 
 // 定义一个特定的会话过期异常，方便上层捕获重试
-class SessionExpiredException extends ExceptionWithMessage {
-  SessionExpiredException() : super("会话已过期");
+class SessionExpiredException extends AuthenticationExpiredException {
+  SessionExpiredException([String message = "会话已过期"]) : super(message);
 }
 
 class Zdbk {
@@ -23,21 +24,37 @@ class Zdbk {
   Cookie? _iPlanetDirectoryPro; // 新增：保存登录凭据
   String? _captcha;
   DatabaseHelper? _db;
+  Future<bool>? _loginFuture;
+  int _sessionGeneration = 0;
 
   set db(DatabaseHelper? db) {
     _db = db;
   }
 
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
+    if (iPlanetDirectoryPro == null) {
+      throw AuthenticationExpiredException("教务网：统一身份认证凭据无效");
+    }
+    _iPlanetDirectoryPro = iPlanetDirectoryPro;
+    final pending = _loginFuture;
+    if (pending != null) return await pending;
+    final login = _doLogin(httpClient, iPlanetDirectoryPro);
+    _loginFuture = login;
+    try {
+      return await login;
+    } finally {
+      if (identical(_loginFuture, login)) _loginFuture = null;
+    }
+  }
+
+  Future<bool> _doLogin(
+      HttpClient httpClient, Cookie iPlanetDirectoryPro) async {
     late HttpClientRequest request;
     late HttpClientResponse response;
 
     _captcha = null;
-    _iPlanetDirectoryPro = iPlanetDirectoryPro; // 保存以便自动重登
-
-    if (iPlanetDirectoryPro == null) {
-      throw ExceptionWithMessage("iPlanetDirectoryPro无效");
-    }
+    _jSessionId = null;
+    _route = null;
     request = await httpClient
         .getUrl(Uri.parse(
             "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fzdbk.zju.edu.cn%2Fjwglxt%2Fxtgl%2Flogin_ssologin.html"))
@@ -47,11 +64,15 @@ class Zdbk {
     request.cookies.add(iPlanetDirectoryPro);
     response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
-    response.drain();
+    final firstBody =
+        await readResponseBody(response, context: '教务网 CAS 登录');
 
     var stLocation = response.headers.value('location');
-    if (stLocation == null) {
-      throw ExceptionWithMessage("iPlanetDirectoryPro无效");
+    if (!response.isRedirect || stLocation == null) {
+      throw AuthenticationExpiredException(
+          "教务网登录：统一身份认证凭据无效；HTTP ${response.statusCode}"
+          "；Location ${stLocation ?? '<缺失>'}"
+          "；响应摘要：${responseSummary(firstBody)}");
     } else if (stLocation.startsWith("http://")) {
       stLocation = stLocation.replaceFirst("http://", "https://");
     }
@@ -61,23 +82,43 @@ class Zdbk {
     request.followRedirects = false;
     response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
-    response.drain();
+    final secondBody =
+        await readResponseBody(response, context: '教务网登录');
+    if (response.statusCode == HttpStatus.unauthorized ||
+        response.statusCode == HttpStatus.forbidden ||
+        bodyIndicatesAuthenticationFailure(secondBody)) {
+      throw AuthenticationExpiredException(
+          "教务网登录态失效；HTTP ${response.statusCode}"
+          "；Location ${response.headers.value(HttpHeaders.locationHeader) ?? '<缺失>'}"
+          "；响应摘要：${responseSummary(secondBody)}");
+    }
+    if (response.statusCode < 200 || response.statusCode >= 400) {
+      throw ExceptionWithMessage(
+          "教务网登录失败；HTTP ${response.statusCode}"
+          "；Content-Type ${response.headers.value(HttpHeaders.contentTypeHeader) ?? '<缺失>'}"
+          "；响应摘要：${responseSummary(secondBody)}");
+    }
 
-    if (response.cookies.any((element) =>
-        element.name == 'JSESSIONID' && element.path == '/jwglxt')) {
-      _jSessionId = response.cookies.firstWhere((element) =>
-          element.name == 'JSESSIONID' && element.path == '/jwglxt');
+    if (response.cookies
+        .any((element) => element.name == 'JSESSIONID')) {
+      _jSessionId = response.cookies
+          .firstWhere((element) => element.name == 'JSESSIONID');
     } else {
-      throw ExceptionWithMessage("无法获取JSESSIONID");
+      throw ExceptionWithMessage(
+          "教务网登录无法获取 JSESSIONID；HTTP ${response.statusCode}"
+          "；响应摘要：${responseSummary(secondBody)}");
     }
 
     if (response.cookies.any((element) => element.name == 'route')) {
       _route =
           response.cookies.firstWhere((element) => element.name == 'route');
     } else {
-      throw ExceptionWithMessage("无法获取route");
+      throw ExceptionWithMessage(
+          "教务网登录无法获取 route；HTTP ${response.statusCode}"
+          "；响应摘要：${responseSummary(secondBody)}");
     }
 
+    _sessionGeneration++;
     return true;
   }
 
@@ -85,18 +126,20 @@ class Zdbk {
     _jSessionId = null;
     _route = null;
     _captcha = null;
+    _iPlanetDirectoryPro = null;
   }
 
-  void _checkSessionExpired(HttpClientResponse response, String responseText) {
-    if (response.statusCode == HttpStatus.movedTemporarily ||
-        response.statusCode == HttpStatus.movedPermanently ||
-        response.statusCode == HttpStatus.found) {
-      throw SessionExpiredException();
-    }
-    if (responseText.contains("login_ssologin") ||
-        responseText.contains("cas/login") ||
-        responseText.contains("统一身份认证")) {
-      throw SessionExpiredException();
+  void _validateResponse(HttpClientResponse response, String responseText,
+      {required String context, bool expectJson = true}) {
+    try {
+      validateResponse(
+        response: response,
+        body: responseText,
+        context: context,
+        expectJson: expectJson,
+      );
+    } on AuthenticationExpiredException catch (error) {
+      throw SessionExpiredException(error.toString());
     }
   }
 
@@ -110,16 +153,91 @@ class Zdbk {
   Future<T> _withAutoRelogin<T>(
       HttpClient httpClient, Future<T> Function() action) async {
     for (var i = 0; i < 2; i++) {
+      var generation = _sessionGeneration;
+      var reloginAttempted = false;
       try {
         if (_jSessionId == null || _route == null) {
+          reloginAttempted = true;
           await _relogin(httpClient);
+          generation = _sessionGeneration;
         }
         return await action();
-      } on SessionExpiredException {
-        await _relogin(httpClient);
+      } on AuthenticationExpiredException catch (error) {
+        if (i == 1 || reloginAttempted) {
+          throw AuthenticationExpiredException(
+              "教务网会话已过期，自动重登后仍失败：$error");
+        }
+        if (_sessionGeneration == generation) {
+          await _relogin(httpClient);
+        }
       }
     }
-    throw ExceptionWithMessage("会话已过期且自动重登失败");
+    throw AuthenticationExpiredException("教务网会话已过期且自动重登失败");
+  }
+
+  List<dynamic> _cachedList(String cacheKey, String context) {
+    final cached = _db?.getCachedWebPage(cacheKey);
+    if (cached == null || cached.trim().isEmpty) return [];
+    try {
+      return decodeJsonList(cached, context: context);
+    } catch (error) {
+      debugPrint('$context 读取失败：$error');
+      return [];
+    }
+  }
+
+  List<Grade> _parseGrades(Object? raw, String context,
+      {bool major = false}) {
+    final items = asDynamicList(raw) ?? const [];
+    final grades = <Grade>[];
+    for (var index = 0; index < items.length; index++) {
+      final item = asStringMap(items[index]);
+      if (item == null) {
+        debugPrint('$context：跳过第 ${index + 1} 条成绩，条目不是对象');
+        continue;
+      }
+      try {
+        final grade = major ? Grade.fromMajor(item) : Grade(item);
+        grades.add(grade);
+      } catch (error) {
+        debugPrint('$context：跳过第 ${index + 1} 条成绩：$error');
+      }
+    }
+    return grades;
+  }
+
+  List<Session> _parseSessions(Object? raw, String context) {
+    final items = asDynamicList(raw) ?? const [];
+    final sessions = <Session>[];
+    for (var index = 0; index < items.length; index++) {
+      final item = asStringMap(items[index]);
+      if (item == null ||
+          item['kcb'] == null ||
+          asString(item['sfyjskc']) == '1') {
+        continue;
+      }
+      try {
+        sessions.add(Session.fromZdbk(item));
+      } catch (error) {
+        debugPrint('$context：跳过第 ${index + 1} 条课程：$error');
+      }
+    }
+    return sessions;
+  }
+
+  List<ExamDto> _parseExams(Object? raw, String context) {
+    final items = asDynamicList(raw) ?? const [];
+    final exams = <ExamDto>[];
+    for (var index = 0; index < items.length; index++) {
+      final item = asStringMap(items[index]);
+      if (item == null) continue;
+      try {
+        exams.add(ExamDto.fromZdbk(item));
+      } catch (error) {
+        debugPrint('$context：跳过第 ${index + 1} 条考试：$error');
+      }
+    }
+    return exams;
   }
 
   Future<Tuple<Exception?, Tuple<List<double>, String>>> getMajorGrade(
@@ -148,43 +266,35 @@ class Zdbk {
         response = await request.close().timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-        var responseText = await response.transform(utf8.decoder).join();
-        _checkSessionExpired(response, responseText);
-
-        var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
-            .firstMatch(responseText)
-            ?.group(0);
-        if (transcriptJson == null) throw ExceptionWithMessage("无法解析主修成绩");
-
-        var grades = (jsonDecode(transcriptJson) as List<dynamic>)
-            .where((e) => e['xkkh'] != null)
-            .map((e) {
-          var grade = Grade(e);
-          grade.major = true;
-          return grade;
-        });
+        var responseText =
+            await readResponseBody(response, context: '教务网主修成绩接口');
+        const context = '教务网主修成绩接口';
+        _validateResponse(response, responseText, context: context);
+        final payload = decodeJsonMap(responseText,
+            context: '$context；HTTP ${response.statusCode}');
+        final items = asDynamicList(payload['items']);
+        if (items == null) {
+          throw ExceptionWithMessage(
+              '$context：缺少 items 数组；HTTP ${response.statusCode}'
+              '；响应摘要：${responseSummary(responseText)}');
+        }
+        final grades = _parseGrades(items, context, major: true);
         var majorGpa = GpaHelper.calculateGpa(grades);
-        _db?.setCachedWebPage('zdbk_MajorGrade', transcriptJson);
+        _db?.setCachedWebPage('zdbk_MajorGrade', jsonEncode(items));
         return Tuple(
             null, Tuple([majorGpa.item1[0], majorGpa.item2], responseText));
-      } catch (e) {
-        if (e is SessionExpiredException) rethrow;
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
-        var cachedJson = _db?.getCachedWebPage('zdbk_MajorGrade') ?? '[]';
-        var grades = (jsonDecode(cachedJson) as List<dynamic>)
-            .where((e) => e['xkkh'] != null)
-            .map((e) {
-          var grade = Grade(e);
-          grade.major = true;
-          return grade;
-        });
+      } catch (error) {
+        if (error is AuthenticationExpiredException) rethrow;
+        final exception = exceptionFrom(error, context: '教务网主修成绩接口');
+        final cachedItems =
+            _cachedList('zdbk_MajorGrade', '教务网主修成绩缓存');
+        final grades =
+            _parseGrades(cachedItems, '教务网主修成绩缓存', major: true);
         var majorGpa = GpaHelper.calculateGpa(grades);
         return Tuple(
             exception,
             Tuple([majorGpa.item1[0], majorGpa.item2],
-                '{"items":$cachedJson,"limit":0}'));
+                '{"items":${jsonEncode(cachedItems)},"limit":0}'));
       }
     });
   }
@@ -215,30 +325,29 @@ class Zdbk {
         response = await request.close().timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-        var responseText = await response.transform(utf8.decoder).join();
-        _checkSessionExpired(response, responseText);
-
-        var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
-            .firstMatch(responseText)
-            ?.group(0);
-        if (transcriptJson == null) throw ExceptionWithMessage("无法解析成绩");
-
-        var grades = (jsonDecode(transcriptJson) as List<dynamic>)
-            .where((e) => e['xkkh'] != null)
-            .map((e) => Grade(e));
-        _db?.setCachedWebPage('zdbk_Transcript', transcriptJson);
+        var responseText =
+            await readResponseBody(response, context: '教务网成绩接口');
+        const context = '教务网成绩接口';
+        _validateResponse(response, responseText, context: context);
+        final payload = decodeJsonMap(responseText,
+            context: '$context；HTTP ${response.statusCode}');
+        final items = asDynamicList(payload['items']);
+        if (items == null) {
+          throw ExceptionWithMessage(
+              '$context：缺少 items 数组；HTTP ${response.statusCode}'
+              '；响应摘要：${responseSummary(responseText)}');
+        }
+        final grades = _parseGrades(items, context);
+        _db?.setCachedWebPage('zdbk_Transcript', jsonEncode(items));
         return Tuple(null, grades);
-      } catch (e) {
-        if (e is SessionExpiredException) rethrow;
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
+      } catch (error) {
+        if (error is AuthenticationExpiredException) rethrow;
+        final exception = exceptionFrom(error, context: '教务网成绩接口');
+        final cached =
+            _cachedList('zdbk_Transcript', '教务网成绩缓存');
         return Tuple(
             exception,
-            (jsonDecode((_db?.getCachedWebPage('zdbk_Transcript') ?? '[]'))
-                    as List<dynamic>)
-                .where((e) => e['xkkh'] != null)
-                .map((e) => Grade(e)));
+            _parseGrades(cached, '教务网成绩缓存'));
       }
     });
   }
@@ -271,11 +380,15 @@ class Zdbk {
               charset: 'utf-8');
           request.add(
               utf8.encode('xnm=$year&xqm=$semester&captcha_value=$_captcha'));
+          request.followRedirects = false;
           response = await request.close().timeout(const Duration(seconds: 8),
               onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-          var responseText = await response.transform(utf8.decoder).join();
-          _checkSessionExpired(response, responseText);
+          var responseText =
+              await readResponseBody(response, context: '教务网课表接口');
+          final context =
+              '教务网课表接口（学年 $year，学期 $semester，请求类型 课表）';
+          _validateResponse(response, responseText, context: context);
 
           if (responseText.contains("captcha_error")) {
             _captcha = null;
@@ -295,30 +408,31 @@ class Zdbk {
             continue;
           }
 
-          if (responseText == "null") return Tuple(null, []);
-          var timetableJson = RegExp('(?<="kbList":)\\[(.*?)\\](?=,"xh")')
-              .firstMatch(responseText)
-              ?.group(0);
-          if (timetableJson == null) throw ExceptionWithMessage("无法解析课表");
-          var sessions = (jsonDecode(timetableJson) as List<dynamic>)
-              .where((e) => e['kcb'] != null && (e['sfyjskc'] != "1"))
-              .map((e) => Session.fromZdbk(e));
-          _db?.setCachedWebPage('zdbk_Timetable$year$semester', timetableJson);
+          if (responseText.trim() == "null") return Tuple(null, <Session>[]);
+          final payload = decodeJsonMap(responseText,
+              context: '$context；HTTP ${response.statusCode}');
+          final items = asDynamicList(payload['kbList']);
+          if (items == null) {
+            throw ExceptionWithMessage(
+                '$context：缺少 kbList 数组；HTTP ${response.statusCode}'
+                '；响应摘要：${responseSummary(responseText)}');
+          }
+          final sessions = _parseSessions(items, context);
+          _db?.setCachedWebPage(
+              'zdbk_Timetable$year$semester', jsonEncode(items));
           return Tuple(null, sessions);
         }
         throw ExceptionWithMessage("验证码识别失败");
-      } catch (e) {
-        if (e is SessionExpiredException) rethrow;
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
+      } catch (error) {
+        if (error is AuthenticationExpiredException) rethrow;
+        final context =
+            '教务网课表接口（学年 $year，学期 $semester，请求类型 课表）';
+        final exception = exceptionFrom(error, context: context);
+        final cached = _cachedList(
+            'zdbk_Timetable$year$semester', '$context 缓存');
         return Tuple(
             exception,
-            (jsonDecode(
-                    (_db?.getCachedWebPage('zdbk_Timetable$year$semester') ??
-                        '[]')) as List<dynamic>)
-                .where((e) => e['kcb'] != null && (e['sfyjskc'] != "1"))
-                .map((e) => Session.fromZdbk(e)));
+            _parseSessions(cached, '$context 缓存'));
       }
     });
   }
@@ -349,30 +463,29 @@ class Zdbk {
         response = await request.close().timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-        var responseText = await response.transform(utf8.decoder).join();
-        _checkSessionExpired(response, responseText);
-
-        var transcriptJson = RegExp('(?<="items":)\\[(.*?)\\](?=,"limit")')
-            .firstMatch(responseText)
-            ?.group(0);
-        if (transcriptJson == null) throw ExceptionWithMessage("无法解析考试信息");
-
-        var exams = (jsonDecode(transcriptJson) as List<dynamic>)
-            .where((e) => e['xkkh'] != null)
-            .map((e) => ExamDto.fromZdbk(e));
-        _db?.setCachedWebPage('zdbk_exams', transcriptJson);
+        var responseText =
+            await readResponseBody(response, context: '教务网考试接口');
+        const context = '教务网考试接口（请求类型 考试）';
+        _validateResponse(response, responseText, context: context);
+        final payload = decodeJsonMap(responseText,
+            context: '$context；HTTP ${response.statusCode}');
+        final items = asDynamicList(payload['items']);
+        if (items == null) {
+          throw ExceptionWithMessage(
+              '$context：缺少 items 数组；HTTP ${response.statusCode}'
+              '；响应摘要：${responseSummary(responseText)}');
+        }
+        final exams = _parseExams(items, context);
+        _db?.setCachedWebPage('zdbk_exams', jsonEncode(items));
         return Tuple(null, exams);
-      } catch (e) {
-        if (e is SessionExpiredException) rethrow;
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
+      } catch (error) {
+        if (error is AuthenticationExpiredException) rethrow;
+        final exception =
+            exceptionFrom(error, context: '教务网考试接口（请求类型 考试）');
+        final cached = _cachedList('zdbk_exams', '教务网考试缓存');
         return Tuple(
             exception,
-            (jsonDecode((_db?.getCachedWebPage('zdbk_exams') ?? '[]'))
-                    as List<dynamic>)
-                .where((e) => e['xkkh'] != null)
-                .map((e) => ExamDto.fromZdbk(e)));
+            _parseExams(cached, '教务网考试缓存'));
       }
     });
   }
@@ -403,8 +516,11 @@ class Zdbk {
         response = await request.close().timeout(const Duration(seconds: 8),
             onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-        var html = await response.transform(utf8.decoder).join();
-        _checkSessionExpired(response, html);
+        var html =
+            await readResponseBody(response, context: '教务网实践分接口');
+        _validateResponse(response, html,
+            context: '教务网实践分接口（学号 $studentId，请求类型 实践分）',
+            expectJson: false);
 
         _db?.setCachedWebPage("zdbk_practiceScores", html);
 
@@ -468,12 +584,11 @@ class Zdbk {
         }
 
         return Tuple(null, scores);
-      } catch (e) {
-        if (e is SessionExpiredException) rethrow;
+      } catch (error) {
+        if (error is AuthenticationExpiredException) rethrow;
 
-        var exception = e is SocketException
-            ? ExceptionWithMessage("网络错误")
-            : e as Exception;
+        final exception = exceptionFrom(error,
+            context: '教务网实践分接口（学号 $studentId，请求类型 实践分）');
 
         var cachedHtml = _db?.getCachedWebPage("zdbk_practiceScores");
         if (cachedHtml != null) {
@@ -530,6 +645,26 @@ class Zdbk {
     response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
     var bytes = await consolidateHttpClientResponseBytes(response);
+    final contentType =
+        response.headers.value(HttpHeaders.contentTypeHeader) ?? '<缺失>';
+    final location = response.headers.value(HttpHeaders.locationHeader);
+    if (response.isRedirect ||
+        response.statusCode == HttpStatus.unauthorized ||
+        response.statusCode == HttpStatus.forbidden) {
+      throw AuthenticationExpiredException(
+          '教务网验证码接口：登录态已失效；HTTP ${response.statusCode}'
+          '${location == null ? '' : '；Location $location'}');
+    }
+    if (response.statusCode < 200 ||
+        response.statusCode >= 300 ||
+        !contentType.toLowerCase().startsWith('image/')) {
+      final body = utf8.decode(bytes, allowMalformed: true);
+      throw ExceptionWithMessage(
+          '教务网验证码接口返回异常；HTTP ${response.statusCode}'
+          '；Content-Type $contentType'
+          '${location == null ? '' : '；Location $location'}'
+          '；响应摘要：${responseSummary(body)}');
+    }
     return bytes;
   }
 

@@ -1,7 +1,7 @@
-import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/http/zjuServices/exceptions.dart';
+import 'package:celechron/http/zjuServices/response_utils.dart';
 import 'package:celechron/utils/tuple.dart';
 
 class GitHubService {
@@ -28,31 +28,33 @@ class GitHubService {
 
       request.headers.add('Accept', 'application/vnd.github+json');
       request.headers.add('X-GitHub-Api-Version', '2022-11-28');
+      request.followRedirects = false;
 
       var response = await request.close().timeout(const Duration(seconds: 10),
           onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-      if (response.statusCode == 200) {
-        var jsonString = await response.transform(utf8.decoder).join();
-        var data = jsonDecode(jsonString) as List<dynamic>;
-        var logins = data.map((item) => item['login'] as String).toList();
+      final jsonString = await readResponseText(response,
+          context: 'GitHub contributors 接口', expectJson: true);
+      final data =
+          decodeJsonList(jsonString,
+              context: 'GitHub contributors 接口；HTTP ${response.statusCode}');
+      final logins = data
+          .map(asStringMap)
+          .whereType<Map<String, dynamic>>()
+          .map((item) => asString(item['login']))
+          .whereType<String>()
+          .toList();
 
-        // 如果抓取到的列表为空，返回默认作者名单
-        if (logins.isEmpty) {
-          return Tuple(null, defaultContributors);
-        }
-
-        return Tuple(null, logins);
-      } else {
-        // 请求失败时返回默认作者名单
-        return Tuple(
-            ExceptionWithMessage("获取contributors失败: ${response.statusCode}"),
-            defaultContributors);
+      // 如果抓取到的列表为空，返回默认作者名单
+      if (logins.isEmpty) {
+        return Tuple(null, defaultContributors);
       }
-    } catch (e) {
+
+      return Tuple(null, logins);
+    } catch (error) {
       // 网络错误或其他异常时返回默认作者名单
-      var exception =
-          e is SocketException ? ExceptionWithMessage("网络错误") : e as Exception;
+      final exception =
+          exceptionFrom(error, context: 'GitHub contributors 接口');
       return Tuple(exception, defaultContributors);
     }
   }
