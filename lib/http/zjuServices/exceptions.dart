@@ -1,9 +1,22 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:flutter/foundation.dart';
 
 const refreshErrorDetailMarker = '\n<<<CELECHRON_ERROR_DETAIL>>>\n';
+const refreshDegradedMarker = '<<<CELECHRON_DEGRADED>>>';
+
+String degradedRefreshText(String message, {String? details}) {
+  final safeMessage = redactSensitive(message);
+  final safeDetails = details == null || details.isEmpty
+      ? ''
+      : '$refreshErrorDetailMarker${redactSensitive(details)}';
+  return '$refreshDegradedMarker$safeMessage$safeDetails';
+}
+
+bool isDegradedRefreshText(Object? error) =>
+    error?.toString().startsWith(refreshDegradedMarker) == true;
 
 class LoginException implements Exception {
   final dynamic message;
@@ -72,12 +85,28 @@ class CalendarConfigUnavailableException extends ExceptionWithMessage {
         );
 }
 
+class CachedDataException extends ExceptionWithMessage {
+  CachedDataException(
+    super.message, {
+    super.details,
+    super.originalError,
+    super.stackTrace,
+  });
+
+  @override
+  String toString() => degradedRefreshText(
+        message.toString(),
+        details: details,
+      );
+}
+
 Exception requestTimeout([String message = '请求超时']) {
   return TimeoutException(message);
 }
 
 String shortErrorText(Object? error) {
-  final text = error?.toString() ?? '未知错误';
+  final text =
+      (error?.toString() ?? '未知错误').replaceFirst(refreshDegradedMarker, '');
   return text.split(refreshErrorDetailMarker).first.trim();
 }
 
@@ -135,6 +164,16 @@ Exception exceptionFrom(
   bool retried = false,
   StackTrace? stackTrace,
 }) {
+  DiagnosticLogService.instance.record(
+    level: CelechronLogLevel.error,
+    module: context ?? 'unknown',
+    operation: 'exception',
+    requestUri: requestUri,
+    relogged: relogged,
+    retried: retried,
+    error: error,
+    stackTrace: stackTrace,
+  );
   if (kDebugMode && stackTrace != null) {
     debugPrint(
         '$context：${error.runtimeType}: ${redactSensitive(error.toString())}\n$stackTrace');

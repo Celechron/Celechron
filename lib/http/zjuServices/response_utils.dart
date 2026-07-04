@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:celechron/utils/json_utils.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
 
 import 'exceptions.dart';
 
@@ -93,6 +94,7 @@ void validateResponse({
   Uri? requestUri,
   bool relogged = false,
   bool retried = false,
+  int? durationMs,
 }) {
   final status = response.statusCode;
   final location = response.headers.value(HttpHeaders.locationHeader);
@@ -108,6 +110,21 @@ void validateResponse({
     '执行过重试：${retried ? '是' : '否'}',
     '响应摘要：${responseSummary(body)}',
   ].join('\n');
+  DiagnosticLogService.instance.record(
+    level: status >= 200 && status < 300
+        ? CelechronLogLevel.info
+        : CelechronLogLevel.warning,
+    module: context,
+    operation: 'httpResponse',
+    requestUri: requestUri,
+    statusCode: status,
+    contentType: contentType,
+    location: location,
+    durationMs: durationMs,
+    relogged: relogged,
+    retried: retried,
+    message: '响应摘要：${responseSummary(body)}',
+  );
 
   if (status == HttpStatus.unauthorized ||
       status == HttpStatus.forbidden ||
@@ -177,7 +194,9 @@ Future<String> readResponseText(
   bool relogged = false,
   bool retried = false,
 }) async {
+  final stopwatch = Stopwatch()..start();
   final body = await readResponseBody(response, context: context);
+  stopwatch.stop();
   validateResponse(
     response: response,
     body: body,
@@ -187,6 +206,7 @@ Future<String> readResponseText(
     requestUri: requestUri,
     relogged: relogged,
     retried: retried,
+    durationMs: stopwatch.elapsedMilliseconds,
   );
   return body;
 }

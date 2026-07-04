@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/model/scholar.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/utils/json_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
@@ -99,9 +100,12 @@ Future<void> refreshScholar() async {
       key: 'notifiedDdlIds', iOptions: secureStorageIOSOptions);
 
   try {
-    final loginErrors = await scholar.login();
-    if (loginErrors.isNotEmpty && loginErrors.first != null) return;
-    final refreshErrors = await scholar.refresh();
+    final refreshErrors =
+        await scholar.refresh(origin: RefreshOrigin.background);
+    if (refreshErrors.whereType<String>().any((error) =>
+        isDegradedRefreshText(error) && shortErrorText(error).contains('刷新'))) {
+      return;
+    }
     bool failed(String interfaceName) => refreshErrors
         .whereType<String>()
         .any((error) => shortErrorText(error).contains(interfaceName));

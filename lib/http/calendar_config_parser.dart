@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 
 const calendarConfigBaseUrl = 'http://calendar.celechron.top/';
 
+int academicYearStartFor(DateTime now) =>
+    now.month >= DateTime.september ? now.year : now.year - 1;
+
 String calendarObjectKeyForSemester(String semesterId) {
   if (!RegExp(r'^\d{4}-\d{4}-[12]$').hasMatch(semesterId)) {
     throw FormatException('无效的学年学期：$semesterId');

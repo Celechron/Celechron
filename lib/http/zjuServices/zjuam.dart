@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/utils/utils.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
@@ -63,7 +64,14 @@ class ZjuAm {
       return Cookie('iPlanetDirectoryPro', value)
         ..domain = 'zju.edu.cn'
         ..path = '/';
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '统一身份认证',
+        operation: 'readSharedSsoCache',
+        error: error,
+        stackTrace: stackTrace,
+      );
       return null;
     }
   }
@@ -103,7 +111,15 @@ class ZjuAm {
       return isHttpRedirectStatus(response.statusCode) &&
           location != null &&
           Uri.tryParse(location)?.queryParameters['ticket']?.isNotEmpty == true;
-    } catch (_) {
+    } on Object catch (error, stackTrace) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '统一身份认证',
+        operation: 'validateSharedSsoCache',
+        requestUri: uri,
+        error: error,
+        stackTrace: stackTrace,
+      );
       return false;
     }
   }
@@ -148,8 +164,12 @@ class ZjuAm {
           onTimeout: () => throw requestTimeout());
 
       cookies.addAll(response.cookies);
-      body = await readResponseText(response,
-          context: '统一身份认证 RSA 公钥', expectJson: true);
+      body = await readResponseText(
+        response,
+        context: '统一身份认证 RSA 公钥',
+        expectJson: true,
+        requestUri: Uri.parse('https://zjuam.zju.edu.cn/cas/v2/getPubKey'),
+      );
       final publicKey = decodeJsonMap(body,
           context: '统一身份认证 RSA 公钥；HTTP ${response.statusCode}');
       var modulusStr = asString(publicKey['modulus']);

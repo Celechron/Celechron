@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/page/option/option_controller.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
+import 'package:celechron/services/refresh_coordinator.dart';
 import 'package:celechron/utils/json_utils.dart';
 
 import 'period.dart';
@@ -105,7 +107,24 @@ class Scholar {
   }
 
   // 初始化以获取Cookies，并刷新数据
-  Future<List<String?>> login() async {
+  Future<List<String?>> login({
+    RefreshOrigin origin = RefreshOrigin.foreground,
+  }) {
+    return DiagnosticLogService.instance.runRefresh(
+      origin: origin,
+      action: () => RefreshCoordinator.run(
+        account: username ?? '<unknown>',
+        origin: origin,
+        refreshId: DiagnosticLogService.instance.currentRefreshId ?? 'unknown',
+        action: _loginInternal,
+        busyResult: [
+          degradedRefreshText('登录：同一账号已有登录或刷新任务，本次已跳过'),
+        ],
+      ),
+    );
+  }
+
+  Future<List<String?>> _loginInternal() async {
     if (username == null || password == null) {
       return ["未登录"];
     }
@@ -150,7 +169,32 @@ class Scholar {
   // 刷新数据
   var _mutex = 0;
 
-  Future<List<String?>> refresh() async {
+  Future<List<String?>> refresh({
+    RefreshOrigin origin = RefreshOrigin.foreground,
+  }) async {
+    return DiagnosticLogService.instance.runRefresh(
+      origin: origin,
+      action: () => RefreshCoordinator.run(
+        account: username ?? '<unknown>',
+        origin: origin,
+        refreshId: DiagnosticLogService.instance.currentRefreshId ?? 'unknown',
+        action: () async {
+          if (!isLogan) {
+            final loginErrors = await _loginInternal();
+            if (loginErrors.any((error) => error != null)) {
+              return loginErrors;
+            }
+          }
+          return _refreshInternal();
+        },
+        busyResult: [
+          degradedRefreshText('刷新：同一账号已有刷新任务，本次已跳过'),
+        ],
+      ),
+    );
+  }
+
+  Future<List<String?>> _refreshInternal() async {
     if (!isLogan) {
       return ["未登录"];
     }
@@ -165,12 +209,26 @@ class Scholar {
     try {
       return await _spider?.getEverything().then((value) async {
             for (var e in value.item1) {
-              // ignore: avoid_print
-              if (e != null) print(e);
+              if (e != null) {
+                DiagnosticLogService.instance.record(
+                  level: CelechronLogLevel.warning,
+                  module: '登录',
+                  operation: 'result',
+                  message: e,
+                );
+              }
             }
             for (var e in value.item2) {
-              // ignore: avoid_print
-              if (e != null) print(e);
+              if (e != null) {
+                DiagnosticLogService.instance.record(
+                  level: isDegradedRefreshText(e)
+                      ? CelechronLogLevel.warning
+                      : CelechronLogLevel.error,
+                  module: '刷新聚合',
+                  operation: 'moduleResult',
+                  message: e,
+                );
+              }
             }
             if (value.item1.every((e) => e == null)) {
               updateLastUpdateTime(value.item2);
@@ -257,9 +315,7 @@ class Scholar {
             }
 
             await _db?.setScholar(this);
-            return value.item1.every((e) => e == null)
-                ? value.item2
-                : value.item1;
+            return value.item2;
           }) ??
           ['未登录'];
     } on Object catch (error, stackTrace) {
@@ -314,7 +370,9 @@ class Scholar {
 
     for (int i = 0; i < errorItems.length; i++) {
       for (var e in errorMessage) {
-        if (e != null && e.contains(errorItems[i])) {
+        if (e != null &&
+            !isDegradedRefreshText(e) &&
+            e.contains(errorItems[i])) {
           errorResult[i] = true;
           break;
         }
@@ -332,8 +390,19 @@ class Scholar {
     }
     if (errorResult[2] == false && tempSemesters.isNotEmpty) {
       semesters = tempSemesters;
+    } else if (tempSemesters.isNotEmpty) {
+      for (final incoming in tempSemesters) {
+        final existingIndex =
+            semesters.indexWhere((semester) => semester.name == incoming.name);
+        if (existingIndex < 0) {
+          semesters.add(incoming);
+        } else {
+          semesters[existingIndex].mergePartialFrom(incoming);
+        }
+      }
+      semesters.sort((a, b) => b.name.compareTo(a.name));
     }
-    if (errorResult[3] == false && tempTodos.isNotEmpty) {
+    if (errorResult[3] == false) {
       todos = tempTodos;
     }
     isPracticeScoresGet = tempIsPracticeScoresGet;

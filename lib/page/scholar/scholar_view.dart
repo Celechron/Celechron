@@ -1,6 +1,7 @@
 // Official packages
 import 'package:celechron/page/scholar/todo/todo_card.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/utils/platform_features.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
@@ -24,49 +25,74 @@ import 'package:celechron/page/option/option_controller.dart';
 
 Future<void> showRefreshResultDialog(
     BuildContext context, List<String?> results) async {
-  final failures = results.whereType<String>().toList();
-  if (failures.isEmpty || !context.mounted) return;
+  final messages = results.whereType<String>().toList();
+  final degraded =
+      messages.where(isDegradedRefreshText).toList(growable: false);
+  final failures = messages
+      .where((message) => !isDegradedRefreshText(message))
+      .toList(growable: false);
+  if (!context.mounted) return;
   final successCount =
-      (results.length - failures.length).clamp(0, results.length);
-  final summaryLines = failures.map((error) {
+      (results.length - messages.length).clamp(0, results.length);
+  final summaryLines = messages.map((error) {
     final compact =
         shortErrorText(error).replaceAll(RegExp(r'\s+'), ' ').trim();
-    return compact.length <= 100 ? compact : '${compact.substring(0, 100)}…';
+    final prefix = isDegradedRefreshText(error) ? '降级：' : '失败：';
+    final line = '$prefix$compact';
+    return line.length <= 100 ? line : '${line.substring(0, 100)}…';
   }).toList();
+  if (summaryLines.isEmpty) {
+    summaryLines.addAll(
+      DiagnosticLogService.instance.latestModuleResults.entries
+          .map((entry) => '${entry.key}：${entry.value}'),
+    );
+  }
+  final diagnosticContext = DiagnosticLogService.instance.latestContext;
+  if (diagnosticContext != null) {
+    summaryLines.insert(
+      0,
+      'refreshId：${diagnosticContext.refreshId}\n'
+      '总耗时：${diagnosticContext.durationMs ?? 0}ms',
+    );
+  }
 
   await showCupertinoDialog<void>(
     context: context,
     builder: (dialogContext) => CupertinoAlertDialog(
-      title: Text('刷新完成：$successCount 项成功，${failures.length} 项失败'),
+      title: Text(
+        '刷新完成：$successCount 项成功，'
+        '${degraded.length} 项降级，${failures.length} 项失败',
+      ),
       content: Text(summaryLines.join('\n')),
       actions: [
-        CupertinoDialogAction(
-          child: const Text('查看详情'),
-          onPressed: () {
-            Navigator.of(dialogContext).pop();
-            showCupertinoDialog<void>(
-              context: context,
-              builder: (detailContext) => CupertinoAlertDialog(
-                title: const Text('刷新详情'),
-                content: SingleChildScrollView(
-                  child: Text(
-                    failures.map((error) {
-                      final short = shortErrorText(error);
-                      final details = detailedErrorText(error);
-                      return details == short ? short : '$short\n$details';
-                    }).join('\n\n'),
+        if (messages.isNotEmpty)
+          CupertinoDialogAction(
+            child: const Text('查看详情'),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              showCupertinoDialog<void>(
+                context: context,
+                builder: (detailContext) => CupertinoAlertDialog(
+                  title: const Text('刷新详情'),
+                  content: SingleChildScrollView(
+                    child: Text(
+                      messages.map((error) {
+                        final short = shortErrorText(error);
+                        final details = detailedErrorText(error);
+                        return details == short ? short : '$short\n$details';
+                      }).join('\n\n'),
+                    ),
                   ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('确定'),
+                      onPressed: () => Navigator.of(detailContext).pop(),
+                    ),
+                  ],
                 ),
-                actions: [
-                  CupertinoDialogAction(
-                    child: const Text('确定'),
-                    onPressed: () => Navigator.of(detailContext).pop(),
-                  ),
-                ],
-              ),
-            );
-          },
-        ),
+              );
+            },
+          ),
         CupertinoDialogAction(
           child: const Text('确定'),
           onPressed: () => Navigator.of(dialogContext).pop(),

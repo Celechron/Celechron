@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:celechron/http/zjuServices/courses.dart';
 import 'package:celechron/http/calendar_config_parser.dart';
+import 'package:celechron/http/data_source_status.dart';
 import 'package:celechron/model/todo.dart';
 import 'package:get/get.dart';
 
@@ -16,6 +17,7 @@ import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/semester.dart';
 import 'package:flutter/foundation.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
 
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
@@ -154,8 +156,10 @@ class UgrsSpider implements Spider {
     int attempts = 0;
     while (true) {
       final requestLoginGeneration = _loginGeneration;
+      T? fallbackResult;
       try {
         var result = await requestFactory(); // 每次尝试都重新创建底层请求
+        fallbackResult = result;
 
         // 【修正】：将判断和抛出异常分开，防止抛出的异常被安全检查的 catch 吃掉
         bool hasHiddenError = false;
@@ -181,7 +185,15 @@ class UgrsSpider implements Spider {
               hiddenErrorToThrow = res.item1;
             }
           }
-        } catch (_) {} // 这里只负责捕获 res.item1 的类型转换报错
+        } on Object catch (error, stackTrace) {
+          DiagnosticLogService.instance.record(
+            level: CelechronLogLevel.debug,
+            module: '本科生刷新',
+            operation: 'inspectResult',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
 
         // 如果发现了隐藏的错误，在 try-catch 外部将其抛出！
         if (hasHiddenError) {
@@ -224,6 +236,7 @@ class UgrsSpider implements Spider {
         if (kDebugMode) {
           debugPrint('刷新请求失败：${error.runtimeType}: $error\n$stackTrace');
         }
+        if (fallbackResult != null) return fallbackResult;
         rethrow;
       }
     }
@@ -266,7 +279,8 @@ class UgrsSpider implements Spider {
       loginErrorMessages = await login();
     }
 
-    var yearNow = DateTime.now().year;
+    final now = DateTime.now();
+    var currentAcademicYearStart = academicYearStartFor(now);
     final enrollmentDigits =
         _username.length >= 3 ? _username.substring(1, 3) : '';
     final parsedEnrollmentYear = int.tryParse(enrollmentDigits);
@@ -288,21 +302,42 @@ class UgrsSpider implements Spider {
     }
 
     var semesterConfigFetches = <Future<String?>>[];
+    var calendarLive = 0;
+    var calendarCache = 0;
+    var calendarFallback = 0;
     var timetableFetches = <Future<String?>>[];
     var cancelTimetableFetch = false;
 
-    while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
-      var yearStr = '$yearEnroll-${yearEnroll + 1}';
+    while (
+        yearEnroll <= currentAcademicYearStart && yearEnroll <= yearGraduate) {
+      var queryAcademicYear = '$yearEnroll-${yearEnroll + 1}';
 
       semesterConfigFetches.add(_timeConfigService
-          .getConfig(_httpClient, '$yearStr-1')
+          .getConfig(_httpClient, '$queryAcademicYear-1')
           .then((value) {
+        switch (value.item3) {
+          case DataSourceStatus.live:
+            calendarLive++;
+          case DataSourceStatus.cache:
+            calendarCache++;
+          case DataSourceStatus.fallback:
+            calendarFallback++;
+          case DataSourceStatus.unavailable:
+            break;
+        }
         if (value.item2 != null) {
           applyCalendarConfig(
             value.item2!,
-            outSemesters[semesterIndexMap['$yearStr-1']!],
+            outSemesters[semesterIndexMap['$queryAcademicYear-1']!],
             outSpecialDates,
-            context: '校历（学年学期 $yearStr-1）',
+            context: '校历（学年学期 $queryAcademicYear-1）',
+          );
+        }
+        if (value.item3.isDegraded) {
+          return degradedRefreshText(
+            '校历（$queryAcademicYear-1）：${value.item3.label}',
+            details:
+                value.item1 == null ? null : detailedErrorText(value.item1),
           );
         }
         return value.item1?.toString();
@@ -310,14 +345,31 @@ class UgrsSpider implements Spider {
               _describeRefreshFailure(error, stackTrace)));
 
       semesterConfigFetches.add(_timeConfigService
-          .getConfig(_httpClient, '$yearStr-2')
+          .getConfig(_httpClient, '$queryAcademicYear-2')
           .then((value) {
+        switch (value.item3) {
+          case DataSourceStatus.live:
+            calendarLive++;
+          case DataSourceStatus.cache:
+            calendarCache++;
+          case DataSourceStatus.fallback:
+            calendarFallback++;
+          case DataSourceStatus.unavailable:
+            break;
+        }
         if (value.item2 != null) {
           applyCalendarConfig(
             value.item2!,
-            outSemesters[semesterIndexMap['$yearStr-2']!],
+            outSemesters[semesterIndexMap['$queryAcademicYear-2']!],
             outSpecialDates,
-            context: '校历（学年学期 $yearStr-2）',
+            context: '校历（学年学期 $queryAcademicYear-2）',
+          );
+        }
+        if (value.item3.isDegraded) {
+          return degradedRefreshText(
+            '校历（$queryAcademicYear-2）：${value.item3.label}',
+            details:
+                value.item1 == null ? null : detailedErrorText(value.item1),
           );
         }
         return value.item1?.toString();
@@ -328,9 +380,11 @@ class UgrsSpider implements Spider {
         if (cancelTimetableFetch) return Future.value("已取消");
         try {
           var value = await _fetchWithRetry(
-              () => _zdbk.getTimetable(_httpClient, yearStr, season));
+              () => _zdbk.getTimetable(_httpClient, queryAcademicYear, season));
 
-          var semKey = season.startsWith('1') ? '$yearStr-1' : '$yearStr-2';
+          var semKey = season.startsWith('1')
+              ? '$queryAcademicYear-1'
+              : '$queryAcademicYear-2';
           var sessions = value.item2.toList();
           sessions.sort((a, b) {
             if (a.dayOfWeek != b.dayOfWeek) {
@@ -368,8 +422,8 @@ class UgrsSpider implements Spider {
                 () => _grsNew.getTimetable(_httpClient, yearEnroll, 13))
             .then((value) {
           for (var e in value.item2) {
-            outSemesters[semesterIndexMap['$yearStr-1']!]
-                .addSession(e, '$yearStr-1', true);
+            outSemesters[semesterIndexMap['$queryAcademicYear-1']!]
+                .addSession(e, '$queryAcademicYear-1', true);
           }
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
@@ -378,8 +432,8 @@ class UgrsSpider implements Spider {
                 () => _grsNew.getTimetable(_httpClient, yearEnroll, 14))
             .then((value) {
           for (var e in value.item2) {
-            outSemesters[semesterIndexMap['$yearStr-1']!]
-                .addSession(e, '$yearStr-1', true);
+            outSemesters[semesterIndexMap['$queryAcademicYear-1']!]
+                .addSession(e, '$queryAcademicYear-1', true);
           }
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
@@ -388,8 +442,8 @@ class UgrsSpider implements Spider {
                 () => _grsNew.getTimetable(_httpClient, yearEnroll, 11))
             .then((value) {
           for (var e in value.item2) {
-            outSemesters[semesterIndexMap['$yearStr-2']!]
-                .addSession(e, '$yearStr-2', true);
+            outSemesters[semesterIndexMap['$queryAcademicYear-2']!]
+                .addSession(e, '$queryAcademicYear-2', true);
           }
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
@@ -398,8 +452,8 @@ class UgrsSpider implements Spider {
                 () => _grsNew.getTimetable(_httpClient, yearEnroll, 12))
             .then((value) {
           for (var e in value.item2) {
-            outSemesters[semesterIndexMap['$yearStr-2']!]
-                .addSession(e, '$yearStr-2', true);
+            outSemesters[semesterIndexMap['$queryAcademicYear-2']!]
+                .addSession(e, '$queryAcademicYear-2', true);
           }
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
@@ -409,8 +463,8 @@ class UgrsSpider implements Spider {
                 () => _grsNew.getExamsDto(_httpClient, yearEnroll, 12))
             .then((value) {
           for (var e in value.item2) {
-            outSemesters[semesterIndexMap['$yearStr-1']!]
-                .addExamWithSemester(e, '$yearStr-1');
+            outSemesters[semesterIndexMap['$queryAcademicYear-1']!]
+                .addExamWithSemester(e, '$queryAcademicYear-1');
           }
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
@@ -419,8 +473,8 @@ class UgrsSpider implements Spider {
                 () => _grsNew.getExamsDto(_httpClient, yearEnroll, 11))
             .then((value) {
           for (var e in value.item2) {
-            outSemesters[semesterIndexMap['$yearStr-2']!]
-                .addExamWithSemester(e, '$yearStr-2');
+            outSemesters[semesterIndexMap['$queryAcademicYear-2']!]
+                .addExamWithSemester(e, '$queryAcademicYear-2');
           }
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
@@ -429,8 +483,18 @@ class UgrsSpider implements Spider {
       yearEnroll++;
     }
 
-    fetches.add(Future.wait(semesterConfigFetches)
-        .then((value) => value.firstWhereOrNull((e) => e != null)));
+    fetches.add(Future.wait(semesterConfigFetches).then((value) {
+      final failure = value.firstWhereOrNull(
+          (error) => error != null && !isDegradedRefreshText(error));
+      if (failure != null) return failure;
+      if (calendarCache > 0 || calendarFallback > 0) {
+        return degradedRefreshText(
+          '校历：$calendarLive 个远程成功，$calendarCache 个缓存降级，'
+          '$calendarFallback 个默认配置',
+        );
+      }
+      return null;
+    }));
     fetches.add(Future.wait(timetableFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
@@ -500,6 +564,12 @@ class UgrsSpider implements Spider {
         .then((value) {
       outTodos.clear();
       outTodos.addAll(value.item2);
+      if (value.item3 == DataSourceStatus.cache) {
+        return degradedRefreshText(
+          '作业：使用缓存，${value.item2.length} 条',
+          details: value.item1 == null ? null : detailedErrorText(value.item1),
+        );
+      }
       return value.item1?.toString();
     }).catchError((Object error, StackTrace stackTrace) =>
             _describeRefreshFailure(error, stackTrace)));
@@ -539,9 +609,26 @@ class UgrsSpider implements Spider {
     }
     for (var i = 0; i < fetchErrorMessages.length; i++) {
       if (fetchErrorMessages[i] != null) {
-        fetchErrorMessages[i] =
-            '${fetchSequence[i]}查询出错：${fetchErrorMessages[i]}';
+        final message = fetchErrorMessages[i]!;
+        fetchErrorMessages[i] = isDegradedRefreshText(message)
+            ? degradedRefreshText(
+                '${fetchSequence[i]}：${shortErrorText(message)}',
+                details: detailedErrorText(message),
+              )
+            : '${fetchSequence[i]}查询出错：$message';
       }
+      DiagnosticLogService.instance.setModuleResult(
+        fetchSequence[i],
+        fetchErrorMessages[i] == null
+            ? fetchSequence[i] == '校历'
+                ? '$calendarLive 个远程成功'
+                : fetchSequence[i] == '作业'
+                    ? '实时成功，${outTodos.length} 条'
+                    : '实时成功'
+            : isDegradedRefreshText(fetchErrorMessages[i])
+                ? shortErrorText(fetchErrorMessages[i])
+                : '失败：${shortErrorText(fetchErrorMessages[i])}',
+      );
     }
 
     for (var semester in outSemesters) {

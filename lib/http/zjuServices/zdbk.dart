@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:celechron/utils/tuple.dart';
@@ -10,6 +11,7 @@ import 'package:celechron/model/session.dart';
 import 'package:celechron/model/exams_dto.dart';
 import 'package:celechron/design/captcha_input.dart';
 import 'package:celechron/utils/global.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
 import 'exceptions.dart';
 import 'response_utils.dart';
 
@@ -31,6 +33,8 @@ class Zdbk {
   DatabaseHelper? _db;
   Future<bool>? _loginFuture;
   int _sessionGeneration = 0;
+  int _activeSiteRequests = 0;
+  final List<Completer<void>> _siteWaiters = [];
 
   set db(DatabaseHelper? db) {
     _db = db;
@@ -163,6 +167,13 @@ class Zdbk {
   }
 
   Future<T> _withAutoRelogin<T>(HttpClient httpClient,
+      Future<T> Function(bool relogged, bool retried) requestFactory) {
+    return _withSitePermit(
+      () => _withAutoReloginUnlocked(httpClient, requestFactory),
+    );
+  }
+
+  Future<T> _withAutoReloginUnlocked<T>(HttpClient httpClient,
       Future<T> Function(bool relogged, bool retried) requestFactory) async {
     var relogged = false;
     for (var i = 0; i < 2; i++) {
@@ -193,17 +204,82 @@ class Zdbk {
     throw LoginExpiredException("教务网会话已过期，请手动重新登录");
   }
 
-  List<dynamic> _cachedList(String cacheKey, String context) {
-    final cached = _db?.getCachedWebPage(cacheKey);
-    if (cached == null || cached.trim().isEmpty) return [];
-    try {
-      return decodeJsonList(cached, context: context);
-    } on Object catch (error, stackTrace) {
-      if (kDebugMode) {
-        debugPrint('$context 读取失败：${error.runtimeType}: $error\n$stackTrace');
-      }
-      return [];
+  Future<T> _withSitePermit<T>(Future<T> Function() action) async {
+    if (_activeSiteRequests >= 3) {
+      final waiter = Completer<void>();
+      _siteWaiters.add(waiter);
+      await waiter.future;
     }
+    _activeSiteRequests++;
+    try {
+      return await action();
+    } finally {
+      _activeSiteRequests--;
+      if (_siteWaiters.isNotEmpty) {
+        _siteWaiters.removeAt(0).complete();
+      }
+    }
+  }
+
+  _CachedList _cachedList(String cacheKey, String context) {
+    final cached = _db?.getCachedWebPage(cacheKey);
+    if (cached == null || cached.trim().isEmpty) {
+      return const _CachedList([], false);
+    }
+    try {
+      final cachedAt = _db?.getCachedWebPage('${cacheKey}_timestamp') ?? '<未知>';
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: context,
+        operation: 'readCache',
+        cacheUsed: true,
+        message: '使用缓存；缓存时间=$cachedAt',
+      );
+      return _CachedList(
+        decodeJsonList(cached, context: context),
+        true,
+        cachedAt: cachedAt,
+      );
+    } on Object catch (error, stackTrace) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: context,
+        operation: 'readCache',
+        cacheUsed: false,
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return const _CachedList([], false);
+    }
+  }
+
+  void _writeCache(String cacheKey, String value) {
+    unawaited(Future.wait([
+      _db?.setCachedWebPage(cacheKey, value) ?? Future<void>.value(),
+      _db?.setCachedWebPage(
+            '${cacheKey}_timestamp',
+            DateTime.now().toUtc().toIso8601String(),
+          ) ??
+          Future<void>.value(),
+    ]));
+  }
+
+  Exception _cacheAwareException(
+    Exception exception,
+    _CachedList cache,
+    String context,
+  ) {
+    if (!cache.used) return exception;
+    return CachedDataException(
+      '$context：实时请求失败，已使用缓存',
+      details: [
+        '缓存时间：${cache.cachedAt ?? '<未知>'}',
+        detailedErrorText(exception),
+      ].join('\n'),
+      originalError: exception,
+      stackTrace:
+          exception is ExceptionWithMessage ? exception.stackTrace : null,
+    );
   }
 
   List<Grade> _parseGrades(Object? raw, String context, {bool major = false}) {
@@ -314,7 +390,7 @@ class Zdbk {
         }
         final grades = _parseGrades(items, context, major: true);
         var majorGpa = GpaHelper.calculateGpa(grades);
-        _db?.setCachedWebPage('zdbk_MajorGrade', jsonEncode(items));
+        _writeCache('zdbk_MajorGrade', jsonEncode(items));
         return Tuple(
             null, Tuple([majorGpa.item1[0], majorGpa.item2], responseText));
       } on Object catch (error, stackTrace) {
@@ -326,12 +402,12 @@ class Zdbk {
             retried: retried,
             stackTrace: stackTrace);
         final cachedItems = _cachedList('zdbk_MajorGrade', '教务网主修成绩缓存');
-        final grades = _parseGrades(cachedItems, '教务网主修成绩缓存', major: true);
+        final grades = _parseGrades(cachedItems.data, '教务网主修成绩缓存', major: true);
         var majorGpa = GpaHelper.calculateGpa(grades);
         return Tuple(
-            exception,
+            _cacheAwareException(exception, cachedItems, '教务网主修成绩'),
             Tuple([majorGpa.item1[0], majorGpa.item2],
-                '{"items":${jsonEncode(cachedItems)},"limit":0}'));
+                '{"items":${jsonEncode(cachedItems.data)},"limit":0}'));
       }
     });
   }
@@ -378,7 +454,7 @@ class Zdbk {
               '；响应摘要：${responseSummary(responseText)}');
         }
         final grades = _parseGrades(items, context);
-        _db?.setCachedWebPage('zdbk_Transcript', jsonEncode(items));
+        _writeCache('zdbk_Transcript', jsonEncode(items));
         return Tuple(null, grades);
       } on Object catch (error, stackTrace) {
         if (error is AuthenticationExpiredException) rethrow;
@@ -389,7 +465,10 @@ class Zdbk {
             retried: retried,
             stackTrace: stackTrace);
         final cached = _cachedList('zdbk_Transcript', '教务网成绩缓存');
-        return Tuple(exception, _parseGrades(cached, '教务网成绩缓存'));
+        return Tuple(
+          _cacheAwareException(exception, cached, '教务网成绩'),
+          _parseGrades(cached.data, '教务网成绩缓存'),
+        );
       }
     });
   }
@@ -417,12 +496,12 @@ class Zdbk {
             ..add('X-Requested-With', 'XMLHttpRequest');
           request.cookies.add(_jSessionId!);
           request.cookies.add(_route!);
+          request.followRedirects = false;
           request.headers.contentType = ContentType(
               'application', 'x-www-form-urlencoded',
               charset: 'utf-8');
           request.add(
               utf8.encode('xnm=$year&xqm=$semester&captcha_value=$_captcha'));
-          request.followRedirects = false;
           response = await request.close().timeout(const Duration(seconds: 8),
               onTimeout: () => throw requestTimeout());
 
@@ -463,8 +542,7 @@ class Zdbk {
                 '；响应摘要：${responseSummary(responseText)}');
           }
           final sessions = _parseSessions(items, context);
-          _db?.setCachedWebPage(
-              'zdbk_Timetable$year$semester', jsonEncode(items));
+          _writeCache('zdbk_Timetable$year$semester', jsonEncode(items));
           return Tuple(null, sessions);
         }
         throw ExceptionWithMessage("验证码识别失败");
@@ -479,7 +557,10 @@ class Zdbk {
             stackTrace: stackTrace);
         final cached =
             _cachedList('zdbk_Timetable$year$semester', '$context 缓存');
-        return Tuple(exception, _parseSessions(cached, '$context 缓存'));
+        return Tuple(
+          _cacheAwareException(exception, cached, context),
+          _parseSessions(cached.data, '$context 缓存'),
+        );
       }
     });
   }
@@ -526,7 +607,7 @@ class Zdbk {
               '；响应摘要：${responseSummary(responseText)}');
         }
         final exams = _parseExams(items, context);
-        _db?.setCachedWebPage('zdbk_exams', jsonEncode(items));
+        _writeCache('zdbk_exams', jsonEncode(items));
         return Tuple(null, exams);
       } on Object catch (error, stackTrace) {
         if (error is AuthenticationExpiredException) rethrow;
@@ -537,7 +618,10 @@ class Zdbk {
             retried: retried,
             stackTrace: stackTrace);
         final cached = _cachedList('zdbk_exams', '教务网考试缓存');
-        return Tuple(exception, _parseExams(cached, '教务网考试缓存'));
+        return Tuple(
+          _cacheAwareException(exception, cached, '教务网考试'),
+          _parseExams(cached.data, '教务网考试缓存'),
+        );
       }
     });
   }
@@ -576,7 +660,7 @@ class Zdbk {
             relogged: relogged,
             retried: retried);
 
-        _db?.setCachedWebPage("zdbk_practiceScores", html);
+        _writeCache("zdbk_practiceScores", html);
 
         var scores = <String, double>{
           'pt2': 0.0,
@@ -594,12 +678,7 @@ class Zdbk {
           var scoreStr = match.group(2)?.trim();
           if (type == null || scoreStr == null) continue;
 
-          double? score;
-          try {
-            score = double.tryParse(scoreStr);
-          } catch (_) {
-            continue;
-          }
+          final score = double.tryParse(scoreStr);
           if (score == null) continue;
 
           if (type.contains('第二课堂')) {
@@ -677,8 +756,22 @@ class Zdbk {
             if (pt4Match != null) {
               scores['pt4'] = double.tryParse(pt4Match.group(1) ?? '0') ?? 0.0;
             }
-            return Tuple(exception, scores);
-          } catch (_) {}
+            final cachedException = CachedDataException(
+              '教务网实践分：实时请求失败，已使用缓存',
+              details: detailedErrorText(exception),
+              originalError: exception,
+            );
+            return Tuple(cachedException, scores);
+          } on Object catch (cacheError, cacheStackTrace) {
+            DiagnosticLogService.instance.record(
+              level: CelechronLogLevel.warning,
+              module: '教务网实践分',
+              operation: 'readCache',
+              cacheUsed: false,
+              error: cacheError,
+              stackTrace: cacheStackTrace,
+            );
+          }
         }
         return Tuple(exception, {'pt2': 0.0, 'pt3': 0.0, 'pt4': 0.0});
       }
@@ -728,4 +821,12 @@ class Zdbk {
   Future<String> solveCaptcha(HttpClient httpClient) async {
     throw UnimplementedError("验证码识别功能未开发");
   }
+}
+
+class _CachedList {
+  final List<dynamic> data;
+  final bool used;
+  final String? cachedAt;
+
+  const _CachedList(this.data, this.used, {this.cachedAt});
 }

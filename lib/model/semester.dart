@@ -3,6 +3,7 @@ import 'package:celechron/model/period.dart';
 import 'package:celechron/utils/gpa_helper.dart';
 import 'package:celechron/utils/json_utils.dart';
 import 'package:celechron/utils/list_ext.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
 import 'course.dart';
 import 'exam.dart';
 import 'grade.dart';
@@ -104,6 +105,64 @@ class Semester {
 
   // 所有课程（几乎没用，绘制课程表是要分学期的，看下面的）
   List<Session> get sessions => _sessions;
+
+  void mergePartialFrom(Semester incoming) {
+    Course? matchingCourse(Course incomingCourse) {
+      for (final existing in _courses.values) {
+        if (incomingCourse.id != null && existing.id == incomingCourse.id) {
+          return existing;
+        }
+        if (existing.name == incomingCourse.name) return existing;
+      }
+      return null;
+    }
+
+    for (final entry in incoming.courses.entries) {
+      final existing = matchingCourse(entry.value);
+      if (existing == null) {
+        _courses[entry.key] = entry.value;
+        continue;
+      }
+      for (final session in entry.value.sessions) {
+        existing.completeSession(session);
+      }
+      if (entry.value.grade != null) {
+        existing.completeGrade(entry.value.grade!);
+      }
+      for (final exam in entry.value.exams) {
+        final duplicate = existing.exams.any((current) =>
+            current.id == exam.id &&
+            current.type == exam.type &&
+            current.time.isNotEmpty &&
+            exam.time.isNotEmpty &&
+            current.time.first == exam.time.first);
+        if (!duplicate) existing.exams.add(exam);
+      }
+    }
+    for (final session in incoming.sessions) {
+      final duplicate = _sessions.any((existing) =>
+          existing.id == session.id &&
+          existing.dayOfWeek == session.dayOfWeek &&
+          existing.time.join(',') == session.time.join(',') &&
+          existing.location == session.location);
+      if (!duplicate) _sessions.add(session);
+    }
+    for (final grade in incoming.grades) {
+      final duplicate = _grades.any((existing) =>
+          existing.id == grade.id && existing.original == grade.original);
+      if (!duplicate) _grades.add(grade);
+    }
+    for (final exam in incoming.exams) {
+      final duplicate = _exams.any((existing) =>
+          existing.id == exam.id &&
+          existing.type == exam.type &&
+          existing.time.isNotEmpty &&
+          exam.time.isNotEmpty &&
+          existing.time.first == exam.time.first);
+      if (!duplicate) _exams.add(exam);
+    }
+    calculateGPA();
+  }
 
   // 上半学期课表
   List<List<Session>> get firstHalfTimetable {
@@ -378,8 +437,7 @@ class Semester {
     }
 
     final sessionToTime = <List<Duration>>[];
-    for (final rawPeriod
-        in asDynamicList(json['sessionTime']) ?? const []) {
+    for (final rawPeriod in asDynamicList(json['sessionTime']) ?? const []) {
       final period = <Duration>[];
       for (final rawTime in asDynamicList(rawPeriod) ?? const []) {
         final parts = (asString(rawTime) ?? '').split(':');
@@ -398,15 +456,13 @@ class Semester {
     }
 
     final holidays = <DateTime, String>{};
-    for (final entry
-        in (asStringMap(json['holiday']) ?? const {}).entries) {
+    for (final entry in (asStringMap(json['holiday']) ?? const {}).entries) {
       final date = asDateTime(entry.key);
       final name = asString(entry.value);
       if (date != null && name != null) holidays[date] = name;
     }
     final exchanges = <DateTime, DateTime>{};
-    for (final key
-        in (asStringMap(json['exchange']) ?? const {}).keys) {
+    for (final key in (asStringMap(json['exchange']) ?? const {}).keys) {
       if (key.length < 16) continue;
       final first = asDateTime(key.substring(0, 8));
       final second = asDateTime(key.substring(8, 16));
@@ -494,8 +550,8 @@ class Semester {
   }
 
   factory Semester.fromJson(Map<String, dynamic> json) {
-    final semester = Semester(
-        asString(json['name']) ?? DateTime.now().toIso8601String());
+    final semester =
+        Semester(asString(json['name']) ?? DateTime.now().toIso8601String());
 
     final courses = asStringMap(json['courses']) ?? const {};
     for (final entry in courses.entries) {
@@ -503,7 +559,15 @@ class Semester {
       if (courseMap == null) continue;
       try {
         semester._courses[entry.key] = Course.fromJson(courseMap);
-      } catch (_) {}
+      } on Object catch (error, stackTrace) {
+        DiagnosticLogService.instance.record(
+          level: CelechronLogLevel.warning,
+          module: '本地学期缓存',
+          operation: 'parseCourse',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
     }
     for (final rawExam in asDynamicList(json['exams']) ?? const []) {
       final examMap = asStringMap(rawExam);
@@ -511,16 +575,31 @@ class Semester {
       try {
         final exam = Exam.fromJson(examMap);
         if (exam.time.length >= 2) semester._exams.add(exam);
-      } catch (_) {}
+      } on Object catch (error, stackTrace) {
+        DiagnosticLogService.instance.record(
+          level: CelechronLogLevel.warning,
+          module: '本地学期缓存',
+          operation: 'parseExam',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
     }
-    for (final rawSession
-        in asDynamicList(json['sessions']) ?? const []) {
+    for (final rawSession in asDynamicList(json['sessions']) ?? const []) {
       final sessionMap = asStringMap(rawSession);
       if (sessionMap == null) continue;
       try {
         final session = Session.fromJson(sessionMap);
         if (session.time.isNotEmpty) semester._sessions.add(session);
-      } catch (_) {}
+      } on Object catch (error, stackTrace) {
+        DiagnosticLogService.instance.record(
+          level: CelechronLogLevel.warning,
+          module: '本地学期缓存',
+          operation: 'parseSession',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
     }
     for (final rawGrade in asDynamicList(json['grades']) ?? const []) {
       final gradeMap = asStringMap(rawGrade);
@@ -528,7 +607,15 @@ class Semester {
       try {
         final grade = Grade.fromJson(gradeMap);
         if (grade.id.isNotEmpty) semester._grades.add(grade);
-      } catch (_) {}
+      } on Object catch (error, stackTrace) {
+        DiagnosticLogService.instance.record(
+          level: CelechronLogLevel.warning,
+          module: '本地学期缓存',
+          operation: 'parseGrade',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
     }
 
     semester.gpa = (asDynamicList(json['gpa']) ?? const [])
@@ -542,8 +629,7 @@ class Semester {
     semester.credits = asDouble(json['credits']) ?? 0.0;
 
     final sessionTimes = <List<Duration>>[];
-    for (final rawPeriod
-        in asDynamicList(json['sessionToTime']) ?? const []) {
+    for (final rawPeriod in asDynamicList(json['sessionToTime']) ?? const []) {
       sessionTimes.add((asDynamicList(rawPeriod) ?? const [])
           .map(asInt)
           .whereType<int>()
@@ -553,13 +639,11 @@ class Semester {
     if (sessionTimes.isNotEmpty) semester._sessionToTime = sessionTimes;
 
     final calendar = <List<List<List<DateTime>>>>[];
-    for (final rawHalf
-        in asDynamicList(json['dayOfWeekToDays']) ?? const []) {
+    for (final rawHalf in asDynamicList(json['dayOfWeekToDays']) ?? const []) {
       final half = <List<List<DateTime>>>[];
       for (final rawOddEven in asDynamicList(rawHalf) ?? const []) {
         final oddEven = <List<DateTime>>[];
-        for (final rawWeekday
-            in asDynamicList(rawOddEven) ?? const []) {
+        for (final rawWeekday in asDynamicList(rawOddEven) ?? const []) {
           oddEven.add((asDynamicList(rawWeekday) ?? const [])
               .map(asString)
               .whereType<String>()
@@ -574,15 +658,13 @@ class Semester {
     if (calendar.length == 2) semester._dayOfWeekToDays = calendar;
 
     semester._holidays = {};
-    for (final entry
-        in (asStringMap(json['holidays']) ?? const {}).entries) {
+    for (final entry in (asStringMap(json['holidays']) ?? const {}).entries) {
       final date = asDateTime(entry.key);
       final name = asString(entry.value);
       if (date != null && name != null) semester._holidays[date] = name;
     }
     semester._exchanges = {};
-    for (final entry
-        in (asStringMap(json['exchanges']) ?? const {}).entries) {
+    for (final entry in (asStringMap(json['exchanges']) ?? const {}).entries) {
       final from = asDateTime(entry.key);
       final to = asDateTime(entry.value);
       if (from != null && to != null) semester._exchanges[from] = to;

@@ -2,8 +2,10 @@ import 'dart:io';
 
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/http/calendar_config_parser.dart';
+import 'package:celechron/http/data_source_status.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/http/zjuServices/response_utils.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/utils/tuple.dart';
 import 'package:flutter/foundation.dart';
 
@@ -16,7 +18,7 @@ class TimeConfigService {
     _db = db;
   }
 
-  Future<Tuple<Exception?, String?>> getConfig(
+  Future<Tuple3<Exception?, String?, DataSourceStatus>> getConfig(
       HttpClient httpClient, String semesterId) async {
     final key = calendarObjectKeyForSemester(semesterId);
     final uri = calendarConfigUriForSemester(semesterId);
@@ -43,7 +45,18 @@ class TimeConfigService {
 
       if (noSuchKey) {
         final fallback = _fallbackConfig(semesterId, context);
-        return Tuple(
+        DiagnosticLogService.instance.record(
+          level: CelechronLogLevel.warning,
+          module: '校历',
+          operation: semesterId,
+          requestUri: uri,
+          statusCode: response.statusCode,
+          contentType: contentType,
+          cacheUsed: fallback.status == DataSourceStatus.cache,
+          message: '远程配置未发布，${fallback.status.label}；'
+              '缓存时间=${fallback.cachedAt ?? '<无>'}',
+        );
+        return Tuple3(
           CalendarConfigUnavailableException(
             details: [
               '接口：$context',
@@ -57,7 +70,8 @@ class TimeConfigService {
               '响应摘要：${responseSummary(body)}',
             ].join('\n'),
           ),
-          fallback,
+          fallback.config,
+          fallback.status,
         );
       }
 
@@ -76,23 +90,48 @@ class TimeConfigService {
         _db?.setCachedWebPage('timeConfig_$semesterId', body) ??
             Future<void>.value(),
         _db?.setCachedWebPage(_lastValidCacheKey, body) ?? Future<void>.value(),
+        _db?.setCachedWebPage(
+              'timeConfig_timestamp_$semesterId',
+              DateTime.now().toUtc().toIso8601String(),
+            ) ??
+            Future<void>.value(),
       ]);
-      return Tuple(null, body);
+      DiagnosticLogService.instance.record(
+        module: '校历',
+        operation: semesterId,
+        requestUri: uri,
+        statusCode: response.statusCode,
+        contentType: contentType,
+        message: DataSourceStatus.live.label,
+      );
+      return Tuple3(null, body, DataSourceStatus.live);
     } on Object catch (error, stackTrace) {
       final fallback = _fallbackConfig(semesterId, context);
-      return Tuple(
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '校历',
+        operation: semesterId,
+        requestUri: uri,
+        cacheUsed: fallback.status == DataSourceStatus.cache,
+        message: '实时请求失败，${fallback.status.label}；'
+            '缓存时间=${fallback.cachedAt ?? '<无>'}',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return Tuple3(
         exceptionFrom(
           error,
           context: context,
           requestUri: uri,
           stackTrace: stackTrace,
         ),
-        fallback,
+        fallback.config,
+        fallback.status,
       );
     }
   }
 
-  String _fallbackConfig(String semesterId, String context) {
+  _CalendarFallback _fallbackConfig(String semesterId, String context) {
     final exactCache = _db?.getCachedWebPage('timeConfig_$semesterId');
     if (exactCache != null) {
       try {
@@ -100,11 +139,20 @@ class TimeConfigService {
           exactCache,
           context: '$context 本地缓存',
         );
-        return exactCache;
+        return _CalendarFallback(
+          exactCache,
+          DataSourceStatus.cache,
+          cachedAt: _db?.getCachedWebPage('timeConfig_timestamp_$semesterId'),
+        );
       } on Object catch (error, stackTrace) {
-        if (kDebugMode) {
-          debugPrint('$context：忽略损坏的本地缓存：$error\n$stackTrace');
-        }
+        DiagnosticLogService.instance.record(
+          level: CelechronLogLevel.warning,
+          module: '校历',
+          operation: 'readExactCache',
+          cacheUsed: false,
+          error: error,
+          stackTrace: stackTrace,
+        );
       }
     }
 
@@ -117,14 +165,30 @@ class TimeConfigService {
           context: '$context 上一份有效缓存',
         );
       } on Object catch (error, stackTrace) {
-        if (kDebugMode) {
-          debugPrint('$context：忽略损坏的历史缓存：$error\n$stackTrace');
-        }
+        DiagnosticLogService.instance.record(
+          level: CelechronLogLevel.warning,
+          module: '校历',
+          operation: 'readTemplateCache',
+          cacheUsed: false,
+          error: error,
+          stackTrace: stackTrace,
+        );
       }
     }
-    return buildSafeDefaultCalendarConfig(
-      semesterId,
-      template: template,
+    return _CalendarFallback(
+      buildSafeDefaultCalendarConfig(
+        semesterId,
+        template: template,
+      ),
+      DataSourceStatus.fallback,
     );
   }
+}
+
+class _CalendarFallback {
+  final String config;
+  final DataSourceStatus status;
+  final String? cachedAt;
+
+  const _CalendarFallback(this.config, this.status, {this.cachedAt});
 }

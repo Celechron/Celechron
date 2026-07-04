@@ -87,8 +87,12 @@ class GrsNew {
     final validateResponse = await validateRequest.close().timeout(
         const Duration(seconds: 8),
         onTimeout: () => throw requestTimeout());
-    final loginJson = await readResponseText(validateResponse,
-        context: '研究生院 CAS 校验接口', expectJson: true);
+    final loginJson = await readResponseText(
+      validateResponse,
+      context: '研究生院 CAS 校验接口',
+      expectJson: true,
+      requestUri: validateUri,
+    );
     final loginInfo = decodeJsonMap(loginJson,
         context: '研究生院 CAS 校验接口；HTTP ${validateResponse.statusCode}');
     if (jsonIndicatesAuthenticationFailure(loginInfo) ||
