@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:celechron/http/spider.dart';
@@ -27,11 +28,11 @@ class GrsSpider implements Spider {
   late GrsNew _grsNew;
   late Courses _courses;
   late TimeConfigService _timeConfigService;
-  Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
   Future<List<String?>>? _reloginFuture;
+  int _loginGeneration = 0;
   static List<String> fetchSequenceGrs = [
-    '配置',
+    '校历',
     '课表',
     '本科生课考试',
     '本科生课成绩',
@@ -41,7 +42,7 @@ class GrsSpider implements Spider {
   ];
 
   GrsSpider(String username, String password) {
-    _initHttpClient();
+    _httpClient = _createHttpClient();
     // _appService = AppService();
     _courses = Courses();
     _zdbk = Zdbk();
@@ -51,10 +52,11 @@ class GrsSpider implements Spider {
     _password = password;
   }
 
-  void _initHttpClient() {
-    _httpClient = HttpClient();
-    _httpClient.userAgent =
+  HttpClient _createHttpClient() {
+    final client = HttpClient();
+    client.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
+    return client;
   }
 
   @override
@@ -81,55 +83,67 @@ class GrsSpider implements Spider {
   }
 
   Future<List<String?>> _doLogin() async {
-    try {
-      _httpClient.close(force: true);
-    } catch (_) {}
-    _initHttpClient();
+    final previousClient = _httpClient;
+    final candidateClient = _createHttpClient();
 
     var loginErrorMessages = <String?>[null];
-    _iPlanetDirectoryPro =
-        await ZjuAm.getSsoCookie(_httpClient, _username, _password)
+    final candidateSsoCookie =
+        await ZjuAm.getSsoCookie(candidateClient, _username, _password)
             .timeout(const Duration(seconds: 8))
-            .catchError((e) {
-      loginErrorMessages[0] = "无法登录统一身份认证，$e";
+            .catchError((Object error, StackTrace stackTrace) {
+      loginErrorMessages[0] = exceptionFrom(
+        error,
+        context: "无法登录统一身份认证",
+        stackTrace: stackTrace,
+      ).toString();
       return null;
     });
-    if (_iPlanetDirectoryPro == null) return loginErrorMessages;
-    Future<String?> captureLogin(
-        Future<dynamic> future, String serviceName,
+    if (candidateSsoCookie == null) {
+      candidateClient.close(force: true);
+      return loginErrorMessages;
+    }
+    Future<String?> captureLogin(Future<dynamic> future, String serviceName,
         {bool ignoreError = false}) async {
       try {
         await future.timeout(const Duration(seconds: 8));
         return null;
-      } catch (error) {
-        return ignoreError ? null : "无法登录$serviceName，$error";
+      } on Object catch (error, stackTrace) {
+        return ignoreError
+            ? null
+            : exceptionFrom(
+                error,
+                context: "无法登录$serviceName",
+                stackTrace: stackTrace,
+              ).toString();
       }
     }
 
     loginErrorMessages.addAll(await Future.wait<String?>([
-      captureLogin(
-          _grsNew.login(_httpClient, _iPlanetDirectoryPro), "研究生院网"),
-      captureLogin(_courses.login(_httpClient, _iPlanetDirectoryPro), "学在浙大"),
+      captureLogin(_grsNew.login(candidateClient, candidateSsoCookie), "研究生院网"),
+      captureLogin(_courses.login(candidateClient, candidateSsoCookie), "学在浙大"),
       /* _appService
                     .login(_httpClient, _iPlanetDirectoryPro)
                     // ignore: unnecessary_cast
                     .then<String?>((value) => null)
                     .timeout(const Duration(seconds: 8))
                     .catchError((e) => "无法登录钉钉工作台，$e"), */
-      captureLogin(_zdbk.login(_httpClient, _iPlanetDirectoryPro), "教务网",
+      captureLogin(_zdbk.login(candidateClient, candidateSsoCookie), "教务网",
           ignoreError: true),
     ]).then((value) {
       if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
       return value;
     }));
+    _httpClient = candidateClient;
+    _loginGeneration++;
+    previousClient.close();
     return loginErrorMessages;
   }
 
   @override
   void logout() {
+    unawaited(ZjuAm.clearCachedSsoCookie(_username));
     _username = "";
     _password = "";
-    _iPlanetDirectoryPro = null;
     try {
       _httpClient.close(force: true);
     } catch (_) {}
@@ -141,12 +155,13 @@ class GrsSpider implements Spider {
 
   // ===== 新增开始 =====
   // 自动重试机制：遇到Cookie过期等错误时，自动重新登录再重试
-  Future<T> _fetchWithRetry<T>(Future<T> Function() operation,
-      {int maxRetries = 2}) async {
+  Future<T> _fetchWithRetry<T>(Future<T> Function() requestFactory,
+      {int maxRetries = 1}) async {
     int attempts = 0;
     while (true) {
+      final requestLoginGeneration = _loginGeneration;
       try {
-        var result = await operation();
+        var result = await requestFactory();
 
         // 检查返回结果中是否隐藏了错误
         bool hasHiddenError = false;
@@ -178,38 +193,56 @@ class GrsSpider implements Spider {
         }
 
         return result;
-      } catch (e) {
+      } on Object catch (error, stackTrace) {
         attempts++;
-        String errStr = e.toString().toLowerCase();
+        String errStr = error.toString().toLowerCase();
 
-        final authenticationError = e is AuthenticationExpiredException ||
-            e is SessionExpiredException ||
-            errStr.contains("未登录") ||
-            errStr.contains("登录态已失效") ||
-            errStr.contains("会话已过期") ||
-            errStr.contains("token 已过期") ||
-            errStr.contains("iplanetdirectorypro无效");
+        final alreadyRelogged =
+            errStr.contains("执行过重新登录：是") || errStr.contains("手动重新登录");
+        final authenticationError = !alreadyRelogged &&
+            (error is AuthenticationExpiredException ||
+                error is SessionExpiredException ||
+                errStr.contains("未登录") ||
+                errStr.contains("登录态已失效") ||
+                errStr.contains("会话已过期") ||
+                errStr.contains("token 已过期") ||
+                errStr.contains("iplanetdirectorypro无效"));
         final transientError = errStr.contains("connection closed") ||
             errStr.contains("timeout") ||
             errStr.contains("超时") ||
             errStr.contains("httpexception") ||
             errStr.contains("网络错误") ||
             errStr.contains("socketexception");
-        if (attempts <= maxRetries && (authenticationError || transientError)) {
-          if (authenticationError) {
+        if (attempts <= maxRetries && authenticationError) {
+          if (_loginGeneration == requestLoginGeneration) {
             final loginErrors = await login();
-            if (loginErrors.any((error) => error != null)) {
-              throw ExceptionWithMessage(
-                  '自动重新登录失败：${loginErrors.whereType<String>().join('；')}');
-            }
+            if (loginErrors.any((error) => error != null)) rethrow;
           }
           await Future.delayed(const Duration(milliseconds: 300));
           continue;
         }
-
+        if (attempts <= maxRetries && transientError) {
+          await Future.delayed(const Duration(milliseconds: 300));
+          continue;
+        }
+        if (kDebugMode) {
+          debugPrint('刷新请求失败：${error.runtimeType}: $error\n$stackTrace');
+        }
         rethrow;
       }
     }
+  }
+
+  String _describeRefreshFailure(
+    Object error,
+    StackTrace stackTrace, {
+    String? source,
+  }) {
+    if (kDebugMode) {
+      debugPrint(
+          '${source ?? '刷新任务'}失败：${error.runtimeType}: ${redactSensitive(error.toString())}\n$stackTrace');
+    }
+    return source == null ? error.toString() : '$source $error';
   }
   // ===== 新增结束 =====
 
@@ -243,14 +276,8 @@ class GrsSpider implements Spider {
         _username.length >= 3 ? _username.substring(1, 3) : '';
     final parsedEnrollmentYear = int.tryParse(enrollmentDigits);
     if (parsedEnrollmentYear == null) {
-      return Tuple7(
-          loginErrorMessages,
-          <String?>['无法解析学号中的入学年份：$_username'],
-          outSemesters,
-          outGrades,
-          outMajorGrade,
-          outSpecialDates,
-          outTodos);
+      return Tuple7(loginErrorMessages, <String?>['无法解析学号中的入学年份：$_username'],
+          outSemesters, outGrades, outMajorGrade, outSpecialDates, outTodos);
     }
     var yearEnroll = parsedEnrollmentYear + 2000;
     // 假设研究生在本科时提前两年选了研究生的课
@@ -277,8 +304,9 @@ class GrsSpider implements Spider {
 
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
       var yearStr = '$yearEnroll-${yearEnroll + 1}';
-      semesterConfigFetches.add(
-          _timeConfigService.getConfig(_httpClient, '$yearStr-1').then((value) {
+      semesterConfigFetches.add(_timeConfigService
+          .getConfig(_httpClient, '$yearStr-1')
+          .then((value) {
         if (value.item2 != null) {
           applyCalendarConfig(
             value.item2!,
@@ -288,9 +316,12 @@ class GrsSpider implements Spider {
           );
         }
         return value.item1?.toString();
-      }).catchError((e) => 'semesterConf($yearStr-1) $e'));
-      semesterConfigFetches.add(
-          _timeConfigService.getConfig(_httpClient, '$yearStr-2').then((value) {
+      }).catchError((Object error, StackTrace stackTrace) =>
+              _describeRefreshFailure(error, stackTrace,
+                  source: 'semesterConf($yearStr-1)')));
+      semesterConfigFetches.add(_timeConfigService
+          .getConfig(_httpClient, '$yearStr-2')
+          .then((value) {
         if (value.item2 != null) {
           applyCalendarConfig(
             value.item2!,
@@ -300,7 +331,9 @@ class GrsSpider implements Spider {
           );
         }
         return value.item1?.toString();
-      }).catchError((e) => 'semesterConf($yearStr-2) $e'));
+      }).catchError((Object error, StackTrace stackTrace) =>
+              _describeRefreshFailure(error, stackTrace,
+                  source: 'semesterConf($yearStr-2)')));
 
       // 查考试
       /*examFetches
@@ -342,8 +375,9 @@ class GrsSpider implements Spider {
             cancelTimetableFetch = true;
           }
           return Future.value(value.item1?.toString());
-        } catch (e) {
-          return Future.value(e.toString());
+        } on Object catch (error, stackTrace) {
+          return Future.value(
+              _describeRefreshFailure(error, stackTrace, source: '课表'));
         }
       }
 
@@ -367,7 +401,9 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-1', true);
         }
         return value.item1?.toString();
-      }).catchError((e) => 'grsNew($yearStr-1, 13) $e'));
+      }).catchError((Object error, StackTrace stackTrace) =>
+              _describeRefreshFailure(error, stackTrace,
+                  source: 'grsNew($yearStr-1, 13)')));
       timetableFetches.add(_fetchWithRetry(
               () => _grsNew.getTimetable(_httpClient, yearEnroll, 14))
           .then((value) {
@@ -376,7 +412,9 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-1', true);
         }
         return value.item1?.toString();
-      }).catchError((e) => 'grsNew($yearStr-1, 14) $e'));
+      }).catchError((Object error, StackTrace stackTrace) =>
+              _describeRefreshFailure(error, stackTrace,
+                  source: 'grsNew($yearStr-1, 14)')));
       timetableFetches.add(_fetchWithRetry(
               () => _grsNew.getTimetable(_httpClient, yearEnroll, 11))
           .then((value) {
@@ -385,7 +423,9 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-2', true);
         }
         return value.item1?.toString();
-      }).catchError((e) => 'grsNew($yearStr-2, 11) $e'));
+      }).catchError((Object error, StackTrace stackTrace) =>
+              _describeRefreshFailure(error, stackTrace,
+                  source: 'grsNew($yearStr-2, 11)')));
       timetableFetches.add(_fetchWithRetry(
               () => _grsNew.getTimetable(_httpClient, yearEnroll, 12))
           .then((value) {
@@ -394,7 +434,9 @@ class GrsSpider implements Spider {
               .addSession(e, '$yearStr-2', true);
         }
         return value.item1?.toString();
-      }).catchError((e) => 'grsNew($yearStr-2, 12) $e'));
+      }).catchError((Object error, StackTrace stackTrace) =>
+              _describeRefreshFailure(error, stackTrace,
+                  source: 'grsNew($yearStr-2, 12)')));
 
       // 研究生课考试
       examFetches.add(_fetchWithRetry(
@@ -404,7 +446,9 @@ class GrsSpider implements Spider {
               .addExamWithSemester(e, '$yearStr-1');
         }
         return value.item1?.toString();
-      }).catchError((e) => 'grsExam($yearStr-1) $e'));
+      }).catchError((Object error, StackTrace stackTrace) =>
+          _describeRefreshFailure(error, stackTrace,
+              source: 'grsExam($yearStr-1)')));
       examFetches.add(_fetchWithRetry(
           () => _grsNew.getExamsDto(_httpClient, yearEnroll, 11)).then((value) {
         for (var e in value.item2) {
@@ -412,7 +456,9 @@ class GrsSpider implements Spider {
               .addExamWithSemester(e, '$yearStr-2');
         }
         return value.item1?.toString();
-      }).catchError((e) => 'grsExam($yearStr-2) $e'));
+      }).catchError((Object error, StackTrace stackTrace) =>
+          _describeRefreshFailure(error, stackTrace,
+              source: 'grsExam($yearStr-2)')));
       yearEnroll++;
     }
 
@@ -426,8 +472,8 @@ class GrsSpider implements Spider {
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
     // 本科生课考试
-    fetches.add(
-        _fetchWithRetry(() => _zdbk.getExamsDto(_httpClient)).then((value) {
+    fetches.add(_fetchWithRetry(() => _zdbk.getExamsDto(_httpClient))
+        .then((value) {
       for (var e in value.item2) {
         try {
           final index = semesterIndexMap[e.semesterId];
@@ -435,16 +481,20 @@ class GrsSpider implements Spider {
             throw FormatException('考试学期不在刷新范围：${e.semesterId}');
           }
           outSemesters[index].addExam(e);
-        } catch (error) {
-          debugPrint('跳过无法归入学期的考试 ${e.id}：$error');
+        } on Object catch (error, stackTrace) {
+          if (kDebugMode) {
+            debugPrint(
+                '跳过无法归入学期的考试 ${e.id}：${error.runtimeType}: $error\n$stackTrace');
+          }
         }
       }
       return value.item1?.toString();
-    }).catchError((e) => 'zdbkExam $e'));
+    }).catchError((Object error, StackTrace stackTrace) =>
+            _describeRefreshFailure(error, stackTrace, source: 'zdbkExam')));
 
     // 查成绩
-    fetches.add(
-        _fetchWithRetry(() => _zdbk.getTranscript(_httpClient)).then((value) {
+    fetches.add(_fetchWithRetry(() => _zdbk.getTranscript(_httpClient))
+        .then((value) {
       for (var e in value.item2) {
         try {
           final index = semesterIndexMap[e.semesterId];
@@ -453,20 +503,24 @@ class GrsSpider implements Spider {
           }
           outSemesters[index].addGrade(e);
           outGrades.add(e);
-        } catch (error) {
-          debugPrint('跳过无法归入学期的成绩 ${e.id}：$error');
+        } on Object catch (error, stackTrace) {
+          if (kDebugMode) {
+            debugPrint(
+                '跳过无法归入学期的成绩 ${e.id}：${error.runtimeType}: $error\n$stackTrace');
+          }
         }
       }
       return value.item1?.toString();
-    }).catchError((e) => 'zdbkGrade $e'));
+    }).catchError((Object error, StackTrace stackTrace) =>
+            _describeRefreshFailure(error, stackTrace, source: 'zdbkGrade')));
 
     // 研究生课考试
     fetches.add(Future.wait(examFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
     // 研究生课成绩
-    fetches
-        .add(_fetchWithRetry(() => _grsNew.getGrade(_httpClient)).then((value) {
+    fetches.add(_fetchWithRetry(() => _grsNew.getGrade(_httpClient))
+        .then((value) {
       for (var e in value.item2) {
         try {
           if (e.id.length < 6) throw const FormatException('缺少学期信息');
@@ -485,28 +539,32 @@ class GrsSpider implements Spider {
             throw const FormatException('缺少学期名称');
           }
           final yearStr = '$year-${year + 1}$semesterStr';
-          final classId =
-              RegExp(r'班级编号(\d{7})').firstMatch(e.id)?.group(1);
+          final classId = RegExp(r'班级编号(\d{7})').firstMatch(e.id)?.group(1);
           final index = semesterIndexMap[yearStr];
           if (classId == null || index == null) {
             throw FormatException('班级编号或学期映射缺失：$yearStr');
           }
           e.id = classId;
           outSemesters[index].addGradeWithSemester(e, yearStr, true);
-        } catch (error) {
-          debugPrint('跳过无法归入学期的研究生成绩 ${e.id}：$error');
+        } on Object catch (error, stackTrace) {
+          if (kDebugMode) {
+            debugPrint(
+                '跳过无法归入学期的研究生成绩 ${e.id}：${error.runtimeType}: $error\n$stackTrace');
+          }
         }
       }
       return value.item1?.toString();
-    }).catchError((e) => 'grsGrade $e'));
+    }).catchError((Object error, StackTrace stackTrace) =>
+            _describeRefreshFailure(error, stackTrace, source: 'grsGrade')));
 
     // 学在浙大
-    fetches
-        .add(_fetchWithRetry(() => _courses.getTodo(_httpClient)).then((value) {
+    fetches.add(_fetchWithRetry(() => _courses.getTodo(_httpClient))
+        .then((value) {
       outTodos.clear();
       outTodos.addAll(value.item2);
       return value.item1?.toString();
-    }).catchError((e) => 'coursesTodo $e'));
+    }).catchError((Object error, StackTrace stackTrace) =>
+            _describeRefreshFailure(error, stackTrace, source: 'coursesTodo')));
 
     // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {

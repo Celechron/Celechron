@@ -49,13 +49,12 @@ class GrsNew {
         "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F");
     final request = await httpClient.getUrl(casUri).timeout(
         const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+        onTimeout: () => throw requestTimeout());
     request.followRedirects = false;
     request.cookies.add(ssoCookie);
     final response = await request.close().timeout(const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("请求超时"));
-    final body =
-        await readResponseBody(response, context: '研究生院 CAS 登录');
+        onTimeout: () => throw requestTimeout());
+    final body = await readResponseBody(response, context: '研究生院 CAS 登录');
     final location = response.headers.value(HttpHeaders.locationHeader);
 
     if (!response.isRedirect || location == null) {
@@ -83,11 +82,11 @@ class GrsNew {
     );
     final validateRequest = await httpClient.getUrl(validateUri).timeout(
         const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+        onTimeout: () => throw requestTimeout());
     validateRequest.followRedirects = false;
     final validateResponse = await validateRequest.close().timeout(
         const Duration(seconds: 8),
-        onTimeout: () => throw ExceptionWithMessage("请求超时"));
+        onTimeout: () => throw requestTimeout());
     final loginJson = await readResponseText(validateResponse,
         context: '研究生院 CAS 校验接口', expectJson: true);
     final loginInfo = decodeJsonMap(loginJson,
@@ -128,55 +127,85 @@ class GrsNew {
     required String context,
     bool post = false,
   }) async {
+    var relogged = false;
+
+    Future<HttpClientRequest> requestFactory() async {
+      final request = post
+          ? await httpClient.postUrl(uri).timeout(
+                const Duration(seconds: 8),
+                onTimeout: () => throw requestTimeout(),
+              )
+          : await httpClient.getUrl(uri).timeout(
+                const Duration(seconds: 8),
+                onTimeout: () => throw requestTimeout(),
+              );
+      request.followRedirects = false;
+      return request;
+    }
+
     for (var attempt = 0; attempt < 2; attempt++) {
       String? requestToken;
       try {
-        if (_token == null) await _relogin(httpClient);
+        if (_token == null) {
+          await _relogin(httpClient);
+          relogged = true;
+        }
         requestToken = _token!;
-        final request = post
-            ? await httpClient.postUrl(uri).timeout(const Duration(seconds: 8),
-                onTimeout: () => throw ExceptionWithMessage("请求超时"))
-            : await httpClient.getUrl(uri).timeout(const Duration(seconds: 8),
-                onTimeout: () => throw ExceptionWithMessage("请求超时"));
-        request.followRedirects = false;
+        final request = await requestFactory();
         request.headers.add("X-Access-Token", requestToken);
         final response = await request.close().timeout(
             const Duration(seconds: 8),
-            onTimeout: () => throw ExceptionWithMessage("请求超时"));
-        final body = await readResponseText(response,
-            context: context, expectJson: true);
+            onTimeout: () => throw requestTimeout());
+        final body = await readResponseText(
+          response,
+          context: context,
+          expectJson: true,
+          requestUri: uri,
+          relogged: relogged,
+          retried: attempt > 0,
+        );
         final result = decodeJsonMap(body,
             context: '$context；HTTP ${response.statusCode}');
         if (jsonIndicatesAuthenticationFailure(result)) {
-          throw AuthenticationExpiredException(
-              '$context：token 已过期；HTTP ${response.statusCode}'
-              '；响应摘要：${responseSummary(body)}');
+          throw LoginExpiredException(
+            '$context：token 已过期',
+            details: [
+              '接口：$context',
+              '请求：${sanitizedRequestUri(uri)}',
+              'HTTP 状态码：${response.statusCode}',
+              '执行过重新登录：${relogged ? '是' : '否'}',
+              '执行过重试：${attempt > 0 ? '是' : '否'}',
+              '响应摘要：${responseSummary(body)}',
+            ].join('\n'),
+          );
         }
         return result;
       } on AuthenticationExpiredException catch (error) {
         // 其它并发请求可能已完成重登；直接用新 token 重试，避免再次登录
         // 使刚签发的 token 失效。
-        if (_token != null &&
-            _token != requestToken &&
-            attempt == 0) {
+        if (_token != null && _token != requestToken && attempt == 0) {
           continue;
         }
         _token = null;
-        if (attempt == 0) {
+        if (attempt == 0 && !relogged) {
           await _relogin(httpClient);
+          relogged = true;
           continue;
         }
-        throw AuthenticationExpiredException('$context：自动重登后仍失败；$error');
+        throw LoginExpiredException(
+          '$context：自动重登失败，请手动重新登录',
+          details: detailedErrorText(error),
+          originalError: error,
+        );
       }
     }
-    throw AuthenticationExpiredException('$context：登录态已失效');
+    throw LoginExpiredException('$context：登录态已失效，请手动重新登录');
   }
 
   void _requireSuccess(Map<String, dynamic> result, String context) {
     if (asBool(result["success"]) == true) return;
-    final message = asString(result["message"]) ??
-        asString(result["msg"]) ??
-        '服务端未提供错误信息';
+    final message =
+        asString(result["message"]) ?? asString(result["msg"]) ?? '服务端未提供错误信息';
     throw ExceptionWithMessage(
         '$context：接口返回失败；code=${asString(result["code"]) ?? '<缺失>'}'
         '；message=$message；响应摘要：${responseSummary(jsonEncode(result))}');
@@ -185,18 +214,22 @@ class GrsNew {
   Future<Tuple<Exception?, Iterable<Grade>>> getGrade(
       HttpClient httpClient) async {
     const context = '研究生院成绩接口（请求类型 成绩）';
+    final uri = Uri.parse(
+        "https://yjsy.zju.edu.cn/dataapi/py/pyXsxk/queryXsxkByXnxqXs");
     try {
       final result = await _fetchApi(
         httpClient,
-        Uri.parse(
-            "https://yjsy.zju.edu.cn/dataapi/py/pyXsxk/queryXsxkByXnxqXs"),
+        uri,
         context: context,
         post: true,
       );
       _requireSuccess(result, context);
       return Tuple(null, _parseGrades(result, context));
-    } catch (error) {
-      return Tuple(exceptionFrom(error, context: context), <Grade>[]);
+    } on Object catch (error, stackTrace) {
+      return Tuple(
+          exceptionFrom(error,
+              context: context, requestUri: uri, stackTrace: stackTrace),
+          <Grade>[]);
     }
   }
 
@@ -232,8 +265,11 @@ class GrsNew {
               comments.contains("录播") ||
               comments.contains("直播");
         grades.add(newGrade);
-      } catch (error) {
-        debugPrint('$context：跳过第 ${index + 1} 条成绩：$error');
+      } on Object catch (error, stackTrace) {
+        if (kDebugMode) {
+          debugPrint(
+              '$context：跳过第 ${index + 1} 条成绩：${error.runtimeType}: $error\n$stackTrace');
+        }
       }
     }
     return grades;
@@ -241,20 +277,21 @@ class GrsNew {
 
   Future<Tuple<Exception?, Iterable<ExamDto>>> getExamsDto(
       HttpClient httpClient, int year, int semester) async {
-    final context =
-        '研究生院考试接口（学年 $year，学期 $semester，请求类型 考试）';
+    final context = '研究生院考试接口（学年 $year，学期 $semester，请求类型 考试）';
+    final uri =
+        Uri.parse("https://yjsy.zju.edu.cn/dataapi/py/pyKsxsxx/queryPageByXs"
+            "?dm=py_grks&mode=2&role=1&column=createTime&order=desc"
+            "&queryMode=1&field=id,,kcbh,kcmc,rq,ksTime,xn,xq_dictText,ksdd,zwh"
+            "&pageNo=1&pageSize=100&xn=$year&xq=$semester");
     try {
-      final uri = Uri.parse(
-          "https://yjsy.zju.edu.cn/dataapi/py/pyKsxsxx/queryPageByXs"
-          "?dm=py_grks&mode=2&role=1&column=createTime&order=desc"
-          "&queryMode=1&field=id,,kcbh,kcmc,rq,ksTime,xn,xq_dictText,ksdd,zwh"
-          "&pageNo=1&pageSize=100&xn=$year&xq=$semester");
-      final result =
-          await _fetchApi(httpClient, uri, context: context);
+      final result = await _fetchApi(httpClient, uri, context: context);
       _requireSuccess(result, context);
       return Tuple(null, _parseExams(result, year, context));
-    } catch (error) {
-      return Tuple(exceptionFrom(error, context: context), <ExamDto>[]);
+    } on Object catch (error, stackTrace) {
+      return Tuple(
+          exceptionFrom(error,
+              context: context, requestUri: uri, stackTrace: stackTrace),
+          <ExamDto>[]);
     }
   }
 
@@ -309,8 +346,11 @@ class GrsNew {
           ..credit = 0.0
           ..exams.add(exam);
         exams.add(dto);
-      } catch (error) {
-        debugPrint('$context：跳过第 ${index + 1} 条考试：$error');
+      } on Object catch (error, stackTrace) {
+        if (kDebugMode) {
+          debugPrint(
+              '$context：跳过第 ${index + 1} 条考试：${error.runtimeType}: $error\n$stackTrace');
+        }
       }
     }
     return exams;
@@ -326,8 +366,7 @@ class GrsNew {
 
   (int, int) _parseClock(Object? value, {required int fallback}) {
     final text = asString(value) ?? '';
-    final clockMatch =
-        RegExp(r'(\d{1,2})\s*:\s*(\d{2})').firstMatch(text);
+    final clockMatch = RegExp(r'(\d{1,2})\s*:\s*(\d{2})').firstMatch(text);
     if (clockMatch != null) {
       final hour = int.tryParse(clockMatch.group(1) ?? '');
       final minute = int.tryParse(clockMatch.group(2) ?? '');
@@ -359,14 +398,12 @@ class GrsNew {
       }
     }
 
-    final semesterName =
-        (semester == 11 || semester == 15) ? "春夏学期" : "秋冬学期";
+    final semesterName = (semester == 11 || semester == 15) ? "春夏学期" : "秋冬学期";
     await Future.wait(sessionsByCourse.entries.map((entry) async {
       final courseSessions = entry.value;
       final teacherId = courseSessions.first.teacherId;
       if (teacherId == null || teacherId.isEmpty) return;
-      final context =
-          '研究生院课程详情接口（学年 $year，学期 $semester，课程 ${entry.key}）';
+      final context = '研究生院课程详情接口（学年 $year，学期 $semester，课程 ${entry.key}）';
       try {
         final uri = Uri.https(
           'yjsy.zju.edu.cn',
@@ -379,12 +416,14 @@ class GrsNew {
             'zjjsJzgId': teacherId,
           },
         );
-        final result =
-            await _fetchApi(httpClient, uri, context: context);
+        final result = await _fetchApi(httpClient, uri, context: context);
         _requireSuccess(result, context);
         _applyCourseDetails(result, courseSessions, context);
-      } catch (error) {
-        debugPrint('$context：保留课表中的原始字段：$error');
+      } on Object catch (error, stackTrace) {
+        if (kDebugMode) {
+          debugPrint(
+              '$context：保留课表中的原始字段：${error.runtimeType}: $error\n$stackTrace');
+        }
       }
     }));
   }
@@ -416,20 +455,21 @@ class GrsNew {
 
   Future<Tuple<Exception?, Iterable<Session>>> getTimetable(
       HttpClient httpClient, int year, int semester) async {
-    final context =
-        '研究生院课表接口（学年 $year，学期 $semester，请求类型 课表）';
+    final context = '研究生院课表接口（学年 $year，学期 $semester，请求类型 课表）';
+    final uri = Uri.parse(
+        "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryXskbByLoginUser"
+        "?xn=$year&pkxq=$semester");
     try {
-      final uri = Uri.parse(
-          "https://yjsy.zju.edu.cn/dataapi/py/pyKcbj/queryXskbByLoginUser"
-          "?xn=$year&pkxq=$semester");
-      final result =
-          await _fetchApi(httpClient, uri, context: context);
+      final result = await _fetchApi(httpClient, uri, context: context);
       _requireSuccess(result, context);
       final sessions = _parseTimetable(result, semester, context);
       await _fetchCourseDetails(httpClient, year, semester, sessions);
       return Tuple(null, sessions);
-    } catch (error) {
-      return Tuple(exceptionFrom(error, context: context), <Session>[]);
+    } on Object catch (error, stackTrace) {
+      return Tuple(
+          exceptionFrom(error,
+              context: context, requestUri: uri, stackTrace: stackTrace),
+          <Session>[]);
     }
   }
 
@@ -448,8 +488,7 @@ class GrsNew {
       final sessionsThisDay = <String, Session>{};
       for (var period = 1; period <= 15; period++) {
         final wrapper = asStringMap(classesThisDay["$period"]);
-        final classes =
-            asDynamicList(wrapper?["pyKcbjSjddVOList"]) ?? const [];
+        final classes = asDynamicList(wrapper?["pyKcbjSjddVOList"]) ?? const [];
         for (var index = 0; index < classes.length; index++) {
           final rawClass = asStringMap(classes[index]);
           if (rawClass == null) continue;
@@ -506,9 +545,11 @@ class GrsNew {
               }
             }
             sessionsThisDay[classId] = session;
-          } catch (error) {
-            debugPrint(
-                '$context：跳过星期 $day 第 $period 节的第 ${index + 1} 条课程：$error');
+          } on Object catch (error, stackTrace) {
+            if (kDebugMode) {
+              debugPrint('$context：跳过星期 $day 第 $period 节的第 ${index + 1} 条课程：'
+                  '${error.runtimeType}: $error\n$stackTrace');
+            }
           }
         }
       }

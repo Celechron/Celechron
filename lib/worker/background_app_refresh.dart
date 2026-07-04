@@ -1,6 +1,9 @@
 import 'dart:convert';
 
+import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/model/scholar.dart';
+import 'package:celechron/utils/json_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -96,13 +99,15 @@ Future<void> refreshScholar() async {
       key: 'notifiedDdlIds', iOptions: secureStorageIOSOptions);
 
   try {
-    var error = await scholar.login();
-    if (error.any((e) => e != null)) return;
-    error = await scholar.refresh();
-    if (error.any((e) => e != null)) return;
+    final loginErrors = await scholar.login();
+    if (loginErrors.isNotEmpty && loginErrors.first != null) return;
+    final refreshErrors = await scholar.refresh();
+    bool failed(String interfaceName) => refreshErrors
+        .whereType<String>()
+        .any((error) => shortErrorText(error).contains(interfaceName));
 
     // 成绩变动通知
-    if (pushOnGradeChange != 'false') {
+    if (pushOnGradeChange != 'false' && !failed('成绩')) {
       if (pushOnGradeChangeFuse == null) {
         await flutterLocalNotificationsPlugin.show(
             0,
@@ -129,10 +134,14 @@ Future<void> refreshScholar() async {
     }
 
     // DDL 截止提醒
-    if (pushOnDdlReminder != 'false') {
+    if (pushOnDdlReminder != 'false' && !failed('作业')) {
       Set<String> notifiedDdlIds = {};
       if (notifiedDdlIdsStr != null && notifiedDdlIdsStr.isNotEmpty) {
-        notifiedDdlIds = Set<String>.from(jsonDecode(notifiedDdlIdsStr));
+        final decoded = jsonDecode(notifiedDdlIdsStr);
+        notifiedDdlIds = (asDynamicList(decoded) ?? const [])
+            .map(asString)
+            .whereType<String>()
+            .toSet();
       }
 
       var now = DateTime.now();
@@ -171,7 +180,10 @@ Future<void> refreshScholar() async {
           value: jsonEncode(notifiedDdlIds.toList()),
           iOptions: secureStorageIOSOptions);
     }
-  } catch (e) {
+  } on Object catch (error, stackTrace) {
+    if (kDebugMode) {
+      debugPrint('后台学业刷新失败：${error.runtimeType}: $error\n$stackTrace');
+    }
     return;
   }
 }

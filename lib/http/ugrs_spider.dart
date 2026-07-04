@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:celechron/http/zjuServices/courses.dart';
@@ -27,16 +28,16 @@ class UgrsSpider implements Spider {
   late Zdbk _zdbk;
   late GrsNew _grsNew;
   late TimeConfigService _timeConfigService;
-  Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
   bool fetchGrs = false;
   Map<String, double>? _practiceScores;
   bool _isPracticeScoresGet = false;
 
   Future<List<String?>>? _reloginFuture;
+  int _loginGeneration = 0;
 
   UgrsSpider(String username, String password) {
-    _initHttpClient(); // 初始化客户端移到单独方法
+    _httpClient = _createHttpClient();
     _courses = Courses();
     _zdbk = Zdbk();
     _grsNew = GrsNew();
@@ -46,12 +47,13 @@ class UgrsSpider implements Spider {
   }
 
   // 初始化或重置 HttpClient
-  void _initHttpClient() {
-    _httpClient = HttpClient();
-    _httpClient.userAgent =
+  HttpClient _createHttpClient() {
+    final client = HttpClient();
+    client.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     // 强制不保存 Cookies，完全由 Zdbk 手动管理，避免冲突
     // 同时也避免重定向时 HttpClient 自动携带旧 Cookie
+    return client;
   }
 
   @override
@@ -78,54 +80,64 @@ class UgrsSpider implements Spider {
 
   Future<List<String?>> _doLogin() async {
     fetchGrs = false;
-    // 【关键修改】登录前先销毁旧的 HttpClient，防止旧 Cookie 或死连接干扰
-    try {
-      _httpClient.close(force: true);
-    } catch (_) {}
-    _initHttpClient(); // 创建全新的客户端
+    final previousClient = _httpClient;
+    final candidateClient = _createHttpClient();
 
     var loginErrorMessages = <String?>[null];
-    _iPlanetDirectoryPro =
-        await ZjuAm.getSsoCookie(_httpClient, _username, _password)
+    final candidateSsoCookie =
+        await ZjuAm.getSsoCookie(candidateClient, _username, _password)
             .timeout(const Duration(seconds: 8))
-            .catchError((e) {
-      loginErrorMessages[0] = "无法登录统一身份认证，$e";
+            .catchError((Object error, StackTrace stackTrace) {
+      loginErrorMessages[0] = exceptionFrom(
+        error,
+        context: "无法登录统一身份认证",
+        stackTrace: stackTrace,
+      ).toString();
       return null;
     });
-    if (_iPlanetDirectoryPro == null) return loginErrorMessages;
-    Future<String?> captureLogin(
-        Future<dynamic> future, String serviceName,
+    if (candidateSsoCookie == null) {
+      candidateClient.close(force: true);
+      return loginErrorMessages;
+    }
+    Future<String?> captureLogin(Future<dynamic> future, String serviceName,
         {void Function()? onSuccess, bool ignoreError = false}) async {
       try {
         await future.timeout(const Duration(seconds: 8));
         onSuccess?.call();
         return null;
-      } catch (error) {
-        return ignoreError ? null : "无法登录$serviceName，$error";
+      } on Object catch (error, stackTrace) {
+        return ignoreError
+            ? null
+            : exceptionFrom(
+                error,
+                context: "无法登录$serviceName",
+                stackTrace: stackTrace,
+              ).toString();
       }
     }
 
     loginErrorMessages.addAll(await Future.wait<String?>([
-      captureLogin(_courses.login(_httpClient, _iPlanetDirectoryPro), "学在浙大"),
-      captureLogin(_zdbk.login(_httpClient, _iPlanetDirectoryPro), "教务网"),
-      captureLogin(
-          _grsNew.login(_httpClient, _iPlanetDirectoryPro), "研究生院网",
+      captureLogin(_courses.login(candidateClient, candidateSsoCookie), "学在浙大"),
+      captureLogin(_zdbk.login(candidateClient, candidateSsoCookie), "教务网"),
+      captureLogin(_grsNew.login(candidateClient, candidateSsoCookie), "研究生院网",
           onSuccess: () {
-            fetchGrs = true;
-          },
-          ignoreError: true),
+        fetchGrs = true;
+      }, ignoreError: true),
     ]).then((value) {
       if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
       return value;
     }));
+    _httpClient = candidateClient;
+    _loginGeneration++;
+    previousClient.close();
     return loginErrorMessages;
   }
 
   @override
   void logout() {
+    unawaited(ZjuAm.clearCachedSsoCookie(_username));
     _username = "";
     _password = "";
-    _iPlanetDirectoryPro = null;
     _zdbk.logout();
     _grsNew.logout();
     _courses.logout();
@@ -137,12 +149,13 @@ class UgrsSpider implements Spider {
   bool get isPracticeScoresGet => _isPracticeScoresGet;
 
   // 【终极修改】自带最大重试次数的循环重试机制，并正确拦截底层私吞的错误
-  Future<T> _fetchWithRetry<T>(Future<T> Function() operation,
-      {int maxRetries = 2}) async {
+  Future<T> _fetchWithRetry<T>(Future<T> Function() requestFactory,
+      {int maxRetries = 1}) async {
     int attempts = 0;
     while (true) {
+      final requestLoginGeneration = _loginGeneration;
       try {
-        var result = await operation(); // 尝试执行请求
+        var result = await requestFactory(); // 每次尝试都重新创建底层请求
 
         // 【修正】：将判断和抛出异常分开，防止抛出的异常被安全检查的 catch 吃掉
         bool hasHiddenError = false;
@@ -176,39 +189,56 @@ class UgrsSpider implements Spider {
         }
 
         return result; // 如果没有错误，正常返回
-      } catch (e) {
+      } on Object catch (error, stackTrace) {
         attempts++;
-        String errStr = e.toString().toLowerCase(); // 转小写方便匹配
+        String errStr = error.toString().toLowerCase(); // 转小写方便匹配
 
-        final authenticationError = e is AuthenticationExpiredException ||
-            e is SessionExpiredException ||
-            errStr.contains("未登录") ||
-            errStr.contains("登录态已失效") ||
-            errStr.contains("会话已过期") ||
-            errStr.contains("token 已过期") ||
-            errStr.contains("wisportalid无效");
+        final alreadyRelogged =
+            errStr.contains("执行过重新登录：是") || errStr.contains("手动重新登录");
+        final authenticationError = !alreadyRelogged &&
+            (error is AuthenticationExpiredException ||
+                error is SessionExpiredException ||
+                errStr.contains("未登录") ||
+                errStr.contains("登录态已失效") ||
+                errStr.contains("会话已过期") ||
+                errStr.contains("token 已过期") ||
+                errStr.contains("wisportalid无效"));
         final transientError = errStr.contains("connection closed") ||
             errStr.contains("timeout") ||
             errStr.contains("超时") ||
             errStr.contains("httpexception") ||
             errStr.contains("网络错误") ||
             errStr.contains("socketexception");
-        if (attempts <= maxRetries && (authenticationError || transientError)) {
-          if (authenticationError) {
+        if (attempts <= maxRetries && authenticationError) {
+          if (_loginGeneration == requestLoginGeneration) {
             final loginErrors = await login();
-            if (loginErrors.any((error) => error != null)) {
-              throw ExceptionWithMessage(
-                  '自动重新登录失败：${loginErrors.whereType<String>().join('；')}');
-            }
+            if (loginErrors.any((error) => error != null)) rethrow;
           }
+          await Future.delayed(const Duration(milliseconds: 300));
+          continue;
+        }
+        if (attempts <= maxRetries && transientError) {
           await Future.delayed(const Duration(milliseconds: 300));
           continue; // 继续下一次尝试
         }
-
-        // 如果重试次数耗尽，或者是不认识的致命错误，才真正报错
+        if (kDebugMode) {
+          debugPrint('刷新请求失败：${error.runtimeType}: $error\n$stackTrace');
+        }
         rethrow;
       }
     }
+  }
+
+  String _describeRefreshFailure(
+    Object error,
+    StackTrace stackTrace, {
+    String? source,
+  }) {
+    if (kDebugMode) {
+      debugPrint(
+          '${source ?? '刷新任务'}失败：${error.runtimeType}: ${redactSensitive(error.toString())}\n$stackTrace');
+    }
+    return source == null ? error.toString() : '$source $error';
   }
 
   @override
@@ -241,14 +271,8 @@ class UgrsSpider implements Spider {
         _username.length >= 3 ? _username.substring(1, 3) : '';
     final parsedEnrollmentYear = int.tryParse(enrollmentDigits);
     if (parsedEnrollmentYear == null) {
-      return Tuple7(
-          loginErrorMessages,
-          <String?>['无法解析学号中的入学年份：$_username'],
-          outSemesters,
-          outGrades,
-          outMajorGrade,
-          outSpecialDates,
-          outTodos);
+      return Tuple7(loginErrorMessages, <String?>['无法解析学号中的入学年份：$_username'],
+          outSemesters, outGrades, outMajorGrade, outSpecialDates, outTodos);
     }
     var yearEnroll = parsedEnrollmentYear + 2000;
     var yearGraduate = yearEnroll + 7;
@@ -270,8 +294,9 @@ class UgrsSpider implements Spider {
     while (yearEnroll <= yearNow && yearEnroll <= yearGraduate) {
       var yearStr = '$yearEnroll-${yearEnroll + 1}';
 
-      semesterConfigFetches.add(
-          _timeConfigService.getConfig(_httpClient, '$yearStr-1').then((value) {
+      semesterConfigFetches.add(_timeConfigService
+          .getConfig(_httpClient, '$yearStr-1')
+          .then((value) {
         if (value.item2 != null) {
           applyCalendarConfig(
             value.item2!,
@@ -281,10 +306,12 @@ class UgrsSpider implements Spider {
           );
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((Object error, StackTrace stackTrace) =>
+              _describeRefreshFailure(error, stackTrace)));
 
-      semesterConfigFetches.add(
-          _timeConfigService.getConfig(_httpClient, '$yearStr-2').then((value) {
+      semesterConfigFetches.add(_timeConfigService
+          .getConfig(_httpClient, '$yearStr-2')
+          .then((value) {
         if (value.item2 != null) {
           applyCalendarConfig(
             value.item2!,
@@ -294,7 +321,8 @@ class UgrsSpider implements Spider {
           );
         }
         return value.item1?.toString();
-      }).catchError((e) => e.toString()));
+      }).catchError((Object error, StackTrace stackTrace) =>
+              _describeRefreshFailure(error, stackTrace)));
 
       Future<String?> handleTimetable(season) async {
         if (cancelTimetableFetch) return Future.value("已取消");
@@ -318,8 +346,9 @@ class UgrsSpider implements Spider {
             cancelTimetableFetch = true;
           }
           return Future.value(value.item1?.toString());
-        } catch (e) {
-          return Future.value(e.toString());
+        } on Object catch (error, stackTrace) {
+          return Future.value(
+              _describeRefreshFailure(error, stackTrace, source: '课表'));
         }
       }
 
@@ -343,7 +372,8 @@ class UgrsSpider implements Spider {
                 .addSession(e, '$yearStr-1', true);
           }
           return value.item1?.toString();
-        }).catchError((e) => e.toString()));
+        }).catchError((Object error, StackTrace stackTrace) =>
+                _describeRefreshFailure(error, stackTrace)));
         timetableFetches.add(_fetchWithRetry(
                 () => _grsNew.getTimetable(_httpClient, yearEnroll, 14))
             .then((value) {
@@ -352,7 +382,8 @@ class UgrsSpider implements Spider {
                 .addSession(e, '$yearStr-1', true);
           }
           return value.item1?.toString();
-        }).catchError((e) => e.toString()));
+        }).catchError((Object error, StackTrace stackTrace) =>
+                _describeRefreshFailure(error, stackTrace)));
         timetableFetches.add(_fetchWithRetry(
                 () => _grsNew.getTimetable(_httpClient, yearEnroll, 11))
             .then((value) {
@@ -361,7 +392,8 @@ class UgrsSpider implements Spider {
                 .addSession(e, '$yearStr-2', true);
           }
           return value.item1?.toString();
-        }).catchError((e) => e.toString()));
+        }).catchError((Object error, StackTrace stackTrace) =>
+                _describeRefreshFailure(error, stackTrace)));
         timetableFetches.add(_fetchWithRetry(
                 () => _grsNew.getTimetable(_httpClient, yearEnroll, 12))
             .then((value) {
@@ -370,7 +402,8 @@ class UgrsSpider implements Spider {
                 .addSession(e, '$yearStr-2', true);
           }
           return value.item1?.toString();
-        }).catchError((e) => e.toString()));
+        }).catchError((Object error, StackTrace stackTrace) =>
+                _describeRefreshFailure(error, stackTrace)));
         // 研究生课的【考试】
         timetableFetches.add(_fetchWithRetry(
                 () => _grsNew.getExamsDto(_httpClient, yearEnroll, 12))
@@ -380,7 +413,8 @@ class UgrsSpider implements Spider {
                 .addExamWithSemester(e, '$yearStr-1');
           }
           return value.item1?.toString();
-        }).catchError((e) => e.toString()));
+        }).catchError((Object error, StackTrace stackTrace) =>
+                _describeRefreshFailure(error, stackTrace)));
         timetableFetches.add(_fetchWithRetry(
                 () => _grsNew.getExamsDto(_httpClient, yearEnroll, 11))
             .then((value) {
@@ -389,7 +423,8 @@ class UgrsSpider implements Spider {
                 .addExamWithSemester(e, '$yearStr-2');
           }
           return value.item1?.toString();
-        }).catchError((e) => e.toString()));
+        }).catchError((Object error, StackTrace stackTrace) =>
+                _describeRefreshFailure(error, stackTrace)));
       }
       yearEnroll++;
     }
@@ -399,8 +434,8 @@ class UgrsSpider implements Spider {
     fetches.add(Future.wait(timetableFetches)
         .then((value) => value.firstWhereOrNull((e) => e != null)));
 
-    fetches.add(
-        _fetchWithRetry(() => _zdbk.getExamsDto(_httpClient)).then((value) {
+    fetches.add(_fetchWithRetry(() => _zdbk.getExamsDto(_httpClient))
+        .then((value) {
       for (var e in value.item2) {
         try {
           final index = semesterIndexMap[e.semesterId];
@@ -408,15 +443,19 @@ class UgrsSpider implements Spider {
             throw FormatException('考试学期不在刷新范围：${e.semesterId}');
           }
           outSemesters[index].addExam(e);
-        } catch (error) {
-          debugPrint('跳过无法归入学期的考试 ${e.id}：$error');
+        } on Object catch (error, stackTrace) {
+          if (kDebugMode) {
+            debugPrint(
+                '跳过无法归入学期的考试 ${e.id}：${error.runtimeType}: $error\n$stackTrace');
+          }
         }
       }
       return value.item1?.toString();
-    }).catchError((e) => e.toString()));
+    }).catchError((Object error, StackTrace stackTrace) =>
+            _describeRefreshFailure(error, stackTrace)));
 
-    fetches.add(
-        _fetchWithRetry(() => _zdbk.getTranscript(_httpClient)).then((value) {
+    fetches.add(_fetchWithRetry(() => _zdbk.getTranscript(_httpClient))
+        .then((value) {
       for (var e in value.item2) {
         try {
           final index = semesterIndexMap[e.semesterId];
@@ -425,23 +464,26 @@ class UgrsSpider implements Spider {
           }
           outSemesters[index].addGrade(e);
           outGrades.add(e);
-        } catch (error) {
-          debugPrint('跳过无法归入学期的成绩 ${e.id}：$error');
+        } on Object catch (error, stackTrace) {
+          if (kDebugMode) {
+            debugPrint(
+                '跳过无法归入学期的成绩 ${e.id}：${error.runtimeType}: $error\n$stackTrace');
+          }
         }
       }
       for (var e in outSemesters) {
         e.calculateGPA();
       }
       return value.item1?.toString();
-    }).catchError((e) => e.toString()));
+    }).catchError((Object error, StackTrace stackTrace) =>
+            _describeRefreshFailure(error, stackTrace)));
 
-    fetches.add(
-        _fetchWithRetry(() => _zdbk.getMajorGrade(_httpClient)).then((value) {
+    fetches.add(_fetchWithRetry(() => _zdbk.getMajorGrade(_httpClient))
+        .then((value) {
       outMajorGrade.clear();
       outMajorGrade.addAll(value.item2.item1);
 
-      final payload = decodeJsonMap(value.item2.item2,
-          context: '教务网主修成绩响应');
+      final payload = decodeJsonMap(value.item2.item2, context: '教务网主修成绩响应');
       majorCourseIds = (asDynamicList(payload['items']) ?? const [])
           .map(asStringMap)
           .whereType<Map<String, dynamic>>()
@@ -450,15 +492,17 @@ class UgrsSpider implements Spider {
           .toSet();
 
       return value.item1?.toString();
-    }).catchError((e) => e.toString()));
+    }).catchError((Object error, StackTrace stackTrace) =>
+            _describeRefreshFailure(error, stackTrace)));
 
     // 作业（学在浙大）- 加上重试包装
-    fetches
-        .add(_fetchWithRetry(() => _courses.getTodo(_httpClient)).then((value) {
+    fetches.add(_fetchWithRetry(() => _courses.getTodo(_httpClient))
+        .then((value) {
       outTodos.clear();
       outTodos.addAll(value.item2);
       return value.item1?.toString();
-    }).catchError((e) => e.toString()));
+    }).catchError((Object error, StackTrace stackTrace) =>
+            _describeRefreshFailure(error, stackTrace)));
 
     fetches.add(
         _fetchWithRetry(() => _zdbk.getPracticeScores(_httpClient, _username))
@@ -471,9 +515,9 @@ class UgrsSpider implements Spider {
         _isPracticeScoresGet = false;
       }
       return value.item1?.toString();
-    }).catchError((e) {
+    }).catchError((Object error, StackTrace stackTrace) {
       _isPracticeScoresGet = false;
-      return e.toString();
+      return _describeRefreshFailure(error, stackTrace);
     }));
 
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
@@ -546,8 +590,8 @@ class MockSpider extends UgrsSpider {
           Semester.fromJson(jsonDecode(
               '{"name":"2024-2025春夏","courses":{"(2024-2025-2)-211G0280-0099160-1":{"id":"(2024-2025-2)-211G0280-0099160-1","name":"C程序设计基础","confirmed":true,"credit":3.0,"grade":{"id":"(2024-2025-2)-211G0280-0099160-1","name":"C程序设计基础","credit":3.0,"original":"95","fivePoint":5.0,"fourPoint":4.3,"fourPointLegacy":4.0,"hundredPoint":95,"gpaIncluded":true,"creditIncluded":true},"teacher":"纪守领","sessions":[{"id":"(2024-2025-2)-211G0280-0099160-1","name":"C程序设计基础","teacher":"纪守领","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":false,"day":4,"time":[2,3],"location":"紫金港东1A-401(录播)","grsClass":null},{"id":"(2024-2025-2)-211G0280-0099160-1","name":"C程序设计基础","teacher":"纪守领","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":false,"evenWeek":true,"day":4,"time":[1,2,3],"location":"紫金港机房","grsClass":null}],"exams":[{"id":"(2024-2025-2)-211G0280-0099160-1","name":"C程序设计基础","type":1,"time":["2021-01-20T15:30:00.000","2021-01-20T17:30:00.000"],"location":"紫金港机房","seat":null}]},"(2024-2025-2)-051F0020-0098350-2":{"id":"(2024-2025-2)-051F0020-0098350-2","name":"大学英语Ⅲ","confirmed":true,"credit":3.0,"grade":{"id":"(2024-2025-2)-051F0020-0098350-2","name":"大学英语Ⅲ","credit":3.0,"original":"90","fivePoint":4.5,"fourPoint":4.1,"fourPointLegacy":4.0,"hundredPoint":90,"gpaIncluded":true,"creditIncluded":true},"teacher":"符亦文","sessions":[{"id":"(2024-2025-2)-051F0020-0098350-2","name":"大学英语Ⅲ","teacher":"符亦文","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":1,"time":[3,4],"location":"紫金港东6-223(网络五边菱)(录播)","grsClass":null},{"id":"(2024-2025-2)-051F0020-0098350-2","name":"大学英语Ⅲ","teacher":"符亦文","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":3,"time":[9,10],"location":"紫金港东6-223(网络五边菱)(录播)","grsClass":null}],"exams":[{"id":"(2024-2025-2)-051F0020-0098350-2","name":"大学英语Ⅲ","type":1,"time":["2021-01-21T10:30:00.000","2021-01-21T12:30:00.000"],"location":"紫金港西2-105(录播)","seat":"85"}]},"(2024-2025-2)-551E0020-0009771-1":{"id":"(2024-2025-2)-551E0020-0009771-1","name":"中国近现代史纲要","confirmed":true,"credit":3.0,"grade":{"id":"(2024-2025-2)-551E0020-0009771-1","name":"中国近现代史纲要","credit":3.0,"original":"92","fivePoint":4.8,"fourPoint":4.2,"fourPointLegacy":4.0,"hundredPoint":92,"gpaIncluded":true,"creditIncluded":true},"teacher":"甘均先","sessions":[{"id":"(2024-2025-2)-551E0020-0009771-1","name":"中国近现代史纲要","teacher":"甘均先","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":1,"time":[6,7,8],"location":"紫金港东1B-302(录播)","grsClass":null}],"exams":[{"id":"(2024-2025-2)-551E0020-0009771-1","name":"中国近现代史纲要","type":1,"time":["2021-01-21T14:00:00.000","2021-01-21T16:00:00.000"],"location":"紫金港西1-211(录播)","seat":"81"}]},"(2024-2025-2)-821T0150-0082403-1":{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","confirmed":true,"credit":5.0,"grade":{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","credit":5.0,"original":"83","fivePoint":3.9,"fourPoint":3.9,"fourPointLegacy":3.9,"hundredPoint":83,"gpaIncluded":true,"creditIncluded":true},"teacher":"金显","sessions":[{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","teacher":"金显","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":1,"time":[9],"location":"紫金港东2-201(录播.4)","grsClass":null},{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","teacher":"金显","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":1,"time":[1,2],"location":"紫金港东2-201(录播.4)","grsClass":null},{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","teacher":"金显","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":3,"time":[3,4,5],"location":"紫金港东2-201(录播.4)","grsClass":null}],"exams":[{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","type":0,"time":["2020-11-16T14:00:00.000","2020-11-16T16:00:00.000"],"location":"紫金港西2-304(录播研)","seat":"48"},{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","type":1,"time":["2021-01-22T08:00:00.000","2021-01-22T10:00:00.000"],"location":"紫金港西2-304(录播研)","seat":"69"}]},"(2024-2025-2)-081C0130-0094011-2":{"id":"(2024-2025-2)-081C0130-0094011-2","name":"工程图学","confirmed":true,"credit":2.5,"grade":{"id":"(2024-2025-2)-081C0130-0094011-2","name":"工程图学","credit":2.5,"original":"85","fivePoint":3.9,"fourPoint":3.9,"fourPointLegacy":3.9,"hundredPoint":85,"gpaIncluded":true,"creditIncluded":true},"teacher":"费少梅","sessions":[{"id":"(2024-2025-2)-081C0130-0094011-2","name":"工程图学","teacher":"费少梅","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":4,"time":[3,4,5],"location":"紫金港东1B-214(录播.4)","grsClass":null}],"exams":[{"id":"(2024-2025-2)-081C0130-0094011-2","name":"工程图学","type":1,"time":["2021-01-25T10:30:00.000","2021-01-25T12:30:00.000"],"location":"紫金港西1-317(录播)*","seat":"26"}]},"(2024-2025-2)-551E0010-0014323-4":{"id":"(2024-2025-2)-551E0010-0014323-4","name":"思想道德修养与法律基础","confirmed":true,"credit":3.0,"grade":{"id":"(2024-2025-2)-551E0010-0014323-4","name":"思想道德修养与法律基础","credit":3.0,"original":"95","fivePoint":5.0,"fourPoint":4.3,"fourPointLegacy":4.0,"hundredPoint":95,"gpaIncluded":true,"creditIncluded":true},"teacher":"姚明明","sessions":[{"id":"(2024-2025-2)-551E0010-0014323-4","name":"思想道德修养与法律基础","teacher":"姚明明","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":3,"time":[1,2],"location":"紫金港东1B-302(录播)","grsClass":null}],"exams":[{"id":"(2024-2025-2)-551E0010-0014323-4","name":"思想道德修养与法律基础","type":1,"time":["2021-01-25T14:00:00.000","2021-01-25T16:00:00.000"],"location":"紫金港东1A-505(录播研)","seat":"72"}]},"(2024-2025-2)-821T0190-0086207-1":{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","confirmed":true,"credit":3.5,"grade":{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","credit":3.5,"original":"90","fivePoint":4.5,"fourPoint":4.1,"fourPointLegacy":4.0,"hundredPoint":90,"gpaIncluded":true,"creditIncluded":true},"teacher":"汪国军","sessions":[{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","teacher":"汪国军","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":2,"time":[9],"location":"紫金港东2-202(录播.4)","grsClass":null},{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","teacher":"汪国军","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":2,"time":[3,4,5],"location":"紫金港东2-202(录播.4)","grsClass":null}],"exams":[{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","type":0,"time":["2020-11-18T14:00:00.000","2020-11-18T16:00:00.000"],"location":"紫金港西2-104(录播)","seat":"58"},{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","type":1,"time":["2021-01-26T08:00:00.000","2021-01-26T10:00:00.000"],"location":"紫金港西2-104(录播)","seat":"3"}]},"(2024-2025-2)-0113N001-0086337-1":{"id":"(2024-2025-2)-0113N001-0086337-1","name":"公共经济分析导论","confirmed":true,"credit":1.5,"grade":{"id":"(2024-2025-2)-0113N001-0086337-1","name":"公共经济分析导论","credit":1.5,"original":"85","fivePoint":3.9,"fourPoint":3.9,"fourPointLegacy":3.9,"hundredPoint":85,"gpaIncluded":true,"creditIncluded":true},"teacher":"朱柏铭","sessions":[{"id":"(2024-2025-2)-0113N001-0086337-1","name":"公共经济分析导论","teacher":"朱柏铭","confirmed":true,"firstHalf":true,"secondHalf":false,"oddWeek":true,"evenWeek":true,"day":3,"time":[6,7,8],"location":"紫金港东1B-206(录播)#","grsClass":null}],"exams":[]},"(2024-2025-2)-371E0010-0008303-2":{"id":"(2024-2025-2)-371E0010-0008303-2","name":"形势与政策Ⅰ","confirmed":true,"credit":1.0,"grade":null,"teacher":"项淑芳/吴维东","sessions":[{"id":"(2024-2025-2)-371E0010-0008303-2","name":"形势与政策Ⅰ","teacher":"项淑芳/吴维东","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":false,"evenWeek":true,"day":7,"time":[11,12],"location":"紫金港东1B-210(录播.4)#","grsClass":null}],"exams":[]},"(2024-2025-2)-40103200-0087355-1":{"id":"(2024-2025-2)-40103200-0087355-1","name":"无线电测向（初级班）","confirmed":true,"credit":1.0,"grade":{"id":"(2024-2025-2)-40103200-0087355-1","name":"无线电测向（初级班）","credit":1.0,"original":"91","fivePoint":4.5,"fourPoint":4.1,"fourPointLegacy":4.0,"hundredPoint":91,"gpaIncluded":true,"creditIncluded":true},"teacher":"董育平","sessions":[{"id":"(2024-2025-2)-40103200-0087355-1","name":"无线电测向（初级班）","teacher":"董育平","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":2,"time":[6,7],"location":"紫金港田径场（东）","grsClass":null}],"exams":[]},"(2024-2025-2)-41100001-0087355-2":{"id":"(2024-2025-2)-41100001-0087355-2","name":"身体素质课","confirmed":true,"credit":0.0,"grade":null,"teacher":"董育平","sessions":[{"id":"(2024-2025-2)-41100001-0087355-2","name":"身体素质课","teacher":"董育平","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":2,"time":[10],"location":"紫金港东田径场","grsClass":null}],"exams":[]},"(2024-2025-2)-8517N001-0082046-3":{"id":"(2024-2025-2)-8517N001-0082046-3","name":"无线网络应用","confirmed":true,"credit":1.5,"grade":{"id":"(2024-2025-2)-8517N001-0082046-3","name":"无线网络应用","credit":1.5,"original":"97","fivePoint":5.0,"fourPoint":4.3,"fourPointLegacy":4.0,"hundredPoint":97,"gpaIncluded":true,"creditIncluded":true},"teacher":"金心宇/史笑兴","sessions":[{"id":"(2024-2025-2)-8517N001-0082046-3","name":"无线网络应用","teacher":"金心宇/史笑兴","confirmed":true,"firstHalf":true,"secondHalf":false,"oddWeek":true,"evenWeek":true,"day":4,"time":[9,10,11,12,13],"location":"紫金港东4-418","grsClass":null}],"exams":[]}},"exams":[{"id":"(2024-2025-2)-211G0280-0099160-1","name":"C程序设计基础","type":1,"time":["2021-01-20T15:30:00.000","2021-01-20T17:30:00.000"],"location":"紫金港机房","seat":null},{"id":"(2024-2025-2)-051F0020-0098350-2","name":"大学英语Ⅲ","type":1,"time":["2021-01-21T10:30:00.000","2021-01-21T12:30:00.000"],"location":"紫金港西2-105(录播)","seat":"85"},{"id":"(2024-2025-2)-551E0020-0009771-1","name":"中国近现代史纲要","type":1,"time":["2021-01-21T14:00:00.000","2021-01-21T16:00:00.000"],"location":"紫金港西1-211(录播)","seat":"81"},{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","type":0,"time":["2020-11-16T14:00:00.000","2020-11-16T16:00:00.000"],"location":"紫金港西2-304(录播研)","seat":"48"},{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","type":1,"time":["2021-01-22T08:00:00.000","2021-01-22T10:00:00.000"],"location":"紫金港西2-304(录播研)","seat":"69"},{"id":"(2024-2025-2)-081C0130-0094011-2","name":"工程图学","type":1,"time":["2021-01-25T10:30:00.000","2021-01-25T12:30:00.000"],"location":"紫金港西1-317(录播)*","seat":"26"},{"id":"(2024-2025-2)-551E0010-0014323-4","name":"思想道德修养与法律基础","type":1,"time":["2021-01-25T14:00:00.000","2021-01-25T16:00:00.000"],"location":"紫金港东1A-505(录播研)","seat":"72"},{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","type":0,"time":["2020-11-18T14:00:00.000","2020-11-18T16:00:00.000"],"location":"紫金港西2-104(录播)","seat":"58"},{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","type":1,"time":["2021-01-26T08:00:00.000","2021-01-26T10:00:00.000"],"location":"紫金港西2-104(录播)","seat":"3"}],"sessions":[{"id":"(2024-2025-2)-551E0020-0009771-1","name":"中国近现代史纲要","teacher":"甘均先","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":1,"time":[6,7,8],"location":"紫金港东1B-302(录播)","grsClass":null},{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","teacher":"金显","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":1,"time":[9],"location":"紫金港东2-201(录播.4)","grsClass":null},{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","teacher":"金显","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":1,"time":[1,2],"location":"紫金港东2-201(录播.4)","grsClass":null},{"id":"(2024-2025-2)-051F0020-0098350-2","name":"大学英语Ⅲ","teacher":"符亦文","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":1,"time":[3,4],"location":"紫金港东6-223(网络五边菱)(录播)","grsClass":null},{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","teacher":"汪国军","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":2,"time":[9],"location":"紫金港东2-202(录播.4)","grsClass":null},{"id":"(2024-2025-2)-41100001-0087355-2","name":"身体素质课","teacher":"董育平","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":2,"time":[10],"location":"紫金港东田径场","grsClass":null},{"id":"(2024-2025-2)-40103200-0087355-1","name":"无线电测向（初级班）","teacher":"董育平","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":2,"time":[6,7],"location":"紫金港田径场（东）","grsClass":null},{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","teacher":"汪国军","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":2,"time":[3,4,5],"location":"紫金港东2-202(录播.4)","grsClass":null},{"id":"(2024-2025-2)-0113N001-0086337-1","name":"公共经济分析导论","teacher":"朱柏铭","confirmed":true,"firstHalf":true,"secondHalf":false,"oddWeek":true,"evenWeek":true,"day":3,"time":[6,7,8],"location":"紫金港东1B-206(录播)#","grsClass":null},{"id":"(2024-2025-2)-551E0010-0014323-4","name":"思想道德修养与法律基础","teacher":"姚明明","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":3,"time":[1,2],"location":"紫金港东1B-302(录播)","grsClass":null},{"id":"(2024-2025-2)-051F0020-0098350-2","name":"大学英语Ⅲ","teacher":"符亦文","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":3,"time":[9,10],"location":"紫金港东6-223(网络五边菱)(录播)","grsClass":null},{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","teacher":"金显","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":3,"time":[3,4,5],"location":"紫金港东2-201(录播.4)","grsClass":null},{"id":"(2024-2025-2)-211G0280-0099160-1","name":"C程序设计基础","teacher":"纪守领","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":false,"day":4,"time":[2,3],"location":"紫金港东1A-401(录播)","grsClass":null},{"id":"(2024-2025-2)-8517N001-0082046-3","name":"无线网络应用","teacher":"金心宇/史笑兴","confirmed":true,"firstHalf":true,"secondHalf":false,"oddWeek":true,"evenWeek":true,"day":4,"time":[9,10,11,12,13],"location":"紫金港东4-418","grsClass":null},{"id":"(2024-2025-2)-081C0130-0094011-2","name":"工程图学","teacher":"费少梅","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":true,"evenWeek":true,"day":4,"time":[3,4,5],"location":"紫金港东1B-214(录播.4)","grsClass":null},{"id":"(2024-2025-2)-211G0280-0099160-1","name":"C程序设计基础","teacher":"纪守领","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":false,"evenWeek":true,"day":4,"time":[1,2,3],"location":"紫金港机房","grsClass":null},{"id":"(2024-2025-2)-371E0010-0008303-2","name":"形势与政策Ⅰ","teacher":"项淑芳/吴维东","confirmed":true,"firstHalf":true,"secondHalf":true,"oddWeek":false,"evenWeek":true,"day":7,"time":[11,12],"location":"紫金港东1B-210(录播.4)#","grsClass":null}],"grades":[{"id":"(2024-2025-2)-8517N001-0082046-3","name":"无线网络应用","credit":1.5,"original":"97","fivePoint":5.0,"fourPoint":4.3,"fourPointLegacy":4.0,"hundredPoint":97,"gpaIncluded":true,"creditIncluded":true},{"id":"(2024-2025-2)-551E0010-0014323-4","name":"思想道德修养与法律基础","credit":3.0,"original":"95","fivePoint":5.0,"fourPoint":4.3,"fourPointLegacy":4.0,"hundredPoint":95,"gpaIncluded":true,"creditIncluded":true},{"id":"(2024-2025-2)-211G0280-0099160-1","name":"C程序设计基础","credit":3.0,"original":"95","fivePoint":5.0,"fourPoint":4.3,"fourPointLegacy":4.0,"hundredPoint":95,"gpaIncluded":true,"creditIncluded":true},{"id":"(2024-2025-2)-551E0020-0009771-1","name":"中国近现代史纲要","credit":3.0,"original":"92","fivePoint":4.8,"fourPoint":4.2,"fourPointLegacy":4.0,"hundredPoint":92,"gpaIncluded":true,"creditIncluded":true},{"id":"(2024-2025-2)-40103200-0087355-1","name":"无线电测向（初级班）","credit":1.0,"original":"91","fivePoint":4.5,"fourPoint":4.1,"fourPointLegacy":4.0,"hundredPoint":91,"gpaIncluded":true,"creditIncluded":true},{"id":"(2024-2025-2)-821T0190-0086207-1","name":"线性代数（甲）","credit":3.5,"original":"90","fivePoint":4.5,"fourPoint":4.1,"fourPointLegacy":4.0,"hundredPoint":90,"gpaIncluded":true,"creditIncluded":true},{"id":"(2024-2025-2)-051F0020-0098350-2","name":"大学英语Ⅲ","credit":3.0,"original":"90","fivePoint":4.5,"fourPoint":4.1,"fourPointLegacy":4.0,"hundredPoint":90,"gpaIncluded":true,"creditIncluded":true},{"id":"(2024-2025-2)-081C0130-0094011-2","name":"工程图学","credit":2.5,"original":"85","fivePoint":3.9,"fourPoint":3.9,"fourPointLegacy":3.9,"hundredPoint":85,"gpaIncluded":true,"creditIncluded":true},{"id":"(2024-2025-2)-0113N001-0086337-1","name":"公共经济分析导论","credit":1.5,"original":"85","fivePoint":3.9,"fourPoint":3.9,"fourPointLegacy":3.9,"hundredPoint":85,"gpaIncluded":true,"creditIncluded":true},{"id":"(2024-2025-2)-821T0150-0082403-1","name":"微积分（甲）Ⅰ","credit":5.0,"original":"83","fivePoint":3.9,"fourPoint":3.9,"fourPointLegacy":3.9,"hundredPoint":83,"gpaIncluded":true,"creditIncluded":true}],"gpa":[4.472222222222222,4.1000000000000005,3.9666666666666663,89.72222222222223],"credits":27.0,"sessionToTime":[[0,0],[480,525],[530,575],[600,645],[650,695],[700,745],[805,850],[855,900],[905,950],[975,1020],[1025,1070],[1130,1175],[1180,1225],[1230,1275],[1280,1325]],"dayOfWeekToDays":[[[[],["2024-02-26T00:00:00.000","2024-03-11T00:00:00.000","2024-03-25T00:00:00.000","2024-04-08T00:00:00.000"],["2024-02-27T00:00:00.000","2024-03-12T00:00:00.000","2024-03-26T00:00:00.000","2024-04-09T00:00:00.000"],["2024-02-28T00:00:00.000","2024-03-13T00:00:00.000","2024-03-27T00:00:00.000","2024-04-10T00:00:00.000"],["2024-02-29T00:00:00.000","2024-03-14T00:00:00.000","2024-03-28T00:00:00.000","2024-04-11T00:00:00.000"],["2024-03-01T00:00:00.000","2024-03-15T00:00:00.000","2024-03-29T00:00:00.000","2024-04-12T00:00:00.000"],["2024-03-02T00:00:00.000","2024-03-16T00:00:00.000","2024-03-30T00:00:00.000","2024-04-13T00:00:00.000"],["2024-03-03T00:00:00.000","2024-03-17T00:00:00.000","2024-03-31T00:00:00.000","2024-04-14T00:00:00.000"]],[[],["2024-03-04T00:00:00.000","2024-03-18T00:00:00.000","2024-04-01T00:00:00.000","2024-04-15T00:00:00.000"],["2024-03-05T00:00:00.000","2024-03-19T00:00:00.000","2024-04-02T00:00:00.000","2024-04-16T00:00:00.000"],["2024-03-06T00:00:00.000","2024-03-20T00:00:00.000","2024-04-03T00:00:00.000","2024-04-17T00:00:00.000"],["2024-03-07T00:00:00.000","2024-03-21T00:00:00.000","2024-04-04T00:00:00.000","2024-04-18T00:00:00.000"],["2024-03-08T00:00:00.000","2024-03-22T00:00:00.000","2024-04-07T00:00:00.000","2024-04-19T00:00:00.000"],["2024-03-09T00:00:00.000","2024-03-23T00:00:00.000","2024-04-06T00:00:00.000","2024-04-20T00:00:00.000"],["2024-03-10T00:00:00.000","2024-03-24T00:00:00.000","2024-04-07T00:00:00.000","2024-04-21T00:00:00.000"]]],[[[],["2024-04-22T00:00:00.000","2024-05-06T00:00:00.000","2024-05-20T00:00:00.000","2024-06-03T00:00:00.000"],["2024-04-23T00:00:00.000","2024-05-07T00:00:00.000","2024-05-21T00:00:00.000","2024-06-04T00:00:00.000"],["2024-04-24T00:00:00.000","2024-05-08T00:00:00.000","2024-05-22T00:00:00.000","2024-06-05T00:00:00.000"],["2024-04-25T00:00:00.000","2024-05-09T00:00:00.000","2024-05-23T00:00:00.000","2024-06-06T00:00:00.000"],["2024-04-26T00:00:00.000","2024-05-10T00:00:00.000","2024-05-24T00:00:00.000","2024-06-07T00:00:00.000"],["2024-04-27T00:00:00.000","2024-05-11T00:00:00.000","2024-05-25T00:00:00.000","2024-06-08T00:00:00.000"],["2024-04-28T00:00:00.000","2024-05-12T00:00:00.000","2024-05-26T00:00:00.000","2024-06-09T00:00:00.000"]],[[],["2024-04-29T00:00:00.000","2024-05-13T00:00:00.000","2024-05-27T00:00:00.000","2024-06-10T00:00:00.000"],["2024-04-30T00:00:00.000","2024-05-14T00:00:00.000","2024-05-28T00:00:00.000","2024-06-11T00:00:00.000"],["2024-05-01T00:00:00.000","2024-05-15T00:00:00.000","2024-05-29T00:00:00.000","2024-06-12T00:00:00.000"],["2024-05-11T00:00:00.000","2024-05-16T00:00:00.000","2024-05-30T00:00:00.000","2024-06-13T00:00:00.000"],["2024-06-17T00:00:00.000","2024-05-17T00:00:00.000","2024-05-31T00:00:00.000","2024-06-14T00:00:00.000"],["2024-05-04T00:00:00.000","2024-05-18T00:00:00.000","2024-06-01T00:00:00.000","2024-06-15T00:00:00.000"],["2024-05-05T00:00:00.000","2024-05-19T00:00:00.000","2024-06-02T00:00:00.000","2024-06-16T00:00:00.000"]]]],"holidays":{"2024-04-04T00:00:00.000":"清明节","2024-05-01T00:00:00.000":"劳动节","2024-06-10T00:00:00.000":"端午节"},"exchanges":{"2024-04-05T00:00:00.000":"2024-04-07T00:00:00.000","2024-05-02T00:00:00.000":"2024-05-11T00:00:00.000","2024-05-03T00:00:00.000":"2024-06-17T00:00:00.000"}}'))
         ],
-        (jsonDecode('[ { "id": "(2024-2025-2)-821T0150-0082403-1", "name": "微积分（甲）Ⅰ", "credit": 5.0, "original": "83", "fivePoint": 3.9, "fourPoint": 3.9, "fourPointLegacy": 3.9, "hundredPoint": 83, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-821T0150-0082403-1", "name": "微积分（甲）Ⅰ", "credit": 5.0, "original": "95", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 95, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-081C0130-0094011-2", "name": "工程图学", "credit": 2.5, "original": "85", "fivePoint": 3.9, "fourPoint": 3.9, "fourPointLegacy": 3.9, "hundredPoint": 85, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-081C0131-0094011-2", "name": "工程图学", "credit": 2.5, "original": "95", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 95, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-0113N001-0086337-1", "name": "公共经济分析导论", "credit": 1.5, "original": "85", "fivePoint": 3.9, "fourPoint": 3.9, "fourPointLegacy": 3.9, "hundredPoint": 85, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-821T0190-0086207-1", "name": "线性代数（甲）", "credit": 3.5, "original": "90", "fivePoint": 4.5, "fourPoint": 4.1, "fourPointLegacy": 4.0, "hundredPoint": 90, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-051F0020-0098350-2", "name": "大学英语Ⅲ", "credit": 3.0, "original": "90", "fivePoint": 4.5, "fourPoint": 4.1, "fourPointLegacy": 4.0, "hundredPoint": 90, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-40103200-0087355-1", "name": "无线电测向（初级班）", "credit": 1.0, "original": "91", "fivePoint": 4.5, "fourPoint": 4.1, "fourPointLegacy": 4.0, "hundredPoint": 91, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-551E0020-0009771-1", "name": "中国近现代史纲要", "credit": 3.0, "original": "92", "fivePoint": 4.8, "fourPoint": 4.2, "fourPointLegacy": 4.0, "hundredPoint": 92, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-551E0010-0014323-4", "name": "思想道德修养与法律基础", "credit": 3.0, "original": "95", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 95, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-211G0280-0099160-1", "name": "C程序设计基础", "credit": 3.0, "original": "95", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 95, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-8517N001-0082046-3", "name": "无线网络应用", "credit": 1.5, "original": "97", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 97, "gpaIncluded": true, "creditIncluded": true } ]')
-                )
+        (jsonDecode(
+                '[ { "id": "(2024-2025-2)-821T0150-0082403-1", "name": "微积分（甲）Ⅰ", "credit": 5.0, "original": "83", "fivePoint": 3.9, "fourPoint": 3.9, "fourPointLegacy": 3.9, "hundredPoint": 83, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-821T0150-0082403-1", "name": "微积分（甲）Ⅰ", "credit": 5.0, "original": "95", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 95, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-081C0130-0094011-2", "name": "工程图学", "credit": 2.5, "original": "85", "fivePoint": 3.9, "fourPoint": 3.9, "fourPointLegacy": 3.9, "hundredPoint": 85, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-081C0131-0094011-2", "name": "工程图学", "credit": 2.5, "original": "95", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 95, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-0113N001-0086337-1", "name": "公共经济分析导论", "credit": 1.5, "original": "85", "fivePoint": 3.9, "fourPoint": 3.9, "fourPointLegacy": 3.9, "hundredPoint": 85, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-821T0190-0086207-1", "name": "线性代数（甲）", "credit": 3.5, "original": "90", "fivePoint": 4.5, "fourPoint": 4.1, "fourPointLegacy": 4.0, "hundredPoint": 90, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-051F0020-0098350-2", "name": "大学英语Ⅲ", "credit": 3.0, "original": "90", "fivePoint": 4.5, "fourPoint": 4.1, "fourPointLegacy": 4.0, "hundredPoint": 90, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-40103200-0087355-1", "name": "无线电测向（初级班）", "credit": 1.0, "original": "91", "fivePoint": 4.5, "fourPoint": 4.1, "fourPointLegacy": 4.0, "hundredPoint": 91, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-551E0020-0009771-1", "name": "中国近现代史纲要", "credit": 3.0, "original": "92", "fivePoint": 4.8, "fourPoint": 4.2, "fourPointLegacy": 4.0, "hundredPoint": 92, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-551E0010-0014323-4", "name": "思想道德修养与法律基础", "credit": 3.0, "original": "95", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 95, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-211G0280-0099160-1", "name": "C程序设计基础", "credit": 3.0, "original": "95", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 95, "gpaIncluded": true, "creditIncluded": true }, { "id": "(2024-2025-2)-8517N001-0082046-3", "name": "无线网络应用", "credit": 1.5, "original": "97", "fivePoint": 5.0, "fourPoint": 4.3, "fourPointLegacy": 4.0, "hundredPoint": 97, "gpaIncluded": true, "creditIncluded": true } ]'))
             .map(asStringMap)
             .whereType<Map<String, dynamic>>()
             .map(Grade.fromJson)

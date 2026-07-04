@@ -1,5 +1,6 @@
 // Official packages
 import 'package:celechron/page/scholar/todo/todo_card.dart';
+import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/utils/platform_features.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
@@ -20,6 +21,60 @@ import 'exam_list/exam_list_view.dart';
 import 'grade_detail/grade_detail_view.dart';
 import 'scholar_controller.dart';
 import 'package:celechron/page/option/option_controller.dart';
+
+Future<void> showRefreshResultDialog(
+    BuildContext context, List<String?> results) async {
+  final failures = results.whereType<String>().toList();
+  if (failures.isEmpty || !context.mounted) return;
+  final successCount =
+      (results.length - failures.length).clamp(0, results.length);
+  final summaryLines = failures.map((error) {
+    final compact =
+        shortErrorText(error).replaceAll(RegExp(r'\s+'), ' ').trim();
+    return compact.length <= 100 ? compact : '${compact.substring(0, 100)}…';
+  }).toList();
+
+  await showCupertinoDialog<void>(
+    context: context,
+    builder: (dialogContext) => CupertinoAlertDialog(
+      title: Text('刷新完成：$successCount 项成功，${failures.length} 项失败'),
+      content: Text(summaryLines.join('\n')),
+      actions: [
+        CupertinoDialogAction(
+          child: const Text('查看详情'),
+          onPressed: () {
+            Navigator.of(dialogContext).pop();
+            showCupertinoDialog<void>(
+              context: context,
+              builder: (detailContext) => CupertinoAlertDialog(
+                title: const Text('刷新详情'),
+                content: SingleChildScrollView(
+                  child: Text(
+                    failures.map((error) {
+                      final short = shortErrorText(error);
+                      final details = detailedErrorText(error);
+                      return details == short ? short : '$short\n$details';
+                    }).join('\n\n'),
+                  ),
+                ),
+                actions: [
+                  CupertinoDialogAction(
+                    child: const Text('确定'),
+                    onPressed: () => Navigator.of(detailContext).pop(),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
+        CupertinoDialogAction(
+          child: const Text('确定'),
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+      ],
+    ),
+  );
+}
 
 class ScholarErrorHandler extends StatelessWidget {
   final FlutterErrorDetails errorDetails;
@@ -49,28 +104,8 @@ class ScholarErrorHandler extends StatelessWidget {
             CupertinoButton(
               onPressed: () async {
                 var error = await _scholarController.fetchData();
-                if (error.any((e) => e != null)) {
-                  if (context.mounted) {
-                    showCupertinoDialog(
-                        context: context,
-                        builder: (context) {
-                          return CupertinoAlertDialog(
-                            title: const Text('刷新失败'),
-                            content: Text(error
-                                .where((e) => e != null)
-                                .fold('', (p, v) => '$p\n$v')
-                                .trim()),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('确定'),
-                                onPressed: () async {
-                                  Navigator.of(context).pop();
-                                },
-                              )
-                            ],
-                          );
-                        });
-                  }
+                if (context.mounted) {
+                  await showRefreshResultDialog(context, error);
                 }
               },
               child: const Text('重新获取数据'),
@@ -791,30 +826,9 @@ class ScholarPage extends StatelessWidget {
                                         var error = await _scholarController
                                             .fetchData();
                                         _isRefreshing.value = false;
-                                        if (error.any((e) => e != null)) {
-                                          if (context.mounted) {
-                                            showCupertinoDialog(
-                                                context: context,
-                                                builder: (context) {
-                                                  return CupertinoAlertDialog(
-                                                    title: const Text('刷新失败'),
-                                                    content: Text(error
-                                                        .where((e) => e != null)
-                                                        .fold('',
-                                                            (p, v) => '$p\n$v')
-                                                        .trim()),
-                                                    actions: [
-                                                      CupertinoDialogAction(
-                                                        child: const Text('确定'),
-                                                        onPressed: () async {
-                                                          Navigator.of(context)
-                                                              .pop();
-                                                        },
-                                                      )
-                                                    ],
-                                                  );
-                                                });
-                                          }
+                                        if (context.mounted) {
+                                          await showRefreshResultDialog(
+                                              context, error);
                                         }
                                       },
                                 child: isRefreshing
@@ -884,28 +898,8 @@ class ScholarPage extends StatelessWidget {
           CupertinoSliverRefreshControl(
             onRefresh: () async {
               var error = await _scholarController.fetchData();
-              if (error.any((e) => e != null)) {
-                if (context.mounted) {
-                  showCupertinoDialog(
-                      context: context,
-                      builder: (context) {
-                        return CupertinoAlertDialog(
-                          title: const Text('刷新失败'),
-                          content: Text(error
-                              .where((e) => e != null)
-                              .fold('', (p, v) => '$p\n$v')
-                              .trim()),
-                          actions: [
-                            CupertinoDialogAction(
-                              child: const Text('确定'),
-                              onPressed: () async {
-                                Navigator.of(context).pop();
-                              },
-                            )
-                          ],
-                        );
-                      });
-                }
+              if (context.mounted) {
+                await showRefreshResultDialog(context, error);
               }
             },
           ),

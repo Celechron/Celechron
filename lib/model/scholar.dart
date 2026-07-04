@@ -1,6 +1,9 @@
 import 'package:get/get.dart';
+import 'package:flutter/foundation.dart';
 
+import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/page/option/option_controller.dart';
+import 'package:celechron/utils/json_utils.dart';
 
 import 'period.dart';
 import 'grade.dart';
@@ -173,25 +176,33 @@ class Scholar {
               updateLastUpdateTime(value.item2);
             }
             var tempSemester = value.item3;
-            var tempGrades = value.item4.fold(<String, List<Grade>>{}, (p, e) {
-              // 体育课
-              var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
-              var key = matchClass?.group(2) ?? e.id.substring(14, 22);
-              if (key.startsWith('PPAE') || key.startsWith('401')) {
-                key = matchClass?.group(1) ?? e.id.substring(0, 22);
+            final tempGrades = <String, List<Grade>>{};
+            final courseIdMappingList =
+                Get.find<OptionController>(tag: 'optionController')
+                    .courseIdMappingList;
+            final courseIdMappingMap = {
+              for (var mapping in courseIdMappingList) mapping.id1: mapping.id2
+            };
+            for (final grade in value.item4) {
+              try {
+                final matchClass =
+                    RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(grade.id);
+                if (matchClass == null && grade.id.length < 22) {
+                  throw const FormatException('成绩课程编号长度不足');
+                }
+                var key = matchClass?.group(2) ?? grade.id.substring(14, 22);
+                if (key.startsWith('PPAE') || key.startsWith('401')) {
+                  key = matchClass?.group(1) ?? grade.id.substring(0, 22);
+                }
+                key = courseIdMappingMap[key] ?? key;
+                tempGrades.putIfAbsent(key, () => <Grade>[]).add(grade);
+              } on Object catch (error, stackTrace) {
+                if (kDebugMode) {
+                  debugPrint(
+                      '跳过无法归类的成绩 ${grade.id}：${error.runtimeType}: $error\n$stackTrace');
+                }
               }
-              var courseIdMappingList =
-                  Get.find<OptionController>(tag: 'optionController')
-                      .courseIdMappingList;
-              var courseIdMappingMap = {
-                for (var e in courseIdMappingList) e.id1: e.id2
-              };
-              if (courseIdMappingMap.containsKey(key)) {
-                key = courseIdMappingMap[key]!;
-              }
-              p.putIfAbsent(key, () => <Grade>[]).add(e);
-              return p;
-            });
+            }
             var tempMajorGpaAndCredit = value.item5;
             var tempSpecialDates = value.item6;
             var tempTodos = value.item7;
@@ -251,11 +262,14 @@ class Scholar {
                 : value.item1;
           }) ??
           ['未登录'];
-    } catch (e) {
+    } on Object catch (error, stackTrace) {
       // 网络异常等情况下保留已有数据，不清空
-      // ignore: avoid_print
-      print('refresh error: $e');
-      return ['网络连接失败，请检查网络后重试'];
+      final exception = exceptionFrom(
+        error,
+        context: '刷新聚合',
+        stackTrace: stackTrace,
+      );
+      return [exception.toString()];
     } finally {
       _mutex--;
     }
@@ -396,45 +410,92 @@ class Scholar {
   }
 
   Scholar.fromJson(Map<String, dynamic> json) {
-    username = json.containsKey('username')
-        ? json['username']
-        : null; // <=0.2.6 Compatibility
-    password = json.containsKey('password')
-        ? json['password']
-        : null; // <=0.2.6 Compatibility
-    semesters =
-        (json['semesters'] as List).map((e) => Semester.fromJson(e)).toList();
-    grades = (json['grades'] as Map<String, dynamic>).map((key, value) {
-      return MapEntry(
-          key, (value as List).map((e) => Grade.fromJson(e)).toList());
-    });
-    gpa = List<double>.from(json['gpa']);
-    aboardGpa = List<double>.from(json['aboardGpa']);
-    credit = json['credit'];
-    majorGpaAndCredit = List<double>.from(json['majorGpaAndCredit']);
-    specialDates = ((json['specialDates'] ?? {}) as Map)
-        .map((k, v) => MapEntry(DateTime.parse(k as String), v as String));
+    username = asString(json['username']); // <=0.2.6 Compatibility
+    password = asString(json['password']); // <=0.2.6 Compatibility
+
+    semesters = [];
+    for (final rawSemester in asDynamicList(json['semesters']) ?? const []) {
+      final semesterMap = asStringMap(rawSemester);
+      if (semesterMap == null) continue;
+      try {
+        semesters.add(Semester.fromJson(semesterMap));
+      } on Object catch (error, stackTrace) {
+        if (kDebugMode) {
+          debugPrint('跳过损坏的本地学期数据：${error.runtimeType}: $error\n$stackTrace');
+        }
+      }
+    }
+
+    grades = {};
+    final rawGrades = asStringMap(json['grades']) ?? const {};
+    for (final entry in rawGrades.entries) {
+      final parsedGrades = <Grade>[];
+      for (final rawGrade in asDynamicList(entry.value) ?? const []) {
+        final gradeMap = asStringMap(rawGrade);
+        if (gradeMap == null) continue;
+        try {
+          final grade = Grade.fromJson(gradeMap);
+          if (grade.id.isNotEmpty) parsedGrades.add(grade);
+        } on Object catch (error, stackTrace) {
+          if (kDebugMode) {
+            debugPrint('跳过损坏的本地成绩数据：${error.runtimeType}: $error\n$stackTrace');
+          }
+        }
+      }
+      if (parsedGrades.isNotEmpty) grades[entry.key] = parsedGrades;
+    }
+
+    List<double> numberList(Object? value, int expectedLength) {
+      final parsed = (asDynamicList(value) ?? const [])
+          .map(asDouble)
+          .whereType<double>()
+          .toList();
+      if (expectedLength == 4 && parsed.length == 3) {
+        parsed.insert(2, 0.0);
+      }
+      return parsed.length == expectedLength
+          ? parsed
+          : List<double>.filled(expectedLength, 0.0);
+    }
+
+    gpa = numberList(json['gpa'], 4);
+    aboardGpa = numberList(json['aboardGpa'], 4);
+    credit = asDouble(json['credit']) ?? 0.0;
+    majorGpaAndCredit = numberList(json['majorGpaAndCredit'], 2);
+
+    specialDates = {};
+    for (final entry
+        in (asStringMap(json['specialDates']) ?? const {}).entries) {
+      final date = asDateTime(entry.key);
+      final description = asString(entry.value);
+      if (date != null && description != null) {
+        specialDates[date] = description;
+      }
+    }
     lastUpdateTimeGrade =
-        DateTime.parse(json['lastUpdateTimeGrade'] ?? "20010101");
+        asDateTime(json['lastUpdateTimeGrade']) ?? DateTime(2001);
     lastUpdateTimeCourse =
-        DateTime.parse(json['lastUpdateTimeCourse'] ?? "20010101");
+        asDateTime(json['lastUpdateTimeCourse']) ?? DateTime(2001);
     lastUpdateTimeHomework =
-        DateTime.parse(json['lastUpdateTimeHomework'] ?? "20010101");
-    todos = json.containsKey('todos') // back compatibility
-        ? (json['todos'] as List).map((e) => Todo.fromJson(e)).toList()
-        : [];
-    pt2 = json.containsKey('pt2') ? (json['pt2'] as num).toDouble() : 0.0;
-    pt3 = json.containsKey('pt3') ? (json['pt3'] as num).toDouble() : 0.0;
-    pt4 = json.containsKey('pt4') ? (json['pt4'] as num).toDouble() : 0.0;
-    isPracticeScoresGet = json.containsKey('isPracticeScoresGet')
-        ? (json['isPracticeScoresGet'] as bool)
-        : false;
+        asDateTime(json['lastUpdateTimeHomework']) ?? DateTime(2001);
+
+    todos = [];
+    for (final rawTodo in asDynamicList(json['todos']) ?? const []) {
+      final todoMap = asStringMap(rawTodo);
+      if (todoMap == null) continue;
+      try {
+        final todo = Todo.fromJson(todoMap);
+        if (todo.id.isNotEmpty) todos.add(todo);
+      } on Object catch (error, stackTrace) {
+        if (kDebugMode) {
+          debugPrint('跳过损坏的本地作业数据：${error.runtimeType}: $error\n$stackTrace');
+        }
+      }
+    }
+    pt2 = asDouble(json['pt2']) ?? 0.0;
+    pt3 = asDouble(json['pt3']) ?? 0.0;
+    pt4 = asDouble(json['pt4']) ?? 0.0;
+    isPracticeScoresGet = asBool(json['isPracticeScoresGet']) ?? false;
     isLogan = true;
-    if (gpa.length == 3) {
-      gpa.insert(2, 0);
-    }
-    if (aboardGpa.length == 3) {
-      aboardGpa.insert(2, 0);
-    }
   }
 }

@@ -7,12 +7,28 @@ import 'exceptions.dart';
 
 export 'package:celechron/utils/json_utils.dart';
 
-String responseSummary(String body, {int maxLength = 240}) {
+String responseSummary(String body, {int maxLength = 200}) {
   final compact = body.replaceAll(RegExp(r'\s+'), ' ').trim();
   if (compact.isEmpty) return '<空响应>';
   return compact.length <= maxLength
       ? compact
       : '${compact.substring(0, maxLength)}…';
+}
+
+bool isHttpRedirectStatus(int status) {
+  return status == HttpStatus.movedPermanently ||
+      status == HttpStatus.found ||
+      status == HttpStatus.seeOther ||
+      status == HttpStatus.temporaryRedirect ||
+      status == HttpStatus.permanentRedirect;
+}
+
+bool locationIndicatesAuthenticationFailure(String? location) {
+  if (location == null) return false;
+  final normalized = location.toLowerCase();
+  return normalized.contains('identity.zju.edu.cn') ||
+      normalized.contains('cas/login') ||
+      normalized.contains('auth/realms/zju');
 }
 
 bool _looksLikeHtml(String body) {
@@ -59,8 +75,7 @@ bool jsonIndicatesAuthenticationFailure(Map<String, dynamic> json) {
   final failed = code == HttpStatus.unauthorized ||
       code == HttpStatus.forbidden ||
       (authenticationMessage &&
-          (success == false ||
-              (code != null && code != HttpStatus.ok)));
+          (success == false || (code != null && code != HttpStatus.ok)));
   if (failed) return true;
   for (final key in const ['result', 'data']) {
     final nested = asStringMap(json[key]);
@@ -75,42 +90,71 @@ void validateResponse({
   required String context,
   bool expectJson = false,
   bool allowEmpty = false,
+  Uri? requestUri,
+  bool relogged = false,
+  bool retried = false,
 }) {
   final status = response.statusCode;
   final location = response.headers.value(HttpHeaders.locationHeader);
   final contentType =
       response.headers.value(HttpHeaders.contentTypeHeader) ?? '<缺失>';
-  final details =
-      '$context；HTTP $status；Content-Type $contentType'
-      '${location == null ? '' : '；Location $location'}';
+  final debugDetails = [
+    '接口：$context',
+    '请求：${sanitizedRequestUri(requestUri)}',
+    'HTTP 状态码：$status',
+    'Content-Type：$contentType',
+    'Location：${location == null ? '<缺失>' : sanitizedRequestUri(Uri.tryParse(location))}',
+    '执行过重新登录：${relogged ? '是' : '否'}',
+    '执行过重试：${retried ? '是' : '否'}',
+    '响应摘要：${responseSummary(body)}',
+  ].join('\n');
 
-  if (status == HttpStatus.unauthorized || status == HttpStatus.forbidden) {
-    throw AuthenticationExpiredException(
-        '$details；登录态已失效；响应摘要：${responseSummary(body)}');
+  if (status == HttpStatus.unauthorized ||
+      status == HttpStatus.forbidden ||
+      status == 901) {
+    throw LoginExpiredException(
+      status == 901 ? '$context：服务端拒绝了当前会话' : '$context：登录态已失效',
+      details: debugDetails,
+    );
   }
-  if (response.isRedirect || (status >= 300 && status < 400)) {
+  if (isHttpRedirectStatus(status)) {
     final target = location ?? '<缺失>';
-    if (bodyIndicatesAuthenticationFailure(target) ||
+    if (locationIndicatesAuthenticationFailure(location) ||
+        bodyIndicatesAuthenticationFailure(target) ||
         bodyIndicatesAuthenticationFailure(body)) {
-      throw AuthenticationExpiredException(
-          '$details；登录态已失效，接口重定向到 $target');
+      throw LoginExpiredException(
+        '$context：登录态已失效',
+        details: debugDetails,
+      );
     }
-    throw ExceptionWithMessage('$details；接口发生未预期跳转到 $target');
+    throw ExceptionWithMessage(
+      '$context：接口发生未预期跳转',
+      details: debugDetails,
+    );
   }
   if (status < 200 || status >= 300) {
     throw ExceptionWithMessage(
-        '$details；请求失败；响应摘要：${responseSummary(body)}');
+      '$context：请求失败',
+      details: debugDetails,
+    );
   }
   if (body.trim().isEmpty && !allowEmpty) {
-    throw ExceptionWithMessage('$details；接口返回空响应');
+    throw ExceptionWithMessage(
+      '$context：接口返回空响应',
+      details: debugDetails,
+    );
   }
   if (bodyIndicatesAuthenticationFailure(body)) {
-    throw AuthenticationExpiredException(
-        '$details；返回内容表明登录态已失效；响应摘要：${responseSummary(body)}');
+    throw LoginExpiredException(
+      '$context：登录态已失效',
+      details: debugDetails,
+    );
   }
   if (expectJson && _looksLikeHtml(body)) {
     throw ExceptionWithMessage(
-        '$details；期望 JSON，但接口返回 HTML；响应摘要：${responseSummary(body)}');
+      '$context：接口返回了 HTML，无法解析业务数据',
+      details: debugDetails,
+    );
   }
   if (expectJson &&
       !contentType.toLowerCase().contains('json') &&
@@ -118,7 +162,9 @@ void validateResponse({
       !body.trimLeft().startsWith('[') &&
       body.trim() != 'null') {
     throw ExceptionWithMessage(
-        '$details；期望 JSON，但响应类型或内容不符；响应摘要：${responseSummary(body)}');
+      '$context：接口返回格式异常',
+      details: debugDetails,
+    );
   }
 }
 
@@ -127,6 +173,9 @@ Future<String> readResponseText(
   required String context,
   bool expectJson = false,
   bool allowEmpty = false,
+  Uri? requestUri,
+  bool relogged = false,
+  bool retried = false,
 }) async {
   final body = await readResponseBody(response, context: context);
   validateResponse(
@@ -135,6 +184,9 @@ Future<String> readResponseText(
     context: context,
     expectJson: expectJson,
     allowEmpty: allowEmpty,
+    requestUri: requestUri,
+    relogged: relogged,
+    retried: retried,
   );
   return body;
 }
@@ -145,8 +197,7 @@ Future<String> readResponseBody(
 }) {
   return response.transform(utf8.decoder).join().timeout(
       const Duration(seconds: 8),
-      onTimeout: () =>
-          throw ExceptionWithMessage('$context：读取响应内容超时'));
+      onTimeout: () => throw requestTimeout('$context：读取响应内容超时'));
 }
 
 Object? decodeJsonValue(String body, {required String context}) {
@@ -155,17 +206,28 @@ Object? decodeJsonValue(String body, {required String context}) {
   }
   if (_looksLikeHtml(body)) {
     if (bodyIndicatesAuthenticationFailure(body)) {
-      throw AuthenticationExpiredException(
-          '$context；登录态已失效，返回了 HTML 登录页；响应摘要：${responseSummary(body)}');
+      throw LoginExpiredException(
+        '$context；登录态已失效，返回了 HTML 登录页',
+        details: '响应摘要：${responseSummary(body)}',
+      );
     }
     throw ExceptionWithMessage(
-        '$context；无法解析 JSON：返回了 HTML；响应摘要：${responseSummary(body)}');
+      '$context；无法解析 JSON：返回了 HTML',
+      details: '响应摘要：${responseSummary(body)}',
+    );
   }
   try {
     return jsonDecode(body);
   } on FormatException catch (error) {
     throw ExceptionWithMessage(
-        '$context；JSON 格式错误：${error.message}；响应摘要：${responseSummary(body)}');
+      '$context；JSON 格式错误',
+      details: [
+        '原始异常类型：${error.runtimeType}',
+        '原始异常消息：${error.message}',
+        '响应摘要：${responseSummary(body)}',
+      ].join('\n'),
+      originalError: error,
+    );
   }
 }
 
@@ -174,7 +236,12 @@ Map<String, dynamic> decodeJsonMap(String body, {required String context}) {
   final map = asStringMap(decoded);
   if (map == null) {
     throw ExceptionWithMessage(
-        '$context；JSON 顶层应为对象，实际为 ${decoded.runtimeType}；响应摘要：${responseSummary(body)}');
+      '$context；JSON 顶层应为对象',
+      details: [
+        '实际类型：${decoded.runtimeType}',
+        '响应摘要：${responseSummary(body)}',
+      ].join('\n'),
+    );
   }
   return map;
 }
@@ -184,7 +251,12 @@ List<dynamic> decodeJsonList(String body, {required String context}) {
   final list = asDynamicList(decoded);
   if (list == null) {
     throw ExceptionWithMessage(
-        '$context；JSON 顶层应为数组，实际为 ${decoded.runtimeType}；响应摘要：${responseSummary(body)}');
+      '$context；JSON 顶层应为数组',
+      details: [
+        '实际类型：${decoded.runtimeType}',
+        '响应摘要：${responseSummary(body)}',
+      ].join('\n'),
+    );
   }
   return list;
 }

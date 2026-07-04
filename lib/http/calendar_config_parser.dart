@@ -1,6 +1,100 @@
+import 'dart:convert';
+
 import 'package:celechron/http/zjuServices/response_utils.dart';
 import 'package:celechron/model/semester.dart';
 import 'package:flutter/foundation.dart';
+
+const calendarConfigBaseUrl = 'http://calendar.celechron.top/';
+
+String calendarObjectKeyForSemester(String semesterId) {
+  if (!RegExp(r'^\d{4}-\d{4}-[12]$').hasMatch(semesterId)) {
+    throw FormatException('无效的学年学期：$semesterId');
+  }
+  return '$semesterId.json';
+}
+
+Uri calendarConfigUriForSemester(String semesterId) {
+  final key = calendarObjectKeyForSemester(semesterId);
+  return Uri.parse(calendarConfigBaseUrl).resolve(key);
+}
+
+Map<String, dynamic> decodeAndValidateCalendarConfig(
+  String rawConfig, {
+  required String context,
+}) {
+  final config = decodeJsonMap(rawConfig, context: context);
+  final startEnd = asDynamicList(config['startEnd']);
+  final sessionTime = asDynamicList(config['sessionTime']);
+  if (startEnd == null || startEnd.length != 4) {
+    throw FormatException('$context：startEnd 应包含四个日期');
+  }
+  if (sessionTime == null || sessionTime.length < 15) {
+    throw FormatException('$context：sessionTime 缺失或节次数不足');
+  }
+  return config;
+}
+
+String buildSafeDefaultCalendarConfig(
+  String semesterId, {
+  Map<String, dynamic>? template,
+}) {
+  final parts = semesterId.split('-');
+  final year = int.parse(parts.first);
+  final term = int.parse(parts.last);
+  final firstStart = _mondayOnOrAfter(
+    term == 1 ? DateTime(year, 9, 14) : DateTime(year + 1, 2, 20),
+  );
+  final firstEnd = firstStart.add(const Duration(days: 55));
+  final secondStart = firstEnd.add(const Duration(days: 1));
+  final secondEnd = secondStart.add(const Duration(days: 55));
+
+  final templateTimes = asDynamicList(template?['sessionTime']);
+  final sessionTime = templateTimes != null && templateTimes.length >= 15
+      ? templateTimes
+      : _defaultSessionTime;
+  return jsonEncode({
+    'sessionTime': sessionTime,
+    'startEnd': [
+      _compactDate(firstStart),
+      _compactDate(firstEnd),
+      _compactDate(secondStart),
+      _compactDate(secondEnd),
+    ],
+    'holiday': <String, String>{},
+    'dummy': <String, String>{},
+    'exchange': <String, String>{},
+  });
+}
+
+DateTime _mondayOnOrAfter(DateTime date) {
+  final offset = (DateTime.monday - date.weekday) % 7;
+  return date.add(Duration(days: offset));
+}
+
+String _compactDate(DateTime date) {
+  return '${date.year.toString().padLeft(4, '0')}'
+      '${date.month.toString().padLeft(2, '0')}'
+      '${date.day.toString().padLeft(2, '0')}';
+}
+
+const _defaultSessionTime = [
+  ['00:00', '00:00'],
+  ['08:00', '08:45'],
+  ['08:50', '09:35'],
+  ['10:00', '10:45'],
+  ['10:50', '11:35'],
+  ['11:40', '12:25'],
+  ['13:25', '14:10'],
+  ['14:15', '15:00'],
+  ['15:05', '15:50'],
+  ['16:15', '17:00'],
+  ['17:05', '17:50'],
+  ['18:50', '19:35'],
+  ['19:40', '20:25'],
+  ['20:30', '21:15'],
+  ['21:20', '22:05'],
+  ['22:10', '22:55'],
+];
 
 void applyCalendarConfig(
   String rawConfig,
@@ -8,7 +102,7 @@ void applyCalendarConfig(
   Map<DateTime, String> specialDates, {
   required String context,
 }) {
-  final config = decodeJsonMap(rawConfig, context: context);
+  final config = decodeAndValidateCalendarConfig(rawConfig, context: context);
   semester.addZjuCalendar(config);
 
   void addDates(Object? raw, String suffix) {
@@ -43,9 +137,7 @@ void applyCalendarConfig(
       debugPrint('$context：跳过异常调休 $key=${entry.value}');
       continue;
     }
-    specialDates[holiday] =
-        '$name放假·调 ${workday.month} 月 ${workday.day} 日';
-    specialDates[workday] =
-        '$name调休·调 ${holiday.month} 月 ${holiday.day} 日';
+    specialDates[holiday] = '$name放假·调 ${workday.month} 月 ${workday.day} 日';
+    specialDates[workday] = '$name调休·调 ${holiday.month} 月 ${holiday.day} 日';
   }
 }
