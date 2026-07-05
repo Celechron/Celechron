@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/utils/utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'exceptions.dart';
@@ -93,6 +94,75 @@ class ZjuAm {
       iOptions: secureStorageIOSOptions,
     );
   }
+
+  /// Requests a fresh, single-use CAS service ticket and returns only its
+  /// callback URI. The URI must be consumed immediately and never persisted.
+  static Future<Uri> getServiceCallback(
+    HttpClient httpClient,
+    Cookie iPlanetDirectoryPro,
+    Uri service,
+  ) async {
+    final uri = buildServiceLoginUri(service);
+    final startedAt = DateTime.now();
+    try {
+      final request = await httpClient.getUrl(uri).timeout(
+            const Duration(seconds: 8),
+            onTimeout: () => throw requestTimeout('CAS service 请求超时'),
+          );
+      request.followRedirects = false;
+      request.cookies.add(
+        Cookie(iPlanetDirectoryPro.name, iPlanetDirectoryPro.value),
+      );
+      final response = await request.close().timeout(
+            const Duration(seconds: 8),
+            onTimeout: () => throw requestTimeout('CAS service 响应超时'),
+          );
+      final location = response.headers.value(HttpHeaders.locationHeader);
+      final statusCode = response.statusCode;
+      final contentType = response.headers.value(HttpHeaders.contentTypeHeader);
+      await response.drain<void>();
+      DiagnosticLogService.instance.record(
+        module: '素质拓展登录',
+        operation: 'casService',
+        requestUri: uri,
+        statusCode: statusCode,
+        contentType: contentType,
+        durationMs: DateTime.now().difference(startedAt).inMilliseconds,
+        message: 'CAS service ticket 响应已读取',
+      );
+      if (!isHttpRedirectStatus(statusCode) ||
+          location == null ||
+          location.isEmpty) {
+        throw AuthenticationExpiredException(
+          'CAS 未返回素质拓展 service 回调；HTTP $statusCode',
+        );
+      }
+      final callback = uri.resolve(location);
+      final ticket = callback.queryParameters['ticket'];
+      final validTarget = callback.scheme == service.scheme &&
+          callback.host == service.host &&
+          callback.port == service.port &&
+          callback.path == service.path;
+      if (!validTarget || ticket == null || ticket.isEmpty) {
+        throw AuthenticationExpiredException('CAS 返回的素质拓展 service 回调无效');
+      }
+      return callback;
+    } on Object catch (error, stackTrace) {
+      throw exceptionFrom(
+        error,
+        context: '素质拓展登录',
+        requestUri: uri,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  @visibleForTesting
+  static Uri buildServiceLoginUri(Uri service) => Uri.https(
+        'zjuam.zju.edu.cn',
+        '/cas/login',
+        {'service': service.toString()},
+      );
 
   static Future<bool> _isCachedSsoCookieValid(
       HttpClient httpClient, Cookie cookie) async {

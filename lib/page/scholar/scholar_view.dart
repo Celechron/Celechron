@@ -20,6 +20,7 @@ import 'course_list/course_list_view.dart';
 import 'course_schedule/course_schedule_view.dart';
 import 'exam_list/exam_list_view.dart';
 import 'grade_detail/grade_detail_view.dart';
+import 'practice_score/practice_score_page.dart';
 import 'scholar_controller.dart';
 import 'package:celechron/page/option/option_controller.dart';
 
@@ -723,38 +724,10 @@ class ScholarPage extends StatelessWidget {
                         child: Column(
                           children: [
                             const SizedBox(height: 16),
-                            MultipleColumns(
-                              contents: [
-                                Obx(() => Text(
-                                    _scholarController.scholar.pt2
-                                        .toStringAsFixed(2),
-                                    style: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .navTitleTextStyle
-                                        .copyWith(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold))),
-                                Obx(() => Text(
-                                    _scholarController.scholar.pt3
-                                        .toStringAsFixed(2),
-                                    style: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .navTitleTextStyle
-                                        .copyWith(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold))),
-                                Obx(() => Text(
-                                    _scholarController.scholar.pt4
-                                        .toStringAsFixed(2),
-                                    style: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .navTitleTextStyle
-                                        .copyWith(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold))),
-                              ],
-                              titles: const ["二课分", "三课分", "四课分"],
-                              onTaps: [() {}, () {}, () {}],
+                            Obx(
+                              () => PracticeScoreColumns(
+                                scholar: _scholarController.scholar,
+                              ),
                             ),
                             const SizedBox(height: 16),
                           ],

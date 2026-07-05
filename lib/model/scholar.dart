@@ -6,6 +6,7 @@ import 'package:celechron/page/option/option_controller.dart';
 import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/services/refresh_coordinator.dart';
 import 'package:celechron/utils/json_utils.dart';
+import 'package:celechron/model/practice_score_item.dart';
 
 import 'period.dart';
 import 'grade.dart';
@@ -69,6 +70,11 @@ class Scholar {
   double pt3 = 0.0; // 三课分
   double pt4 = 0.0; // 四课分
   bool isPracticeScoresGet = false; // 是否成功获取到二三四课堂分数
+  List<PracticeScoreItem> practiceScoreItems = [];
+  PracticeDataSource practiceDataSource = PracticeDataSource.unavailable;
+  DateTime? practiceUpdatedAt;
+  bool practiceDetailsAvailable = false;
+  bool practiceDetailsStale = false;
 
   int get gradedCourseCount {
     return grades.values.fold(0, (p, e) => p + e.length);
@@ -135,6 +141,7 @@ class Scholar {
     } else {
       _spider = GrsSpider(username!, password!);
     }
+    _spider!.db = _db;
     var loginErrorMessage = await _spider!.login();
     if (loginErrorMessage.every((e) => e == null)) {
       isLogan = true;
@@ -156,6 +163,11 @@ class Scholar {
     pt3 = 0.0;
     pt4 = 0.0;
     isPracticeScoresGet = false;
+    practiceScoreItems = [];
+    practiceDataSource = PracticeDataSource.unavailable;
+    practiceUpdatedAt = null;
+    practiceDetailsAvailable = false;
+    practiceDetailsStale = false;
     isLogan = false;
     lastUpdateTimeGrade = DateTime.parse("20010101");
     lastUpdateTimeCourse = DateTime.parse("20010101");
@@ -265,22 +277,10 @@ class Scholar {
             var tempSpecialDates = value.item6;
             var tempTodos = value.item7;
 
-            var tempIsPracticeScoresGet = false;
-            var tempPt2 = 0.0, tempPt3 = 0.0, tempPt4 = 0.0;
+            PracticeScoreSnapshot? tempPracticeSnapshot;
             // 获取实践学分数据（仅本科生）
             if (_spider is UgrsSpider && !isGrs) {
-              var ugrsSpider = _spider as UgrsSpider;
-              tempIsPracticeScoresGet = ugrsSpider.isPracticeScoresGet;
-              if (tempIsPracticeScoresGet) {
-                var practiceScores = ugrsSpider.practiceScores;
-                if (practiceScores != null) {
-                  tempPt2 = practiceScores['pt2'] ?? 0.0;
-                  tempPt3 = practiceScores['pt3'] ?? 0.0;
-                  tempPt4 = practiceScores['pt4'] ?? 0.0;
-                }
-              }
-            } else {
-              tempIsPracticeScoresGet = false;
+              tempPracticeSnapshot = (_spider as UgrsSpider).practiceSnapshot;
             }
 
             setScholar(
@@ -290,10 +290,7 @@ class Scholar {
                 tempMajorGpaAndCredit,
                 tempSpecialDates,
                 tempTodos,
-                tempIsPracticeScoresGet,
-                tempPt2,
-                tempPt3,
-                tempPt4);
+                tempPracticeSnapshot);
 
             // 保研成绩，只取第一次
             var netGrades = grades.values.map((e) => e.first);
@@ -361,10 +358,7 @@ class Scholar {
       List<double> tempMajorGpaAndCredit,
       Map<DateTime, String> tempSpecialDates,
       List<Todo> tempTodos,
-      bool tempIsPracticeScoresGet,
-      double tempPt2,
-      double tempPt3,
-      double tempPt4) {
+      PracticeScoreSnapshot? tempPracticeSnapshot) {
     var errorItems = ["成绩", "主修", "课表", "作业", "实践"];
     var errorResult = [false, false, false, false, false];
 
@@ -405,11 +399,27 @@ class Scholar {
     if (errorResult[3] == false) {
       todos = tempTodos;
     }
-    isPracticeScoresGet = tempIsPracticeScoresGet;
-    if (errorResult[4] == false && tempIsPracticeScoresGet) {
-      pt2 = tempPt2;
-      pt3 = tempPt3;
-      pt4 = tempPt4;
+    if (tempPracticeSnapshot != null) {
+      final snapshot = tempPracticeSnapshot;
+      if (snapshot.source == PracticeDataSource.unavailable) {
+        isPracticeScoresGet = false;
+        practiceDataSource = PracticeDataSource.unavailable;
+        practiceDetailsStale = true;
+      } else {
+        isPracticeScoresGet = true;
+        practiceDataSource = snapshot.source;
+        practiceUpdatedAt = snapshot.updatedAt;
+        practiceDetailsAvailable = snapshot.detailsAvailable;
+        practiceDetailsStale = snapshot.stale;
+        if (snapshot.detailsAvailable) {
+          practiceScoreItems = List<PracticeScoreItem>.from(snapshot.items);
+        } else {
+          practiceScoreItems = [];
+        }
+        pt2 = snapshot.totalFor(1);
+        pt3 = snapshot.totalFor(2);
+        pt4 = snapshot.totalFor(3);
+      }
     }
   }
 
@@ -431,6 +441,12 @@ class Scholar {
       'pt3': pt3,
       'pt4': pt4,
       'isPracticeScoresGet': isPracticeScoresGet,
+      'practiceScoreItems':
+          practiceScoreItems.map((item) => item.toJson()).toList(),
+      'practiceDataSource': practiceDataSource.name,
+      'practiceUpdatedAt': practiceUpdatedAt?.toIso8601String(),
+      'practiceDetailsAvailable': practiceDetailsAvailable,
+      'practiceDetailsStale': practiceDetailsStale,
     };
   }
 
@@ -565,6 +581,39 @@ class Scholar {
     pt3 = asDouble(json['pt3']) ?? 0.0;
     pt4 = asDouble(json['pt4']) ?? 0.0;
     isPracticeScoresGet = asBool(json['isPracticeScoresGet']) ?? false;
+    final hasPracticeItemsField = json.containsKey('practiceScoreItems');
+    practiceScoreItems = [];
+    for (final rawItem
+        in asDynamicList(json['practiceScoreItems']) ?? const []) {
+      final itemMap = asStringMap(rawItem);
+      if (itemMap == null) continue;
+      try {
+        final item = PracticeScoreItem.fromJson(itemMap);
+        if (!item.deleted) practiceScoreItems.add(item);
+      } on Object catch (error, stackTrace) {
+        if (kDebugMode) {
+          debugPrint('跳过损坏的本地实践项目数据：${error.runtimeType}: $error\n$stackTrace');
+        }
+      }
+    }
+    practiceDataSource = PracticeDataSource.fromJson(
+      json['practiceDataSource'],
+    );
+    practiceUpdatedAt = asDateTime(json['practiceUpdatedAt'])?.toLocal();
+    practiceDetailsAvailable = asBool(json['practiceDetailsAvailable']) ??
+        (hasPracticeItemsField && practiceScoreItems.isNotEmpty);
+    practiceDetailsStale = asBool(json['practiceDetailsStale']) ?? false;
+    if (!json.containsKey('practiceDataSource') && isPracticeScoresGet) {
+      practiceDataSource = PracticeDataSource.zdbkCache;
+      practiceDetailsAvailable = false;
+      practiceDetailsStale = true;
+    }
+    if (hasPracticeItemsField && practiceDetailsAvailable) {
+      final totals = PracticeScoreItem.approvedTotals(practiceScoreItems);
+      pt2 = totals[1] ?? 0;
+      pt3 = totals[2] ?? 0;
+      pt4 = totals[3] ?? 0;
+    }
     isLogan = true;
   }
 }

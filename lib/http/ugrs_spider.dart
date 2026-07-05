@@ -5,6 +5,7 @@ import 'package:celechron/http/zjuServices/courses.dart';
 import 'package:celechron/http/calendar_config_parser.dart';
 import 'package:celechron/http/data_source_status.dart';
 import 'package:celechron/model/todo.dart';
+import 'package:celechron/model/practice_score_item.dart';
 import 'package:get/get.dart';
 
 import 'package:celechron/http/spider.dart';
@@ -21,6 +22,7 @@ import 'package:celechron/services/diagnostic_log_service.dart';
 
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
+import 'zjuServices/sztz.dart';
 
 class UgrsSpider implements Spider {
   late HttpClient _httpClient; // HTTP 客户端
@@ -28,12 +30,14 @@ class UgrsSpider implements Spider {
   late String _password;
   late Courses _courses;
   late Zdbk _zdbk;
+  late Sztz _sztz;
   late GrsNew _grsNew;
   late TimeConfigService _timeConfigService;
   DateTime _lastUpdateTime = DateTime(0);
   bool fetchGrs = false;
   Map<String, double>? _practiceScores;
   bool _isPracticeScoresGet = false;
+  PracticeScoreSnapshot _practiceSnapshot = PracticeScoreSnapshot.unavailable;
 
   Future<List<String?>>? _reloginFuture;
   int _loginGeneration = 0;
@@ -42,6 +46,7 @@ class UgrsSpider implements Spider {
     _httpClient = _createHttpClient();
     _courses = Courses();
     _zdbk = Zdbk();
+    _sztz = Sztz(accountScope: username);
     _grsNew = GrsNew();
     _timeConfigService = TimeConfigService();
     _username = username;
@@ -62,6 +67,7 @@ class UgrsSpider implements Spider {
   set db(DatabaseHelper? db) {
     _courses.db = db;
     _zdbk.db = db;
+    _sztz.db = db;
     _grsNew.db = db;
     _timeConfigService.db = db;
   }
@@ -121,6 +127,8 @@ class UgrsSpider implements Spider {
     loginErrorMessages.addAll(await Future.wait<String?>([
       captureLogin(_courses.login(candidateClient, candidateSsoCookie), "学在浙大"),
       captureLogin(_zdbk.login(candidateClient, candidateSsoCookie), "教务网"),
+      captureLogin(_sztz.login(candidateClient, candidateSsoCookie), "素质拓展平台",
+          ignoreError: true),
       captureLogin(_grsNew.login(candidateClient, candidateSsoCookie), "研究生院网",
           onSuccess: () {
         fetchGrs = true;
@@ -141,14 +149,35 @@ class UgrsSpider implements Spider {
     _username = "";
     _password = "";
     _zdbk.logout();
+    _sztz.logout();
     _grsNew.logout();
     _courses.logout();
     _practiceScores = null;
     _isPracticeScoresGet = false;
+    _practiceSnapshot = PracticeScoreSnapshot.unavailable;
   }
 
   Map<String, double>? get practiceScores => _practiceScores;
   bool get isPracticeScoresGet => _isPracticeScoresGet;
+  PracticeScoreSnapshot get practiceSnapshot => _practiceSnapshot;
+
+  Future<Cookie?> _reauthenticateSztz() async {
+    await ZjuAm.clearCachedSsoCookie(_username);
+    return ZjuAm.getSsoCookie(_httpClient, _username, _password).timeout(
+      const Duration(seconds: 8),
+      onTimeout: () => throw requestTimeout('素质拓展重新认证超时'),
+    );
+  }
+
+  void _usePracticeSnapshot(PracticeScoreSnapshot snapshot) {
+    _practiceSnapshot = snapshot;
+    _isPracticeScoresGet = snapshot.source != PracticeDataSource.unavailable;
+    _practiceScores = {
+      'pt2': snapshot.totalFor(1),
+      'pt3': snapshot.totalFor(2),
+      'pt4': snapshot.totalFor(3),
+    };
+  }
 
   // 【终极修改】自带最大重试次数的循环重试机制，并正确拦截底层私吞的错误
   Future<T> _fetchWithRetry<T>(Future<T> Function() requestFactory,
@@ -574,21 +603,67 @@ class UgrsSpider implements Spider {
     }).catchError((Object error, StackTrace stackTrace) =>
             _describeRefreshFailure(error, stackTrace)));
 
-    fetches.add(
-        _fetchWithRetry(() => _zdbk.getPracticeScores(_httpClient, _username))
-            .then((value) {
-      if (value.item1 == null) {
-        _practiceScores = value.item2;
-        _isPracticeScoresGet = true;
-      } else {
-        _practiceScores = value.item2;
-        _isPracticeScoresGet = false;
+    fetches.add(() async {
+      final sztzSnapshot = await _sztz.getPracticeScoreItems(
+        _httpClient,
+        reauthenticate: _reauthenticateSztz,
+      );
+      if (sztzSnapshot.source == PracticeDataSource.sztzLive) {
+        _usePracticeSnapshot(sztzSnapshot);
+        return null;
       }
-      return value.item1?.toString();
-    }).catchError((Object error, StackTrace stackTrace) {
-      _isPracticeScoresGet = false;
-      return _describeRefreshFailure(error, stackTrace);
-    }));
+      if (sztzSnapshot.source == PracticeDataSource.sztzCache) {
+        _usePracticeSnapshot(sztzSnapshot);
+        return degradedRefreshText(
+          '实践：素质拓展实时请求失败，已使用项目缓存',
+          details: sztzSnapshot.errorMessage,
+        );
+      }
+
+      try {
+        final value = await _fetchWithRetry(
+          () => _zdbk.getPracticeScores(_httpClient, _username),
+        );
+        if (value.item1 == null) {
+          _usePracticeSnapshot(
+            PracticeScoreSnapshot.zdbk(
+              totals: value.item2,
+              source: PracticeDataSource.zdbkLive,
+              updatedAt: DateTime.now(),
+              stale: false,
+              errorMessage: sztzSnapshot.errorMessage,
+            ),
+          );
+          return degradedRefreshText(
+            '实践：素质拓展不可用，已使用教务网旧实践分实时汇总',
+            details: sztzSnapshot.errorMessage,
+          );
+        }
+        if (value.item1 is CachedDataException ||
+            isDegradedRefreshText(value.item1)) {
+          _usePracticeSnapshot(
+            PracticeScoreSnapshot.zdbk(
+              totals: value.item2,
+              source: PracticeDataSource.zdbkCache,
+              updatedAt: _zdbk.practiceScoresCacheUpdatedAt ?? DateTime.now(),
+              stale: true,
+              errorMessage: shortErrorText(value.item1),
+            ),
+          );
+          return degradedRefreshText(
+            '实践：素质拓展不可用，已使用教务网旧实践分缓存',
+            details: detailedErrorText(value.item1),
+          );
+        }
+        _usePracticeSnapshot(PracticeScoreSnapshot.unavailable);
+        return value.item1?.toString() ??
+            sztzSnapshot.errorMessage ??
+            '实践数据当前不可用';
+      } on Object catch (error, stackTrace) {
+        _usePracticeSnapshot(PracticeScoreSnapshot.unavailable);
+        return _describeRefreshFailure(error, stackTrace, source: '实践');
+      }
+    }());
 
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
       outSemesters.removeWhere((e) =>

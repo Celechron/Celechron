@@ -40,6 +40,11 @@ class Zdbk {
     _db = db;
   }
 
+  DateTime? get practiceScoresCacheUpdatedAt {
+    final value = _db?.getCachedWebPage('zdbk_practiceScores_timestamp');
+    return value == null ? null : DateTime.tryParse(value)?.toLocal();
+  }
+
   Future<bool> login(HttpClient httpClient, Cookie? iPlanetDirectoryPro) async {
     if (iPlanetDirectoryPro == null) {
       throw AuthenticationExpiredException("教务网：统一身份认证凭据无效");
