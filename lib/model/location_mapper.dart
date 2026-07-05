@@ -25,7 +25,7 @@ class BuildingAlias {
 ///
 /// 教务网中的地址规范为：[校区+教学楼]-[教室]，如"紫金港西1-101"表示"紫金港西1教学楼-101教室"，详细地址为"浙江大学紫金港校区西一教学楼"。
 /// 映射输出格式：原始文本, 具体楼宇地址
-/// 例如："紫金港西1-101" → "紫金港西1-101, 浙江大学紫金港校区西一教学楼-101"
+/// 例如："紫金港西1-101" → "紫金港西1-101, 浙江大学紫金港校区西一教学楼"
 ///
 /// 可能存在不包含'-'符号的地址，目前已知存在这种情况的地址较少，且定位较为准确，因此可以直接保留原始字符串。
 class CalendarLocationMapper {
@@ -63,15 +63,15 @@ class CalendarLocationMapper {
     // 其他
     BuildingAlias(campusName: '紫金港', aliases: ['蒙民伟'], fullName: '蒙民伟楼'),
 
-    // todo: 玉泉
+    // TODO: 玉泉
 
-    // todo: 西溪
+    // TODO: 西溪
 
-    // todo: 华家池
+    // TODO: 华家池
 
-    // todo: 之江
+    // TODO: 之江
 
-    // todo: 海宁
+    // TODO: 海宁
   ];
 
   static String mapForCalendar(String? rawLocation) {
@@ -88,12 +88,11 @@ class CalendarLocationMapper {
       mappedAddress = _mapHeadToFullAddress(normalized);
     } else {
       final head = parts.$1;
-      final room = parts.$2;
       if (head.isEmpty) return raw;
 
       final mappedHead = _mapHeadToFullAddress(head);
       if (mappedHead != null) {
-        mappedAddress = room.isEmpty ? mappedHead : '$mappedHead-$room';
+        mappedAddress = mappedHead;
       }
     }
 
