@@ -309,7 +309,6 @@ class UgrsSpider implements Spider {
     }
 
     final now = DateTime.now();
-    var currentAcademicYearStart = academicYearStartFor(now);
     final enrollmentDigits =
         _username.length >= 3 ? _username.substring(1, 3) : '';
     final parsedEnrollmentYear = int.tryParse(enrollmentDigits);
@@ -319,6 +318,10 @@ class UgrsSpider implements Spider {
     }
     var yearEnroll = parsedEnrollmentYear + 2000;
     var yearGraduate = yearEnroll + 7;
+    final timetableYearPlan = timetableAcademicYearPlan(
+      now: now,
+      graduationYearStart: yearGraduate,
+    );
     Map<String, int> semesterIndexMap = <String, int>{};
     // 大一开学考的学期是入学的前一学期
     for (var i = 7, j = 0; i >= -1; i--, j++) {
@@ -337,22 +340,36 @@ class UgrsSpider implements Spider {
     var timetableFetches = <Future<String?>>[];
     var cancelTimetableFetch = false;
 
-    while (
-        yearEnroll <= currentAcademicYearStart && yearEnroll <= yearGraduate) {
-      var queryAcademicYear = '$yearEnroll-${yearEnroll + 1}';
+    for (final queryAcademicYearStart
+        in timetableYearPlan.yearsFrom(yearEnroll)) {
+      final isProbeYear = timetableYearPlan.isProbeYear(queryAcademicYearStart);
+      final queryAcademicYear =
+          '$queryAcademicYearStart-${queryAcademicYearStart + 1}';
+      var probeSessionCount = 0;
+      var probeHadUnexpectedFailure = false;
+
+      if (isProbeYear) {
+        DiagnosticLogService.instance.record(
+          module: '课表',
+          operation: 'futureProbe',
+          message: '正在探测未来学年课表：$queryAcademicYear',
+        );
+      }
 
       semesterConfigFetches.add(_timeConfigService
           .getConfig(_httpClient, '$queryAcademicYear-1')
           .then((value) {
-        switch (value.item3) {
-          case DataSourceStatus.live:
-            calendarLive++;
-          case DataSourceStatus.cache:
-            calendarCache++;
-          case DataSourceStatus.fallback:
-            calendarFallback++;
-          case DataSourceStatus.unavailable:
-            break;
+        if (!isProbeYear) {
+          switch (value.item3) {
+            case DataSourceStatus.live:
+              calendarLive++;
+            case DataSourceStatus.cache:
+              calendarCache++;
+            case DataSourceStatus.fallback:
+              calendarFallback++;
+            case DataSourceStatus.unavailable:
+              break;
+          }
         }
         if (value.item2 != null) {
           applyCalendarConfig(
@@ -363,6 +380,16 @@ class UgrsSpider implements Spider {
           );
         }
         if (value.item3.isDegraded) {
+          if (isProbeYear) {
+            DiagnosticLogService.instance.record(
+              level: CelechronLogLevel.warning,
+              module: '校历',
+              operation: 'futureProbe',
+              message: '未来学年校历未发布，已使用现有回退：'
+                  '$queryAcademicYear-1',
+            );
+            return null;
+          }
           return degradedRefreshText(
             '校历（$queryAcademicYear-1）：${value.item3.label}',
             details:
@@ -376,15 +403,17 @@ class UgrsSpider implements Spider {
       semesterConfigFetches.add(_timeConfigService
           .getConfig(_httpClient, '$queryAcademicYear-2')
           .then((value) {
-        switch (value.item3) {
-          case DataSourceStatus.live:
-            calendarLive++;
-          case DataSourceStatus.cache:
-            calendarCache++;
-          case DataSourceStatus.fallback:
-            calendarFallback++;
-          case DataSourceStatus.unavailable:
-            break;
+        if (!isProbeYear) {
+          switch (value.item3) {
+            case DataSourceStatus.live:
+              calendarLive++;
+            case DataSourceStatus.cache:
+              calendarCache++;
+            case DataSourceStatus.fallback:
+              calendarFallback++;
+            case DataSourceStatus.unavailable:
+              break;
+          }
         }
         if (value.item2 != null) {
           applyCalendarConfig(
@@ -395,6 +424,16 @@ class UgrsSpider implements Spider {
           );
         }
         if (value.item3.isDegraded) {
+          if (isProbeYear) {
+            DiagnosticLogService.instance.record(
+              level: CelechronLogLevel.warning,
+              module: '校历',
+              operation: 'futureProbe',
+              message: '未来学年校历未发布，已使用现有回退：'
+                  '$queryAcademicYear-2',
+            );
+            return null;
+          }
           return degradedRefreshText(
             '校历（$queryAcademicYear-2）：${value.item3.label}',
             details:
@@ -406,7 +445,10 @@ class UgrsSpider implements Spider {
               _describeRefreshFailure(error, stackTrace)));
 
       Future<String?> handleTimetable(season) async {
-        if (cancelTimetableFetch) return Future.value("已取消");
+        if (cancelTimetableFetch) {
+          if (isProbeYear) probeHadUnexpectedFailure = true;
+          return Future.value("已取消");
+        }
         try {
           var value = await _fetchWithRetry(
               () => _zdbk.getTimetable(_httpClient, queryAcademicYear, season));
@@ -415,6 +457,11 @@ class UgrsSpider implements Spider {
               ? '$queryAcademicYear-1'
               : '$queryAcademicYear-2';
           var sessions = value.item2.toList();
+          if (isProbeYear &&
+              sessions.isEmpty &&
+              isExpectedTimetableProbeMiss(value.item1)) {
+            return null;
+          }
           sessions.sort((a, b) {
             if (a.dayOfWeek != b.dayOfWeek) {
               return a.dayOfWeek.compareTo(b.dayOfWeek);
@@ -425,11 +472,24 @@ class UgrsSpider implements Spider {
           for (var e in sessions) {
             outSemesters[semesterIndexMap[semKey]!].addSession(e, semKey);
           }
+          if (isProbeYear) {
+            probeSessionCount += sessions.length;
+          }
           if (value.item1.toString().contains("验证码")) {
             cancelTimetableFetch = true;
           }
+          if (isProbeYear && isExpectedTimetableProbeMiss(value.item1)) {
+            return null;
+          }
+          if (isProbeYear && value.item1 != null) {
+            probeHadUnexpectedFailure = true;
+          }
           return Future.value(value.item1?.toString());
         } on Object catch (error, stackTrace) {
+          if (isProbeYear && isExpectedTimetableProbeMiss(error)) {
+            return null;
+          }
+          if (isProbeYear) probeHadUnexpectedFailure = true;
           return Future.value(
               _describeRefreshFailure(error, stackTrace, source: '课表'));
         }
@@ -446,9 +506,29 @@ class UgrsSpider implements Spider {
         }
       }
 
-      if (fetchGrs) {
-        timetableFetches.add(_fetchWithRetry(
-                () => _grsNew.getTimetable(_httpClient, yearEnroll, 13))
+      if (isProbeYear) {
+        timetableFetches.first = timetableFetches.first.then((value) {
+          DiagnosticLogService.instance.record(
+            level: probeHadUnexpectedFailure
+                ? CelechronLogLevel.warning
+                : CelechronLogLevel.info,
+            module: '课表',
+            operation: 'futureProbe',
+            message: probeSessionCount > 0
+                ? '未来学年课表有数据：$queryAcademicYear，'
+                    '条目数：$probeSessionCount'
+                : probeHadUnexpectedFailure
+                    ? '未来学年课表探测失败：$queryAcademicYear，'
+                        '已按现有错误链路上报'
+                    : '未来学年课表尚未开放：$queryAcademicYear',
+          );
+          return value;
+        });
+      }
+
+      if (fetchGrs && !isProbeYear) {
+        timetableFetches.add(_fetchWithRetry(() =>
+                _grsNew.getTimetable(_httpClient, queryAcademicYearStart, 13))
             .then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$queryAcademicYear-1']!]
@@ -457,8 +537,8 @@ class UgrsSpider implements Spider {
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
                 _describeRefreshFailure(error, stackTrace)));
-        timetableFetches.add(_fetchWithRetry(
-                () => _grsNew.getTimetable(_httpClient, yearEnroll, 14))
+        timetableFetches.add(_fetchWithRetry(() =>
+                _grsNew.getTimetable(_httpClient, queryAcademicYearStart, 14))
             .then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$queryAcademicYear-1']!]
@@ -467,8 +547,8 @@ class UgrsSpider implements Spider {
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
                 _describeRefreshFailure(error, stackTrace)));
-        timetableFetches.add(_fetchWithRetry(
-                () => _grsNew.getTimetable(_httpClient, yearEnroll, 11))
+        timetableFetches.add(_fetchWithRetry(() =>
+                _grsNew.getTimetable(_httpClient, queryAcademicYearStart, 11))
             .then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$queryAcademicYear-2']!]
@@ -477,8 +557,8 @@ class UgrsSpider implements Spider {
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
                 _describeRefreshFailure(error, stackTrace)));
-        timetableFetches.add(_fetchWithRetry(
-                () => _grsNew.getTimetable(_httpClient, yearEnroll, 12))
+        timetableFetches.add(_fetchWithRetry(() =>
+                _grsNew.getTimetable(_httpClient, queryAcademicYearStart, 12))
             .then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$queryAcademicYear-2']!]
@@ -488,8 +568,8 @@ class UgrsSpider implements Spider {
         }).catchError((Object error, StackTrace stackTrace) =>
                 _describeRefreshFailure(error, stackTrace)));
         // 研究生课的【考试】
-        timetableFetches.add(_fetchWithRetry(
-                () => _grsNew.getExamsDto(_httpClient, yearEnroll, 12))
+        timetableFetches.add(_fetchWithRetry(() =>
+                _grsNew.getExamsDto(_httpClient, queryAcademicYearStart, 12))
             .then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$queryAcademicYear-1']!]
@@ -498,8 +578,8 @@ class UgrsSpider implements Spider {
           return value.item1?.toString();
         }).catchError((Object error, StackTrace stackTrace) =>
                 _describeRefreshFailure(error, stackTrace)));
-        timetableFetches.add(_fetchWithRetry(
-                () => _grsNew.getExamsDto(_httpClient, yearEnroll, 11))
+        timetableFetches.add(_fetchWithRetry(() =>
+                _grsNew.getExamsDto(_httpClient, queryAcademicYearStart, 11))
             .then((value) {
           for (var e in value.item2) {
             outSemesters[semesterIndexMap['$queryAcademicYear-2']!]
@@ -509,7 +589,6 @@ class UgrsSpider implements Spider {
         }).catchError((Object error, StackTrace stackTrace) =>
                 _describeRefreshFailure(error, stackTrace)));
       }
-      yearEnroll++;
     }
 
     fetches.add(Future.wait(semesterConfigFetches).then((value) {

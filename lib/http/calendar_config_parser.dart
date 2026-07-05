@@ -9,6 +9,60 @@ const calendarConfigBaseUrl = 'http://calendar.celechron.top/';
 int academicYearStartFor(DateTime now) =>
     now.month >= DateTime.september ? now.year : now.year - 1;
 
+class TimetableAcademicYearPlan {
+  final int normalUpperBound;
+  final int probeUpperBound;
+
+  const TimetableAcademicYearPlan({
+    required this.normalUpperBound,
+    required this.probeUpperBound,
+  });
+
+  Iterable<int> yearsFrom(int enrollmentYearStart) sync* {
+    for (var year = enrollmentYearStart; year <= probeUpperBound; year++) {
+      yield year;
+    }
+  }
+
+  bool isProbeYear(int academicYearStart) =>
+      academicYearStart > normalUpperBound;
+}
+
+TimetableAcademicYearPlan timetableAcademicYearPlan({
+  required DateTime now,
+  required int graduationYearStart,
+}) {
+  final currentAcademicYearStart = academicYearStartFor(now);
+  final normalUpperBound = currentAcademicYearStart < graduationYearStart
+      ? currentAcademicYearStart
+      : graduationYearStart;
+  final nextAcademicYearStart = currentAcademicYearStart + 1;
+  final probeUpperBound = nextAcademicYearStart < graduationYearStart
+      ? nextAcademicYearStart
+      : graduationYearStart;
+  return TimetableAcademicYearPlan(
+    normalUpperBound: normalUpperBound,
+    probeUpperBound: probeUpperBound,
+  );
+}
+
+bool isExpectedTimetableProbeMiss(Object? error) {
+  if (error == null) return true;
+  final text = error.toString().toLowerCase();
+  return text.contains('404') ||
+      text.contains('not found') ||
+      text.contains('no data') ||
+      text.contains('暂无数据') ||
+      text.contains('无数据') ||
+      text.contains('未开放') ||
+      text.contains('尚未开放') ||
+      text.contains('空响应') ||
+      text.contains('响应为空') ||
+      text.contains('正文为空') ||
+      text.contains('empty response') ||
+      text.contains('缺少 kblist');
+}
+
 String calendarObjectKeyForSemester(String semesterId) {
   if (!RegExp(r'^\d{4}-\d{4}-[12]$').hasMatch(semesterId)) {
     throw FormatException('无效的学年学期：$semesterId');
