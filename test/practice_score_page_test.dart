@@ -43,6 +43,7 @@ Scholar liveScholar() {
       item(id: 3, categoryId: 3),
     ]
     ..practiceDataSource = PracticeDataSource.sztzLive
+    ..practiceSummarySource = PracticeSummarySource.networkMyInfo
     ..practiceUpdatedAt = DateTime(2026, 1, 2, 12)
     ..practiceDetailsAvailable = true
     ..practiceDetailsStale = false
@@ -90,6 +91,7 @@ void main() {
     final scholar = Scholar()
       ..pt2 = 2.5
       ..practiceDataSource = PracticeDataSource.zdbkLive
+      ..practiceSummarySource = PracticeSummarySource.legacyPersisted
       ..practiceUpdatedAt = DateTime(2026, 1, 2)
       ..practiceDetailsAvailable = false;
     await tester.pumpWidget(
@@ -98,8 +100,16 @@ void main() {
       ),
     );
     expect(
-      find.text('当前仅获取到教务网旧实践分汇总，暂无素质拓展平台项目明细。'),
+      find.text('当前仅获取到旧实践汇总，暂无 getSqjl 项目明细。'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('myTg 和 lyTg 分别展示为美育、劳育通过状态', (tester) async {
+    final scholar = liveScholar()
+      ..practiceMyPassed = true
+      ..practiceLyPassed = false;
+    await tester.pumpWidget(summaryApp(scholar));
+    expect(find.text('美育：已通过 · 劳育：未通过'), findsOneWidget);
   });
 }

@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'exceptions.dart';
 import 'response_utils.dart';
 
+/// 研究生院接口客户端；CAS ticket 校验成功后以 X-Access-Token 访问业务 API。
 class GrsNew {
   String? _token;
   Cookie? _ssoCookie;
@@ -29,6 +30,7 @@ class GrsNew {
     }
     _ssoCookie = ssoCookie;
 
+    // 登录单飞可避免并发 CAS ticket 校验生成多个互相替代的 token。
     final pending = _loginFuture;
     if (pending != null) {
       await pending;
@@ -72,6 +74,7 @@ class GrsNew {
           '；Location $location；响应摘要：${responseSummary(body)}');
     }
 
+    // CAS Location 中的 ticket 必须立即交给研究生院校验接口换取业务 token。
     final validateUri = Uri.https(
       'yjsy.zju.edu.cn',
       '/dataapi/sys/cas/client/validateLogin',
@@ -131,6 +134,7 @@ class GrsNew {
     required String context,
     bool post = false,
   }) async {
+    // 每个请求最多自动重登一次；第二次认证失败交由上层提示手动登录。
     var relogged = false;
 
     Future<HttpClientRequest> requestFactory() async {

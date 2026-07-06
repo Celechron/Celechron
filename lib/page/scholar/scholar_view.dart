@@ -712,7 +712,7 @@ class ScholarPage extends StatelessWidget {
                                 Padding(
                                     padding: const EdgeInsets.only(
                                         left: 4, top: 4, bottom: 4, right: 16),
-                                    child: Text('获取实践分数时遇到问题',
+                                    child: Text('获取实践计点时遇到问题',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,

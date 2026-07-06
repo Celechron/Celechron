@@ -1,3 +1,4 @@
+/// 宽容地规范接口和旧缓存中的动态 JSON 类型；不满足目标类型时返回 null。
 Map<String, dynamic>? asStringMap(Object? value) {
   if (value is! Map) return null;
   final result = <String, dynamic>{};

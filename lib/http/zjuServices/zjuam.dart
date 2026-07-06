@@ -9,12 +9,14 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'exceptions.dart';
 import 'response_utils.dart';
 
+/// 统一身份认证入口，负责共享 SSO Cookie 及按 service 签发的一次性回调。
 class ZjuAm {
   static const _secureStorage = FlutterSecureStorage();
   static final Map<String, Future<Cookie?>> _pendingLogins = {};
 
   static Future<Cookie?> getSsoCookie(
       HttpClient httpClient, String username, String password) async {
+    // 同一账号共享一次登录任务，避免并发提交密码和互相覆盖缓存。
     final pending = _pendingLogins[username];
     if (pending != null) return await pending;
 
@@ -31,6 +33,7 @@ class ZjuAm {
 
   static Future<Cookie?> _getOrCreateSsoCookie(
       HttpClient httpClient, String username, String password) async {
+    // 缓存命中仍需向 CAS 验证；失效值先清除，再执行完整登录。
     final cached = await _readCachedSsoCookie(username);
     if (cached != null && await _isCachedSsoCookieValid(httpClient, cached)) {
       return cached;
@@ -166,6 +169,7 @@ class ZjuAm {
 
   static Future<bool> _isCachedSsoCookieValid(
       HttpClient httpClient, Cookie cookie) async {
+    // 验证请求只检查 CAS 是否能签发 ticket；ticket 本身不会被保存或消费。
     final uri = Uri.parse(
         'https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F');
     try {
@@ -200,6 +204,7 @@ class ZjuAm {
     late HttpClientResponse response;
 
     try {
+      // execution 与初始 Cookie 属于同一次 CAS 表单会话，必须先取登录页。
       request = await httpClient
           .getUrl(Uri.parse('https://zjuam.zju.edu.cn/cas/login'))
           .timeout(const Duration(seconds: 8),
@@ -224,6 +229,7 @@ class ZjuAm {
             '；响应摘要：${responseSummary(body)}');
       }
 
+      // 公钥请求沿用登录页 Cookie，随后才可加密密码并提交 execution。
       request = await httpClient
           .getUrl(Uri.parse('https://zjuam.zju.edu.cn/cas/v2/getPubKey'))
           .timeout(const Duration(seconds: 8),

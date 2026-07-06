@@ -6,11 +6,16 @@ import 'package:flutter/foundation.dart';
 
 const calendarConfigBaseUrl = 'http://calendar.celechron.top/';
 
+/// 返回日期所属学年的起始年份；九月是学年边界，不代表课表开放时间。
 int academicYearStartFor(DateTime now) =>
     now.month >= DateTime.september ? now.year : now.year - 1;
 
+/// 描述历史/当前学年的正常抓取上限，以及额外尝试一年的探测上限。
 class TimetableAcademicYearPlan {
+  /// 正常范围止于当前学年或毕业学年，以较早者为准。
   final int normalUpperBound;
+
+  /// 在正常范围后多探测一年，但仍不能越过毕业学年。
   final int probeUpperBound;
 
   const TimetableAcademicYearPlan({
@@ -47,6 +52,8 @@ TimetableAcademicYearPlan timetableAcademicYearPlan({
 }
 
 bool isExpectedTimetableProbeMiss(Object? error) {
+  // 不同部署对“尚未开放”会返回空结果、HTTP 文本或解析错误，
+  // 因此仅在探测学年用这些兼容文本识别可忽略失败。
   if (error == null) return true;
   final text = error.toString().toLowerCase();
   return text.contains('404') ||
@@ -79,6 +86,7 @@ Map<String, dynamic> decodeAndValidateCalendarConfig(
   String rawConfig, {
   required String context,
 }) {
+  // startEnd 依次供两个半学期计算日期；sessionTime 的下标与节次直接对应。
   final config = decodeJsonMap(rawConfig, context: context);
   final startEnd = asDynamicList(config['startEnd']);
   final sessionTime = asDynamicList(config['sessionTime']);
@@ -95,6 +103,8 @@ String buildSafeDefaultCalendarConfig(
   String semesterId, {
   Map<String, dynamic>? template,
 }) {
+  // 这是保证课表仍可展示的推算配置，并非学校发布的官方校历。
+  // holiday、dummy、exchange 留空，避免凭空生成节假日或调休信息。
   final parts = semesterId.split('-');
   final year = int.parse(parts.first);
   final term = int.parse(parts.last);
@@ -159,6 +169,7 @@ void applyCalendarConfig(
   Map<DateTime, String> specialDates, {
   required String context,
 }) {
+  // holiday/dummy 的键是日期；exchange 的键拼接放假日和调休日各 8 位日期。
   final config = decodeAndValidateCalendarConfig(rawConfig, context: context);
   semester.addZjuCalendar(config);
 

@@ -24,6 +24,8 @@ class ECard {
     response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
+    // synjones-auth 可能出现在任意一跳 Location 中；每跳必须先收集
+    // 当前响应 Cookie，再访问相对地址解析后的下一跳。
     var current = Uri.parse(
         "https://elife.zju.edu.cn/berserker-auth/cas/oauth2?resultUrl=https://elife.zju.edu.cn/plat-pc");
     for (var redirectCount = 0; redirectCount < 10; redirectCount++) {

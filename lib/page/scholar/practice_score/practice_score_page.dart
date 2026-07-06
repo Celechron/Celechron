@@ -30,17 +30,38 @@ class PracticeScoreColumns extends StatelessWidget {
       );
     }
 
-    return MultipleColumns(
-      contents: [
-        score(1, scholar.pt2),
-        score(2, scholar.pt3),
-        score(3, scholar.pt4),
-      ],
-      titles: const ['二课分', '三课分', '四课分'],
-      onTaps: [
-        () => open(1),
-        () => open(2),
-        () => open(3),
+    final passed = <String>[
+      if (scholar.practiceMyPassed != null)
+        '美育：${scholar.practiceMyPassed! ? '已通过' : '未通过'}',
+      if (scholar.practiceLyPassed != null)
+        '劳育：${scholar.practiceLyPassed! ? '已通过' : '未通过'}',
+    ];
+    return Column(
+      children: [
+        MultipleColumns(
+          contents: [
+            score(1, scholar.pt2),
+            score(2, scholar.pt3),
+            score(3, scholar.pt4),
+          ],
+          titles: const ['二课计点', '三课计点', '四课计点'],
+          onTaps: [
+            () => open(1),
+            () => open(2),
+            () => open(3),
+          ],
+        ),
+        if (passed.isNotEmpty) ...[
+          const SizedBox(height: 10),
+          Text(
+            passed.join(' · '),
+            key: const ValueKey('practice-passed-status'),
+            style: const TextStyle(
+              color: CupertinoColors.secondaryLabel,
+              fontSize: 13,
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -96,9 +117,11 @@ class PracticeScorePage extends StatelessWidget {
               },
               includedCount: included.length,
               excludedCount: excluded.length,
-              source: scholar.practiceDataSource,
+              source: scholar.practiceSummarySource,
+              detailSource: scholar.practiceDataSource,
               updatedAt: scholar.practiceUpdatedAt,
-              stale: scholar.practiceDetailsStale,
+              stale: scholar.practiceSummaryStale,
+              detailsStale: scholar.practiceDetailsStale,
             ),
             const SizedBox(height: 16),
             if (!scholar.practiceDetailsAvailable)
@@ -206,9 +229,11 @@ class _SummaryCard extends StatelessWidget {
   final double total;
   final int includedCount;
   final int excludedCount;
-  final PracticeDataSource source;
+  final PracticeSummarySource source;
+  final PracticeDataSource detailSource;
   final DateTime? updatedAt;
   final bool stale;
+  final bool detailsStale;
 
   const _SummaryCard({
     required this.categoryName,
@@ -216,8 +241,10 @@ class _SummaryCard extends StatelessWidget {
     required this.includedCount,
     required this.excludedCount,
     required this.source,
+    required this.detailSource,
     required this.updatedAt,
     required this.stale,
+    required this.detailsStale,
   });
 
   @override
@@ -231,6 +258,11 @@ class _SummaryCard extends StatelessWidget {
             style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 8),
+          const Text(
+            '正式汇总计点',
+            style: TextStyle(color: CupertinoColors.secondaryLabel),
+          ),
+          const SizedBox(height: 4),
           Text(
             total.toStringAsFixed(2),
             style: const TextStyle(fontSize: 34, fontWeight: FontWeight.bold),
@@ -239,7 +271,12 @@ class _SummaryCard extends StatelessWidget {
           Text('已计入 $includedCount 项 · 未计入 $excludedCount 项'),
           const SizedBox(height: 6),
           Text(
-            '数据来源：${source.label}',
+            '计点来源：${source.label}',
+            style: const TextStyle(color: CupertinoColors.secondaryLabel),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            '项目明细来源：${detailSource.label}',
             style: const TextStyle(color: CupertinoColors.secondaryLabel),
           ),
           const SizedBox(height: 4),
@@ -250,10 +287,26 @@ class _SummaryCard extends StatelessWidget {
           if (stale) ...[
             const SizedBox(height: 10),
             const Text(
-              '当前展示缓存或过期数据，请在网络恢复后刷新。',
+              '当前计点使用缓存或项目合计，请在网络恢复后刷新。',
               style: TextStyle(color: CupertinoColors.systemOrange),
             ),
           ],
+          if (detailsStale) ...[
+            const SizedBox(height: 6),
+            const Text(
+              '项目明细为缓存或上一次结果。',
+              style: TextStyle(color: CupertinoColors.systemOrange),
+            ),
+          ],
+          const SizedBox(height: 10),
+          const Text(
+            '正式汇总与项目记录可能不完全一致，项目明细仍按 getSqjl 原样展示。',
+            style: TextStyle(
+              color: CupertinoColors.secondaryLabel,
+              fontSize: 13,
+              height: 1.4,
+            ),
+          ),
         ],
       ),
     );
@@ -271,7 +324,7 @@ class _NoDetailsCard extends StatelessWidget {
         source == PracticeDataSource.zdbkCache;
     return _Card(
       child: Text(
-        zdbkOnly ? '当前仅获取到教务网旧实践分汇总，暂无素质拓展平台项目明细。' : '当前实践项目明细不可用，请稍后刷新。',
+        zdbkOnly ? '当前仅获取到旧实践汇总，暂无 getSqjl 项目明细。' : '当前 getSqjl 项目明细不可用，请稍后刷新。',
         key: const ValueKey('practice-no-details'),
         style: const TextStyle(
           color: CupertinoColors.secondaryLabel,

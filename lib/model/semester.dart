@@ -107,6 +107,7 @@ class Semester {
   List<Session> get sessions => _sessions;
 
   void mergePartialFrom(Semester incoming) {
+    // 用于部分刷新失败时补充新数据；空或不完整对象不得替换已有课程安排。
     Course? matchingCourse(Course incomingCourse) {
       for (final existing in _courses.values) {
         if (incomingCourse.id != null && existing.id == incomingCourse.id) {
@@ -374,6 +375,7 @@ class Semester {
 
   void addSession(Session session, String semesterId, [bool isGrs = false]) {
     // 由于ZDBK不给课号，Session的id初始值为null，不能直接拿来用！
+    // 因此本科课程以“学期 + 课程名”归组，再由 Course 合并重复安排。
     var key = '$semesterId${session.name}';
     if (_courses.containsKey(key)) {
       // 坑爹的API，有时同一节课会出现两次，必须鉴别是否重复。

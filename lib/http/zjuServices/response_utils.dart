@@ -9,6 +9,7 @@ import 'exceptions.dart';
 export 'package:celechron/utils/json_utils.dart';
 
 String responseSummary(String body, {int maxLength = 200}) {
+  // 摘要只用于诊断；调用方仍应避免把含个人数据的业务正文传入。
   final compact = body.replaceAll(RegExp(r'\s+'), ' ').trim();
   if (compact.isEmpty) return '<空响应>';
   return compact.length <= maxLength
@@ -96,6 +97,8 @@ void validateResponse({
   bool retried = false,
   int? durationMs,
 }) {
+  // 必须先识别认证页/认证跳转，再把响应交给业务 JSON 解析，
+  // 否则 HTTP 200 的登录页容易被误报成普通格式错误。
   final status = response.statusCode;
   final location = response.headers.value(HttpHeaders.locationHeader);
   final contentType =
@@ -221,6 +224,7 @@ Future<String> readResponseBody(
 }
 
 Object? decodeJsonValue(String body, {required String context}) {
+  // HTML 检查保留在 JSON 解码入口，兼容未经过 validateResponse 的调用点。
   if (body.trim().isEmpty) {
     throw ExceptionWithMessage('$context；无法解析 JSON：响应为空');
   }

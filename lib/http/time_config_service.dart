@@ -9,6 +9,7 @@ import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/utils/tuple.dart';
 import 'package:flutter/foundation.dart';
 
+/// 获取并校验学期校历；远程不可用时按“同学期缓存、推算配置”顺序降级。
 class TimeConfigService {
   static const _lastValidCacheKey = 'timeConfig_lastValid';
 
@@ -44,6 +45,7 @@ class TimeConfigService {
           body.contains('<Code>NoSuchKey</Code>');
 
       if (noSuchKey) {
+        // 未发布与网络故障分开记录；前者是未来学期的正常状态。
         final fallback = _fallbackConfig(semesterId, context);
         DiagnosticLogService.instance.record(
           level: CelechronLogLevel.warning,
@@ -87,6 +89,7 @@ class TimeConfigService {
         context: '$context；HTTP ${response.statusCode}',
       );
       await Future.wait([
+        // 精确学期缓存用于恢复本学期；最后有效配置只提供节次时间模板。
         _db?.setCachedWebPage('timeConfig_$semesterId', body) ??
             Future<void>.value(),
         _db?.setCachedWebPage(_lastValidCacheKey, body) ?? Future<void>.value(),
@@ -132,6 +135,7 @@ class TimeConfigService {
   }
 
   _CalendarFallback _fallbackConfig(String semesterId, String context) {
+    // 精确缓存优先，因为其中的日期和调休只适用于对应学期。
     final exactCache = _db?.getCachedWebPage('timeConfig_$semesterId');
     if (exactCache != null) {
       try {
@@ -156,6 +160,7 @@ class TimeConfigService {
       }
     }
 
+    // 其它学期缓存不能复用日期，只提取经过校验的 sessionTime。
     Map<String, dynamic>? template;
     final lastValid = _db?.getCachedWebPage(_lastValidCacheKey);
     if (lastValid != null) {

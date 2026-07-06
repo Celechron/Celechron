@@ -7,6 +7,7 @@ import 'package:flutter/foundation.dart';
 const refreshErrorDetailMarker = '\n<<<CELECHRON_ERROR_DETAIL>>>\n';
 const refreshDegradedMarker = '<<<CELECHRON_DEGRADED>>>';
 
+/// 将“有缓存可用”的失败编码为降级结果，避免上层把它当成完全失败。
 String degradedRefreshText(String message, {String? details}) {
   final safeMessage = redactSensitive(message);
   final safeDetails = details == null || details.isEmpty
@@ -31,6 +32,7 @@ class LoginException implements Exception {
   }
 }
 
+/// 同时携带面向用户的短消息与可导出的诊断详情。
 class ExceptionWithMessage implements Exception {
   final Object message;
   final String? details;
@@ -85,6 +87,7 @@ class CalendarConfigUnavailableException extends ExceptionWithMessage {
         );
 }
 
+/// 实时请求失败但已返回缓存；其字符串标记供刷新合并逻辑识别。
 class CachedDataException extends ExceptionWithMessage {
   CachedDataException(
     super.message, {
@@ -105,6 +108,7 @@ Exception requestTimeout([String message = '请求超时']) {
 }
 
 String shortErrorText(Object? error) {
+  // UI 只展示标记前的短消息，完整详情仍保留给诊断日志。
   final text =
       (error?.toString() ?? '未知错误').replaceFirst(refreshDegradedMarker, '');
   return text.split(refreshErrorDetailMarker).first.trim();
@@ -164,6 +168,7 @@ Exception exceptionFrom(
   bool retried = false,
   StackTrace? stackTrace,
 }) {
+  // 统一转换前先记录原始类型；输出文本和 URL 随后都经过脱敏。
   DiagnosticLogService.instance.record(
     level: CelechronLogLevel.error,
     module: context ?? 'unknown',

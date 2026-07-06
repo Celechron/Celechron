@@ -10,6 +10,7 @@ enum CelechronLogLevel { debug, info, warning, error }
 
 enum RefreshOrigin { foreground, background, probe }
 
+/// 一次完整刷新的关联上下文，通过 Zone 传递给并行模块。
 class RefreshDiagnosticContext {
   final String refreshId;
   final RefreshOrigin origin;
@@ -24,6 +25,7 @@ class RefreshDiagnosticContext {
   });
 }
 
+/// 统一收集、脱敏并串行落盘诊断信息，避免并发写入互相覆盖。
 class DiagnosticLogService {
   static const _contextKey = #celechronRefreshDiagnosticContext;
   static const _maxMemoryLines = 2000;
@@ -62,6 +64,7 @@ class DiagnosticLogService {
     required RefreshOrigin origin,
     required Future<T> Function() action,
   }) async {
+    // Zone 让异步子任务无需显式传参也能使用同一个 refreshId。
     final context = RefreshDiagnosticContext(
       refreshId: createRefreshId(),
       origin: origin,
@@ -125,6 +128,7 @@ class DiagnosticLogService {
     Object? error,
     StackTrace? stackTrace,
   }) {
+    // 所有自由文本和跳转地址都在进入内存、文件前完成脱敏。
     final context = currentContext;
     final fields = <String>[
       DateTime.now().toUtc().toIso8601String(),
@@ -229,6 +233,7 @@ class DiagnosticLogService {
   }
 
   void _enqueuePersist(String line) {
+    // 写入链保证日志顺序；单次失败被吸收，不能反向影响业务刷新。
     _fileQueue = _fileQueue.then((_) async {
       final file = await _bufferFile();
       await file.writeAsString(
@@ -295,6 +300,7 @@ class DiagnosticLogService {
   }
 
   static String sanitizeUri(Uri uri) {
+    // 只保留定位接口所需的 scheme/host/path，查询参数可能含 ticket 或账号。
     final path = uri.path.isEmpty ? '/' : uri.path;
     return Uri(
       scheme: uri.scheme,
@@ -319,6 +325,7 @@ class DiagnosticLogService {
   }
 
   static String _sanitize(String value) {
+    // 规则覆盖常见凭据名、URL 查询串和连续账号数字；日志调用方仍应避免原文。
     var result = value;
     result = result.replaceAllMapped(
       RegExp(

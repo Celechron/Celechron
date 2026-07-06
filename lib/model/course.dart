@@ -109,6 +109,7 @@ class Course {
   bool completeSession(Session session) {
     // 如果调用了这个函数，则表明该Course对象不是基于Session创建的。
     // 然而，通过成绩创建的Course可能没有id，因此我们这里判断下id是否为空，为空则使用sessioin中带的id
+    // 后续只合并同一安排或相邻节次，避免重复接口记录生成重叠课程。
     id ??= session.id;
     session.id = id;
     teacher ??= session.teacher;

@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 
 import 'diagnostic_log_service.dart';
 
+/// 按账号对前台、后台及 isolate 间的刷新做单飞协调。
 class RefreshCoordinator {
   static const _staleAfter = Duration(minutes: 10);
   static const _foregroundWait = Duration(seconds: 60);
@@ -18,6 +19,7 @@ class RefreshCoordinator {
     required Future<T> Function() action,
     required T busyResult,
   }) async {
+    // 锁键使用账号哈希，避免锁文件名泄露明文账号。
     final key = sha256.convert(utf8.encode(account)).toString();
     final pending = _inProcessRefreshes[key];
     if (pending != null) return await pending as T;
@@ -50,6 +52,7 @@ class RefreshCoordinator {
     try {
       lockFile = await _lockFile(key);
       final deadline = DateTime.now().add(_foregroundWait);
+      // 后台刷新不等待；前台可短暂等待正在进行的同账号任务。
       while (!await _tryAcquire(lockFile, refreshId, origin)) {
         if (origin == RefreshOrigin.background ||
             DateTime.now().isAfter(deadline)) {
@@ -113,6 +116,7 @@ class RefreshCoordinator {
     } on FileSystemException {
       if (!await file.exists()) return false;
       try {
+        // 进程异常退出会遗留锁文件，超过时限后才允许其它任务接管。
         final modified = await file.lastModified();
         if (DateTime.now().difference(modified) > _staleAfter) {
           await file.delete();
@@ -125,6 +129,7 @@ class RefreshCoordinator {
   }
 
   static Future<void> _releaseIfOwned(File file, String refreshId) async {
+    // refreshId 是所有权凭据；无法确认归属时宁可保留到过期也不误删。
     try {
       if (!await file.exists()) return;
       final raw = await file.readAsString();

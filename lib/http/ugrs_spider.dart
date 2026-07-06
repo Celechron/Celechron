@@ -24,6 +24,7 @@ import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
 import 'zjuServices/sztz.dart';
 
+/// 本科完整刷新编排器；各站点共享统一认证，但独立登录、缓存和降级。
 class UgrsSpider implements Spider {
   late HttpClient _httpClient; // HTTP 客户端
   late String _username;
@@ -40,6 +41,7 @@ class UgrsSpider implements Spider {
   PracticeScoreSnapshot _practiceSnapshot = PracticeScoreSnapshot.unavailable;
 
   Future<List<String?>>? _reloginFuture;
+  Future<Cookie?>? _sztzReauthFuture;
   int _loginGeneration = 0;
 
   UgrsSpider(String username, String password) {
@@ -88,6 +90,8 @@ class UgrsSpider implements Spider {
 
   Future<List<String?>> _doLogin() async {
     fetchGrs = false;
+    // 所有子站完成本轮登录尝试后才整体替换旧客户端，
+    // 避免登录过程中业务请求混用两套连接状态。
     final previousClient = _httpClient;
     final candidateClient = _createHttpClient();
 
@@ -155,6 +159,7 @@ class UgrsSpider implements Spider {
     _practiceScores = null;
     _isPracticeScoresGet = false;
     _practiceSnapshot = PracticeScoreSnapshot.unavailable;
+    _sztzReauthFuture = null;
   }
 
   Map<String, double>? get practiceScores => _practiceScores;
@@ -162,21 +167,35 @@ class UgrsSpider implements Spider {
   PracticeScoreSnapshot get practiceSnapshot => _practiceSnapshot;
 
   Future<Cookie?> _reauthenticateSztz() async {
-    await ZjuAm.clearCachedSsoCookie(_username);
-    return ZjuAm.getSsoCookie(_httpClient, _username, _password).timeout(
-      const Duration(seconds: 8),
-      onTimeout: () => throw requestTimeout('素质拓展重新认证超时'),
-    );
+    final pending = _sztzReauthFuture;
+    if (pending != null) return pending;
+    final future = () async {
+      await ZjuAm.clearCachedSsoCookie(_username);
+      return ZjuAm.getSsoCookie(_httpClient, _username, _password).timeout(
+        const Duration(seconds: 8),
+        onTimeout: () => throw requestTimeout('素质拓展重新认证超时'),
+      );
+    }();
+    _sztzReauthFuture = future;
+    try {
+      return await future;
+    } finally {
+      if (identical(_sztzReauthFuture, future)) {
+        _sztzReauthFuture = null;
+      }
+    }
   }
 
   void _usePracticeSnapshot(PracticeScoreSnapshot snapshot) {
     _practiceSnapshot = snapshot;
-    _isPracticeScoresGet = snapshot.source != PracticeDataSource.unavailable;
-    _practiceScores = {
-      'pt2': snapshot.totalFor(1),
-      'pt3': snapshot.totalFor(2),
-      'pt4': snapshot.totalFor(3),
-    };
+    _isPracticeScoresGet = snapshot.hasAnyData;
+    if (snapshot.summary != null) {
+      _practiceScores = {
+        'pt2': snapshot.totalFor(1),
+        'pt3': snapshot.totalFor(2),
+        'pt4': snapshot.totalFor(3),
+      };
+    }
   }
 
   // 【终极修改】自带最大重试次数的循环重试机制，并正确拦截底层私吞的错误
@@ -251,6 +270,7 @@ class UgrsSpider implements Spider {
             errStr.contains("网络错误") ||
             errStr.contains("socketexception");
         if (attempts <= maxRetries && authenticationError) {
+          // generation 防止多个失败请求同时启动重复的整套登录流程。
           if (_loginGeneration == requestLoginGeneration) {
             final loginErrors = await login();
             if (loginErrors.any((error) => error != null)) rethrow;
@@ -342,6 +362,8 @@ class UgrsSpider implements Spider {
 
     for (final queryAcademicYearStart
         in timetableYearPlan.yearsFrom(yearEnroll)) {
+      // normalUpperBound 内保持历史/当前抓取；其后的 probeUpperBound
+      // 无条件尝试下一学年，以接口是否有有效数据判断是否开放。
       final isProbeYear = timetableYearPlan.isProbeYear(queryAcademicYearStart);
       final queryAcademicYear =
           '$queryAcademicYearStart-${queryAcademicYearStart + 1}';
@@ -527,6 +549,7 @@ class UgrsSpider implements Spider {
       }
 
       if (fetchGrs && !isProbeYear) {
+        // 额外一年只探测本科课表，避免扩大研究生接口原有请求范围。
         timetableFetches.add(_fetchWithRetry(() =>
                 _grsNew.getTimetable(_httpClient, queryAcademicYearStart, 13))
             .then((value) {
@@ -682,66 +705,50 @@ class UgrsSpider implements Spider {
     }).catchError((Object error, StackTrace stackTrace) =>
             _describeRefreshFailure(error, stackTrace)));
 
+    // getSqjl 只负责项目明细；外层计点严格按
+    // getMyInfo 网络、getMyInfo 账号缓存、getSqjl 项目合计三级降级。
     fetches.add(() async {
-      final sztzSnapshot = await _sztz.getPracticeScoreItems(
+      final snapshot = await _sztz.getPracticeScoreData(
         _httpClient,
         reauthenticate: _reauthenticateSztz,
       );
-      if (sztzSnapshot.source == PracticeDataSource.sztzLive) {
-        _usePracticeSnapshot(sztzSnapshot);
-        return null;
-      }
-      if (sztzSnapshot.source == PracticeDataSource.sztzCache) {
-        _usePracticeSnapshot(sztzSnapshot);
-        return degradedRefreshText(
-          '实践：素质拓展实时请求失败，已使用项目缓存',
-          details: sztzSnapshot.errorMessage,
-        );
-      }
-
-      try {
-        final value = await _fetchWithRetry(
-          () => _zdbk.getPracticeScores(_httpClient, _username),
-        );
-        if (value.item1 == null) {
-          _usePracticeSnapshot(
-            PracticeScoreSnapshot.zdbk(
-              totals: value.item2,
-              source: PracticeDataSource.zdbkLive,
-              updatedAt: DateTime.now(),
-              stale: false,
-              errorMessage: sztzSnapshot.errorMessage,
-            ),
-          );
-          return degradedRefreshText(
-            '实践：素质拓展不可用，已使用教务网旧实践分实时汇总',
-            details: sztzSnapshot.errorMessage,
-          );
-        }
-        if (value.item1 is CachedDataException ||
-            isDegradedRefreshText(value.item1)) {
-          _usePracticeSnapshot(
-            PracticeScoreSnapshot.zdbk(
-              totals: value.item2,
-              source: PracticeDataSource.zdbkCache,
-              updatedAt: _zdbk.practiceScoresCacheUpdatedAt ?? DateTime.now(),
-              stale: true,
-              errorMessage: shortErrorText(value.item1),
-            ),
-          );
-          return degradedRefreshText(
-            '实践：素质拓展不可用，已使用教务网旧实践分缓存',
-            details: detailedErrorText(value.item1),
-          );
-        }
-        _usePracticeSnapshot(PracticeScoreSnapshot.unavailable);
-        return value.item1?.toString() ??
-            sztzSnapshot.errorMessage ??
+      if (!snapshot.hasAnyData) {
+        // 两个接口都失败时保留上一次快照，不能用零覆盖旧汇总或旧明细。
+        return snapshot.summaryErrorMessage ??
+            snapshot.errorMessage ??
             '实践数据当前不可用';
-      } on Object catch (error, stackTrace) {
-        _usePracticeSnapshot(PracticeScoreSnapshot.unavailable);
-        return _describeRefreshFailure(error, stackTrace, source: '实践');
       }
+      _usePracticeSnapshot(snapshot);
+
+      final degraded = <String>[];
+      if (snapshot.source == PracticeDataSource.sztzCache) {
+        degraded.add('项目实时请求失败，已使用 getSqjl 项目缓存');
+      } else if (snapshot.source == PracticeDataSource.unavailable) {
+        degraded.add('getSqjl 项目明细本次不可用，已保留原有明细');
+      }
+      switch (snapshot.summarySource) {
+        case PracticeSummarySource.cachedMyInfo:
+          degraded.add('getMyInfo 实时请求失败，已使用账号缓存');
+          break;
+        case PracticeSummarySource.calculatedFromSqjl:
+          degraded.add('getMyInfo 及其缓存不可用，已按 getSqjl 项目合计');
+          break;
+        case PracticeSummarySource.unavailable:
+          degraded.add('外层计点汇总本次不可用，已保留原有汇总');
+          break;
+        case PracticeSummarySource.networkMyInfo:
+        case PracticeSummarySource.legacyPersisted:
+          break;
+      }
+      if (degraded.isEmpty) return null;
+      final details = [
+        snapshot.errorMessage,
+        snapshot.summaryErrorMessage,
+      ].whereType<String>().join('；');
+      return degradedRefreshText(
+        '实践：${degraded.join('；')}',
+        details: details.isEmpty ? null : details,
+      );
     }());
 
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {

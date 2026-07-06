@@ -21,6 +21,7 @@ import 'package:celechron/model/semester.dart';
 import 'zjuServices/zjuam.dart';
 import 'zjuServices/zdbk.dart';
 
+/// 研究生完整刷新编排器，同时兼容研究生院课程与已选本科课程。
 class GrsSpider implements Spider {
   late HttpClient _httpClient;
   late String _username;
@@ -85,6 +86,7 @@ class GrsSpider implements Spider {
   }
 
   Future<List<String?>> _doLogin() async {
+    // 候选客户端完成各子站登录后再替换，避免失败登录污染旧会话。
     final previousClient = _httpClient;
     final candidateClient = _createHttpClient();
 
@@ -234,6 +236,7 @@ class GrsSpider implements Spider {
             errStr.contains("网络错误") ||
             errStr.contains("socketexception");
         if (attempts <= maxRetries && authenticationError) {
+          // generation 用来复用其它并发请求刚完成的重新登录。
           if (_loginGeneration == requestLoginGeneration) {
             final loginErrors = await login();
             if (loginErrors.any((error) => error != null)) rethrow;

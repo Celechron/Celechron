@@ -11,11 +11,14 @@ import 'package:celechron/utils/json_utils.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
+/// 素质拓展平台客户端，独立维护业务 Cookie、CAS 登录态和账号隔离缓存。
 class Sztz {
   static final Uri _serviceUri = Uri.parse('https://sztz.zju.edu.cn/dekt/');
   static final Uri _ctxUri = Uri.parse('https://sztz.zju.edu.cn/dekt/ctx');
   static final Uri _practiceUri =
       Uri.parse('https://sztz.zju.edu.cn/dekt/student/home/getSqjl');
+  static final Uri _myInfoUri =
+      Uri.parse('https://sztz.zju.edu.cn/dekt/student/home/getMyInfo');
   static const _practiceAccept =
       'text/html,application/xhtml+xml,application/xml;q=0.9,'
       'image/avif,image/webp,image/apng,*/*;q=0.8,'
@@ -27,6 +30,8 @@ class Sztz {
   Cookie? _ssoCookie;
   Future<bool>? _loginFuture;
   Future<PracticeScoreSnapshot>? _fetchFuture;
+  Future<_MyInfoResult>? _myInfoFetchFuture;
+  Future<PracticeScoreSnapshot>? _practiceDataFuture;
   bool _authenticated = false;
   bool _lastLoginFailed = false;
 
@@ -40,6 +45,7 @@ class Sztz {
     if (iPlanetDirectoryPro == null) {
       throw AuthenticationExpiredException('素质拓展登录：统一身份认证凭据无效');
     }
+    // CAS ticket 只能消费一次；登录单飞可避免并发请求各自申请 ticket。
     final pending = _loginFuture;
     if (pending != null) return pending;
 
@@ -70,6 +76,8 @@ class Sztz {
       requestUri: _serviceUri,
       message: '开始申请素质拓展 CAS service ticket',
     );
+    // 顺序不可交换：先申请并访问 CAS 回调取得 SESSION，再由 ctx
+    // 确认它对应非匿名业务身份，之后才能请求实践项目接口。
     try {
       final callback = await ZjuAm.getServiceCallback(
         httpClient,
@@ -105,6 +113,8 @@ class Sztz {
     HttpClient httpClient,
     Uri callback,
   ) async {
+    // 必须完整访问带一次性 ticket 的回调并先保存 Set-Cookie；
+    // 仅拿到 Location 而不消费回调不会建立正式业务 SESSION。
     final startedAt = DateTime.now();
     final request = await httpClient.getUrl(callback).timeout(
           const Duration(seconds: 12),
@@ -142,6 +152,7 @@ class Sztz {
   }
 
   Future<void> _verifyContext(HttpClient httpClient) async {
+    // SESSION 存在不等于已登录，ctx 的 Base64 业务上下文才是身份依据。
     if (!_hasFormalSessionCookie()) {
       throw const _SztzAuthenticationException('素质拓展正式 SESSION 缺失');
     }
@@ -187,6 +198,7 @@ class Sztz {
     HttpClient httpClient, {
     Future<Cookie?> Function()? reauthenticate,
   }) async {
+    // 抓取也采用单飞，避免并发刷新重复登录并覆盖同一 CookieJar。
     final pending = _fetchFuture;
     if (pending != null) return pending;
     final fetch = _getPracticeScoreItems(
@@ -198,6 +210,73 @@ class Sztz {
       return await fetch;
     } finally {
       if (identical(_fetchFuture, fetch)) _fetchFuture = null;
+    }
+  }
+
+  /// 并行刷新 getSqjl 明细与 getMyInfo 正式汇总，两者可分别成功或失败。
+  Future<PracticeScoreSnapshot> getPracticeScoreData(
+    HttpClient httpClient, {
+    Future<Cookie?> Function()? reauthenticate,
+  }) async {
+    final pending = _practiceDataFuture;
+    if (pending != null) return pending;
+    final fetch = _getPracticeScoreData(
+      httpClient,
+      reauthenticate: reauthenticate,
+    );
+    _practiceDataFuture = fetch;
+    try {
+      return await fetch;
+    } finally {
+      if (identical(_practiceDataFuture, fetch)) _practiceDataFuture = null;
+    }
+  }
+
+  Future<PracticeScoreSnapshot> _getPracticeScoreData(
+    HttpClient httpClient, {
+    Future<Cookie?> Function()? reauthenticate,
+  }) async {
+    late PracticeScoreSnapshot details;
+    late _MyInfoResult myInfo;
+    await Future.wait<void>([
+      getPracticeScoreItems(
+        httpClient,
+        reauthenticate: reauthenticate,
+      ).then((value) => details = value),
+      _getMyInfoSummary(
+        httpClient,
+        reauthenticate: reauthenticate,
+      ).then((value) => myInfo = value),
+    ]);
+    final snapshot = PracticeScoreSnapshot.resolve(
+      details: details,
+      myInfoSummary: myInfo.summary,
+      summaryErrorMessage: myInfo.errorMessage,
+    );
+    DiagnosticLogService.instance.record(
+      module: '素质拓展实践汇总',
+      operation: 'resolve',
+      cacheUsed: snapshot.summarySource == PracticeSummarySource.cachedMyInfo,
+      message: '外层计点来源：${snapshot.summarySource.label}',
+    );
+    return snapshot;
+  }
+
+  Future<_MyInfoResult> _getMyInfoSummary(
+    HttpClient httpClient, {
+    Future<Cookie?> Function()? reauthenticate,
+  }) async {
+    final pending = _myInfoFetchFuture;
+    if (pending != null) return pending;
+    final fetch = _fetchMyInfoSummary(
+      httpClient,
+      reauthenticate: reauthenticate,
+    );
+    _myInfoFetchFuture = fetch;
+    try {
+      return await fetch;
+    } finally {
+      if (identical(_myInfoFetchFuture, fetch)) _myInfoFetchFuture = null;
     }
   }
 
@@ -261,6 +340,7 @@ class Sztz {
       } on _SztzAuthenticationException catch (error, stackTrace) {
         liveError = error;
         liveStackTrace = stackTrace;
+        // 只允许重新取得一次统一认证 Cookie，防止认证失败形成无限循环。
         if (attempt > 0 || reauthenticate == null) break;
         try {
           final refreshedCookie = await reauthenticate();
@@ -306,6 +386,155 @@ class Sztz {
     );
   }
 
+  Future<_MyInfoResult> _fetchMyInfoSummary(
+    HttpClient httpClient, {
+    Future<Cookie?> Function()? reauthenticate,
+  }) async {
+    Object? liveError;
+    StackTrace? liveStackTrace;
+    var relogged = false;
+
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        if (_ssoCookie == null) {
+          throw const _SztzAuthenticationException('缺少统一身份认证登录态');
+        }
+        if (!_authenticated) {
+          final pendingLogin = _loginFuture;
+          if (pendingLogin != null) {
+            await pendingLogin;
+          } else if (_lastLoginFailed) {
+            throw const _SztzAuthenticationException(
+              '此前素质拓展 CAS/ctx 登录未完成',
+            );
+          } else {
+            await login(httpClient, _ssoCookie);
+          }
+        }
+        if (!_authenticated) {
+          throw const _SztzAuthenticationException('素质拓展身份尚未确认');
+        }
+
+        final response = await _requestMyInfoData(
+          httpClient,
+          relogged: relogged,
+          retried: attempt > 0,
+        );
+        final myInfo = _decodeMyInfoPayload(response);
+        if (myInfo == null) {
+          _authenticated = false;
+          throw const _SztzAuthenticationException(
+            'HTTP 200 但未取得有效 getMyInfo 业务 JSON',
+          );
+        }
+        final responseStudentId = asString(myInfo['xh'])?.trim();
+        if (responseStudentId != null &&
+            responseStudentId.isNotEmpty &&
+            responseStudentId != _accountScope) {
+          throw const FormatException('getMyInfo 返回账号与当前账号不一致');
+        }
+
+        final updatedAt = DateTime.now();
+        PracticeScoreSummary summary;
+        try {
+          summary = PracticeScoreSummary.fromMyInfoJson(
+            myInfo,
+            source: PracticeSummarySource.networkMyInfo,
+            updatedAt: updatedAt,
+          );
+        } on FormatException catch (error, stackTrace) {
+          DiagnosticLogService.instance.record(
+            level: CelechronLogLevel.warning,
+            module: '素质拓展实践汇总',
+            operation: 'parse',
+            requestUri: _myInfoUri,
+            message: error.message,
+            error: error,
+            stackTrace: stackTrace,
+          );
+          rethrow;
+        }
+
+        // 只有结构完整的网络结果才能覆盖缓存，失败或 fallback 绝不写入。
+        try {
+          await _writeMyInfoCache(summary);
+        } on Object catch (error, stackTrace) {
+          // 持久化失败不能降级已经校验通过的本次网络汇总。
+          DiagnosticLogService.instance.record(
+            level: CelechronLogLevel.warning,
+            module: '素质拓展实践汇总',
+            operation: 'writeCache',
+            message: 'getMyInfo 网络数据有效，但缓存写入失败',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
+        DiagnosticLogService.instance.record(
+          module: '素质拓展实践汇总',
+          operation: 'result',
+          requestUri: _myInfoUri,
+          message: 'getMyInfo 请求成功；计点汇总已更新',
+        );
+        return _MyInfoResult(summary: summary);
+      } on _SztzAuthenticationException catch (error, stackTrace) {
+        liveError = error;
+        liveStackTrace = stackTrace;
+        if (attempt > 0 || reauthenticate == null) break;
+        try {
+          final refreshedCookie = await reauthenticate();
+          if (refreshedCookie == null) break;
+          await login(httpClient, refreshedCookie);
+          relogged = true;
+        } on Object catch (error, stackTrace) {
+          liveError = error;
+          liveStackTrace = stackTrace;
+          break;
+        }
+      } on Object catch (error, stackTrace) {
+        liveError = error;
+        liveStackTrace = stackTrace;
+        break;
+      }
+    }
+
+    final safeException = exceptionFrom(
+      liveError ?? const FormatException('未取得有效 getMyInfo 汇总'),
+      context: '素质拓展实践汇总',
+      requestUri: _myInfoUri,
+      relogged: relogged,
+      retried: relogged,
+      stackTrace: liveStackTrace,
+    );
+    final errorMessage = shortErrorText(safeException);
+    DiagnosticLogService.instance.record(
+      level: CelechronLogLevel.warning,
+      module: '素质拓展实践汇总',
+      operation: 'result',
+      requestUri: _myInfoUri,
+      message: 'getMyInfo 请求失败，尝试账号隔离缓存',
+      error: safeException,
+      stackTrace: liveStackTrace,
+    );
+    final cached = _readMyInfoCache();
+    if (cached != null) {
+      DiagnosticLogService.instance.record(
+        module: '素质拓展实践汇总',
+        operation: 'result',
+        cacheUsed: true,
+        message: 'getMyInfo 缓存命中；外层计点使用缓存',
+      );
+      return _MyInfoResult(summary: cached, errorMessage: errorMessage);
+    }
+    DiagnosticLogService.instance.record(
+      level: CelechronLogLevel.warning,
+      module: '素质拓展实践汇总',
+      operation: 'result',
+      cacheUsed: false,
+      message: 'getMyInfo 缓存无效；将回退到 getSqjl 项目合计',
+    );
+    return _MyInfoResult(errorMessage: errorMessage);
+  }
+
   Future<Map<String, dynamic>> _fetchValidPayload(
     HttpClient httpClient, {
     required bool relogged,
@@ -345,6 +574,7 @@ class Sztz {
   }
 
   Map<String, dynamic>? _decodeBusinessPayload(_SztzResponse response) {
+    // HTTP 200 可能仍是登录页；必须同时满足业务 success/code/data 约束。
     if (response.statusCode != HttpStatus.ok || response.body.trim().isEmpty) {
       return null;
     }
@@ -360,6 +590,50 @@ class Sztz {
       return payload;
     } on FormatException {
       return null;
+    }
+  }
+
+  static Map<String, dynamic>? _decodeMyInfoPayload(
+    _SztzResponse response,
+  ) {
+    if (response.statusCode != HttpStatus.ok || response.body.trim().isEmpty) {
+      return null;
+    }
+    try {
+      final decoded = asStringMap(jsonDecode(response.body));
+      if (decoded == null || asInt(decoded['code']) != 0) return null;
+      final extend = asStringMap(decoded['extend']);
+      return asStringMap(extend?['myInfo']);
+    } on FormatException {
+      // 登录页 HTML 及其它非 JSON 内容统一视为接口失败。
+      return null;
+    }
+  }
+
+  @visibleForTesting
+  static bool isValidMyInfoResponse(
+    String body, {
+    required String accountScope,
+  }) {
+    final myInfo = _decodeMyInfoPayload(
+      _SztzResponse(statusCode: HttpStatus.ok, body: body),
+    );
+    if (myInfo == null) return false;
+    final responseStudentId = asString(myInfo['xh'])?.trim();
+    if (responseStudentId != null &&
+        responseStudentId.isNotEmpty &&
+        responseStudentId != accountScope) {
+      return false;
+    }
+    try {
+      PracticeScoreSummary.fromMyInfoJson(
+        myInfo,
+        source: PracticeSummarySource.networkMyInfo,
+        updatedAt: DateTime(2000),
+      );
+      return true;
+    } on FormatException {
+      return false;
     }
   }
 
@@ -424,6 +698,67 @@ class Sztz {
     return _SztzResponse(statusCode: response.statusCode, body: body);
   }
 
+  Future<_SztzResponse> _requestMyInfoData(
+    HttpClient httpClient, {
+    required bool relogged,
+    required bool retried,
+  }) async {
+    if (!_authenticated || !_hasFormalSessionCookie()) {
+      throw const _SztzAuthenticationException('素质拓展身份或 SESSION 无效');
+    }
+    final startedAt = DateTime.now();
+    final request = await httpClient.getUrl(_myInfoUri).timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => throw requestTimeout('getMyInfo 请求超时'),
+        );
+    request.followRedirects = false;
+    request.headers
+      ..set(HttpHeaders.acceptHeader, 'application/json, text/plain, */*')
+      ..set(HttpHeaders.cacheControlHeader, 'no-cache')
+      ..set('Pragma', 'no-cache');
+    request.cookies.addAll(_requestCookies(_myInfoUri));
+    DiagnosticLogService.instance.record(
+      module: '素质拓展实践汇总',
+      operation: 'fetch',
+      requestUri: _myInfoUri,
+      relogged: relogged,
+      retried: retried,
+      message: '[SZTZ] GET ${DiagnosticLogService.sanitizeUri(_myInfoUri)}',
+    );
+
+    final response = await request.close().timeout(
+          const Duration(seconds: 12),
+          onTimeout: () => throw requestTimeout('getMyInfo 响应超时'),
+        );
+    _storeResponseCookies(response, _myInfoUri);
+    final body = await _readBody(response, context: '素质拓展 getMyInfo');
+    DiagnosticLogService.instance.record(
+      module: '素质拓展实践汇总',
+      operation: 'fetch',
+      requestUri: _myInfoUri,
+      statusCode: response.statusCode,
+      contentType: response.headers.value(HttpHeaders.contentTypeHeader),
+      durationMs: DateTime.now().difference(startedAt).inMilliseconds,
+      relogged: relogged,
+      retried: retried,
+      message: 'getMyInfo 响应已完整读取',
+    );
+    if (_isRedirect(response.statusCode) ||
+        response.statusCode == HttpStatus.unauthorized ||
+        response.statusCode == HttpStatus.forbidden) {
+      _authenticated = false;
+      throw _SztzAuthenticationException(
+        'getMyInfo 认证未完成；HTTP ${response.statusCode}',
+      );
+    }
+    if (response.statusCode != HttpStatus.ok) {
+      throw ExceptionWithMessage(
+        'getMyInfo 请求失败；HTTP ${response.statusCode}',
+      );
+    }
+    return _SztzResponse(statusCode: response.statusCode, body: body);
+  }
+
   Set<String> _storeResponseCookies(
     HttpClientResponse response,
     Uri origin,
@@ -477,6 +812,8 @@ class Sztz {
     final path = cookie.path == null || cookie.path!.isEmpty
         ? _defaultCookiePath(origin.path)
         : cookie.path!;
+    // Cookie 以 name + domain + path 唯一；CAS 回调签发的正式 SESSION
+    // 必须覆盖同范围内先前的匿名 SESSION。
     _cookies.removeWhere((stored) =>
         stored.name == cookie.name &&
         stored.domain == domain &&
@@ -503,6 +840,7 @@ class Sztz {
   }
 
   List<_StoredCookie> _matchingCookies(Uri uri) {
+    // 发送前再按期限、域名、路径和 Secure 属性筛选，路径更长者优先。
     final now = DateTime.now();
     _cookies.removeWhere((cookie) => cookie.isExpired(now));
     return _cookies.where((cookie) => cookie.matches(uri)).toList()
@@ -553,6 +891,7 @@ class Sztz {
 
   @visibleForTesting
   static bool isAuthenticatedCtxResponse(String body) {
+    // ctx.data 是 Base64 JSON；匿名标志、用户 ID 与角色需同时通过检查。
     try {
       final payload = asStringMap(jsonDecode(body));
       if (payload == null ||
@@ -614,6 +953,7 @@ class Sztz {
 
   Future<void> _writeCache(
       List<PracticeScoreItem> items, DateTime updatedAt) async {
+    // 仅缓存归一化字段，不落盘原始响应中的身份信息或附件数据。
     await _db?.setCachedWebPage(
       _cacheKey,
       jsonEncode({
@@ -621,6 +961,50 @@ class Sztz {
         'items': items.map((item) => item.toJson()).toList(growable: false),
       }),
     );
+  }
+
+  Future<void> _writeMyInfoCache(PracticeScoreSummary summary) async {
+    // 缓存按当前账号隔离；fallback 项目合计绝不能伪装成 getMyInfo 缓存。
+    await _db?.setCachedWebPage(
+      _myInfoCacheKey,
+      jsonEncode({
+        'version': 1,
+        'account': _accountScope,
+        'updatedAt': summary.updatedAt.toUtc().toIso8601String(),
+        'summary': summary.toCacheJson(),
+      }),
+    );
+  }
+
+  PracticeScoreSummary? _readMyInfoCache() {
+    final raw = _db?.getCachedWebPage(_myInfoCacheKey);
+    if (raw == null || raw.trim().isEmpty) return null;
+    try {
+      final payload = asStringMap(jsonDecode(raw));
+      if (payload == null ||
+          asInt(payload['version']) != 1 ||
+          asString(payload['account']) != _accountScope) {
+        return null;
+      }
+      final updatedAt = asDateTime(payload['updatedAt']);
+      final summary = asStringMap(payload['summary']);
+      if (updatedAt == null || summary == null) return null;
+      return PracticeScoreSummary.fromCacheJson(
+        summary,
+        updatedAt: updatedAt.toLocal(),
+      );
+    } on Object catch (error, stackTrace) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '素质拓展实践汇总',
+        operation: 'readCache',
+        cacheUsed: false,
+        message: 'getMyInfo 缓存结构无效，已安全忽略',
+        error: error,
+        stackTrace: stackTrace,
+      );
+      return null;
+    }
   }
 
   PracticeScoreSnapshot? _readCache({required String errorMessage}) {
@@ -699,8 +1083,17 @@ class Sztz {
   }
 
   String get _cacheKey {
+    // 账号只参与哈希作用域，避免明文学号出现在缓存键中或跨账号串用。
     final digest = sha256.convert(utf8.encode(_accountScope)).toString();
     return 'sztz_practice_items_v1_$digest';
+  }
+
+  String get _myInfoCacheKey => myInfoCacheKeyForAccount(_accountScope);
+
+  @visibleForTesting
+  static String myInfoCacheKeyForAccount(String accountScope) {
+    final digest = sha256.convert(utf8.encode(accountScope)).toString();
+    return 'sztz_my_info_summary_v1_$digest';
   }
 
   void logout() {
@@ -708,6 +1101,8 @@ class Sztz {
     _ssoCookie = null;
     _loginFuture = null;
     _fetchFuture = null;
+    _myInfoFetchFuture = null;
+    _practiceDataFuture = null;
     _authenticated = false;
     _lastLoginFailed = false;
   }
@@ -736,6 +1131,17 @@ class _SztzResponse {
   });
 }
 
+class _MyInfoResult {
+  final PracticeScoreSummary? summary;
+  final String? errorMessage;
+
+  const _MyInfoResult({
+    this.summary,
+    this.errorMessage,
+  });
+}
+
+/// CookieJar 内部记录；保留 HttpOnly/SameSite 以校验正式 SESSION 属性。
 class _StoredCookie {
   final String name;
   final String value;

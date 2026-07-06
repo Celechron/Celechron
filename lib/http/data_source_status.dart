@@ -1,3 +1,4 @@
+/// 标记一次读取的真实来源，便于上层区分实时数据与可用但过期的降级结果。
 enum DataSourceStatus {
   live,
   cache,

@@ -102,6 +102,7 @@ Future<void> refreshScholar() async {
   try {
     final refreshErrors =
         await scholar.refresh(origin: RefreshOrigin.background);
+    // 后台刷新拿到整体降级结果时不发通知，避免把旧缓存误判为新成绩或新作业。
     if (refreshErrors.whereType<String>().any((error) =>
         isDegradedRefreshText(error) && shortErrorText(error).contains('刷新'))) {
       return;

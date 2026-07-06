@@ -62,6 +62,8 @@ class Session {
   }*/
 
   factory Session.fromZdbk(Map<String, dynamic> json) {
+    // kcb 将课程名、教学班、教师和地点编码在 HTML 换行块中；
+    // xxq 表示半学期，djj/skcd 分别提供起始节次和连续节数。
     final session = Session.empty()
       ..confirmed = asString(json['sfqd']) == '1'
       ..dayOfWeek = asInt(json['xqj']) ?? 1

@@ -13,6 +13,7 @@ import 'package:celechron/model/todo.dart';
 import 'package:flutter/foundation.dart';
 import 'response_utils.dart';
 
+/// 学在浙大客户端；手动跟随 SSO 跳转并维护业务 SESSION，失败时回退作业缓存。
 class Courses {
   static final Uri _todoUri = Uri.parse("https://courses.zju.edu.cn/api/todos");
 
@@ -27,6 +28,7 @@ class Courses {
 
   Future<Tuple3<Exception?, List<Todo>, DataSourceStatus>> getTodo(
       HttpClient httpClient) async {
+    // 认证失败只允许重建一次业务 SESSION；网络或解析失败直接进入缓存降级。
     try {
       var relogged = false;
       if (_session == null) {

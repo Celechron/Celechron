@@ -25,6 +25,7 @@ class SessionExpiredException extends LoginExpiredException {
   });
 }
 
+/// 本科教务网客户端；统一管理 CAS 业务会话、并发限流与按接口缓存降级。
 class Zdbk {
   Cookie? _jSessionId;
   Cookie? _route;
@@ -50,6 +51,7 @@ class Zdbk {
       throw AuthenticationExpiredException("教务网：统一身份认证凭据无效");
     }
     _iPlanetDirectoryPro = iPlanetDirectoryPro;
+    // 同一客户端只建立一套 JSESSIONID/route，避免并发 CAS 回调互相覆盖。
     final pending = _loginFuture;
     if (pending != null) return await pending;
     final login = _doLogin(httpClient, iPlanetDirectoryPro);
@@ -69,6 +71,8 @@ class Zdbk {
     _captcha = null;
     _jSessionId = null;
     _route = null;
+    // 第一步用统一认证 Cookie 换取 service 跳转；第二步访问跳转地址，
+    // 业务站才会签发必须成对使用的 JSESSIONID 与 route。
     request = await httpClient
         .getUrl(Uri.parse(
             "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fzdbk.zju.edu.cn%2Fjwglxt%2Fxtgl%2Flogin_ssologin.html"))
@@ -200,6 +204,7 @@ class Zdbk {
             originalError: error,
           );
         }
+        // 若其它并发请求已更新会话，本请求直接复用，避免重复登录。
         if (_sessionGeneration == generation) {
           await _relogin(httpClient);
           relogged = true;
@@ -210,6 +215,7 @@ class Zdbk {
   }
 
   Future<T> _withSitePermit<T>(Future<T> Function() action) async {
+    // 限制同时访问教务站的请求数，避免刷新时多个模块共同放大瞬时压力。
     if (_activeSiteRequests >= 3) {
       final waiter = Completer<void>();
       _siteWaiters.add(waiter);
@@ -227,6 +233,7 @@ class Zdbk {
   }
 
   _CachedList _cachedList(String cacheKey, String context) {
+    // 缓存内容必须重新走与实时响应相同的解析器；损坏缓存视为不可用。
     final cached = _db?.getCachedWebPage(cacheKey);
     if (cached == null || cached.trim().isEmpty) {
       return const _CachedList([], false);
@@ -274,6 +281,7 @@ class Zdbk {
     _CachedList cache,
     String context,
   ) {
+    // 返回缓存时仍保留实时异常，并用降级标记告知上层不要清空旧数据。
     if (!cache.used) return exception;
     return CachedDataException(
       '$context：实时请求失败，已使用缓存',

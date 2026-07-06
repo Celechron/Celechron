@@ -65,16 +65,26 @@ class Scholar {
   // 作业（学在浙大）
   List<Todo> todos = [];
 
-  // 实践学分（素质拓展）
-  double pt2 = 0.0; // 二课分
-  double pt3 = 0.0; // 三课分
-  double pt4 = 0.0; // 四课分
-  bool isPracticeScoresGet = false; // 是否成功获取到二三四课堂分数
+  // 素质拓展计点；Jf 是“计点”。
+  double pt2 = 0.0; // 第二课堂计点
+  double pt3 = 0.0; // 第三课堂计点
+  double pt4 = 0.0; // 第四课堂计点
+  bool isPracticeScoresGet = false; // 是否有可展示的二三四课堂计点
   List<PracticeScoreItem> practiceScoreItems = [];
+  // 明细来源始终只描述 getSqjl，不与外层正式汇总混用。
   PracticeDataSource practiceDataSource = PracticeDataSource.unavailable;
+  PracticeSummarySource practiceSummarySource =
+      PracticeSummarySource.unavailable;
   DateTime? practiceUpdatedAt;
+  DateTime? practiceDetailsUpdatedAt;
   bool practiceDetailsAvailable = false;
   bool practiceDetailsStale = false;
+  bool practiceSummaryStale = false;
+  bool? practiceMyPassed;
+  bool? practiceLyPassed;
+
+  /// 总计点只由第二、第三、第四课堂三个计点字段组成。
+  double get practiceTotalJf => pt2 + pt3 + pt4;
 
   int get gradedCourseCount {
     return grades.values.fold(0, (p, e) => p + e.length);
@@ -165,9 +175,14 @@ class Scholar {
     isPracticeScoresGet = false;
     practiceScoreItems = [];
     practiceDataSource = PracticeDataSource.unavailable;
+    practiceSummarySource = PracticeSummarySource.unavailable;
     practiceUpdatedAt = null;
+    practiceDetailsUpdatedAt = null;
     practiceDetailsAvailable = false;
     practiceDetailsStale = false;
+    practiceSummaryStale = false;
+    practiceMyPassed = null;
+    practiceLyPassed = null;
     isLogan = false;
     lastUpdateTimeGrade = DateTime.parse("20010101");
     lastUpdateTimeCourse = DateTime.parse("20010101");
@@ -359,6 +374,7 @@ class Scholar {
       Map<DateTime, String> tempSpecialDates,
       List<Todo> tempTodos,
       PracticeScoreSnapshot? tempPracticeSnapshot) {
+    // 各模块独立降级：某一来源失败时保留该模块旧数据，不阻断其它成功结果。
     var errorItems = ["成绩", "主修", "课表", "作业", "实践"];
     var errorResult = [false, false, false, false, false];
 
@@ -385,6 +401,7 @@ class Scholar {
     if (errorResult[2] == false && tempSemesters.isNotEmpty) {
       semesters = tempSemesters;
     } else if (tempSemesters.isNotEmpty) {
+      // 降级刷新只合并可用片段，避免不完整新对象覆盖已有课表明细。
       for (final incoming in tempSemesters) {
         final existingIndex =
             semesters.indexWhere((semester) => semester.name == incoming.name);
@@ -400,25 +417,31 @@ class Scholar {
       todos = tempTodos;
     }
     if (tempPracticeSnapshot != null) {
+      // 详情仍只采用 getSqjl；汇总独立采用 getMyInfo 的三级回退结果。
       final snapshot = tempPracticeSnapshot;
-      if (snapshot.source == PracticeDataSource.unavailable) {
-        isPracticeScoresGet = false;
-        practiceDataSource = PracticeDataSource.unavailable;
-        practiceDetailsStale = true;
-      } else {
-        isPracticeScoresGet = true;
+      if (snapshot.detailsAvailable) {
+        practiceScoreItems = List<PracticeScoreItem>.from(snapshot.items);
         practiceDataSource = snapshot.source;
-        practiceUpdatedAt = snapshot.updatedAt;
-        practiceDetailsAvailable = snapshot.detailsAvailable;
+        practiceDetailsUpdatedAt = snapshot.updatedAt;
+        practiceDetailsAvailable = true;
         practiceDetailsStale = snapshot.stale;
-        if (snapshot.detailsAvailable) {
-          practiceScoreItems = List<PracticeScoreItem>.from(snapshot.items);
-        } else {
-          practiceScoreItems = [];
-        }
-        pt2 = snapshot.totalFor(1);
-        pt3 = snapshot.totalFor(2);
-        pt4 = snapshot.totalFor(3);
+      } else if (snapshot.source == PracticeDataSource.unavailable) {
+        // getSqjl 失败不能清空上一次成功明细。
+        practiceDetailsAvailable = practiceScoreItems.isNotEmpty;
+        practiceDetailsStale = true;
+      }
+
+      final summary = snapshot.summary;
+      if (summary != null) {
+        isPracticeScoresGet = true;
+        practiceSummarySource = summary.source;
+        practiceUpdatedAt = summary.updatedAt;
+        practiceSummaryStale = summary.stale;
+        practiceMyPassed = summary.myPassed;
+        practiceLyPassed = summary.lyPassed;
+        pt2 = summary.dektJf;
+        pt3 = summary.dsktJf;
+        pt4 = summary.dsiktJf;
       }
     }
   }
@@ -444,9 +467,14 @@ class Scholar {
       'practiceScoreItems':
           practiceScoreItems.map((item) => item.toJson()).toList(),
       'practiceDataSource': practiceDataSource.name,
+      'practiceSummarySource': practiceSummarySource.name,
       'practiceUpdatedAt': practiceUpdatedAt?.toIso8601String(),
+      'practiceDetailsUpdatedAt': practiceDetailsUpdatedAt?.toIso8601String(),
       'practiceDetailsAvailable': practiceDetailsAvailable,
       'practiceDetailsStale': practiceDetailsStale,
+      'practiceSummaryStale': practiceSummaryStale,
+      'practiceMyPassed': practiceMyPassed,
+      'practiceLyPassed': practiceLyPassed,
     };
   }
 
@@ -581,6 +609,7 @@ class Scholar {
     pt3 = asDouble(json['pt3']) ?? 0.0;
     pt4 = asDouble(json['pt4']) ?? 0.0;
     isPracticeScoresGet = asBool(json['isPracticeScoresGet']) ?? false;
+    // 字段是否存在用于区分旧版缓存与“新版缓存但项目为空”。
     final hasPracticeItemsField = json.containsKey('practiceScoreItems');
     practiceScoreItems = [];
     for (final rawItem
@@ -599,20 +628,44 @@ class Scholar {
     practiceDataSource = PracticeDataSource.fromJson(
       json['practiceDataSource'],
     );
+    final hasPracticeSummarySource = json.containsKey('practiceSummarySource');
+    practiceSummarySource = PracticeSummarySource.fromJson(
+      json['practiceSummarySource'],
+    );
     practiceUpdatedAt = asDateTime(json['practiceUpdatedAt'])?.toLocal();
+    practiceDetailsUpdatedAt =
+        asDateTime(json['practiceDetailsUpdatedAt'])?.toLocal() ??
+            practiceUpdatedAt;
     practiceDetailsAvailable = asBool(json['practiceDetailsAvailable']) ??
         (hasPracticeItemsField && practiceScoreItems.isNotEmpty);
     practiceDetailsStale = asBool(json['practiceDetailsStale']) ?? false;
+    practiceSummaryStale =
+        asBool(json['practiceSummaryStale']) ?? hasPracticeSummarySource;
+    practiceMyPassed = asBool(json['practiceMyPassed']);
+    practiceLyPassed = asBool(json['practiceLyPassed']);
     if (!json.containsKey('practiceDataSource') && isPracticeScoresGet) {
+      // 旧版本只保存教务网汇总，因此恢复为无明细且过期的兼容来源。
       practiceDataSource = PracticeDataSource.zdbkCache;
       practiceDetailsAvailable = false;
       practiceDetailsStale = true;
     }
-    if (hasPracticeItemsField && practiceDetailsAvailable) {
+    if (!hasPracticeSummarySource &&
+        hasPracticeItemsField &&
+        practiceDetailsAvailable) {
+      // 旧版有明细时，其外层总分原本就是 getSqjl 项目合计。
       final totals = PracticeScoreItem.approvedTotals(practiceScoreItems);
       pt2 = totals[1] ?? 0;
       pt3 = totals[2] ?? 0;
       pt4 = totals[3] ?? 0;
+      practiceSummarySource = PracticeSummarySource.calculatedFromSqjl;
+      practiceSummaryStale = true;
+    } else if (!hasPracticeSummarySource && isPracticeScoresGet) {
+      practiceSummarySource = PracticeSummarySource.legacyPersisted;
+      practiceSummaryStale = true;
+    } else if (practiceSummarySource == PracticeSummarySource.networkMyInfo) {
+      // 从 Scholar 持久化恢复后已不是本次网络结果，按缓存语义展示。
+      practiceSummarySource = PracticeSummarySource.cachedMyInfo;
+      practiceSummaryStale = true;
     }
     isLogan = true;
   }
