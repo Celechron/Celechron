@@ -44,7 +44,7 @@ class PracticeScoreColumns extends StatelessWidget {
             score(2, scholar.pt3),
             score(3, scholar.pt4),
           ],
-          titles: const ['二课计点', '三课计点', '四课计点'],
+          titles: const ['二课记点', '三课记点', '四课记点'],
           onTaps: [
             () => open(1),
             () => open(2),
@@ -259,7 +259,7 @@ class _SummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           const Text(
-            '正式汇总计点',
+            '正式汇总记点',
             style: TextStyle(color: CupertinoColors.secondaryLabel),
           ),
           const SizedBox(height: 4),
@@ -271,7 +271,7 @@ class _SummaryCard extends StatelessWidget {
           Text('已计入 $includedCount 项 · 未计入 $excludedCount 项'),
           const SizedBox(height: 6),
           Text(
-            '计点来源：${source.label}',
+            '记点来源：${source.label}',
             style: const TextStyle(color: CupertinoColors.secondaryLabel),
           ),
           const SizedBox(height: 4),
@@ -287,7 +287,7 @@ class _SummaryCard extends StatelessWidget {
           if (stale) ...[
             const SizedBox(height: 10),
             const Text(
-              '当前计点使用缓存或项目合计，请在网络恢复后刷新。',
+              '当前记点使用缓存或项目合计，请在网络恢复后刷新。',
               style: TextStyle(color: CupertinoColors.systemOrange),
             ),
           ],

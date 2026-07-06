@@ -95,7 +95,7 @@ void main() {
       });
     }
 
-    test('总计点只累加三个 Jf 白名单字段', () {
+    test('总记点只累加三个 Jf 白名单字段', () {
       final summary = PracticeScoreSummary.fromMyInfoJson(
         {
           'dektJf': '3.450',
@@ -128,7 +128,7 @@ void main() {
       expect(summary.lyPassed, isFalse);
     });
 
-    test('全部计点字段缺失或异常值会拒绝解析', () {
+    test('全部记点字段缺失或异常值会拒绝解析', () {
       expect(
         () => PracticeScoreSummary.fromMyInfoJson(
           {'myTg': true},

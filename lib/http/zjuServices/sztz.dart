@@ -257,7 +257,7 @@ class Sztz {
       module: '素质拓展实践汇总',
       operation: 'resolve',
       cacheUsed: snapshot.summarySource == PracticeSummarySource.cachedMyInfo,
-      message: '外层计点来源：${snapshot.summarySource.label}',
+      message: '外层记点来源：${snapshot.summarySource.label}',
     );
     return snapshot;
   }
@@ -473,7 +473,7 @@ class Sztz {
           module: '素质拓展实践汇总',
           operation: 'result',
           requestUri: _myInfoUri,
-          message: 'getMyInfo 请求成功；计点汇总已更新',
+          message: 'getMyInfo 请求成功；记点汇总已更新',
         );
         return _MyInfoResult(summary: summary);
       } on _SztzAuthenticationException catch (error, stackTrace) {
@@ -521,7 +521,7 @@ class Sztz {
         module: '素质拓展实践汇总',
         operation: 'result',
         cacheUsed: true,
-        message: 'getMyInfo 缓存命中；外层计点使用缓存',
+        message: 'getMyInfo 缓存命中；外层记点使用缓存',
       );
       return _MyInfoResult(summary: cached, errorMessage: errorMessage);
     }

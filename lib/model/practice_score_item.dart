@@ -25,7 +25,7 @@ enum PracticeDataSource {
   }
 }
 
-/// 外层计点汇总来源；与 getSqjl 的项目明细来源分开记录。
+/// 外层记点汇总来源；与 getSqjl 的项目明细来源分开记录。
 enum PracticeSummarySource {
   networkMyInfo,
   cachedMyInfo,
@@ -250,7 +250,7 @@ class PracticeScoreItem {
   }
 }
 
-/// getMyInfo 给出的正式汇总；Jf 表示“计点”。
+/// getMyInfo 给出的正式汇总；Jf 表示“记点”。
 class PracticeScoreSummary {
   final double dektJf;
   final double dsktJf;
@@ -272,7 +272,7 @@ class PracticeScoreSummary {
     required this.stale,
   });
 
-  /// 总计点只使用明确白名单。
+  /// 总记点只使用明确白名单。
   double get totalJf => dektJf + dsktJf + dsiktJf;
 
   /// 沿用项目已有分类：dekt/dskt/dsikt 分别对应第二/三/四课堂。
@@ -290,7 +290,7 @@ class PracticeScoreSummary {
   }) {
     const jfFields = ['dektJf', 'dsktJf', 'dsiktJf'];
     if (!jfFields.any(json.containsKey)) {
-      throw const FormatException('getMyInfo 缺少全部必需计点字段');
+      throw const FormatException('getMyInfo 缺少全部必需记点字段');
     }
     return PracticeScoreSummary(
       dektJf: _parseJf(json, 'dektJf'),
@@ -362,7 +362,7 @@ class PracticeScoreSummary {
     if (value == null || (value is String && value.trim().isEmpty)) return 0;
     final parsed = asDouble(value);
     if (parsed == null || !parsed.isFinite) {
-      throw FormatException('计点字段 $fieldName 无法转换为有限数值');
+      throw FormatException('记点字段 $fieldName 无法转换为有限数值');
     }
     return parsed;
   }

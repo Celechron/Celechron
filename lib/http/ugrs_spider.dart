@@ -705,7 +705,7 @@ class UgrsSpider implements Spider {
     }).catchError((Object error, StackTrace stackTrace) =>
             _describeRefreshFailure(error, stackTrace)));
 
-    // getSqjl 只负责项目明细；外层计点严格按
+    // getSqjl 只负责项目明细；外层记点严格按
     // getMyInfo 网络、getMyInfo 账号缓存、getSqjl 项目合计三级降级。
     fetches.add(() async {
       final snapshot = await _sztz.getPracticeScoreData(
@@ -734,7 +734,7 @@ class UgrsSpider implements Spider {
           degraded.add('getMyInfo 及其缓存不可用，已按 getSqjl 项目合计');
           break;
         case PracticeSummarySource.unavailable:
-          degraded.add('外层计点汇总本次不可用，已保留原有汇总');
+          degraded.add('外层记点汇总本次不可用，已保留原有汇总');
           break;
         case PracticeSummarySource.networkMyInfo:
         case PracticeSummarySource.legacyPersisted:

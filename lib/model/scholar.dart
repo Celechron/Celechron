@@ -65,11 +65,11 @@ class Scholar {
   // 作业（学在浙大）
   List<Todo> todos = [];
 
-  // 素质拓展计点；Jf 是“计点”。
-  double pt2 = 0.0; // 第二课堂计点
-  double pt3 = 0.0; // 第三课堂计点
-  double pt4 = 0.0; // 第四课堂计点
-  bool isPracticeScoresGet = false; // 是否有可展示的二三四课堂计点
+  // 素质拓展记点；Jf 是“记点”。
+  double pt2 = 0.0; // 第二课堂记点
+  double pt3 = 0.0; // 第三课堂记点
+  double pt4 = 0.0; // 第四课堂记点
+  bool isPracticeScoresGet = false; // 是否有可展示的二三四课堂记点
   List<PracticeScoreItem> practiceScoreItems = [];
   // 明细来源始终只描述 getSqjl，不与外层正式汇总混用。
   PracticeDataSource practiceDataSource = PracticeDataSource.unavailable;
@@ -83,7 +83,7 @@ class Scholar {
   bool? practiceMyPassed;
   bool? practiceLyPassed;
 
-  /// 总计点只由第二、第三、第四课堂三个计点字段组成。
+  /// 总记点只由第二、第三、第四课堂三个记点字段组成。
   double get practiceTotalJf => pt2 + pt3 + pt4;
 
   int get gradedCourseCount {
