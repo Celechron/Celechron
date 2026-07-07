@@ -179,15 +179,8 @@ class UgrsSpider implements Spider {
   }
 
   @override
-  Future<
-      Tuple7<
-          List<String?>,
-          List<String?>,
-          List<Semester>,
-          List<Grade>,
-          List<double>,
-          Map<DateTime, String>,
-          List<Todo>>> getEverything() async {
+  Future<EverythingTuple> getEverything(
+      {void Function(EverythingTuple partial)? onProgress}) async {
     var fetches = <Future<String?>>[];
     List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业', '实践'];
 
@@ -426,6 +419,22 @@ class UgrsSpider implements Spider {
       return e.toString();
     }));
 
+    // 异步刷新：每完成一个顶层任务就向上层回调一次当前进度。
+    // 校历(0)、课表(1)、考试(2)、成绩(3)共同拼出学期数据，全部成功后才暴露学期
+    if (onProgress != null) {
+      attachEverythingProgress(
+          fetches: fetches,
+          fetchSequence: fetchSequence,
+          semesterFetchIndices: const [0, 1, 2, 3],
+          loginErrorMessages: loginErrorMessages,
+          semesters: outSemesters,
+          grades: outGrades,
+          majorGrade: outMajorGrade,
+          specialDates: outSpecialDates,
+          todos: outTodos,
+          onProgress: onProgress);
+    }
+
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
       outSemesters.removeWhere((e) =>
           e.grades.isEmpty &&
@@ -479,15 +488,8 @@ class MockSpider extends UgrsSpider {
   void logout() {}
 
   @override
-  Future<
-      Tuple7<
-          List<String?>,
-          List<String?>,
-          List<Semester>,
-          List<Grade>,
-          List<double>,
-          Map<DateTime, String>,
-          List<Todo>>> getEverything() async {
+  Future<EverythingTuple> getEverything(
+      {void Function(EverythingTuple partial)? onProgress}) async {
     await Future.delayed(const Duration(seconds: 2));
     return Tuple7(
         [null, null],

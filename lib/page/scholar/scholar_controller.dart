@@ -81,16 +81,23 @@ class ScholarController extends GetxController {
   List<Todo> get todosInOneWeek =>
       currentSemesterPendingTodos.where((e) => e.isInOneWeek()).toList();
 
-  Future<List<String?>> fetchData() async {
-    return await _scholar.value.refresh().then((value) {
-      _scholar.refresh();
+  void _updateDurations() {
+    _durationToLastUpdateGrade.value =
+        DateTime.now().difference(_scholar.value.lastUpdateTimeGrade);
+    _durationToLastUpdateCourse.value =
+        DateTime.now().difference(_scholar.value.lastUpdateTimeCourse);
+    _durationToLastUpdateHomework.value =
+        DateTime.now().difference(_scholar.value.lastUpdateTimeHomework);
+  }
 
-      _durationToLastUpdateGrade.value =
-          DateTime.now().difference(_scholar.value.lastUpdateTimeGrade);
-      _durationToLastUpdateCourse.value =
-          DateTime.now().difference(_scholar.value.lastUpdateTimeCourse);
-      _durationToLastUpdateHomework.value =
-          DateTime.now().difference(_scholar.value.lastUpdateTimeHomework);
+  Future<List<String?>> fetchData() async {
+    // 异步刷新开启时，每合并一部分数据就刷新界面和“更新于”时长
+    return await _scholar.value.refresh(onPartialUpdate: () {
+      _scholar.refresh();
+      _updateDurations();
+    }).then((value) {
+      _scholar.refresh();
+      _updateDurations();
       return value;
     });
   }
@@ -104,12 +111,7 @@ class ScholarController extends GetxController {
     semesterIndex.value = thisSemesterIndex >= 0 ? thisSemesterIndex : 0;
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      _durationToLastUpdateGrade.value =
-          DateTime.now().difference(_scholar.value.lastUpdateTimeGrade);
-      _durationToLastUpdateCourse.value =
-          DateTime.now().difference(_scholar.value.lastUpdateTimeCourse);
-      _durationToLastUpdateHomework.value =
-          DateTime.now().difference(_scholar.value.lastUpdateTimeHomework);
+      _updateDurations();
     });
   }
 

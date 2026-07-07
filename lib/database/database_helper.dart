@@ -71,6 +71,7 @@ class DatabaseHelper {
   final String kBrightnessMode = 'brightnessMode';
   final String kCourseIdMappingList = 'courseIdMappingList';
   final String kHideHomeGpa = 'hideHomeGpa';
+  final String kAsyncRefresh = 'asyncRefresh';
 
   Option getOption() {
     return Option(
@@ -83,6 +84,7 @@ class DatabaseHelper {
       brightnessMode: getBrightnessMode().obs,
       courseIdMappingList: getCourseIdMappingList().obs,
       hideHomeGpa: getHideHomeGpa().obs,
+      asyncRefresh: getAsyncRefresh().obs,
     );
   }
 
@@ -175,6 +177,18 @@ class DatabaseHelper {
 
   Future<void> setHideHomeGpa(bool hideHomeGpa) async {
     await optionsBox.put(kHideHomeGpa, hideHomeGpa);
+  }
+
+  // 异步刷新：数据边刷出边显示。默认关闭，即等全部刷完后一次性更新
+  bool getAsyncRefresh() {
+    if (optionsBox.get(kAsyncRefresh) == null) {
+      optionsBox.put(kAsyncRefresh, false);
+    }
+    return optionsBox.get(kAsyncRefresh);
+  }
+
+  Future<void> setAsyncRefresh(bool asyncRefresh) async {
+    await optionsBox.put(kAsyncRefresh, asyncRefresh);
   }
 
   List<CourseIdMap> getCourseIdMappingList() {

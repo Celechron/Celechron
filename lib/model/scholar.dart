@@ -147,7 +147,7 @@ class Scholar {
   // 刷新数据
   var _mutex = 0;
 
-  Future<List<String?>> refresh() async {
+  Future<List<String?>> refresh({void Function()? onPartialUpdate}) async {
     if (!isLogan) {
       return ["未登录"];
     }
@@ -160,7 +160,31 @@ class Scholar {
     }
     _mutex++;
     try {
-      return await _spider?.getEverything().then((value) async {
+      // 异步刷新：每完成一部分抓取就先合并进内存并通知界面，
+      // 全部完成后仍会走下面的完整合并（含实践学分、时间戳、持久化与报错）
+      var useAsyncRefresh =
+          onPartialUpdate != null && (_db?.getAsyncRefresh() ?? false);
+      return await _spider
+              ?.getEverything(
+                  onProgress: useAsyncRefresh
+                      ? (partial) {
+                          try {
+                            _applyFetchResult(partial, partial: true);
+                            // 已成功板块立即打上“更新于”时间戳；
+                            // 未完成/失败的板块被 updateLastUpdateTime 的
+                            // 关键字守卫（“查询进行中”/“查询出错”）拦下
+                            if (partial.item1.every((e) => e == null)) {
+                              updateLastUpdateTime(partial.item2);
+                            }
+                            onPartialUpdate();
+                          } catch (e) {
+                            // 中间态合并失败不影响整体刷新，最终合并会兜底
+                            // ignore: avoid_print
+                            print('partial refresh error: $e');
+                          }
+                        }
+                      : null)
+              .then((value) async {
             for (var e in value.item1) {
               // ignore: avoid_print
               if (e != null) print(e);
@@ -172,78 +196,7 @@ class Scholar {
             if (value.item1.every((e) => e == null)) {
               updateLastUpdateTime(value.item2);
             }
-            var tempSemester = value.item3;
-            var tempGrades = value.item4.fold(<String, List<Grade>>{}, (p, e) {
-              // 体育课
-              var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
-              var key = matchClass?.group(2) ?? e.id.substring(14, 22);
-              if (key.startsWith('PPAE') || key.startsWith('401')) {
-                key = matchClass?.group(1) ?? e.id.substring(0, 22);
-              }
-              var courseIdMappingList =
-                  Get.find<OptionController>(tag: 'optionController')
-                      .courseIdMappingList;
-              var courseIdMappingMap = {
-                for (var e in courseIdMappingList) e.id1: e.id2
-              };
-              if (courseIdMappingMap.containsKey(key)) {
-                key = courseIdMappingMap[key]!;
-              }
-              p.putIfAbsent(key, () => <Grade>[]).add(e);
-              return p;
-            });
-            var tempMajorGpaAndCredit = value.item5;
-            var tempSpecialDates = value.item6;
-            var tempTodos = value.item7;
-
-            var tempIsPracticeScoresGet = false;
-            var tempPt2 = 0.0, tempPt3 = 0.0, tempPt4 = 0.0;
-            // 获取实践学分数据（仅本科生）
-            if (_spider is UgrsSpider && !isGrs) {
-              var ugrsSpider = _spider as UgrsSpider;
-              tempIsPracticeScoresGet = ugrsSpider.isPracticeScoresGet;
-              if (tempIsPracticeScoresGet) {
-                var practiceScores = ugrsSpider.practiceScores;
-                if (practiceScores != null) {
-                  tempPt2 = practiceScores['pt2'] ?? 0.0;
-                  tempPt3 = practiceScores['pt3'] ?? 0.0;
-                  tempPt4 = practiceScores['pt4'] ?? 0.0;
-                }
-              }
-            } else {
-              tempIsPracticeScoresGet = false;
-            }
-
-            setScholar(
-                value.item2,
-                tempSemester,
-                tempGrades,
-                tempMajorGpaAndCredit,
-                tempSpecialDates,
-                tempTodos,
-                tempIsPracticeScoresGet,
-                tempPt2,
-                tempPt3,
-                tempPt4);
-
-            // 保研成绩，只取第一次
-            var netGrades = grades.values.map((e) => e.first);
-            if (netGrades.isNotEmpty) {
-              gpa = GpaHelper.calculateGpa(netGrades).item1;
-            }
-            // 出国成绩，取最高的一次
-            var aboardNetGrades = grades.values.map((e) {
-              e.sort((a, b) => a.hundredPoint.compareTo(b.hundredPoint));
-              return e.last;
-            });
-            if (aboardNetGrades.isNotEmpty) {
-              var result = GpaHelper.calculateGpa(aboardNetGrades);
-              aboardGpa = result.item1;
-              // 所获学分，不包括挂科的。
-              credit = result.item2;
-            } else {
-              credit = 0.0;
-            }
+            _applyFetchResult(value);
 
             await _db?.setScholar(this);
             return value.item1.every((e) => e == null)
@@ -258,6 +211,88 @@ class Scholar {
       return ['网络连接失败，请检查网络后重试'];
     } finally {
       _mutex--;
+    }
+  }
+
+  // 把一次抓取结果合并进当前对象。partial 为 true 表示异步刷新的中间态：
+  // 空数据、有报错或尚未抓完的部分会被 setScholar 的守卫拦下，保留原值；
+  // 实践学分成功与否要等全部抓完才能判定，中间态一律保持不变。
+  void _applyFetchResult(EverythingTuple value, {bool partial = false}) {
+    var tempSemester = value.item3;
+    var tempGrades = value.item4.fold(<String, List<Grade>>{}, (p, e) {
+      // 体育课
+      var matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(e.id);
+      var key = matchClass?.group(2) ?? e.id.substring(14, 22);
+      if (key.startsWith('PPAE') || key.startsWith('401')) {
+        key = matchClass?.group(1) ?? e.id.substring(0, 22);
+      }
+      var courseIdMappingList =
+          Get.find<OptionController>(tag: 'optionController')
+              .courseIdMappingList;
+      var courseIdMappingMap = {
+        for (var e in courseIdMappingList) e.id1: e.id2
+      };
+      if (courseIdMappingMap.containsKey(key)) {
+        key = courseIdMappingMap[key]!;
+      }
+      p.putIfAbsent(key, () => <Grade>[]).add(e);
+      return p;
+    });
+    var tempMajorGpaAndCredit = value.item5;
+    var tempSpecialDates = value.item6;
+    var tempTodos = value.item7;
+
+    var tempIsPracticeScoresGet = partial ? isPracticeScoresGet : false;
+    var tempPt2 = partial ? pt2 : 0.0;
+    var tempPt3 = partial ? pt3 : 0.0;
+    var tempPt4 = partial ? pt4 : 0.0;
+    if (!partial) {
+      // 获取实践学分数据（仅本科生）
+      if (_spider is UgrsSpider && !isGrs) {
+        var ugrsSpider = _spider as UgrsSpider;
+        tempIsPracticeScoresGet = ugrsSpider.isPracticeScoresGet;
+        if (tempIsPracticeScoresGet) {
+          var practiceScores = ugrsSpider.practiceScores;
+          if (practiceScores != null) {
+            tempPt2 = practiceScores['pt2'] ?? 0.0;
+            tempPt3 = practiceScores['pt3'] ?? 0.0;
+            tempPt4 = practiceScores['pt4'] ?? 0.0;
+          }
+        }
+      } else {
+        tempIsPracticeScoresGet = false;
+      }
+    }
+
+    setScholar(
+        value.item2,
+        tempSemester,
+        tempGrades,
+        tempMajorGpaAndCredit,
+        tempSpecialDates,
+        tempTodos,
+        tempIsPracticeScoresGet,
+        tempPt2,
+        tempPt3,
+        tempPt4);
+
+    // 保研成绩，只取第一次
+    var netGrades = grades.values.map((e) => e.first);
+    if (netGrades.isNotEmpty) {
+      gpa = GpaHelper.calculateGpa(netGrades).item1;
+    }
+    // 出国成绩，取最高的一次
+    var aboardNetGrades = grades.values.map((e) {
+      e.sort((a, b) => a.hundredPoint.compareTo(b.hundredPoint));
+      return e.last;
+    });
+    if (aboardNetGrades.isNotEmpty) {
+      var result = GpaHelper.calculateGpa(aboardNetGrades);
+      aboardGpa = result.item1;
+      // 所获学分，不包括挂科的。
+      credit = result.item2;
+    } else {
+      credit = 0.0;
     }
   }
 

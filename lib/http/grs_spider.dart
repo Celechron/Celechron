@@ -184,15 +184,8 @@ class GrsSpider implements Spider {
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override
-  Future<
-      Tuple7<
-          List<String?>,
-          List<String?>,
-          List<Semester>,
-          List<Grade>,
-          List<double>,
-          Map<DateTime, String>,
-          List<Todo>>> getEverything() async {
+  Future<EverythingTuple> getEverything(
+      {void Function(EverythingTuple partial)? onProgress}) async {
     // 返回值初始化
     var outSemesters = <Semester>[];
     var outGrades = <Grade>[];
@@ -451,6 +444,23 @@ class GrsSpider implements Spider {
       outTodos.addAll(value.item2);
       return value.item1?.toString();
     }).catchError((e) => 'coursesTodo $e'));
+
+    // 异步刷新：每完成一个顶层任务就向上层回调一次当前进度。
+    // 配置(0)、课表(1)、本科生课考试(2)、本科生课成绩(3)、研究生课考试(4)、
+    // 研究生课成绩(5)共同拼出学期数据，全部成功后才暴露学期
+    if (onProgress != null) {
+      attachEverythingProgress(
+          fetches: fetches,
+          fetchSequence: fetchSequenceGrs,
+          semesterFetchIndices: const [0, 1, 2, 3, 4, 5],
+          loginErrorMessages: loginErrorMessages,
+          semesters: outSemesters,
+          grades: outGrades,
+          majorGrade: outMajorGrade,
+          specialDates: outSpecialDates,
+          todos: outTodos,
+          onProgress: onProgress);
+    }
 
     // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
