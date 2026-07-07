@@ -292,7 +292,7 @@ class TaskPage extends StatelessWidget {
           child: RoundRectangleCard(
             onTap: () async {
               // 直接导航到编辑页面
-              Task? res = await Navigator.of(context).push(
+              Task? res = await Navigator.of(context, rootNavigator: true).push(
                 CupertinoPageRoute(
                   builder: (context) => TaskEditPage(deadline),
                 ),
