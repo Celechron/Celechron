@@ -3,6 +3,7 @@ import 'package:celechron/page/scholar/todo/todo_card.dart';
 import 'package:celechron/utils/platform_features.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -93,6 +94,22 @@ class ScholarPage extends StatelessWidget {
 
   final _scholarController = Get.put(ScholarController());
   final ValueNotifier<bool> _isRefreshing = ValueNotifier(false);
+
+  // 让页内横向列表在桌面端也响应鼠标拖动。外层 PageView 为支持鼠标切页开启了
+  // 鼠标拖动，横向列表若不响应鼠标，拖动会漏到 PageView 上造成误切页；
+  // 内层可滚动组件在手势竞技中优先，包上后拖动由列表自己消费（触屏行为不变）
+  Widget _mouseDraggable(BuildContext context, Widget child) {
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(
+        scrollbars: false,
+        dragDevices: {
+          ...ScrollConfiguration.of(context).dragDevices,
+          PointerDeviceKind.mouse,
+        },
+      ),
+      child: child,
+    );
+  }
 
   Widget _buildGradeBrief(BuildContext context) {
     final optionController =
@@ -578,19 +595,21 @@ class ScholarPage extends StatelessWidget {
                             if (_scholarController.todos.isNotEmpty)
                               SizedBox(
                                   height: 102,
-                                  child: ListView.separated(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount:
-                                          _scholarController.todos.length,
-                                      separatorBuilder: (context, index) =>
-                                          const SizedBox(width: 8),
-                                      itemBuilder: (context, index) {
-                                        final todo =
-                                            _scholarController.todos[index];
-                                        return SizedBox(
-                                            width: 200,
-                                            child: TodoCard(todo: todo));
-                                      }))
+                                  child: _mouseDraggable(
+                                      context,
+                                      ListView.separated(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount:
+                                              _scholarController.todos.length,
+                                          separatorBuilder: (context, index) =>
+                                              const SizedBox(width: 8),
+                                          itemBuilder: (context, index) {
+                                            final todo =
+                                                _scholarController.todos[index];
+                                            return SizedBox(
+                                                width: 200,
+                                                child: TodoCard(todo: todo));
+                                          })))
                           ],
                         ))),
               ],
@@ -837,36 +856,39 @@ class ScholarPage extends StatelessWidget {
                     Expanded(
                       child: SizedBox(
                         height: 30,
-                        child: Obx(
-                          () => ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _scholarController.semesters.length,
-                            itemBuilder: (context, index) {
-                              final semester =
-                                  _scholarController.semesters[index];
-                              return Stack(
-                                children: [
-                                  Obx(
-                                    () => AnimateButton(
-                                      text:
-                                          '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
-                                      onTap: () {
-                                        _scholarController.semesterIndex.value =
-                                            index;
-                                        _scholarController.semesterIndex
-                                            .refresh();
-                                      },
-                                      backgroundColor: _scholarController
-                                                  .semesterIndex.value ==
-                                              index
-                                          ? CustomCupertinoDynamicColors.cyan
-                                          : CupertinoColors.systemFill,
+                        child: _mouseDraggable(
+                          context,
+                          Obx(
+                            () => ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _scholarController.semesters.length,
+                              itemBuilder: (context, index) {
+                                final semester =
+                                    _scholarController.semesters[index];
+                                return Stack(
+                                  children: [
+                                    Obx(
+                                      () => AnimateButton(
+                                        text:
+                                            '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
+                                        onTap: () {
+                                          _scholarController
+                                              .semesterIndex.value = index;
+                                          _scholarController.semesterIndex
+                                              .refresh();
+                                        },
+                                        backgroundColor: _scholarController
+                                                    .semesterIndex.value ==
+                                                index
+                                            ? CustomCupertinoDynamicColors.cyan
+                                            : CupertinoColors.systemFill,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 90),
-                                ],
-                              );
-                            },
+                                    const SizedBox(width: 90),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
