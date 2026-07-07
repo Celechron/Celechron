@@ -9,6 +9,35 @@ import 'package:celechron/model/todo.dart';
 typedef EverythingTuple = Tuple7<List<String?>, List<String?>, List<Semester>,
     List<Grade>, List<double>, Map<DateTime, String>, List<Todo>>;
 
+/// 单个抓取模块的状态（供刷新状态文案使用）
+enum FetchModuleState { pending, success, failed }
+
+/// 一个顶层抓取模块的标签与当前状态
+class ModuleFetchStatus {
+  final String label;
+  final FetchModuleState state;
+
+  const ModuleFetchStatus(this.label, this.state);
+}
+
+/// 由 getEverything 的抓取错误列表（中间态或最终态）推导各模块状态。
+/// null=成功；以「查询进行中」结尾=进行中；其余=失败。
+/// 两表长度不等时视为不可信，返回空列表。
+List<ModuleFetchStatus> moduleStatusesFromErrors(
+    List<String?> errors, List<String> labels) {
+  if (errors.length != labels.length) return const [];
+  return List.generate(labels.length, (i) {
+    final e = errors[i];
+    return ModuleFetchStatus(
+        labels[i],
+        e == null
+            ? FetchModuleState.success
+            : e.endsWith('查询进行中')
+                ? FetchModuleState.pending
+                : FetchModuleState.failed);
+  });
+}
+
 abstract class Spider {
   set db(DatabaseHelper? db);
 
@@ -19,6 +48,9 @@ abstract class Spider {
   void logout() {
     throw UnimplementedError();
   }
+
+  /// 顶层抓取任务的标签序列，与 getEverything 返回值的抓取错误列表下标一一对应
+  List<String> get fetchLabels;
 
   /// onProgress：异步刷新用。每完成一个顶层抓取任务，就带着当前已累积的数据回调一次；
   /// 传 null 则行为与原来完全一致。

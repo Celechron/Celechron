@@ -36,6 +36,20 @@ class UgrsSpider implements Spider {
     "iplanetdirectorypro无效"
   ];
 
+  /// getEverything 内各顶层抓取任务的标签，与抓取错误列表下标一一对应
+  static const List<String> fetchSequence = [
+    '校历',
+    '课表',
+    '考试',
+    '成绩',
+    '主修',
+    '作业',
+    '实践'
+  ];
+
+  @override
+  List<String> get fetchLabels => fetchSequence;
+
   UgrsSpider(String username, String password) {
     _initHttpClient(); // 初始化客户端移到单独方法
     _courses = Courses();
@@ -182,7 +196,6 @@ class UgrsSpider implements Spider {
   Future<EverythingTuple> getEverything(
       {void Function(EverythingTuple partial)? onProgress}) async {
     var fetches = <Future<String?>>[];
-    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业', '实践'];
 
     var outSemesters = <Semester>[];
     var outGrades = <Grade>[];

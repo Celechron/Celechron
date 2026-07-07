@@ -12,6 +12,8 @@ import 'package:celechron/design/two_line_card.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/design/animate_button.dart';
+import 'package:celechron/design/refresh_status_indicator.dart';
+import 'package:celechron/design/rolling_shimmer_text.dart';
 
 import 'package:celechron/page/search/search_view.dart';
 import 'course_list/course_list_view.dart';
@@ -871,6 +873,41 @@ class ScholarPage extends StatelessWidget {
                     ),
                   ],
                 ),
+                // 桌面端刷新超过 5 秒后的状态条：小转圈 + 滚动文案，随刷新结束收起。
+                // 移动端的状态文案由下方 CupertinoSliverRefreshControl 的 builder 展示
+                if (PlatformFeatures.isDesktop)
+                  Obx(() {
+                    final message =
+                        _scholarController.refreshStatusMessage.value;
+                    return AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      alignment: Alignment.topCenter,
+                      // AnimatedSwitcher 让收起时末条文案先淡出、条带再合拢，
+                      // 而不是内容瞬间消失
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: message == null
+                            ? const SizedBox(
+                                key: ValueKey('refreshStatusStripEmpty'),
+                                width: double.infinity)
+                            : Padding(
+                                key: const ValueKey('refreshStatusStrip'),
+                                padding:
+                                    const EdgeInsets.only(top: 6, bottom: 2),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const CupertinoActivityIndicator(radius: 7),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                        child: RollingShimmerText(message)),
+                                  ],
+                                ),
+                              ),
+                      ),
+                    );
+                  }),
                 const SizedBox(height: 4),
                 Divider(
                   thickness: 0,
@@ -882,6 +919,18 @@ class ScholarPage extends StatelessWidget {
         )),
         if (_scholarController.scholar.isLogan)
           CupertinoSliverRefreshControl(
+            // 复刻原生转圈，刷新超过 5 秒后在其右侧滚动展示状态文案。
+            // Obx 是必需的：刷新驻留期间 sliver 高度不变、builder 不会被重调，
+            // 文案更新只能靠响应式重建
+            builder: (context, refreshState, pulledExtent,
+                    refreshTriggerPullDistance, refreshIndicatorExtent) =>
+                Obx(() => RefreshStatusIndicator(
+                      refreshState: refreshState,
+                      pulledExtent: pulledExtent,
+                      refreshTriggerPullDistance: refreshTriggerPullDistance,
+                      refreshIndicatorExtent: refreshIndicatorExtent,
+                      message: _scholarController.refreshStatusMessage.value,
+                    )),
             onRefresh: () async {
               var error = await _scholarController.fetchData();
               if (error.any((e) => e != null)) {

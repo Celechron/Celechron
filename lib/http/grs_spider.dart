@@ -33,7 +33,8 @@ class GrsSpider implements Spider {
     "iplanetdirectorypro无效",
     "会话已过期",
   ];
-  static List<String> fetchSequenceGrs = [
+  /// getEverything 内各顶层抓取任务的标签，与抓取错误列表下标一一对应
+  static const List<String> fetchSequenceGrs = [
     '配置',
     '课表',
     '本科生课考试',
@@ -42,6 +43,9 @@ class GrsSpider implements Spider {
     '研究生课成绩',
     '作业'
   ];
+
+  @override
+  List<String> get fetchLabels => fetchSequenceGrs;
 
   GrsSpider(String username, String password) {
     _initHttpClient();

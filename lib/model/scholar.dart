@@ -147,7 +147,9 @@ class Scholar {
   // 刷新数据
   var _mutex = 0;
 
-  Future<List<String?>> refresh({void Function()? onPartialUpdate}) async {
+  Future<List<String?>> refresh(
+      {void Function()? onPartialUpdate,
+      void Function(List<ModuleFetchStatus> statuses)? onFetchStatus}) async {
     if (!isLogan) {
       return ["未登录"];
     }
@@ -164,24 +166,50 @@ class Scholar {
       // 全部完成后仍会走下面的完整合并（含实践学分、时间戳、持久化与报错）
       var useAsyncRefresh =
           onPartialUpdate != null && (_db?.getAsyncRefresh() ?? false);
+      // 刷新状态文案：与数据合并解耦，只要有人监听就照常上报各模块进度，
+      // 不受异步刷新开关影响；后台刷新两个回调都不传，行为与原来完全一致
+      var fetchLabels = _spider?.fetchLabels ?? const <String>[];
+      void emitStatuses(List<String?> fetchErrors) {
+        if (onFetchStatus == null || fetchLabels.isEmpty) return;
+        try {
+          var statuses = moduleStatusesFromErrors(fetchErrors, fetchLabels);
+          if (statuses.isNotEmpty) onFetchStatus(statuses);
+        } catch (e) {
+          // 状态上报失败不影响刷新本身
+          // ignore: avoid_print
+          print('fetch status error: $e');
+        }
+      }
+
+      // 起始状态：全部「进行中」（覆盖登录阶段，此时尚无任何任务完成回调）
+      if (onFetchStatus != null && fetchLabels.isNotEmpty) {
+        onFetchStatus([
+          for (var label in fetchLabels)
+            ModuleFetchStatus(label, FetchModuleState.pending)
+        ]);
+      }
+      var wantProgress = useAsyncRefresh || onFetchStatus != null;
       return await _spider
               ?.getEverything(
-                  onProgress: useAsyncRefresh
+                  onProgress: wantProgress
                       ? (partial) {
-                          try {
-                            _applyFetchResult(partial, partial: true);
-                            // 已成功板块立即打上“更新于”时间戳；
-                            // 未完成/失败的板块被 updateLastUpdateTime 的
-                            // 关键字守卫（“查询进行中”/“查询出错”）拦下
-                            if (partial.item1.every((e) => e == null)) {
-                              updateLastUpdateTime(partial.item2);
+                          if (useAsyncRefresh) {
+                            try {
+                              _applyFetchResult(partial, partial: true);
+                              // 已成功板块立即打上“更新于”时间戳；
+                              // 未完成/失败的板块被 updateLastUpdateTime 的
+                              // 关键字守卫（“查询进行中”/“查询出错”）拦下
+                              if (partial.item1.every((e) => e == null)) {
+                                updateLastUpdateTime(partial.item2);
+                              }
+                              onPartialUpdate();
+                            } catch (e) {
+                              // 中间态合并失败不影响整体刷新，最终合并会兜底
+                              // ignore: avoid_print
+                              print('partial refresh error: $e');
                             }
-                            onPartialUpdate();
-                          } catch (e) {
-                            // 中间态合并失败不影响整体刷新，最终合并会兜底
-                            // ignore: avoid_print
-                            print('partial refresh error: $e');
                           }
+                          emitStatuses(partial.item2);
                         }
                       : null)
               .then((value) async {
@@ -197,6 +225,9 @@ class Scholar {
               updateLastUpdateTime(value.item2);
             }
             _applyFetchResult(value);
+
+            // 终态补发：最后完成的模块不会触发 onProgress，只能在这里定论
+            emitStatuses(value.item2);
 
             await _db?.setScholar(this);
             return value.item1.every((e) => e == null)
