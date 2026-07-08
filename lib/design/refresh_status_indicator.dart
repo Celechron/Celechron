@@ -23,8 +23,7 @@ class RefreshStatusIndicator extends StatefulWidget {
   final String? message;
 
   @override
-  State<RefreshStatusIndicator> createState() =>
-      _RefreshStatusIndicatorState();
+  State<RefreshStatusIndicator> createState() => _RefreshStatusIndicatorState();
 }
 
 class _RefreshStatusIndicatorState extends State<RefreshStatusIndicator> {

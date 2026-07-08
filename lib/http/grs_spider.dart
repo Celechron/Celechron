@@ -33,6 +33,7 @@ class GrsSpider implements Spider {
     "iplanetdirectorypro无效",
     "会话已过期",
   ];
+
   /// getEverything 内各顶层抓取任务的标签，与抓取错误列表下标一一对应
   static const List<String> fetchSequenceGrs = [
     '配置',

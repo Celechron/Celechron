@@ -165,10 +165,14 @@ class ScholarController extends GetxController {
     if (_activeFetchCount == 1) _startStatusFeed();
     try {
       // 异步刷新开启时，每合并一部分数据就刷新界面和“更新于”时长
-      return await _scholar.value.refresh(onPartialUpdate: () {
-        _scholar.refresh();
-        _updateDurations();
-      }, onFetchStatus: _onFetchStatus).then((value) {
+      return await _scholar.value
+          .refresh(
+              onPartialUpdate: () {
+                _scholar.refresh();
+                _updateDurations();
+              },
+              onFetchStatus: _onFetchStatus)
+          .then((value) {
         _scholar.refresh();
         _updateDurations();
         return value;

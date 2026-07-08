@@ -33,9 +33,13 @@ void main() {
       final statuses = moduleStatusesFromErrors(
           [null, null, '考试查询出错：500', null, null, null, null], labels);
       expect(
-          statuses.where((s) => s.state == FetchModuleState.failed).single.label,
+          statuses
+              .where((s) => s.state == FetchModuleState.failed)
+              .single
+              .label,
           '考试');
-      expect(statuses.where((s) => s.state == FetchModuleState.pending), isEmpty);
+      expect(
+          statuses.where((s) => s.state == FetchModuleState.pending), isEmpty);
     });
 
     test('长度不一致时视为不可信，返回空列表（如 MockSpider 的 6 项错误表）', () {
