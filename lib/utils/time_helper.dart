@@ -1,23 +1,94 @@
 import 'package:celechron/utils/utils.dart';
 
 class TimeHelper {
+  static final RegExp _chineseCalendarDatePattern = RegExp(
+    r'(\d{4})\s*年\s*(\d{1,2})\s*月\s*(\d{1,2})\s*日',
+  );
+  static final RegExp _numericCalendarDatePattern = RegExp(
+    r'(\d{4})\s*[-/.]\s*(\d{1,2})\s*[-/.]\s*(\d{1,2})',
+  );
+  static final RegExp _timeRangePattern = RegExp(
+    r'[（(]?\s*(\d{1,2}:\d{2})\s*[-–—~～至]\s*(\d{1,2}:\d{2})\s*[）)]?',
+  );
+  static final RegExp _examWeekDayPattern = RegExp(
+    r'第\s*(\d+)\s*天',
+  );
+
   static List<DateTime> parseExamDateTime(String datetimeStr) {
-    // Input format: 2021年01月22日(08:00-10:00)
-    String date, timeBegin, timeEnd;
-    if (datetimeStr.contains("年")) {
-      // contains方法返回值是bool，不会返回null
-      date =
-          '${datetimeStr.substring(0, 4)}${datetimeStr.substring(5, 7)}${datetimeStr.substring(8, 10)}T';
-      timeBegin = datetimeStr.substring(12, 17);
-      timeEnd = datetimeStr.substring(18, 23);
-    } else {
-      // 校历未出时zdbk不会有具体日期 使用1970代替
-      var datePat = RegExp("第(\\d+)天\\((.+)-(.+)\\)").firstMatch(datetimeStr);
-      date = '197001${datePat?.group(1)?.padLeft(2, '0') ?? "14"}T';
-      timeBegin = datePat?.group(2) ?? "05:14";
-      timeEnd = datePat?.group(3) ?? "07:14";
+    final timeMatch = _timeRangePattern.firstMatch(datetimeStr);
+    final timeBegin = timeMatch?.group(1) ?? '05:14';
+    final timeEnd = timeMatch?.group(2) ?? '07:14';
+    final calendarMatch = _calendarDateMatch(datetimeStr);
+    if (calendarMatch != null) {
+      final year = int.parse(calendarMatch.group(1)!);
+      final month = int.parse(calendarMatch.group(2)!);
+      final day = int.parse(calendarMatch.group(3)!);
+      return [
+        _dateTimeWithTime(year, month, day, timeBegin),
+        _dateTimeWithTime(year, month, day, timeEnd),
+      ];
     }
-    return [DateTime.parse(date + timeBegin), DateTime.parse(date + timeEnd)];
+
+    final examWeekMatch = _examWeekDayPattern.firstMatch(datetimeStr);
+    // 校历未出时 zdbk 不会有具体日期，使用 1970 年作为占位。
+    final day = int.tryParse(examWeekMatch?.group(1) ?? '') ?? 14;
+    final month = _examWeekPlaceholderMonth(datetimeStr);
+    return [
+      _dateTimeWithTime(1970, month, day, timeBegin),
+      _dateTimeWithTime(1970, month, day, timeEnd),
+    ];
+  }
+
+  static String? parseExamDateLabel(String datetimeStr) {
+    if (_calendarDateMatch(datetimeStr) != null) return null;
+
+    final timeMatch = _timeRangePattern.firstMatch(datetimeStr);
+    final labelEnd = timeMatch?.start ?? datetimeStr.length;
+    final label = datetimeStr
+        .substring(0, labelEnd)
+        .replaceAll(RegExp(r'[（(\s]+$'), '')
+        .trim();
+    if (label.isEmpty) return null;
+
+    final normalizedLabel = label.replaceFirstMapped(
+      _examWeekDayPattern,
+      (match) => '第 ${int.parse(match.group(1)!)} 天',
+    );
+    return normalizedLabel.startsWith('第')
+        ? '考试周$normalizedLabel'
+        : normalizedLabel;
+  }
+
+  static RegExpMatch? _calendarDateMatch(String datetimeStr) {
+    return _chineseCalendarDatePattern.firstMatch(datetimeStr) ??
+        _numericCalendarDatePattern.firstMatch(datetimeStr);
+  }
+
+  static int _examWeekPlaceholderMonth(String datetimeStr) {
+    final season = RegExp(r'[春夏秋冬]').firstMatch(datetimeStr)?.group(0);
+    return switch (season) {
+      '春' => 1,
+      '夏' => 2,
+      '秋' => 3,
+      '冬' => 4,
+      _ => 1,
+    };
+  }
+
+  static DateTime _dateTimeWithTime(
+    int year,
+    int month,
+    int day,
+    String time,
+  ) {
+    final parts = time.split(':');
+    return DateTime(
+      year,
+      month,
+      day,
+      int.parse(parts[0]),
+      int.parse(parts[1]),
+    );
   }
 
   static String chineseDateTime(DateTime dateTime) {

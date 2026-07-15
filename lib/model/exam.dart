@@ -7,6 +7,7 @@ class Exam {
 
   // 第一个元素是开始时间，第二个元素是结束时间
   late List<DateTime> time;
+  String? dateLabel;
   String? location;
   String? seat;
 
@@ -47,12 +48,16 @@ class Exam {
   Exam._fromZdbk(this.id, this.name, Map<String, dynamic> json, this.type) {
     switch (type) {
       case ExamType.midterm:
-        time = TimeHelper.parseExamDateTime(json['qzkssj']);
+        final dateTimeText = json['qzkssj']?.toString() ?? '';
+        time = TimeHelper.parseExamDateTime(dateTimeText);
+        dateLabel = TimeHelper.parseExamDateLabel(dateTimeText);
         location = json['qzjsmc'];
         seat = json['qzzwxh'];
         break;
       case ExamType.finalExam:
-        time = TimeHelper.parseExamDateTime(json['kssj']);
+        final dateTimeText = json['kssj']?.toString() ?? '';
+        time = TimeHelper.parseExamDateTime(dateTimeText);
+        dateLabel = TimeHelper.parseExamDateLabel(dateTimeText);
         location = json['jsmc'];
         seat = json['zwxh'];
         break;
@@ -76,6 +81,7 @@ class Exam {
         'name': name,
         'type': type.index,
         'time': time.map((e) => e.toIso8601String()).toList(),
+        'dateLabel': dateLabel,
         'location': location,
         'seat': seat,
       };
@@ -85,12 +91,20 @@ class Exam {
         name = json['name'],
         type = ExamType.values[json['type']],
         time = (json['time'] as List).map((e) => DateTime.parse(e)).toList(),
+        dateLabel = json['dateLabel'] as String?,
         location = json['location'],
         seat = json['seat'];
 
-  get chineseTime => TimeHelper.chineseTime(time[0], time[1]);
+  get chineseTime {
+    if (dateLabel == null) return TimeHelper.chineseTime(time[0], time[1]);
+    return '$dateLabel ${_hourMinute(time[0])} - ${_hourMinute(time[1])}';
+  }
 
-  get chineseDate => TimeHelper.chineseDay(time[0]).replaceAll(" ", "");
+  get chineseDate =>
+      dateLabel ?? TimeHelper.chineseDay(time[0]).replaceAll(" ", "");
+
+  String _hourMinute(DateTime dateTime) =>
+      '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
 }
 
 enum ExamType { midterm, finalExam }
