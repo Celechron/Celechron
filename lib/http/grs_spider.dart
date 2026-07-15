@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:celechron/http/retry_helper.dart';
 import 'package:celechron/http/spider.dart';
 import 'package:celechron/http/time_config_service.dart';
 import 'package:celechron/http/zjuServices/courses.dart';
@@ -28,7 +29,13 @@ class GrsSpider implements Spider {
   Cookie? _iPlanetDirectoryPro;
   DateTime _lastUpdateTime = DateTime(0);
   Future<List<String?>>? _reloginFuture;
-  static List<String> fetchSequenceGrs = [
+  static const _retryableFetchErrors = <String>[
+    "iplanetdirectorypro无效",
+    "会话已过期",
+  ];
+
+  /// getEverything 内各顶层抓取任务的标签，与抓取错误列表下标一一对应
+  static const List<String> fetchSequenceGrs = [
     '配置',
     '课表',
     '本科生课考试',
@@ -37,6 +44,9 @@ class GrsSpider implements Spider {
     '研究生课成绩',
     '作业'
   ];
+
+  @override
+  List<String> get fetchLabels => fetchSequenceGrs;
 
   GrsSpider(String username, String password) {
     _initHttpClient();
@@ -51,6 +61,9 @@ class GrsSpider implements Spider {
 
   void _initHttpClient() {
     _httpClient = HttpClient();
+    // 建立连接（TCP/TLS握手）5秒内不成功视为网络不可用，快速失败；
+    // 已建立的连接传输慢则交给各请求自己的总超时兜底
+    _httpClient.connectionTimeout = const Duration(seconds: 5);
     _httpClient.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
   }
@@ -131,70 +144,41 @@ class GrsSpider implements Spider {
     _username = "";
     _password = "";
     _iPlanetDirectoryPro = null;
+    _reloginFuture = null;
     try {
       _httpClient.close(force: true);
     } catch (_) {}
     // _appService.logout();
+    _courses.logout();
     _zdbk.logout();
     _grsNew.logout();
   }
 
-  // ===== 新增开始 =====
-  // 自动重试机制：遇到Cookie过期等错误时，自动重新登录再重试
-  Future<T> _fetchWithRetry<T>(Future<T> Function() operation,
-      {int maxRetries = 2}) async {
+  Future<T> _fetchWithRetry<T>(
+    Future<T> Function() operation, {
+    int maxRetries = 1,
+  }) async {
     int attempts = 0;
     while (true) {
       try {
         var result = await operation();
+        final hiddenError = getRetryableTupleError(
+          result,
+          extraMessages: _retryableFetchErrors,
+        );
 
-        // 检查返回结果中是否隐藏了错误
-        bool hasHiddenError = false;
-        dynamic hiddenErrorToThrow;
-        try {
-          dynamic res = result;
-          if (res != null && res.item1 != null) {
-            String errStr = res.item1.toString().toLowerCase();
-            if (errStr.contains("connection closed") ||
-                errStr.contains("httpexception") ||
-                errStr.contains("请求超时") ||
-                errStr.contains("网络错误") ||
-                errStr.contains("未登录") ||
-                errStr.contains("超时") ||
-                errStr.contains("timeout") ||
-                errStr.contains("type 'null'") ||
-                errStr.contains("iplanetdirectorypro无效") ||
-                errStr.contains("会话已过期")) {
-              hasHiddenError = true;
-              hiddenErrorToThrow = res.item1;
-            }
-          }
-        } catch (_) {}
-
-        if (hasHiddenError) {
-          throw hiddenErrorToThrow;
+        if (hiddenError != null) {
+          throw hiddenError;
         }
 
         return result;
       } catch (e) {
         attempts++;
-        String errStr = e.toString().toLowerCase();
 
-        // 判断是否是可以通过重新登录解决的错误
         if (attempts <= maxRetries &&
-            (e is SessionExpiredException ||
-                errStr.contains("未登录") ||
-                errStr.contains("iplanetdirectorypro无效") ||
-                errStr.contains("会话已过期") ||
-                errStr.contains("connection closed") ||
-                errStr.contains("timeout") ||
-                errStr.contains("超时") ||
-                errStr.contains("请求超时") ||
-                errStr.contains("httpexception") ||
-                errStr.contains("网络错误") ||
-                errStr.contains("socketexception"))) {
-          await login(); // 重新获取 iPlanetDirectoryPro
-          await Future.delayed(const Duration(milliseconds: 1000));
+            shouldRetryAfterLogin(e, extraMessages: _retryableFetchErrors)) {
+          await login();
+          await Future.delayed(const Duration(milliseconds: 300));
           continue;
         }
 
@@ -202,19 +186,11 @@ class GrsSpider implements Spider {
       }
     }
   }
-  // ===== 新增结束 =====
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override
-  Future<
-      Tuple7<
-          List<String?>,
-          List<String?>,
-          List<Semester>,
-          List<Grade>,
-          List<double>,
-          Map<DateTime, String>,
-          List<Todo>>> getEverything() async {
+  Future<EverythingTuple> getEverything(
+      {void Function(EverythingTuple partial)? onProgress}) async {
     // 返回值初始化
     var outSemesters = <Semester>[];
     var outGrades = <Grade>[];
@@ -258,44 +234,36 @@ class GrsSpider implements Spider {
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-1').then((value) {
         if (value.item2 != null) {
-          outSemesters[semesterIndexMap['$yearStr-1']!]
-              .addZjuCalendar(jsonDecode(value.item2!));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
-              .map((k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(0, 8)),
-                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(8, 16)),
-                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
-              (k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          final config = jsonDecode(value.item2!);
+          outSemesters[semesterIndexMap['$yearStr-1']!].addZjuCalendar(config);
+          outSpecialDates.addAll((config['holiday'] as Map).map((k, v) =>
+              MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((config['exchange'] as Map).map((k, v) => MapEntry(
+              DateTime.parse((k as String).substring(0, 8)),
+              '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
+          outSpecialDates.addAll((config['exchange'] as Map).map((k, v) => MapEntry(
+              DateTime.parse((k as String).substring(8, 16)),
+              '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
+          outSpecialDates.addAll((config['dummy'] as Map).map((k, v) =>
+              MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
       }).catchError((e) => 'semesterConf($yearStr-1) $e'));
       semesterConfigFetches.add(
           _timeConfigService.getConfig(_httpClient, '$yearStr-2').then((value) {
         if (value.item2 != null) {
-          outSemesters[semesterIndexMap['$yearStr-2']!]
-              .addZjuCalendar(jsonDecode(value.item2!));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['holiday'] as Map)
-              .map((k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(0, 8)),
-                  '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['exchange'] as Map)
-              .map((k, v) => MapEntry(
-                  DateTime.parse((k as String).substring(8, 16)),
-                  '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
-          outSpecialDates.addAll((jsonDecode(value.item2!)['dummy'] as Map).map(
-              (k, v) =>
-                  MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          final config = jsonDecode(value.item2!);
+          outSemesters[semesterIndexMap['$yearStr-2']!].addZjuCalendar(config);
+          outSpecialDates.addAll((config['holiday'] as Map).map((k, v) =>
+              MapEntry(DateTime.parse(k as String), '${v as String}放假')));
+          outSpecialDates.addAll((config['exchange'] as Map).map((k, v) => MapEntry(
+              DateTime.parse((k as String).substring(0, 8)),
+              '${v as String}放假·调 ${DateTime.parse(k.substring(8, 16)).month} 月 ${DateTime.parse(k.substring(8, 16)).day} 日')));
+          outSpecialDates.addAll((config['exchange'] as Map).map((k, v) => MapEntry(
+              DateTime.parse((k as String).substring(8, 16)),
+              '${v as String}调休·调 ${DateTime.parse(k.substring(0, 8)).month} 月 ${DateTime.parse(k.substring(0, 8)).day} 日')));
+          outSpecialDates.addAll((config['dummy'] as Map).map((k, v) =>
+              MapEntry(DateTime.parse(k as String), '${v as String}放假')));
         }
         return value.item1?.toString();
       }).catchError((e) => 'semesterConf($yearStr-2) $e'));
@@ -481,6 +449,23 @@ class GrsSpider implements Spider {
       outTodos.addAll(value.item2);
       return value.item1?.toString();
     }).catchError((e) => 'coursesTodo $e'));
+
+    // 异步刷新：每完成一个顶层任务就向上层回调一次当前进度。
+    // 配置(0)、课表(1)、本科生课考试(2)、本科生课成绩(3)、研究生课考试(4)、
+    // 研究生课成绩(5)共同拼出学期数据，全部成功后才暴露学期
+    if (onProgress != null) {
+      attachEverythingProgress(
+          fetches: fetches,
+          fetchSequence: fetchSequenceGrs,
+          semesterFetchIndices: const [0, 1, 2, 3, 4, 5],
+          loginErrorMessages: loginErrorMessages,
+          semesters: outSemesters,
+          grades: outGrades,
+          majorGrade: outMajorGrade,
+          specialDates: outSpecialDates,
+          todos: outTodos,
+          onProgress: onProgress);
+    }
 
     // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {

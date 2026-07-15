@@ -13,13 +13,31 @@ import 'package:celechron/design/custom_colors.dart';
 
 import 'exam_list_controller.dart';
 
-class ExamListPage extends StatelessWidget {
+class ExamListPage extends StatefulWidget {
+  final String initialSemesterName;
+
+  const ExamListPage({required this.initialSemesterName, super.key});
+
+  @override
+  State<ExamListPage> createState() => _ExamListPageState();
+}
+
+class _ExamListPageState extends State<ExamListPage> {
   late final ExamListController _examListController;
 
-  ExamListPage({required String initialSemesterName, super.key}) {
+  @override
+  void initState() {
+    super.initState();
     Get.delete<ExamListController>();
     _examListController =
-        Get.put(ExamListController(initialName: initialSemesterName));
+        Get.put(ExamListController(initialName: widget.initialSemesterName));
+  }
+
+  @override
+  void dispose() {
+    // 离开页面即释放 controller，onClose 里会取消定时器
+    Get.delete<ExamListController>();
+    super.dispose();
   }
 
   Widget _examCard(context, List<Exam> exams) {

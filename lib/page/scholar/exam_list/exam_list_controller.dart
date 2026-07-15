@@ -10,6 +10,7 @@ class ExamListController extends GetxController {
   final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   late final RxInt semesterIndex;
   final Rx<Duration> _durationToLastUpdate = const Duration().obs;
+  Timer? _timer;
 
   ExamListController({required String initialName}) {
     semesterIndex = semesters.indexWhere((e) => e.name == initialName).obs;
@@ -37,9 +38,15 @@ class ExamListController extends GetxController {
   @override
   void onReady() {
     super.onReady();
-    Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _durationToLastUpdate.value =
           DateTime.now().difference(_scholar.value.lastUpdateTimeCourse);
     });
+  }
+
+  @override
+  void onClose() {
+    _timer?.cancel();
+    super.onClose();
   }
 }

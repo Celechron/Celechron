@@ -126,6 +126,8 @@ class TaskPage extends StatelessWidget {
                     _taskController.updateDeadlineListTime();
                   }
                   _taskController.taskList.refresh();
+                  // 仅改 summary 等字段时 updateDeadlineList 检测不到变化，需显式落盘
+                  _taskController.saveDeadlineListToDb();
                 },
                 child: const Text('编辑'),
               ),
@@ -290,7 +292,7 @@ class TaskPage extends StatelessWidget {
           child: RoundRectangleCard(
             onTap: () async {
               // 直接导航到编辑页面
-              Task? res = await Navigator.of(context).push(
+              Task? res = await Navigator.of(context, rootNavigator: true).push(
                 CupertinoPageRoute(
                   builder: (context) => TaskEditPage(deadline),
                 ),
@@ -336,22 +338,26 @@ class TaskPage extends StatelessWidget {
                                     overflow: TextOverflow.ellipsis,
                                   ))),
                       const Spacer(),
-                      Text(
-                          deadline.type == TaskType.deadline
-                              ? deadlineStatusName[deadline.status]!
-                              : (DateTime.now().isBefore(deadline.startTime)
-                                  ? '未开始'
-                                  : (!DateTime.now().isBefore(deadline.endTime)
-                                      ? '已结束'
-                                      : '进行中')),
-                          style: CupertinoTheme.of(context)
-                              .textTheme
-                              .textStyle
-                              .copyWith(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                overflow: TextOverflow.ellipsis,
-                              )),
+                      // 固定日程的状态随时间翻转；taskList 不再每秒通知，改由 timeNow 驱动
+                      Obx(() {
+                        final now = _flowController.timeNow.value;
+                        return Text(
+                            deadline.type == TaskType.deadline
+                                ? deadlineStatusName[deadline.status]!
+                                : (now.isBefore(deadline.startTime)
+                                    ? '未开始'
+                                    : (!now.isBefore(deadline.endTime)
+                                        ? '已结束'
+                                        : '进行中')),
+                            style: CupertinoTheme.of(context)
+                                .textTheme
+                                .textStyle
+                                .copyWith(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.bold,
+                                  overflow: TextOverflow.ellipsis,
+                                ));
+                      }),
                     ],
                   ),
                   const SizedBox(height: 8.0),
@@ -467,12 +473,16 @@ class TaskPage extends StatelessWidget {
                   if (deadline.type == TaskType.fixed ||
                       deadline.status == TaskStatus.running) ...[
                     const SizedBox(height: 8.0),
-                    LinearProgressIndicator(
-                      value: progress,
-                      backgroundColor: CupertinoDynamicColor.resolve(
-                          CupertinoColors.separator, context),
-                      valueColor: AlwaysStoppedAnimation<Color>(color),
-                    ),
+                    // 固定日程的进度随时间前进，订阅 timeNow 以便每秒刷新
+                    Obx(() {
+                      final _ = _flowController.timeNow.value;
+                      return LinearProgressIndicator(
+                        value: deadline.getProgress(),
+                        backgroundColor: CupertinoDynamicColor.resolve(
+                            CupertinoColors.separator, context),
+                        valueColor: AlwaysStoppedAnimation<Color>(color),
+                      );
+                    }),
                   ],
                   if (deadline.type == TaskType.deadline &&
                       deadline.status == TaskStatus.suspended) ...[
