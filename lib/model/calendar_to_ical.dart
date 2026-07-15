@@ -4,6 +4,7 @@ import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:celechron/model/location_mapper.dart';
 import 'package:celechron/model/period.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/semester.dart';
@@ -51,6 +52,8 @@ class CalendarToIcal {
         '${DateTime.now().toUtc().toIso8601String().replaceAll(RegExp(r'[-:]'), '').split('.')[0]}Z';
     final startStr = _toISOString(period.startTime);
     final endStr = _toISOString(period.endTime);
+    final mappedLocation =
+        CalendarLocationMapper.mapForCalendar(period.location);
 
     // 生成唯一ID
     final hash = _generateHash(period);
@@ -76,8 +79,8 @@ class CalendarToIcal {
     buffer.writeln('LAST-MODIFIED:$utcStr');
 
     // 地点信息
-    if (period.location.isNotEmpty) {
-      buffer.writeln('LOCATION:${period.location}');
+    if (mappedLocation.isNotEmpty) {
+      buffer.writeln('LOCATION:$mappedLocation');
     }
 
     buffer.writeln('SEQUENCE:0');
@@ -99,8 +102,10 @@ class CalendarToIcal {
 
   /// 生成事件的哈希ID
   static String _generateHash(Period period) {
+    final mappedLocation =
+        CalendarLocationMapper.mapForCalendar(period.location);
     final content =
-        '${period.description}${period.summary}${period.location}${_toISOString(period.startTime)}';
+        '${period.description}${period.summary}$mappedLocation${_toISOString(period.startTime)}';
     final bytes = utf8.encode(content);
     final digest = sha1.convert(bytes);
     return digest.toString();
