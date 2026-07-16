@@ -32,6 +32,7 @@ class Option {
   Rx<BrightnessMode> brightnessMode;
   RxList<CourseIdMap> courseIdMappingList;
   RxBool hideHomeGpa;
+  RxBool asyncRefresh;
 
   Option({
     required this.workTime,
@@ -43,5 +44,6 @@ class Option {
     required this.brightnessMode,
     required this.courseIdMappingList,
     required this.hideHomeGpa,
+    required this.asyncRefresh,
   });
 }

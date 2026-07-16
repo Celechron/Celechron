@@ -97,7 +97,8 @@ class LoginForm extends StatelessWidget {
                             val.password = passwordController.value.text;
                             val.login().then((value) async {
                               if (value.every((e) => e == null)) {
-                                await val.refresh();
+                                await val.refresh(
+                                    onPartialUpdate: scholar.refresh);
                                 scholar.refresh();
                                 buttonPressed.value = false;
                                 _optionController.pushOnGradeChange =

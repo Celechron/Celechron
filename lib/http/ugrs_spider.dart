@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:celechron/http/retry_helper.dart';
 import 'package:celechron/http/zjuServices/courses.dart';
 import 'package:celechron/http/calendar_config_parser.dart';
 import 'package:celechron/http/data_source_status.dart';
@@ -43,6 +44,28 @@ class UgrsSpider implements Spider {
   Future<List<String?>>? _reloginFuture;
   Future<Cookie?>? _sztzReauthFuture;
   int _loginGeneration = 0;
+  static const _retryableFetchErrors = <String>[
+    "无法解析",
+    "iplanetdirectorypro无效",
+    "wisportalid无效",
+    "登录态已失效",
+    "会话已过期",
+    "token 已过期",
+  ];
+
+  /// getEverything 内各顶层抓取任务的标签，与抓取错误列表下标一一对应
+  static const List<String> fetchSequence = [
+    '校历',
+    '课表',
+    '考试',
+    '成绩',
+    '主修',
+    '作业',
+    '实践'
+  ];
+
+  @override
+  List<String> get fetchLabels => fetchSequence;
 
   UgrsSpider(String username, String password) {
     _httpClient = _createHttpClient();
@@ -58,6 +81,8 @@ class UgrsSpider implements Spider {
   // 初始化或重置 HttpClient
   HttpClient _createHttpClient() {
     final client = HttpClient();
+    // TCP/TLS 建连快速失败；已建立连接仍由各接口的总超时兜底。
+    client.connectionTimeout = const Duration(seconds: 5);
     client.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     // 强制不保存 Cookies，完全由 Zdbk 手动管理，避免冲突
@@ -152,6 +177,19 @@ class UgrsSpider implements Spider {
     unawaited(ZjuAm.clearCachedSsoCookie(_username));
     _username = "";
     _password = "";
+    _reloginFuture = null;
+    try {
+      _httpClient.close(force: true);
+    } on Object catch (error, stackTrace) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '本科生刷新',
+        operation: 'closeHttpClient',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+    fetchGrs = false;
     _zdbk.logout();
     _sztz.logout();
     _grsNew.logout();
@@ -198,7 +236,7 @@ class UgrsSpider implements Spider {
     }
   }
 
-  // 【终极修改】自带最大重试次数的循环重试机制，并正确拦截底层私吞的错误
+  // 对元组内返回的会话错误进行一次单飞重登；瞬时网络错误只重试请求。
   Future<T> _fetchWithRetry<T>(Future<T> Function() requestFactory,
       {int maxRetries = 1}) async {
     int attempts = 0;
@@ -206,49 +244,17 @@ class UgrsSpider implements Spider {
       final requestLoginGeneration = _loginGeneration;
       T? fallbackResult;
       try {
-        var result = await requestFactory(); // 每次尝试都重新创建底层请求
+        var result = await requestFactory();
         fallbackResult = result;
-
-        // 【修正】：将判断和抛出异常分开，防止抛出的异常被安全检查的 catch 吃掉
-        bool hasHiddenError = false;
-        dynamic hiddenErrorToThrow;
-
-        try {
-          dynamic res = result;
-          if (res != null && res.item1 != null) {
-            String errStr = res.item1.toString().toLowerCase();
-            if (errStr.contains("connection closed") ||
-                errStr.contains("httpexception") ||
-                errStr.contains("网络错误") ||
-                errStr.contains("未登录") ||
-                errStr.contains("超时") ||
-                errStr.contains("timeout") ||
-                errStr.contains("type 'null'") ||
-                errStr.contains("无法解析") ||
-                errStr.contains("wisportalid无效") ||
-                errStr.contains("登录态已失效") ||
-                errStr.contains("会话已过期") ||
-                errStr.contains("token 已过期")) {
-              hasHiddenError = true;
-              hiddenErrorToThrow = res.item1;
-            }
-          }
-        } on Object catch (error, stackTrace) {
-          DiagnosticLogService.instance.record(
-            level: CelechronLogLevel.debug,
-            module: '本科生刷新',
-            operation: 'inspectResult',
-            error: error,
-            stackTrace: stackTrace,
-          );
+        final hiddenError = getRetryableTupleError(
+          result,
+          extraMessages: _retryableFetchErrors,
+        );
+        if (hiddenError != null) {
+          throw hiddenError;
         }
 
-        // 如果发现了隐藏的错误，在 try-catch 外部将其抛出！
-        if (hasHiddenError) {
-          throw hiddenErrorToThrow;
-        }
-
-        return result; // 如果没有错误，正常返回
+        return result;
       } on Object catch (error, stackTrace) {
         attempts++;
         String errStr = error.toString().toLowerCase(); // 转小写方便匹配
@@ -262,6 +268,7 @@ class UgrsSpider implements Spider {
                 errStr.contains("登录态已失效") ||
                 errStr.contains("会话已过期") ||
                 errStr.contains("token 已过期") ||
+                errStr.contains("iplanetdirectorypro无效") ||
                 errStr.contains("wisportalid无效"));
         final transientError = errStr.contains("connection closed") ||
             errStr.contains("timeout") ||
@@ -304,17 +311,9 @@ class UgrsSpider implements Spider {
   }
 
   @override
-  Future<
-      Tuple7<
-          List<String?>,
-          List<String?>,
-          List<Semester>,
-          List<Grade>,
-          List<double>,
-          Map<DateTime, String>,
-          List<Todo>>> getEverything() async {
+  Future<EverythingTuple> getEverything(
+      {void Function(EverythingTuple partial)? onProgress}) async {
     var fetches = <Future<String?>>[];
-    List<String> fetchSequence = ['校历', '课表', '考试', '成绩', '主修', '作业', '实践'];
 
     var outSemesters = <Semester>[];
     var outGrades = <Grade>[];
@@ -751,6 +750,22 @@ class UgrsSpider implements Spider {
       );
     }());
 
+    // 异步刷新：每完成一个顶层任务就向上层回调一次当前进度。
+    // 校历(0)、课表(1)、考试(2)、成绩(3)共同拼出学期数据，全部成功后才暴露学期
+    if (onProgress != null) {
+      attachEverythingProgress(
+          fetches: fetches,
+          fetchSequence: fetchSequence,
+          semesterFetchIndices: const [0, 1, 2, 3],
+          loginErrorMessages: loginErrorMessages,
+          semesters: outSemesters,
+          grades: outGrades,
+          majorGrade: outMajorGrade,
+          specialDates: outSpecialDates,
+          todos: outTodos,
+          onProgress: onProgress);
+    }
+
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {
       outSemesters.removeWhere((e) =>
           e.grades.isEmpty &&
@@ -821,15 +836,8 @@ class MockSpider extends UgrsSpider {
   void logout() {}
 
   @override
-  Future<
-      Tuple7<
-          List<String?>,
-          List<String?>,
-          List<Semester>,
-          List<Grade>,
-          List<double>,
-          Map<DateTime, String>,
-          List<Todo>>> getEverything() async {
+  Future<EverythingTuple> getEverything(
+      {void Function(EverythingTuple partial)? onProgress}) async {
     await Future.delayed(const Duration(seconds: 2));
     return Tuple7(
         [null, null],

@@ -205,7 +205,15 @@ class Semester {
                 (e.time.length) * ((e.oddWeek ? 1 : 0) + (e.evenWeek ? 1 : 0)));
   }
 
-  List<Period> get periods {
+  List<Period>? _periodsCache;
+
+  void _invalidatePeriodsCache() => _periodsCache = null;
+
+  // 构建代价高，缓存结果；任何影响构建输入的 mutator 都必须调用 _invalidatePeriodsCache。
+  // 调用方不得原地修改返回的列表（需要排序等操作时先拷贝）。
+  List<Period> get periods => _periodsCache ??= _buildPeriods();
+
+  List<Period> _buildPeriods() {
     List<Period> periods = [];
     for (var session in _sessions) {
       // 自定义单双周的课程在后面处理（目前均为研究生课）
@@ -374,6 +382,8 @@ class Semester {
   }
 
   void addSession(Session session, String semesterId, [bool isGrs = false]) {
+    // completeSession 即使判定重复也会改写已存 Session 的 firstHalf/secondHalf/id，必须失效缓存
+    _invalidatePeriodsCache();
     // 由于ZDBK不给课号，Session的id初始值为null，不能直接拿来用！
     // 因此本科课程以“学期 + 课程名”归组，再由 Course 合并重复安排。
     var key = '$semesterId${session.name}';
@@ -398,6 +408,7 @@ class Semester {
   }
 
   void addExamWithSemester(ExamDto examDto, String semesterId) {
+    _invalidatePeriodsCache();
     // 有的课没有考试，但是能查到考试信息，其考试时间为null。
     _exams.addAll(examDto.exams);
     var key = '$semesterId${examDto.name}';
@@ -414,6 +425,8 @@ class Semester {
 
   void addGradeWithSemester(Grade grade, String semesterId,
       [bool isGrs = false]) {
+    // completeGrade 可能把已存 Session 的 location 改写为“线上”，必须失效缓存
+    _invalidatePeriodsCache();
     _grades.add(grade);
     var key = '$semesterId${grade.name}';
     if (_courses.containsKey(key)) {
@@ -428,6 +441,7 @@ class Semester {
   }
 
   void addZjuCalendar(Map<String, dynamic> json) {
+    _invalidatePeriodsCache();
     final startEnd = (asDynamicList(json['startEnd']) ?? const [])
         .map(asString)
         .whereType<String>()
@@ -522,7 +536,8 @@ class Semester {
   }
 
   void sortExams() {
-    // 考试按开始时间排序
+    // 考试按开始时间排序；顺序影响 periods 尾部考试项，需失效缓存
+    _invalidatePeriodsCache();
     _exams.sort((a, b) => a.time.first.compareTo(b.time.first));
   }
 

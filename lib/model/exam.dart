@@ -8,6 +8,7 @@ class Exam {
 
   // 第一个元素是开始时间，第二个元素是结束时间
   late List<DateTime> time;
+  String? dateLabel;
   String? location;
   String? seat;
 
@@ -48,12 +49,16 @@ class Exam {
   Exam._fromZdbk(this.id, this.name, Map<String, dynamic> json, this.type) {
     switch (type) {
       case ExamType.midterm:
-        time = TimeHelper.parseExamDateTime(asString(json['qzkssj']) ?? '');
+        final dateTimeText = asString(json['qzkssj']) ?? '';
+        time = TimeHelper.parseExamDateTime(dateTimeText);
+        dateLabel = TimeHelper.parseExamDateLabel(dateTimeText);
         location = asString(json['qzjsmc']);
         seat = asString(json['qzzwxh']);
         break;
       case ExamType.finalExam:
-        time = TimeHelper.parseExamDateTime(asString(json['kssj']) ?? '');
+        final dateTimeText = asString(json['kssj']) ?? '';
+        time = TimeHelper.parseExamDateTime(dateTimeText);
+        dateLabel = TimeHelper.parseExamDateLabel(dateTimeText);
         location = asString(json['jsmc']);
         seat = asString(json['zwxh']);
         break;
@@ -81,6 +86,7 @@ class Exam {
         'name': name,
         'type': type.index,
         'time': time.map((e) => e.toIso8601String()).toList(),
+        'dateLabel': dateLabel,
         'location': location,
         'seat': seat,
       };
@@ -95,12 +101,20 @@ class Exam {
             .map(DateTime.tryParse)
             .whereType<DateTime>()
             .toList(),
+        dateLabel = asString(json['dateLabel']),
         location = asString(json['location']),
         seat = asString(json['seat']);
 
-  get chineseTime => TimeHelper.chineseTime(time[0], time[1]);
+  get chineseTime {
+    if (dateLabel == null) return TimeHelper.chineseTime(time[0], time[1]);
+    return '$dateLabel ${_hourMinute(time[0])} - ${_hourMinute(time[1])}';
+  }
 
-  get chineseDate => TimeHelper.chineseDay(time[0]).replaceAll(" ", "");
+  get chineseDate =>
+      dateLabel ?? TimeHelper.chineseDay(time[0]).replaceAll(" ", "");
+
+  String _hourMinute(DateTime dateTime) =>
+      '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
 }
 
 ExamType _examTypeFromJson(Object? value) {

@@ -15,21 +15,11 @@ import 'package:celechron/services/diagnostic_log_service.dart';
 import 'exceptions.dart';
 import 'response_utils.dart';
 
-// 定义一个特定的会话过期异常，方便上层捕获重试
-class SessionExpiredException extends LoginExpiredException {
-  SessionExpiredException(
-    super.message, {
-    super.details,
-    super.originalError,
-    super.stackTrace,
-  });
-}
-
 /// 本科教务网客户端；统一管理 CAS 业务会话、并发限流与按接口缓存降级。
 class Zdbk {
   Cookie? _jSessionId;
   Cookie? _route;
-  Cookie? _iPlanetDirectoryPro; // 新增：保存登录凭据
+  Cookie? _iPlanetDirectoryPro;
   String? _captcha;
   DatabaseHelper? _db;
   Future<bool>? _loginFuture;
@@ -138,8 +128,8 @@ class Zdbk {
   void logout() {
     _jSessionId = null;
     _route = null;
-    _captcha = null;
     _iPlanetDirectoryPro = null;
+    _captcha = null;
   }
 
   void _validateResponse(HttpClientResponse response, String responseText,
@@ -169,10 +159,11 @@ class Zdbk {
   }
 
   Future<void> _relogin(HttpClient httpClient) async {
-    if (_iPlanetDirectoryPro == null) {
-      throw ExceptionWithMessage("会话已过期，请重新登录");
+    final iPlanetDirectoryPro = _iPlanetDirectoryPro;
+    if (iPlanetDirectoryPro == null) {
+      throw LoginExpiredException("教务网会话已过期，请重新登录");
     }
-    await login(httpClient, _iPlanetDirectoryPro);
+    await login(httpClient, iPlanetDirectoryPro);
   }
 
   Future<T> _withAutoRelogin<T>(HttpClient httpClient,

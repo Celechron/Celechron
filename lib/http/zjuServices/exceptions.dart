@@ -74,6 +74,16 @@ class LoginExpiredException extends AuthenticationExpiredException {
   });
 }
 
+/// 本科教务网业务会话失效；上层可据此执行单飞重新登录并重试。
+class SessionExpiredException extends LoginExpiredException {
+  SessionExpiredException(
+    super.message, {
+    super.details,
+    super.originalError,
+    super.stackTrace,
+  });
+}
+
 class CalendarConfigUnavailableException extends ExceptionWithMessage {
   CalendarConfigUnavailableException({
     required String details,

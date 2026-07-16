@@ -43,7 +43,7 @@ void main() async {
         .login()
         .then((value) async {
           GlobalStatus.isFirstScreenReq = true;
-          await scholar.value.refresh();
+          await scholar.value.refresh(onPartialUpdate: scholar.refresh);
           GlobalStatus.isFirstScreenReq = false;
         })
         .then((value) => scholar.refresh())

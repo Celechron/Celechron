@@ -154,6 +154,14 @@ class OptionPage extends StatelessWidget {
                           },
                         ),
                         CupertinoListTile(
+                            title: const Text('异步刷新'),
+                            trailing: Obx(() => CupertinoSwitch(
+                                  value: _optionController.asyncRefresh,
+                                  onChanged: (value) async {
+                                    _optionController.asyncRefresh = value;
+                                  },
+                                ))),
+                        CupertinoListTile(
                             title: const Text('推送成绩变动'),
                             trailing: CupertinoSwitch(
                               value: _optionController.pushOnGradeChange,

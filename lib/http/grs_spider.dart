@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:celechron/http/retry_helper.dart';
 import 'package:celechron/http/spider.dart';
 import 'package:celechron/http/calendar_config_parser.dart';
 import 'package:celechron/http/data_source_status.dart';
@@ -34,7 +35,15 @@ class GrsSpider implements Spider {
   DateTime _lastUpdateTime = DateTime(0);
   Future<List<String?>>? _reloginFuture;
   int _loginGeneration = 0;
-  static List<String> fetchSequenceGrs = [
+  static const _retryableFetchErrors = <String>[
+    "iplanetdirectorypro无效",
+    "会话已过期",
+    "登录态已失效",
+    "token 已过期",
+  ];
+
+  /// getEverything 内各顶层抓取任务的标签，与抓取错误列表下标一一对应
+  static const List<String> fetchSequenceGrs = [
     '校历',
     '课表',
     '本科生课考试',
@@ -43,6 +52,9 @@ class GrsSpider implements Spider {
     '研究生课成绩',
     '作业'
   ];
+
+  @override
+  List<String> get fetchLabels => fetchSequenceGrs;
 
   GrsSpider(String username, String password) {
     _httpClient = _createHttpClient();
@@ -57,6 +69,8 @@ class GrsSpider implements Spider {
 
   HttpClient _createHttpClient() {
     final client = HttpClient();
+    // TCP/TLS 建连快速失败；已建立连接仍由各接口的总超时兜底。
+    client.connectionTimeout = const Duration(seconds: 5);
     client.userAgent =
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36 Edg/110.0.1587.63";
     return client;
@@ -160,12 +174,11 @@ class GrsSpider implements Spider {
       );
     }
     // _appService.logout();
+    _courses.logout();
     _zdbk.logout();
     _grsNew.logout();
-    _courses.logout();
   }
 
-  // ===== 新增开始 =====
   // 自动重试机制：遇到Cookie过期等错误时，自动重新登录再重试
   Future<T> _fetchWithRetry<T>(Future<T> Function() requestFactory,
       {int maxRetries = 1}) async {
@@ -176,42 +189,13 @@ class GrsSpider implements Spider {
       try {
         var result = await requestFactory();
         fallbackResult = result;
+        final hiddenError = getRetryableTupleError(
+          result,
+          extraMessages: _retryableFetchErrors,
+        );
 
-        // 检查返回结果中是否隐藏了错误
-        bool hasHiddenError = false;
-        dynamic hiddenErrorToThrow;
-        try {
-          dynamic res = result;
-          if (res != null && res.item1 != null) {
-            String errStr = res.item1.toString().toLowerCase();
-            if (errStr.contains("connection closed") ||
-                errStr.contains("httpexception") ||
-                errStr.contains("请求超时") ||
-                errStr.contains("网络错误") ||
-                errStr.contains("未登录") ||
-                errStr.contains("超时") ||
-                errStr.contains("timeout") ||
-                errStr.contains("type 'null'") ||
-                errStr.contains("iplanetdirectorypro无效") ||
-                errStr.contains("会话已过期") ||
-                errStr.contains("登录态已失效") ||
-                errStr.contains("token 已过期")) {
-              hasHiddenError = true;
-              hiddenErrorToThrow = res.item1;
-            }
-          }
-        } on Object catch (error, stackTrace) {
-          DiagnosticLogService.instance.record(
-            level: CelechronLogLevel.debug,
-            module: '研究生刷新',
-            operation: 'inspectResult',
-            error: error,
-            stackTrace: stackTrace,
-          );
-        }
-
-        if (hasHiddenError) {
-          throw hiddenErrorToThrow;
+        if (hiddenError != null) {
+          throw hiddenError;
         }
 
         return result;
@@ -268,19 +252,11 @@ class GrsSpider implements Spider {
     }
     return source == null ? error.toString() : '$source $error';
   }
-  // ===== 新增结束 =====
 
   // 返回一堆错误信息，如果有的话。看看返回的List是不是空的就知道刷新是否成功。
   @override
-  Future<
-      Tuple7<
-          List<String?>,
-          List<String?>,
-          List<Semester>,
-          List<Grade>,
-          List<double>,
-          Map<DateTime, String>,
-          List<Todo>>> getEverything() async {
+  Future<EverythingTuple> getEverything(
+      {void Function(EverythingTuple partial)? onProgress}) async {
     // 返回值初始化
     var outSemesters = <Semester>[];
     var outGrades = <Grade>[];
@@ -646,6 +622,23 @@ class GrsSpider implements Spider {
       return value.item1?.toString();
     }).catchError((Object error, StackTrace stackTrace) =>
             _describeRefreshFailure(error, stackTrace, source: 'coursesTodo')));
+
+    // 异步刷新：每完成一个顶层任务就向上层回调一次当前进度。
+    // 配置(0)、课表(1)、本科生课考试(2)、本科生课成绩(3)、研究生课考试(4)、
+    // 研究生课成绩(5)共同拼出学期数据，全部成功后才暴露学期
+    if (onProgress != null) {
+      attachEverythingProgress(
+          fetches: fetches,
+          fetchSequence: fetchSequenceGrs,
+          semesterFetchIndices: const [0, 1, 2, 3, 4, 5],
+          loginErrorMessages: loginErrorMessages,
+          semesters: outSemesters,
+          grades: outGrades,
+          majorGrade: outMajorGrade,
+          specialDates: outSpecialDates,
+          todos: outTodos,
+          onProgress: onProgress);
+    }
 
     // await一下，等待所有请求完成。然后，删除不包含考试、成绩、课程的空学期
     var fetchErrorMessages = await Future.wait(fetches).whenComplete(() {

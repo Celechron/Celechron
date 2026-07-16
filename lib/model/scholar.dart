@@ -198,6 +198,8 @@ class Scholar {
 
   Future<List<String?>> refresh({
     RefreshOrigin origin = RefreshOrigin.foreground,
+    void Function()? onPartialUpdate,
+    void Function(List<ModuleFetchStatus> statuses)? onFetchStatus,
   }) async {
     return DiagnosticLogService.instance.runRefresh(
       origin: origin,
@@ -212,7 +214,10 @@ class Scholar {
               return loginErrors;
             }
           }
-          return _refreshInternal();
+          return _refreshInternal(
+            onPartialUpdate: onPartialUpdate,
+            onFetchStatus: onFetchStatus,
+          );
         },
         busyResult: [
           degradedRefreshText('刷新：同一账号已有刷新任务，本次已跳过'),
@@ -221,7 +226,10 @@ class Scholar {
     );
   }
 
-  Future<List<String?>> _refreshInternal() async {
+  Future<List<String?>> _refreshInternal({
+    void Function()? onPartialUpdate,
+    void Function(List<ModuleFetchStatus> statuses)? onFetchStatus,
+  }) async {
     if (!isLogan) {
       return ["未登录"];
     }
@@ -234,7 +242,57 @@ class Scholar {
     }
     _mutex++;
     try {
-      return await _spider?.getEverything().then((value) async {
+      // 异步刷新：每完成一部分抓取就先合并进内存并通知界面，
+      // 全部完成后仍会走下面的完整合并（含实践学分、时间戳、持久化与报错）
+      var useAsyncRefresh =
+          onPartialUpdate != null && (_db?.getAsyncRefresh() ?? false);
+      // 刷新状态文案：与数据合并解耦，只要有人监听就照常上报各模块进度，
+      // 不受异步刷新开关影响；后台刷新两个回调都不传，行为与原来完全一致
+      var fetchLabels = _spider?.fetchLabels ?? const <String>[];
+      void emitStatuses(List<String?> fetchErrors) {
+        if (onFetchStatus == null || fetchLabels.isEmpty) return;
+        try {
+          var statuses = moduleStatusesFromErrors(fetchErrors, fetchLabels);
+          if (statuses.isNotEmpty) onFetchStatus(statuses);
+        } catch (e) {
+          // 状态上报失败不影响刷新本身
+          // ignore: avoid_print
+          print('fetch status error: $e');
+        }
+      }
+
+      // 起始状态：全部「进行中」（覆盖登录阶段，此时尚无任何任务完成回调）
+      if (onFetchStatus != null && fetchLabels.isNotEmpty) {
+        onFetchStatus([
+          for (var label in fetchLabels)
+            ModuleFetchStatus(label, FetchModuleState.pending)
+        ]);
+      }
+      var wantProgress = useAsyncRefresh || onFetchStatus != null;
+      return await _spider
+              ?.getEverything(
+                  onProgress: wantProgress
+                      ? (partial) {
+                          if (useAsyncRefresh) {
+                            try {
+                              _applyFetchResult(partial, partial: true);
+                              // 已成功板块立即打上“更新于”时间戳；
+                              // 未完成/失败的板块被 updateLastUpdateTime 的
+                              // 关键字守卫（“查询进行中”/“查询出错”）拦下
+                              if (partial.item1.every((e) => e == null)) {
+                                updateLastUpdateTime(partial.item2);
+                              }
+                              onPartialUpdate();
+                            } catch (e) {
+                              // 中间态合并失败不影响整体刷新，最终合并会兜底
+                              // ignore: avoid_print
+                              print('partial refresh error: $e');
+                            }
+                          }
+                          emitStatuses(partial.item2);
+                        }
+                      : null)
+              .then((value) async {
             for (var e in value.item1) {
               if (e != null) {
                 DiagnosticLogService.instance.record(
@@ -260,71 +318,10 @@ class Scholar {
             if (value.item1.every((e) => e == null)) {
               updateLastUpdateTime(value.item2);
             }
-            var tempSemester = value.item3;
-            final tempGrades = <String, List<Grade>>{};
-            final courseIdMappingList =
-                Get.find<OptionController>(tag: 'optionController')
-                    .courseIdMappingList;
-            final courseIdMappingMap = {
-              for (var mapping in courseIdMappingList) mapping.id1: mapping.id2
-            };
-            for (final grade in value.item4) {
-              try {
-                final matchClass =
-                    RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(grade.id);
-                if (matchClass == null && grade.id.length < 22) {
-                  throw const FormatException('成绩课程编号长度不足');
-                }
-                var key = matchClass?.group(2) ?? grade.id.substring(14, 22);
-                if (key.startsWith('PPAE') || key.startsWith('401')) {
-                  key = matchClass?.group(1) ?? grade.id.substring(0, 22);
-                }
-                key = courseIdMappingMap[key] ?? key;
-                tempGrades.putIfAbsent(key, () => <Grade>[]).add(grade);
-              } on Object catch (error, stackTrace) {
-                if (kDebugMode) {
-                  debugPrint(
-                      '跳过无法归类的成绩 ${grade.id}：${error.runtimeType}: $error\n$stackTrace');
-                }
-              }
-            }
-            var tempMajorGpaAndCredit = value.item5;
-            var tempSpecialDates = value.item6;
-            var tempTodos = value.item7;
+            _applyFetchResult(value);
 
-            PracticeScoreSnapshot? tempPracticeSnapshot;
-            // 获取实践学分数据（仅本科生）
-            if (_spider is UgrsSpider && !isGrs) {
-              tempPracticeSnapshot = (_spider as UgrsSpider).practiceSnapshot;
-            }
-
-            setScholar(
-                value.item2,
-                tempSemester,
-                tempGrades,
-                tempMajorGpaAndCredit,
-                tempSpecialDates,
-                tempTodos,
-                tempPracticeSnapshot);
-
-            // 保研成绩，只取第一次
-            var netGrades = grades.values.map((e) => e.first);
-            if (netGrades.isNotEmpty) {
-              gpa = GpaHelper.calculateGpa(netGrades).item1;
-            }
-            // 出国成绩，取最高的一次
-            var aboardNetGrades = grades.values.map((e) {
-              e.sort((a, b) => a.hundredPoint.compareTo(b.hundredPoint));
-              return e.last;
-            });
-            if (aboardNetGrades.isNotEmpty) {
-              var result = GpaHelper.calculateGpa(aboardNetGrades);
-              aboardGpa = result.item1;
-              // 所获学分，不包括挂科的。
-              credit = result.item2;
-            } else {
-              credit = 0.0;
-            }
+            // 终态补发：最后完成的模块不会触发 onProgress，只能在这里定论
+            emitStatuses(value.item2);
 
             await _db?.setScholar(this);
             return value.item2;
@@ -340,6 +337,64 @@ class Scholar {
       return [exception.toString()];
     } finally {
       _mutex--;
+    }
+  }
+
+  // 把一次抓取结果合并进当前对象。partial 为 true 表示异步刷新的中间态：
+  // 空数据、有报错或尚未抓完的部分会被 setScholar 的守卫拦下，保留原值；
+  // 实践学分成功与否要等全部抓完才能判定，中间态一律保持不变。
+  void _applyFetchResult(EverythingTuple value, {bool partial = false}) {
+    final tempGrades = <String, List<Grade>>{};
+    final courseIdMappingList =
+        Get.find<OptionController>(tag: 'optionController').courseIdMappingList;
+    final courseIdMappingMap = {
+      for (final mapping in courseIdMappingList) mapping.id1: mapping.id2
+    };
+    for (final grade in value.item4) {
+      try {
+        final matchClass = RegExp(r'(\(.*\)-(.*?))-.*').firstMatch(grade.id);
+        if (matchClass == null && grade.id.length < 22) {
+          throw const FormatException('成绩课程编号长度不足');
+        }
+        var key = matchClass?.group(2) ?? grade.id.substring(14, 22);
+        if (key.startsWith('PPAE') || key.startsWith('401')) {
+          key = matchClass?.group(1) ?? grade.id.substring(0, 22);
+        }
+        key = courseIdMappingMap[key] ?? key;
+        tempGrades.putIfAbsent(key, () => <Grade>[]).add(grade);
+      } on Object catch (error, stackTrace) {
+        if (kDebugMode) {
+          debugPrint(
+              '跳过无法归类的成绩 ${grade.id}：${error.runtimeType}: $error\n$stackTrace');
+        }
+      }
+    }
+
+    PracticeScoreSnapshot? tempPracticeSnapshot;
+    if (!partial && _spider is UgrsSpider && !isGrs) {
+      tempPracticeSnapshot = (_spider as UgrsSpider).practiceSnapshot;
+    }
+
+    setScholar(value.item2, value.item3, tempGrades, value.item5, value.item6,
+        value.item7, tempPracticeSnapshot);
+
+    // 保研成绩，只取第一次
+    var netGrades = grades.values.map((e) => e.first);
+    if (netGrades.isNotEmpty) {
+      gpa = GpaHelper.calculateGpa(netGrades).item1;
+    }
+    // 出国成绩，取最高的一次
+    var aboardNetGrades = grades.values.map((e) {
+      e.sort((a, b) => a.hundredPoint.compareTo(b.hundredPoint));
+      return e.last;
+    });
+    if (aboardNetGrades.isNotEmpty) {
+      var result = GpaHelper.calculateGpa(aboardNetGrades);
+      aboardGpa = result.item1;
+      // 所获学分，不包括挂科的。
+      credit = result.item2;
+    } else {
+      credit = 0.0;
     }
   }
 

@@ -10,6 +10,7 @@ class ExamListController extends GetxController {
   final _scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
   late final RxInt semesterIndex;
   final Rx<Duration> _durationToLastUpdate = const Duration().obs;
+  Timer? _timer;
 
   ExamListController({required String initialName}) {
     semesterIndex = semesters.indexWhere((e) => e.name == initialName).obs;
@@ -21,30 +22,31 @@ class ExamListController extends GetxController {
 
   List<List<Exam>> get exams {
     semester.sortExams();
-    var exams = semester.exams.fold(<List<Exam>>[], (previousValue, element) {
-      if (previousValue.isEmpty) {
-        previousValue.add([element]);
-      } else {
-        if (previousValue.last[0].time[0].year == element.time[0].year &&
-            previousValue.last[0].time[0].month == element.time[0].month &&
-            previousValue.last[0].time[0].day == element.time[0].day) {
-          previousValue.last.add(element);
-        } else {
-          previousValue.add([element]);
-        }
-      }
-      return previousValue;
-    });
-    exams.sort((a, b) => a[0].time[0].compareTo(b[0].time[0]));
-    return exams;
+    final groupedExams = <String, List<Exam>>{};
+    for (final exam in semester.exams) {
+      groupedExams.putIfAbsent(_examDayKey(exam), () => []).add(exam);
+    }
+    return groupedExams.values.toList();
+  }
+
+  String _examDayKey(Exam exam) {
+    if (exam.dateLabel != null) return 'label:${exam.dateLabel}';
+    final date = exam.time[0];
+    return 'date:${date.year}-${date.month}-${date.day}';
   }
 
   @override
   void onReady() {
     super.onReady();
-    Timer.periodic(const Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _durationToLastUpdate.value =
           DateTime.now().difference(_scholar.value.lastUpdateTimeCourse);
     });
+  }
+
+  @override
+  void onClose() {
+    _timer?.cancel();
+    super.onClose();
   }
 }

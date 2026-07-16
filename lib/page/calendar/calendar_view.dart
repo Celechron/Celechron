@@ -218,21 +218,18 @@ class CalendarPage extends StatelessWidget {
                                 : null),
                       ),
                       Expanded(
-                        child: Obx(
-                          () => ListView(
-                            children: _calendarController
-                                .getEventsForDay(
-                                    _calendarController.selectedDay.value)
-                                .map(
-                                  (e) => Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 5, horizontal: 16),
-                                    child: createCard(context, e),
-                                  ),
-                                )
-                                .toList(),
-                          ),
-                        ),
+                        child: Obx(() {
+                          final events = _calendarController.getEventsForDay(
+                              _calendarController.selectedDay.value);
+                          return ListView.builder(
+                            itemCount: events.length,
+                            itemBuilder: (context, index) => Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  vertical: 5, horizontal: 16),
+                              child: createCard(context, events[index]),
+                            ),
+                          );
+                        }),
                       ),
                     ],
                   );

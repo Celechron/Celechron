@@ -174,7 +174,7 @@ class GrsNew {
         );
         final result = decodeJsonMap(body,
             context: '$context；HTTP ${response.statusCode}');
-        if (jsonIndicatesAuthenticationFailure(result)) {
+        if (_isTokenExpired(result)) {
           throw LoginExpiredException(
             '$context：token 已过期',
             details: [
@@ -208,6 +208,14 @@ class GrsNew {
       }
     }
     throw LoginExpiredException('$context：登录态已失效，请手动重新登录');
+  }
+
+  bool _isTokenExpired(Map<String, dynamic> result) {
+    if (jsonIndicatesAuthenticationFailure(result)) return true;
+    // 研究生院在 token 过期时也可能只返回 success=false、code=500。
+    final code = asInt(result['code']);
+    return asBool(result['success']) == false &&
+        (code == HttpStatus.unauthorized || code == 500);
   }
 
   void _requireSuccess(Map<String, dynamic> result, String context) {

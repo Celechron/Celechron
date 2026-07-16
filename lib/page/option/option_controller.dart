@@ -170,6 +170,13 @@ class OptionController extends GetxController {
     _db.setHideHomeGpa(value);
   }
 
+  bool get asyncRefresh => _option.asyncRefresh.value;
+
+  set asyncRefresh(bool value) {
+    _option.asyncRefresh.value = value;
+    _db.setAsyncRefresh(value);
+  }
+
   String get celechronVersion => _fuse.value.displayVersion;
 
   bool get hasNewVersion => _fuse.value.hasNewVersion;

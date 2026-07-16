@@ -5,6 +5,7 @@ import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/utils/platform_features.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -14,6 +15,8 @@ import 'package:celechron/design/two_line_card.dart';
 import 'package:celechron/design/round_rectangle_card.dart';
 import 'package:celechron/design/custom_colors.dart';
 import 'package:celechron/design/animate_button.dart';
+import 'package:celechron/design/refresh_status_indicator.dart';
+import 'package:celechron/design/rolling_shimmer_text.dart';
 
 import 'package:celechron/page/search/search_view.dart';
 import 'course_list/course_list_view.dart';
@@ -153,6 +156,22 @@ class ScholarPage extends StatelessWidget {
 
   final _scholarController = Get.put(ScholarController());
   final ValueNotifier<bool> _isRefreshing = ValueNotifier(false);
+
+  // 让页内横向列表在桌面端也响应鼠标拖动。外层 PageView 为支持鼠标切页开启了
+  // 鼠标拖动，横向列表若不响应鼠标，拖动会漏到 PageView 上造成误切页；
+  // 内层可滚动组件在手势竞技中优先，包上后拖动由列表自己消费（触屏行为不变）
+  Widget _mouseDraggable(BuildContext context, Widget child) {
+    return ScrollConfiguration(
+      behavior: ScrollConfiguration.of(context).copyWith(
+        scrollbars: false,
+        dragDevices: {
+          ...ScrollConfiguration.of(context).dragDevices,
+          PointerDeviceKind.mouse,
+        },
+      ),
+      child: child,
+    );
+  }
 
   Widget _buildGradeBrief(BuildContext context) {
     final optionController =
@@ -638,19 +657,21 @@ class ScholarPage extends StatelessWidget {
                             if (_scholarController.todos.isNotEmpty)
                               SizedBox(
                                   height: 102,
-                                  child: ListView.separated(
-                                      scrollDirection: Axis.horizontal,
-                                      itemCount:
-                                          _scholarController.todos.length,
-                                      separatorBuilder: (context, index) =>
-                                          const SizedBox(width: 8),
-                                      itemBuilder: (context, index) {
-                                        final todo =
-                                            _scholarController.todos[index];
-                                        return SizedBox(
-                                            width: 200,
-                                            child: TodoCard(todo: todo));
-                                      }))
+                                  child: _mouseDraggable(
+                                      context,
+                                      ListView.separated(
+                                          scrollDirection: Axis.horizontal,
+                                          itemCount:
+                                              _scholarController.todos.length,
+                                          separatorBuilder: (context, index) =>
+                                              const SizedBox(width: 8),
+                                          itemBuilder: (context, index) {
+                                            final todo =
+                                                _scholarController.todos[index];
+                                            return SizedBox(
+                                                width: 200,
+                                                child: TodoCard(todo: todo));
+                                          })))
                           ],
                         ))),
               ],
@@ -848,42 +869,80 @@ class ScholarPage extends StatelessWidget {
                     Expanded(
                       child: SizedBox(
                         height: 30,
-                        child: Obx(
-                          () => ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            itemCount: _scholarController.semesters.length,
-                            itemBuilder: (context, index) {
-                              final semester =
-                                  _scholarController.semesters[index];
-                              return Stack(
-                                children: [
-                                  Obx(
-                                    () => AnimateButton(
-                                      text:
-                                          '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
-                                      onTap: () {
-                                        _scholarController.semesterIndex.value =
-                                            index;
-                                        _scholarController.semesterIndex
-                                            .refresh();
-                                      },
-                                      backgroundColor: _scholarController
-                                                  .semesterIndex.value ==
-                                              index
-                                          ? CustomCupertinoDynamicColors.cyan
-                                          : CupertinoColors.systemFill,
+                        child: _mouseDraggable(
+                          context,
+                          Obx(
+                            () => ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: _scholarController.semesters.length,
+                              itemBuilder: (context, index) {
+                                final semester =
+                                    _scholarController.semesters[index];
+                                return Stack(
+                                  children: [
+                                    Obx(
+                                      () => AnimateButton(
+                                        text:
+                                            '${semester.name.substring(2, 5)}${semester.name.substring(7, 11)}',
+                                        onTap: () {
+                                          _scholarController
+                                              .semesterIndex.value = index;
+                                          _scholarController.semesterIndex
+                                              .refresh();
+                                        },
+                                        backgroundColor: _scholarController
+                                                    .semesterIndex.value ==
+                                                index
+                                            ? CustomCupertinoDynamicColors.cyan
+                                            : CupertinoColors.systemFill,
+                                      ),
                                     ),
-                                  ),
-                                  const SizedBox(width: 90),
-                                ],
-                              );
-                            },
+                                    const SizedBox(width: 90),
+                                  ],
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ),
                     ),
                   ],
                 ),
+                // 桌面端刷新超过 5 秒后的状态条：小转圈 + 滚动文案，随刷新结束收起。
+                // 移动端的状态文案由下方 CupertinoSliverRefreshControl 的 builder 展示
+                if (PlatformFeatures.isDesktop)
+                  Obx(() {
+                    final message =
+                        _scholarController.refreshStatusMessage.value;
+                    return AnimatedSize(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      alignment: Alignment.topCenter,
+                      // AnimatedSwitcher 让收起时末条文案先淡出、条带再合拢，
+                      // 而不是内容瞬间消失
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 200),
+                        child: message == null
+                            ? const SizedBox(
+                                key: ValueKey('refreshStatusStripEmpty'),
+                                width: double.infinity)
+                            : Padding(
+                                key: const ValueKey('refreshStatusStrip'),
+                                padding:
+                                    const EdgeInsets.only(top: 6, bottom: 2),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const CupertinoActivityIndicator(radius: 7),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                        child: RollingShimmerText(message)),
+                                  ],
+                                ),
+                              ),
+                      ),
+                    );
+                  }),
                 const SizedBox(height: 4),
                 Divider(
                   thickness: 0,
@@ -895,6 +954,18 @@ class ScholarPage extends StatelessWidget {
         )),
         if (_scholarController.scholar.isLogan)
           CupertinoSliverRefreshControl(
+            // 复刻原生转圈，刷新超过 5 秒后在其右侧滚动展示状态文案。
+            // Obx 是必需的：刷新驻留期间 sliver 高度不变、builder 不会被重调，
+            // 文案更新只能靠响应式重建
+            builder: (context, refreshState, pulledExtent,
+                    refreshTriggerPullDistance, refreshIndicatorExtent) =>
+                Obx(() => RefreshStatusIndicator(
+                      refreshState: refreshState,
+                      pulledExtent: pulledExtent,
+                      refreshTriggerPullDistance: refreshTriggerPullDistance,
+                      refreshIndicatorExtent: refreshIndicatorExtent,
+                      message: _scholarController.refreshStatusMessage.value,
+                    )),
             onRefresh: () async {
               var error = await _scholarController.fetchData();
               if (context.mounted) {
