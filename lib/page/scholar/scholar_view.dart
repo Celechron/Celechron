@@ -1,7 +1,6 @@
 // Official packages
 import 'package:celechron/page/scholar/todo/todo_card.dart';
 import 'package:celechron/http/zjuServices/exceptions.dart';
-import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/utils/platform_features.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
@@ -30,14 +29,14 @@ import 'package:celechron/page/option/option_controller.dart';
 Future<void> showRefreshResultDialog(
     BuildContext context, List<String?> results) async {
   final messages = results.whereType<String>().toList();
+  // 完全成功只通过数据、更新时间和页面状态反馈，不主动打断用户。
+  if (messages.isEmpty) return;
   final degraded =
       messages.where(isDegradedRefreshText).toList(growable: false);
   final failures = messages
       .where((message) => !isDegradedRefreshText(message))
       .toList(growable: false);
   if (!context.mounted) return;
-  final successCount =
-      (results.length - messages.length).clamp(0, results.length);
   final summaryLines = messages.map((error) {
     final compact =
         shortErrorText(error).replaceAll(RegExp(r'\s+'), ' ').trim();
@@ -45,27 +44,12 @@ Future<void> showRefreshResultDialog(
     final line = '$prefix$compact';
     return line.length <= 100 ? line : '${line.substring(0, 100)}…';
   }).toList();
-  if (summaryLines.isEmpty) {
-    summaryLines.addAll(
-      DiagnosticLogService.instance.latestModuleResults.entries
-          .map((entry) => '${entry.key}：${entry.value}'),
-    );
-  }
-  final diagnosticContext = DiagnosticLogService.instance.latestContext;
-  if (diagnosticContext != null) {
-    summaryLines.insert(
-      0,
-      'refreshId：${diagnosticContext.refreshId}\n'
-      '总耗时：${diagnosticContext.durationMs ?? 0}ms',
-    );
-  }
 
   await showCupertinoDialog<void>(
     context: context,
     builder: (dialogContext) => CupertinoAlertDialog(
       title: Text(
-        '刷新完成：$successCount 项成功，'
-        '${degraded.length} 项降级，${failures.length} 项失败',
+        '刷新遇到问题：${degraded.length} 项降级，${failures.length} 项失败',
       ),
       content: Text(summaryLines.join('\n')),
       actions: [
@@ -133,9 +117,10 @@ class ScholarErrorHandler extends StatelessWidget {
           children: [
             CupertinoButton(
               onPressed: () async {
-                var error = await _scholarController.fetchData();
-                if (context.mounted) {
-                  await showRefreshResultDialog(context, error);
+                final results = await _scholarController.fetchData();
+                if (context.mounted &&
+                    results.any((result) => result != null)) {
+                  await showRefreshResultDialog(context, results);
                 }
               },
               child: const Text('重新获取数据'),
@@ -843,12 +828,18 @@ class ScholarPage extends StatelessWidget {
                                     ? null
                                     : () async {
                                         _isRefreshing.value = true;
-                                        var error = await _scholarController
-                                            .fetchData();
-                                        _isRefreshing.value = false;
-                                        if (context.mounted) {
+                                        late final List<String?> results;
+                                        try {
+                                          results = await _scholarController
+                                              .fetchData();
+                                        } finally {
+                                          _isRefreshing.value = false;
+                                        }
+                                        if (context.mounted &&
+                                            results.any(
+                                                (result) => result != null)) {
                                           await showRefreshResultDialog(
-                                              context, error);
+                                              context, results);
                                         }
                                       },
                                 child: isRefreshing
@@ -967,9 +958,9 @@ class ScholarPage extends StatelessWidget {
                       message: _scholarController.refreshStatusMessage.value,
                     )),
             onRefresh: () async {
-              var error = await _scholarController.fetchData();
-              if (context.mounted) {
-                await showRefreshResultDialog(context, error);
+              final results = await _scholarController.fetchData();
+              if (context.mounted && results.any((result) => result != null)) {
+                await showRefreshResultDialog(context, results);
               }
             },
           ),
