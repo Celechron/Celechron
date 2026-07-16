@@ -185,6 +185,11 @@ class RefreshCoordinationStore {
       if (await file.readAsString() != observed) return;
       if (await file.lastModified() != modified) return;
       await file.delete();
+      DiagnosticLogService.instance.record(
+        module: 'refresh',
+        operation: 'staleLockRemoved',
+        message: '已清理超过心跳期限的遗留刷新锁',
+      );
     } on FileSystemException {
       // 另一个 isolate 正在更新或释放锁。
     }
@@ -214,11 +219,21 @@ class RefreshCoordinator {
   static final Map<String, _InProcessFlight> _inProcessFlights = {};
   static final Map<String, Future<void>> _accountTails = {};
   static Future<void> _foregroundLeaseQueue = Future<void>.value();
+  static bool? _foregroundActive;
 
   static Future<void> setForegroundActive(bool active) {
     final update = _foregroundLeaseQueue.then((_) async {
       try {
         await _defaultStore.setForegroundActive(active);
+        if (_foregroundActive != active) {
+          _foregroundActive = active;
+          DiagnosticLogService.instance.record(
+            module: 'refresh',
+            operation: active ? 'foregroundActive' : 'foregroundInactive',
+            message: active ? 'App 已进入前台' : 'App 已离开前台',
+            origin: RefreshOrigin.foreground,
+          );
+        }
       } on Object catch (error, stackTrace) {
         DiagnosticLogService.instance.record(
           level: CelechronLogLevel.warning,
@@ -314,12 +329,27 @@ class RefreshCoordinator {
           backgroundYieldResult != null) {
         return Future<T>.value(_yieldBackground(backgroundYieldResult));
       }
+      DiagnosticLogService.instance.record(
+        module: 'refresh',
+        operation: 'shareFlight',
+        message: '同账号同操作已共享正在执行的 Future',
+        origin: origin,
+      );
       return pending.future as Future<T>;
     }
 
     // 同一账号的不同操作（例如登录后刷新）必须串行，但不能互相复用结果；
     // 相同操作则直接复用上面的同一个 Future。
+    final hasPreviousOperation = _accountTails.containsKey(accountKey);
     final previous = _accountTails[accountKey] ?? Future<void>.value();
+    if (hasPreviousOperation) {
+      DiagnosticLogService.instance.record(
+        module: 'refresh',
+        operation: 'queueOperation',
+        message: '同账号不同操作已按顺序等待',
+        origin: origin,
+      );
+    }
     final rawFuture = previous.then(
       (_) => _runWithFileLock(
         key: accountKey,
@@ -364,6 +394,7 @@ class RefreshCoordinator {
     required RefreshCoordinationStore store,
   }) async {
     File? lockFile;
+    var waitLogged = false;
     try {
       while (lockFile == null) {
         lockFile = await store.tryAcquire(
@@ -372,6 +403,15 @@ class RefreshCoordinator {
           origin: origin,
         );
         if (lockFile == null) {
+          if (!waitLogged) {
+            waitLogged = true;
+            DiagnosticLogService.instance.record(
+              module: 'refresh',
+              operation: 'lockWait',
+              message: '正在等待同账号跨 isolate 刷新锁',
+              origin: origin,
+            );
+          }
           if (origin == RefreshOrigin.background &&
               backgroundYieldResult != null) {
             return _yieldBackground(backgroundYieldResult);
@@ -379,6 +419,12 @@ class RefreshCoordinator {
           await store.waitBeforeRetry();
         }
       }
+      DiagnosticLogService.instance.record(
+        module: 'refresh',
+        operation: 'lockAcquired',
+        message: waitLogged ? '等待后已获取刷新锁' : '已获取刷新锁',
+        origin: origin,
+      );
     } on Object catch (error, stackTrace) {
       DiagnosticLogService.instance.record(
         level: CelechronLogLevel.warning,
@@ -435,6 +481,14 @@ class RefreshCoordinator {
       await activeRenewal;
       try {
         await store.releaseIfOwned(lockFile, refreshId);
+        if (!await lockFile.exists()) {
+          DiagnosticLogService.instance.record(
+            module: 'refresh',
+            operation: 'lockReleased',
+            message: '已释放刷新锁',
+            origin: origin,
+          );
+        }
       } on Object catch (error, stackTrace) {
         DiagnosticLogService.instance.record(
           level: CelechronLogLevel.warning,
@@ -470,6 +524,7 @@ class RefreshCoordinator {
       module: 'refresh',
       operation: 'backgroundYield',
       message: '后台刷新检测到活跃前台或同账号任务，已正常让行',
+      origin: RefreshOrigin.background,
     );
     return result();
   }

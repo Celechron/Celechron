@@ -446,4 +446,20 @@ void main() {
     expect(await lock.exists(), isTrue);
     await heartbeatStore.releaseIfOwned(lock, 'live-refresh');
   });
+
+  test('前台租约按生产默认时限过期', () async {
+    var now = DateTime.now().toUtc();
+    final leaseStore = RefreshCoordinationStore(
+      directory: testDirectory,
+      foregroundLeaseOwnerId: 'expiring-foreground',
+      lockHeartbeatInterval: Duration.zero,
+      now: () => now,
+    );
+
+    await leaseStore.setForegroundActive(true);
+    expect(await leaseStore.hasActiveForeground(), isTrue);
+
+    now = now.add(const Duration(seconds: 31));
+    expect(await leaseStore.hasActiveForeground(), isFalse);
+  });
 }

@@ -6,6 +6,9 @@ import 'package:flutter/foundation.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 
+import 'diagnostic_report.dart';
+import 'diagnostic_sanitizer.dart';
+
 enum CelechronLogLevel { debug, info, warning, error }
 
 enum RefreshOrigin { foreground, background, probe }
@@ -181,28 +184,18 @@ class DiagnosticLogService {
     final now = DateTime.now();
     final fileName = 'celechron-test-log-${_fileTimestamp(now)}.txt';
     final file = File('${directory.path}${Platform.pathSeparator}$fileName');
-    final context = latestContext;
-    final moduleSummary = context?.moduleResults.entries
-            .map((entry) => '${entry.key}：${entry.value}')
-            .join('\n') ??
-        '<当前上下文无模块摘要>';
-    final header = [
-      'Celechron 诊断日志',
-      '版本：$version',
-      '构建号：$buildNumber',
-      '平台：${Platform.operatingSystem}',
-      '系统版本：${_sanitize(Platform.operatingSystemVersion)}',
-      '导出时间：${now.toUtc().toIso8601String()}',
-      'refreshId：${context?.refreshId ?? '-'}',
-      '来源：${context?.origin.name ?? 'foreground'}',
-      '模块结果：',
-      moduleSummary,
-      '',
-      '日志：',
-    ].join('\n');
     final logs = await _readRecentLines();
+    final bundle = const DiagnosticReportParser().parse(logs);
+    final contents = formatDiagnosticExport(
+      bundle: bundle,
+      rawLog: logs,
+      version: version,
+      buildNumber: buildNumber,
+      platform: Platform.operatingSystem,
+      exportedAt: now,
+    );
     await file.writeAsString(
-      '$header\n$logs\n',
+      contents,
       encoding: utf8,
       flush: true,
     );
@@ -301,23 +294,16 @@ class DiagnosticLogService {
   }
 
   static String sanitizeUri(Uri uri) {
-    // 只保留定位接口所需的 scheme/host/path，查询参数可能含 ticket 或账号。
-    final path = uri.path.isEmpty ? '/' : uri.path;
-    return Uri(
-      scheme: uri.scheme,
-      host: uri.host,
-      port: uri.hasPort ? uri.port : null,
-      path: path,
-    ).toString();
+    return sanitizeDiagnosticUri(uri);
   }
 
   static String sanitizeLocation(String location) {
-    final uri = Uri.tryParse(location);
-    return uri == null ? '<无效 Location>' : sanitizeUri(uri);
+    return sanitizeDiagnosticLocation(location);
   }
 
   @visibleForTesting
-  static String sanitizeForDiagnostic(String value) => _sanitize(value);
+  static String sanitizeForDiagnostic(String value) =>
+      sanitizeDiagnosticText(value);
 
   static String _sanitizeStack(StackTrace stackTrace) {
     return _sanitize(stackTrace.toString())
@@ -326,57 +312,7 @@ class DiagnosticLogService {
   }
 
   static String _sanitize(String value) {
-    // 规则覆盖常见凭据、结构化个人字段、URL 查询串和连续账号数字；
-    // 日志调用方仍应避免传入完整业务正文。
-    var result = value;
-    result = result.replaceAllMapped(
-      RegExp(
-        r'("(?:name|realName|studentName|xm|xh|studentId|account|cardAccount|'
-        r'balance|score|grade|courseName|examName)"\s*:\s*)'
-        r'("(?:\\.|[^"])*"|[-+]?\d+(?:\.\d+)?|true|false|null)',
-        caseSensitive: false,
-      ),
-      (match) => '${match.group(1)}"<已隐藏>"',
-    );
-    result = result.replaceAllMapped(
-      RegExp(
-        r'((?:姓名|学号|校园卡(?:账号|账户)?|余额|成绩|分数|课程(?:名称)?|'
-        r'考试(?:名称)?|realName|studentName|studentId|cardAccount|balance|'
-        r'score|grade|courseName|examName)\s*[:=：]\s*)'
-        r'[^,;；|\r\n}\]]+',
-        caseSensitive: false,
-      ),
-      (match) => '${match.group(1)}<已隐藏>',
-    );
-    result = result.replaceAllMapped(
-      RegExp(
-        r'(authorization|proxy-authorization|cookie|set-cookie)'
-        r'\s*[:=]\s*[^\r\n|]+',
-        caseSensitive: false,
-      ),
-      (match) => '${match.group(1)}=<已隐藏>',
-    );
-    result = result.replaceAllMapped(
-      RegExp(
-        r'(password|passwd|token|ticket|code|session|'
-        r'iplanetdirectorypro|jsessionid|synjones-auth)'
-        r'\s*[:=]\s*[^;,\s|]+',
-        caseSensitive: false,
-      ),
-      (match) => '${match.group(1)}=<已隐藏>',
-    );
-    result = result.replaceAllMapped(
-      RegExp(r'https?://[^\s|]+'),
-      (match) {
-        final uri = Uri.tryParse(match.group(0) ?? '');
-        return uri == null ? '<已隐藏 URL>' : sanitizeUri(uri);
-      },
-    );
-    result = result.replaceAll(
-      RegExp(r'(?<!\d)\d{8,12}(?!\d)'),
-      '<账号已隐藏>',
-    );
-    return result.replaceAll('\r', ' ').replaceAll('\n', r'\n');
+    return sanitizeDiagnosticText(value);
   }
 
   static String _fileTimestamp(DateTime value) {
