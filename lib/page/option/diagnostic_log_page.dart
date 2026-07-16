@@ -7,11 +7,13 @@ class DiagnosticLogPage extends StatefulWidget {
   final String version;
   final String buildNumber;
   final String? initialLogText;
+  final Future<void> Function()? clearLogs;
 
   const DiagnosticLogPage({
     required this.version,
     this.buildNumber = '1',
     this.initialLogText,
+    this.clearLogs,
     super.key,
   });
 
@@ -93,9 +95,35 @@ class _DiagnosticLogPageState extends State<DiagnosticLogPage> {
   }
 
   Future<void> _clear() async {
-    await DiagnosticLogService.instance.clear();
-    await _reload();
+    await (widget.clearLogs ?? DiagnosticLogService.instance.clear)();
+    if (widget.initialLogText == null) {
+      await _reload();
+    } else if (mounted) {
+      setState(() => _setLogText(''));
+    }
     if (mounted) await _showMessage('已清空', '测试日志已清空。');
+  }
+
+  Future<void> _confirmClear() async {
+    final confirmed = await showCupertinoDialog<bool>(
+      context: context,
+      builder: (dialogContext) => CupertinoAlertDialog(
+        title: const Text('确定清空测试日志？'),
+        content: const Text('清空后，当前保存的诊断记录将无法在 App 内恢复。'),
+        actions: [
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('取消'),
+          ),
+          CupertinoDialogAction(
+            isDestructiveAction: true,
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('清空'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && mounted) await _clear();
   }
 
   Future<void> _showMessage(String title, String message) {
@@ -226,10 +254,11 @@ class _DiagnosticLogPageState extends State<DiagnosticLogPage> {
   Widget _reportCard(BuildContext context, DiagnosticRefreshReport report) {
     final expanded = _expandedReports.contains(report.refreshId);
     final statusColor = _severityColor(context, report.severity);
+    final description = diagnosticReportDescription(report);
     return Semantics(
       container: true,
       label: '${diagnosticOriginLabel(report.origin)}，'
-          '${diagnosticSeverityLabel(report.severity)}，'
+          '${diagnosticReportTitle(report)}，'
           '${formatLocalDiagnosticTime(report.startedAtUtc)}',
       child: _card(
         context,
@@ -247,7 +276,7 @@ class _DiagnosticLogPageState extends State<DiagnosticLogPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        diagnosticSeverityLabel(report.severity),
+                        diagnosticReportTitle(report),
                         style: TextStyle(
                           color: statusColor,
                           fontSize: 19,
@@ -270,27 +299,35 @@ class _DiagnosticLogPageState extends State<DiagnosticLogPage> {
                 ),
               ],
             ),
+            if (description != null) ...[
+              const SizedBox(height: 12),
+              Text(description),
+            ],
             const SizedBox(height: 14),
             Wrap(
               spacing: 8,
               runSpacing: 8,
               children: [
                 _metric(context, '总耗时', formatDuration(report.durationMs)),
-                _metric(context, '成功', '${report.successCount}'),
-                _metric(context, '降级', '${report.degradedCount}'),
-                _metric(context, '失败', '${report.failedCount}'),
+                if (report.performedModuleRequests) ...[
+                  _metric(context, '成功', '${report.successCount}'),
+                  _metric(context, '降级', '${report.degradedCount}'),
+                  _metric(context, '失败', '${report.failedCount}'),
+                ],
               ],
             ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12,
-              runSpacing: 6,
-              children: [
-                _flag('重新登录', report.relogged),
-                _flag('重试', report.retried),
-                _flag('缓存回退', report.cacheUsed),
-              ],
-            ),
+            if (report.performedModuleRequests) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 12,
+                runSpacing: 6,
+                children: [
+                  _flag('重新登录', report.relogged),
+                  _flag('重试', report.retried),
+                  _flag('缓存回退', report.cacheUsed),
+                ],
+              ),
+            ],
             Align(
               alignment: Alignment.centerRight,
               child: CupertinoButton(
@@ -308,9 +345,12 @@ class _DiagnosticLogPageState extends State<DiagnosticLogPage> {
             ),
             if (expanded) ...[
               _divider(context),
-              _sectionTitle('模块状态'),
-              for (final module in report.modules) _moduleCard(context, module),
-              const SizedBox(height: 10),
+              if (report.modules.isNotEmpty) ...[
+                _sectionTitle('模块状态'),
+                for (final module in report.modules)
+                  _moduleCard(context, module),
+                const SizedBox(height: 10),
+              ],
               _sectionTitle('关键时间线'),
               if (report.timeline.isEmpty)
                 const Text('没有可展示的关键事件。')
@@ -370,7 +410,7 @@ class _DiagnosticLogPageState extends State<DiagnosticLogPage> {
             spacing: 10,
             runSpacing: 4,
             children: [
-              Text('耗时 ${formatDuration(module.durationMs)}'),
+              Text(formatModuleDuration(module)),
               if (module.relogged) const Text('已重新登录'),
               if (module.retried) const Text('已重试'),
               if (cacheTime != null) Text('缓存更新于 $cacheTime'),
@@ -548,7 +588,7 @@ class _DiagnosticLogPageState extends State<DiagnosticLogPage> {
                   '清空测试日志',
                   style: TextStyle(color: CupertinoColors.systemRed),
                 ),
-                onTap: _clear,
+                onTap: _confirmClear,
               ),
             ],
           ),
@@ -668,6 +708,7 @@ class _DiagnosticLogPageState extends State<DiagnosticLogPage> {
       DiagnosticReportSeverity.degraded => CupertinoColors.systemOrange,
       DiagnosticReportSeverity.failed => CupertinoColors.systemRed,
       DiagnosticReportSeverity.incomplete => CupertinoColors.systemYellow,
+      DiagnosticReportSeverity.coordinated => CupertinoColors.systemBlue,
     };
     return CupertinoDynamicColor.resolve(color, context);
   }
@@ -681,6 +722,8 @@ class _DiagnosticLogPageState extends State<DiagnosticLogPage> {
       DiagnosticReportSeverity.failed => CupertinoIcons.xmark_circle_fill,
       DiagnosticReportSeverity.incomplete =>
         CupertinoIcons.question_circle_fill,
+      DiagnosticReportSeverity.coordinated =>
+        CupertinoIcons.arrow_2_circlepath_circle_fill,
     };
   }
 

@@ -1,6 +1,14 @@
 import 'diagnostic_sanitizer.dart';
 
-enum DiagnosticReportSeverity { success, degraded, failed, incomplete }
+enum DiagnosticReportSeverity {
+  success,
+  degraded,
+  failed,
+  incomplete,
+  coordinated,
+}
+
+enum DiagnosticRefreshDisposition { executed, shared, backgroundYielded }
 
 enum DiagnosticModuleState { liveSuccess, cache, failed, notExecuted }
 
@@ -12,6 +20,7 @@ enum DiagnosticIssueCategory {
   coordination,
   expectedFallback,
   incompleteLog,
+  refreshExecution,
 }
 
 enum DiagnosticIssueSeverity { info, warning, error }
@@ -76,6 +85,7 @@ class DiagnosticModuleReport {
   final String name;
   final DiagnosticModuleState state;
   final int? durationMs;
+  final bool durationEstimated;
   final bool relogged;
   final bool retried;
   final DateTime? cacheUpdatedAtUtc;
@@ -88,6 +98,7 @@ class DiagnosticModuleReport {
     required this.relogged,
     required this.retried,
     required this.reason,
+    this.durationEstimated = false,
     this.durationMs,
     this.cacheUpdatedAtUtc,
     this.cacheUpdatedText,
@@ -101,6 +112,8 @@ class DiagnosticRefreshReport {
   final DateTime? finishedAtUtc;
   final int? durationMs;
   final DiagnosticReportSeverity severity;
+  final DiagnosticRefreshDisposition disposition;
+  final String? relatedRefreshId;
   final List<DiagnosticModuleReport> modules;
   final List<DiagnosticTimelineEvent> timeline;
   final List<DiagnosticIssue> issues;
@@ -115,13 +128,18 @@ class DiagnosticRefreshReport {
     required this.finishedAtUtc,
     required this.durationMs,
     required this.severity,
+    required this.disposition,
     required this.modules,
     required this.timeline,
     required this.issues,
     required this.relogged,
     required this.retried,
     required this.cacheUsed,
+    this.relatedRefreshId,
   });
+
+  bool get performedModuleRequests =>
+      disposition == DiagnosticRefreshDisposition.executed;
 
   int get successCount => modules
       .where((module) => module.state == DiagnosticModuleState.liveSuccess)
@@ -134,6 +152,28 @@ class DiagnosticRefreshReport {
   int get failedCount => modules
       .where((module) => module.state == DiagnosticModuleState.failed)
       .length;
+
+  DiagnosticRefreshReport copyWith({
+    DiagnosticReportSeverity? severity,
+    List<DiagnosticIssue>? issues,
+  }) {
+    return DiagnosticRefreshReport(
+      refreshId: refreshId,
+      origin: origin,
+      startedAtUtc: startedAtUtc,
+      finishedAtUtc: finishedAtUtc,
+      durationMs: durationMs,
+      severity: severity ?? this.severity,
+      disposition: disposition,
+      relatedRefreshId: relatedRefreshId,
+      modules: modules,
+      timeline: timeline,
+      issues: issues ?? this.issues,
+      relogged: relogged,
+      retried: retried,
+      cacheUsed: cacheUsed,
+    );
+  }
 }
 
 class DiagnosticReportBundle {
@@ -164,6 +204,11 @@ class DiagnosticLogEntry {
   const DiagnosticLogEntry(this.timestampUtc, this.fields);
 
   String get refreshId => fields['refreshId'] ?? '-';
+  String? get relatedRefreshId {
+    final value = fields['relatedRefreshId'];
+    return value == null || value == '-' || value.isEmpty ? null : value;
+  }
+
   String get source => fields['source'] ?? 'foreground';
   String get level => fields['level'] ?? 'info';
   String get module => fields['module'] ?? '未知模块';
@@ -249,9 +294,10 @@ class DiagnosticReportParser {
       }
     }
 
-    final reports = grouped.entries
+    final baseReports = grouped.entries
         .map((entry) => _buildReport(entry.key, entry.value))
-        .toList()
+        .toList();
+    final reports = _resolveSharedOutcomes(baseReports)
       ..sort((a, b) => b.startedAtUtc.compareTo(a.startedAtUtc));
     final globalTimeline = _buildTimeline(globalEntries, refreshId: null);
     return DiagnosticReportBundle(
@@ -259,6 +305,47 @@ class DiagnosticReportParser {
       globalTimeline: globalTimeline,
       damagedLineCount: damaged,
     );
+  }
+
+  List<DiagnosticRefreshReport> _resolveSharedOutcomes(
+    List<DiagnosticRefreshReport> reports,
+  ) {
+    final byId = {for (final report in reports) report.refreshId: report};
+    return reports.map((report) {
+      if (report.disposition != DiagnosticRefreshDisposition.shared ||
+          report.relatedRefreshId == null ||
+          report.severity == DiagnosticReportSeverity.failed) {
+        return report;
+      }
+      final owner = byId[report.relatedRefreshId];
+      if (owner == null) return report;
+      switch (owner.severity) {
+        case DiagnosticReportSeverity.failed:
+          final issue = DiagnosticIssue(
+            id: '${report.refreshId}-shared-owner-failed',
+            category: DiagnosticIssueCategory.refreshExecution,
+            severity: DiagnosticIssueSeverity.error,
+            title: '共享任务失败',
+            explanation: '关联的刷新任务执行失败，本次调用没有重复请求服务器，并收到了相同失败结果。',
+            details: DiagnosticTechnicalDetails(
+              refreshId: report.refreshId,
+              timestampUtc: report.finishedAtUtc ?? report.startedAtUtc,
+              interfaceName: 'refresh',
+            ),
+          );
+          return report.copyWith(
+            severity: DiagnosticReportSeverity.failed,
+            issues: [...report.issues, issue],
+          );
+        case DiagnosticReportSeverity.degraded:
+          return report.copyWith(severity: DiagnosticReportSeverity.degraded);
+        case DiagnosticReportSeverity.incomplete:
+          return report.copyWith(severity: DiagnosticReportSeverity.incomplete);
+        case DiagnosticReportSeverity.success:
+        case DiagnosticReportSeverity.coordinated:
+          return report;
+      }
+    }).toList();
   }
 
   DiagnosticRefreshReport _buildReport(
@@ -286,29 +373,54 @@ class DiagnosticReportParser {
     final origin = startEntries.isNotEmpty
         ? startEntries.first.source
         : entries.first.source;
+    final shareEntries =
+        entries.where((entry) => entry.operation == 'shareFlight').toList();
+    final yielded =
+        entries.any((entry) => entry.operation == 'backgroundYield');
+    final disposition = shareEntries.isNotEmpty
+        ? DiagnosticRefreshDisposition.shared
+        : yielded
+            ? DiagnosticRefreshDisposition.backgroundYielded
+            : DiagnosticRefreshDisposition.executed;
+    final relatedRefreshId = shareEntries
+        .map((entry) => entry.relatedRefreshId)
+        .whereType<String>()
+        .lastOrNull;
+    final topLevelFailureEntry =
+        finishEntries.where(_isTopLevelFailureEntry).firstOrNull;
 
     final moduleBuilders = <String, _ModuleBuilder>{};
-    for (final entry in entries) {
-      final canonical = _canonicalModule(entry.module, entry.message);
-      if (canonical == null) continue;
-      moduleBuilders
-          .putIfAbsent(canonical, () => _ModuleBuilder(canonical))
-          .add(entry,
-              expectedFallback: _isExpectedCalendarFallback(entry, entries));
+    if (disposition == DiagnosticRefreshDisposition.executed) {
+      for (final entry in entries) {
+        final canonical = _canonicalModule(entry.module, entry.message);
+        if (canonical == null) continue;
+        moduleBuilders
+            .putIfAbsent(canonical, () => _ModuleBuilder(canonical))
+            .add(entry,
+                expectedFallback: _isExpectedCalendarFallback(entry, entries));
+      }
     }
-    final modules = moduleOrder
-        .map((name) =>
-            moduleBuilders[name]?.build() ??
-            DiagnosticModuleReport(
-              name: name,
-              state: DiagnosticModuleState.notExecuted,
-              relogged: false,
-              retried: false,
-              reason: '本次日志中没有该模块的执行记录。',
-            ))
-        .toList();
+    final modules = disposition == DiagnosticRefreshDisposition.executed
+        ? moduleOrder
+            .map((name) =>
+                moduleBuilders[name]?.build() ??
+                DiagnosticModuleReport(
+                  name: name,
+                  state: DiagnosticModuleState.notExecuted,
+                  relogged: false,
+                  retried: false,
+                  reason: '本次日志中没有该模块的执行记录。',
+                ))
+            .toList()
+        : <DiagnosticModuleReport>[];
 
-    final issues = _buildIssues(refreshId, entries, modules);
+    final issues = _buildIssues(
+      refreshId,
+      entries,
+      modules,
+      disposition: disposition,
+      topLevelFailureEntry: topLevelFailureEntry,
+    );
     if (startEntries.isNotEmpty && finishEntries.isEmpty) {
       final entry = startEntries.first;
       issues.add(DiagnosticIssue(
@@ -324,7 +436,9 @@ class DiagnosticReportParser {
     }
 
     DiagnosticReportSeverity severity;
-    if (startEntries.isNotEmpty && finishEntries.isEmpty) {
+    if (topLevelFailureEntry != null) {
+      severity = DiagnosticReportSeverity.failed;
+    } else if (startEntries.isNotEmpty && finishEntries.isEmpty) {
       severity = DiagnosticReportSeverity.incomplete;
     } else if (modules
             .any((module) => module.state == DiagnosticModuleState.failed) ||
@@ -335,6 +449,8 @@ class DiagnosticReportParser {
     } else if (modules
         .any((module) => module.state == DiagnosticModuleState.cache)) {
       severity = DiagnosticReportSeverity.degraded;
+    } else if (disposition != DiagnosticRefreshDisposition.executed) {
+      severity = DiagnosticReportSeverity.coordinated;
     } else {
       severity = DiagnosticReportSeverity.success;
     }
@@ -346,6 +462,8 @@ class DiagnosticReportParser {
       finishedAtUtc: finishedAt,
       durationMs: duration,
       severity: severity,
+      disposition: disposition,
+      relatedRefreshId: relatedRefreshId,
       modules: modules,
       timeline: _buildTimeline(entries, refreshId: refreshId),
       issues: issues,
@@ -362,6 +480,12 @@ class DiagnosticReportParser {
   }) {
     final events = <DiagnosticTimelineEvent>[];
     final seen = <String>{};
+    final finishEntries = entries
+        .where(
+            (entry) => entry.module == 'refresh' && entry.operation == 'finish')
+        .toList();
+    final lastFinish = finishEntries.lastOrNull;
+    final topLevelFailed = finishEntries.any(_isTopLevelFailureEntry);
     void add(DiagnosticLogEntry entry, String type, String title,
         [String? description]) {
       final key = '$type-${entry.module}-${entry.operation}';
@@ -379,10 +503,11 @@ class DiagnosticReportParser {
       if (entry.module == 'refresh' && entry.operation == 'start') {
         add(entry, 'start', entry.source == 'background' ? '后台任务开始' : '前台刷新开始');
       } else if (entry.module == 'refresh' && entry.operation == 'finish') {
+        if (!identical(entry, lastFinish)) continue;
         add(
             entry,
             'finish',
-            '刷新结束',
+            topLevelFailed ? '刷新异常结束' : '刷新结束',
             entry.durationMs == null
                 ? null
                 : '总耗时 ${formatDuration(entry.durationMs)}');
@@ -391,11 +516,24 @@ class DiagnosticReportParser {
           case 'foregroundActive':
             add(entry, 'foregroundActive', 'App 进入前台');
           case 'lockWait':
-            add(entry, 'lockWait', '等待同账号刷新锁');
+            add(entry, 'lockWait', '跨 isolate 等待账号文件锁');
           case 'shareFlight':
-            add(entry, 'shareFlight', '共享正在执行的刷新任务');
+            add(
+              entry,
+              'shareFlight',
+              '共享同账号同操作的刷新 Future',
+              entry.relatedRefreshId == null
+                  ? null
+                  : '关联任务 ${entry.relatedRefreshId}',
+            );
+          case 'queueOperation':
+            add(entry, 'queueOperation', '同账号不同操作正在排队');
           case 'backgroundYield':
-            add(entry, 'backgroundYield', '后台因前台刷新主动让行');
+            add(
+              entry,
+              'backgroundYield',
+              entry.message.contains('登录完成后') ? '后台登录后检测到前台并让行' : '后台因前台使用主动让行',
+            );
           case 'staleLockRemoved':
             add(entry, 'staleLockRemoved', '发现并清理遗留刷新锁');
           case 'lockAcquired':
@@ -422,8 +560,10 @@ class DiagnosticReportParser {
   List<DiagnosticIssue> _buildIssues(
     String refreshId,
     List<DiagnosticLogEntry> entries,
-    List<DiagnosticModuleReport> modules,
-  ) {
+    List<DiagnosticModuleReport> modules, {
+    required DiagnosticRefreshDisposition disposition,
+    required DiagnosticLogEntry? topLevelFailureEntry,
+  }) {
     final issues = <DiagnosticIssue>[];
     final seen = <String>{};
     void add(
@@ -443,6 +583,21 @@ class DiagnosticReportParser {
         explanation: explanation,
         details: _details(refreshId, entry),
       ));
+    }
+
+    if (topLevelFailureEntry != null) {
+      add(
+        topLevelFailureEntry,
+        'refresh-execution',
+        DiagnosticIssueCategory.refreshExecution,
+        DiagnosticIssueSeverity.error,
+        disposition == DiagnosticRefreshDisposition.shared
+            ? '共享任务失败'
+            : '刷新执行异常',
+        disposition == DiagnosticRefreshDisposition.shared
+            ? '正在共享的刷新任务异常结束，本次调用也收到了相同异常。'
+            : '刷新在完成全部模块前异常结束，请查看技术详情。',
+      );
     }
 
     for (final entry in entries) {
@@ -532,6 +687,14 @@ class DiagnosticReportParser {
     return issues;
   }
 
+  static bool _isTopLevelFailureEntry(DiagnosticLogEntry entry) {
+    if (entry.module != 'refresh' || entry.operation != 'finish') return false;
+    return entry.level == 'error' ||
+        entry.message.contains('完整刷新异常结束') ||
+        (entry.exceptionType != '-' && entry.exceptionType.isNotEmpty) ||
+        (entry.exception != '-' && entry.exception.isNotEmpty);
+  }
+
   static bool _isExpectedCalendarFallback(
     DiagnosticLogEntry entry,
     List<DiagnosticLogEntry> entries,
@@ -590,7 +753,9 @@ class _ModuleBuilder {
   final List<DiagnosticModuleState> terminalStates = [];
   DateTime? firstAt;
   DateTime? lastAt;
-  int? recordedDurationMs;
+  DateTime? moduleStartedAt;
+  DateTime? moduleFinishedAt;
+  int? moduleDurationMs;
   bool relogged = false;
   bool retried = false;
   bool cacheUsed = false;
@@ -606,10 +771,12 @@ class _ModuleBuilder {
   void add(DiagnosticLogEntry entry, {required bool expectedFallback}) {
     firstAt ??= entry.timestampUtc;
     lastAt = entry.timestampUtc;
-    if (entry.durationMs != null &&
-        (recordedDurationMs == null ||
-            entry.durationMs! > recordedDurationMs!)) {
-      recordedDurationMs = entry.durationMs;
+    if (entry.operation == 'start' || entry.operation == 'moduleStart') {
+      moduleStartedAt ??= entry.timestampUtc;
+    } else if (entry.operation == 'finish' ||
+        entry.operation == 'moduleFinish') {
+      moduleFinishedAt = entry.timestampUtc;
+      if (entry.durationMs != null) moduleDurationMs = entry.durationMs;
     }
     relogged |= entry.relogged;
     retried |= entry.retried;
@@ -670,14 +837,21 @@ class _ModuleBuilder {
     } else {
       state = DiagnosticModuleState.notExecuted;
     }
-    final duration = recordedDurationMs ??
-        (firstAt != null && lastAt != null && lastAt != firstAt
-            ? lastAt!.difference(firstAt!).inMilliseconds
-            : null);
+    int? duration;
+    var durationEstimated = false;
+    if (moduleDurationMs != null) {
+      duration = moduleDurationMs;
+    } else if (moduleStartedAt != null && moduleFinishedAt != null) {
+      duration = moduleFinishedAt!.difference(moduleStartedAt!).inMilliseconds;
+    } else if (firstAt != null && lastAt != null && lastAt != firstAt) {
+      duration = lastAt!.difference(firstAt!).inMilliseconds;
+      durationEstimated = true;
+    }
     return DiagnosticModuleReport(
       name: name,
       state: state,
       durationMs: duration,
+      durationEstimated: durationEstimated,
       relogged: relogged,
       retried: retried,
       cacheUpdatedAtUtc: cacheUpdatedAtUtc,
@@ -724,6 +898,7 @@ class _ModuleBuilder {
 }
 
 extension _IterableLastOrNull<T> on Iterable<T> {
+  T? get firstOrNull => isEmpty ? null : first;
   T? get lastOrNull => isEmpty ? null : last;
 }
 
@@ -737,6 +912,37 @@ String diagnosticSeverityLabel(DiagnosticReportSeverity severity) {
       return '刷新失败';
     case DiagnosticReportSeverity.incomplete:
       return '记录不完整';
+    case DiagnosticReportSeverity.coordinated:
+      return '正常协调完成';
+  }
+}
+
+String diagnosticReportTitle(DiagnosticRefreshReport report) {
+  if (report.disposition == DiagnosticRefreshDisposition.shared) {
+    return switch (report.severity) {
+      DiagnosticReportSeverity.failed => '共享任务失败',
+      DiagnosticReportSeverity.degraded => '共享任务部分降级',
+      DiagnosticReportSeverity.incomplete => '共享任务记录不完整',
+      DiagnosticReportSeverity.success => '已共享现有刷新',
+      DiagnosticReportSeverity.coordinated => '已共享现有刷新',
+    };
+  }
+  if (report.disposition == DiagnosticRefreshDisposition.backgroundYielded) {
+    return '后台已主动让行';
+  }
+  return diagnosticSeverityLabel(report.severity);
+}
+
+String? diagnosticReportDescription(DiagnosticRefreshReport report) {
+  switch (report.disposition) {
+    case DiagnosticRefreshDisposition.executed:
+      return null;
+    case DiagnosticRefreshDisposition.shared:
+      final owner = report.relatedRefreshId;
+      return '本次操作没有重复请求服务器，已等待正在执行的刷新任务。'
+          '${owner == null ? '' : '\n关联任务：$owner'}';
+    case DiagnosticRefreshDisposition.backgroundYielded:
+      return '检测到 App 正在前台使用，本次后台任务没有发起模块请求。';
   }
 }
 
@@ -772,6 +978,8 @@ String diagnosticIssueCategoryLabel(DiagnosticIssueCategory category) {
       return '预期回退';
     case DiagnosticIssueCategory.incompleteLog:
       return '日志不完整';
+    case DiagnosticIssueCategory.refreshExecution:
+      return '刷新执行异常';
   }
 }
 
@@ -779,6 +987,12 @@ String formatDuration(int? durationMs) {
   if (durationMs == null) return '未知';
   if (durationMs < 1000) return '${durationMs}ms';
   return '${(durationMs / 1000).toStringAsFixed(1)} 秒';
+}
+
+String formatModuleDuration(DiagnosticModuleReport module) {
+  if (module.durationMs == null) return '耗时未知';
+  return '耗时${module.durationEstimated ? '约 ' : ''}'
+      '${formatDuration(module.durationMs)}';
 }
 
 String formatLocalDiagnosticTime(DateTime utc, {Duration? utcOffset}) {
@@ -833,24 +1047,34 @@ String formatDiagnosticExport({
         ..writeln()
         ..writeln(
             '${formatLocalDiagnosticTime(report.startedAtUtc, utcOffset: offset)} '
-            '${diagnosticOriginLabel(report.origin)} · ${diagnosticSeverityLabel(report.severity)}')
+            '${diagnosticOriginLabel(report.origin)} · ${diagnosticReportTitle(report)}')
         ..writeln('refreshId：${report.refreshId}')
-        ..writeln('总耗时：${formatDuration(report.durationMs)}')
-        ..writeln('模块：成功 ${report.successCount} / 降级 ${report.degradedCount} / '
-            '失败 ${report.failedCount}')
-        ..writeln('重新登录：${report.relogged ? '是' : '否'}；'
-            '重试：${report.retried ? '是' : '否'}；'
-            '缓存回退：${report.cacheUsed ? '是' : '否'}');
+        ..writeln('总耗时：${formatDuration(report.durationMs)}');
+      final description = diagnosticReportDescription(report);
+      if (description != null) buffer.writeln(description);
+      if (report.performedModuleRequests) {
+        buffer
+          ..writeln(
+              '模块：成功 ${report.successCount} / 降级 ${report.degradedCount} / '
+              '失败 ${report.failedCount}')
+          ..writeln('重新登录：${report.relogged ? '是' : '否'}；'
+              '重试：${report.retried ? '是' : '否'}；'
+              '缓存回退：${report.cacheUsed ? '是' : '否'}');
+      }
     }
   }
 
   buffer.writeln('\n=== 2. 模块结果 ===');
   for (final report in bundle.reports) {
     buffer.writeln('\n[${report.refreshId}]');
-    for (final module in report.modules) {
-      buffer
-          .writeln('${module.name}：${diagnosticModuleStateLabel(module.state)}；'
-              '耗时=${formatDuration(module.durationMs)}；${module.reason}');
+    if (report.modules.isEmpty) {
+      buffer.writeln('${diagnosticReportTitle(report)}：未发起独立模块请求。');
+    } else {
+      for (final module in report.modules) {
+        buffer.writeln(
+            '${module.name}：${diagnosticModuleStateLabel(module.state)}；'
+            '${formatModuleDuration(module)}；${module.reason}');
+      }
     }
   }
 

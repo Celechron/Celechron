@@ -206,8 +206,9 @@ class RefreshCoordinationStore {
 class _InProcessFlight {
   final Future<Object?> future;
   final RefreshOrigin origin;
+  final String ownerRefreshId;
 
-  const _InProcessFlight(this.future, this.origin);
+  const _InProcessFlight(this.future, this.origin, this.ownerRefreshId);
 }
 
 /// 进程内相同操作共享 Future；同账号不同操作及 isolate 间的任务按账号串行。
@@ -333,6 +334,7 @@ class RefreshCoordinator {
         module: 'refresh',
         operation: 'shareFlight',
         message: '同账号同操作已共享正在执行的 Future',
+        relatedRefreshId: pending.ownerRefreshId,
         origin: origin,
       );
       return pending.future as Future<T>;
@@ -367,7 +369,7 @@ class RefreshCoordinator {
         _inProcessFlights.remove(flightKey);
       }
     });
-    _inProcessFlights[flightKey] = _InProcessFlight(flight, origin);
+    _inProcessFlights[flightKey] = _InProcessFlight(flight, origin, refreshId);
 
     // 队尾吞掉前一操作的异常，只负责唤醒下一项；实际异常仍由 flight
     // 原样传给所有调用者。

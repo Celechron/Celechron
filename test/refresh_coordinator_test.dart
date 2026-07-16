@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/services/diagnostic_log_service.dart';
+import 'package:celechron/services/diagnostic_report.dart';
 import 'package:celechron/services/refresh_coordinator.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -31,6 +32,11 @@ Future<T> runFlight<T>({
 
 String accountKey(String account) =>
     sha256.convert(utf8.encode('refresh-coordinator-test-$account')).toString();
+
+String diagnosticTextSince(String before) {
+  final current = DiagnosticLogService.instance.currentText();
+  return before.isEmpty ? current : current.substring(before.length + 1);
+}
 
 void main() {
   late Directory testDirectory;
@@ -80,6 +86,157 @@ void main() {
     resultGate.complete(expected);
     expect(await startupRefresh, same(expected));
     expect(await manualRefresh, same(expected));
+  });
+
+  test('共享 Future 结构化记录 owner refreshId', () async {
+    final before = DiagnosticLogService.instance.currentText();
+    final started = Completer<void>();
+    final gate = Completer<List<String?>>();
+    var actionCalls = 0;
+
+    final owner = RefreshCoordinator.run<List<String?>>(
+      account: 'structured-owner-account',
+      operation: 'refresh',
+      origin: RefreshOrigin.foreground,
+      refreshId: 'owner-refresh-id',
+      coordinationStore: testStore,
+      action: () {
+        actionCalls++;
+        started.complete();
+        return gate.future;
+      },
+    );
+    await started.future;
+    final shared = RefreshCoordinator.run<List<String?>>(
+      account: 'structured-owner-account',
+      operation: 'refresh',
+      origin: RefreshOrigin.foreground,
+      refreshId: 'shared-caller-id',
+      coordinationStore: testStore,
+      action: () async {
+        actionCalls++;
+        return <String?>['不应执行'];
+      },
+    );
+
+    gate.complete(<String?>[null]);
+    expect(await owner, <String?>[null]);
+    expect(await shared, <String?>[null]);
+    expect(actionCalls, 1);
+    final shareLine = diagnosticTextSince(before)
+        .split('\n')
+        .singleWhere((line) => line.contains('operation=shareFlight'));
+    expect(shareLine, contains('relatedRefreshId=owner-refresh-id'));
+  });
+
+  test('共享调用等待 owner 成功并生成协调报告', () async {
+    final before = DiagnosticLogService.instance.currentText();
+    final started = Completer<void>();
+    final gate = Completer<List<String?>>();
+    String? ownerId;
+    String? sharedId;
+    var actionCalls = 0;
+
+    final owner = DiagnosticLogService.instance.runRefresh<List<String?>>(
+      origin: RefreshOrigin.foreground,
+      action: () {
+        ownerId = DiagnosticLogService.instance.currentRefreshId;
+        return RefreshCoordinator.run(
+          account: 'logged-shared-success',
+          operation: 'refresh',
+          origin: RefreshOrigin.foreground,
+          refreshId: ownerId!,
+          coordinationStore: testStore,
+          action: () {
+            actionCalls++;
+            started.complete();
+            return gate.future;
+          },
+        );
+      },
+    );
+    await started.future;
+    final shared = DiagnosticLogService.instance.runRefresh<List<String?>>(
+      origin: RefreshOrigin.foreground,
+      action: () {
+        sharedId = DiagnosticLogService.instance.currentRefreshId;
+        return RefreshCoordinator.run(
+          account: 'logged-shared-success',
+          operation: 'refresh',
+          origin: RefreshOrigin.foreground,
+          refreshId: sharedId!,
+          coordinationStore: testStore,
+          action: () async {
+            actionCalls++;
+            return <String?>['不应执行'];
+          },
+        );
+      },
+    );
+
+    gate.complete(<String?>[null]);
+    await Future.wait([owner, shared]);
+    expect(actionCalls, 1);
+    final bundle =
+        const DiagnosticReportParser().parse(diagnosticTextSince(before));
+    final sharedReport = bundle.reports.singleWhere(
+      (report) => report.refreshId == sharedId,
+    );
+    expect(sharedReport.relatedRefreshId, ownerId);
+    expect(sharedReport.disposition, DiagnosticRefreshDisposition.shared);
+    expect(sharedReport.severity, DiagnosticReportSeverity.coordinated);
+    expect(sharedReport.modules, isEmpty);
+    expect(diagnosticReportTitle(sharedReport), '已共享现有刷新');
+  });
+
+  test('owner 抛出异常时共享调用报告同样失败', () async {
+    final before = DiagnosticLogService.instance.currentText();
+    final started = Completer<void>();
+    final gate = Completer<List<String?>>();
+    String? ownerId;
+    String? sharedId;
+    var actionCalls = 0;
+
+    Future<List<String?>> loggedFlight(void Function(String id) capture) {
+      return DiagnosticLogService.instance.runRefresh<List<String?>>(
+        origin: RefreshOrigin.foreground,
+        action: () {
+          final id = DiagnosticLogService.instance.currentRefreshId!;
+          capture(id);
+          return RefreshCoordinator.run(
+            account: 'logged-shared-failure',
+            operation: 'refresh',
+            origin: RefreshOrigin.foreground,
+            refreshId: id,
+            coordinationStore: testStore,
+            action: () {
+              actionCalls++;
+              if (!started.isCompleted) started.complete();
+              return gate.future;
+            },
+          );
+        },
+      );
+    }
+
+    final owner = loggedFlight((id) => ownerId = id);
+    await started.future;
+    final shared = loggedFlight((id) => sharedId = id);
+    final ownerExpectation = expectLater(owner, throwsA(isA<StateError>()));
+    final sharedExpectation = expectLater(shared, throwsA(isA<StateError>()));
+    gate.completeError(StateError('shared owner failed'));
+    await Future.wait([ownerExpectation, sharedExpectation]);
+
+    expect(actionCalls, 1);
+    final bundle =
+        const DiagnosticReportParser().parse(diagnosticTextSince(before));
+    final sharedReport = bundle.reports.singleWhere(
+      (report) => report.refreshId == sharedId,
+    );
+    expect(sharedReport.relatedRefreshId, ownerId);
+    expect(sharedReport.severity, DiagnosticReportSeverity.failed);
+    expect(diagnosticReportTitle(sharedReport), '共享任务失败');
+    expect(sharedReport.modules, isEmpty);
   });
 
   test('同账号共享任务返回相同失败结果', () async {
@@ -246,6 +403,7 @@ void main() {
   });
 
   test('同账号登录与刷新不共享错误类型结果而是依次执行', () async {
+    final diagnosticBefore = DiagnosticLogService.instance.currentText();
     final loginStarted = Completer<void>();
     final loginGate = Completer<List<String?>>();
     final refreshStarted = Completer<void>();
@@ -276,6 +434,9 @@ void main() {
     expect(await login, <String?>[null]);
     await refreshStarted.future;
     expect(await refresh, <String?>[null, null]);
+    final diagnostic = diagnosticTextSince(diagnosticBefore);
+    expect(diagnostic, contains('operation=queueOperation'));
+    expect(diagnostic, isNot(contains('operation=shareFlight')));
   });
 
   test('后台任务遇到活跃前台租约时正常让行', () async {

@@ -75,6 +75,8 @@ class DiagnosticLogService {
     );
     return runZoned(
       () async {
+        Object? terminalError;
+        StackTrace? terminalStackTrace;
         record(
           module: 'refresh',
           operation: 'start',
@@ -83,14 +85,8 @@ class DiagnosticLogService {
         try {
           return await action();
         } on Object catch (error, stackTrace) {
-          record(
-            level: CelechronLogLevel.error,
-            module: 'refresh',
-            operation: 'finish',
-            message: '完整刷新异常结束',
-            error: error,
-            stackTrace: stackTrace,
-          );
+          terminalError = error;
+          terminalStackTrace = stackTrace;
           rethrow;
         } finally {
           final elapsed =
@@ -98,10 +94,15 @@ class DiagnosticLogService {
           context.durationMs = elapsed;
           context.moduleResults['总耗时'] = '${elapsed}ms';
           record(
+            level: terminalError == null
+                ? CelechronLogLevel.info
+                : CelechronLogLevel.error,
             module: 'refresh',
             operation: 'finish',
-            message: '完整刷新结束',
+            message: terminalError == null ? '完整刷新结束' : '完整刷新异常结束',
             durationMs: elapsed,
+            error: terminalError,
+            stackTrace: terminalStackTrace,
           );
           _lastRefreshContext = context;
         }
@@ -128,6 +129,7 @@ class DiagnosticLogService {
     bool relogged = false,
     bool retried = false,
     bool cacheUsed = false,
+    String? relatedRefreshId,
     RefreshOrigin? origin,
     Object? error,
     StackTrace? stackTrace,
@@ -138,6 +140,7 @@ class DiagnosticLogService {
       DateTime.now().toUtc().toIso8601String(),
       'level=${level.name}',
       'refreshId=${context?.refreshId ?? '-'}',
+      'relatedRefreshId=${relatedRefreshId == null ? '-' : _sanitize(relatedRefreshId)}',
       'source=${origin?.name ?? context?.origin.name ?? 'foreground'}',
       'module=${_sanitize(module)}',
       'operation=${_sanitize(operation)}',

@@ -15,13 +15,40 @@ String diagnosticLine(
   String exception = '-',
   String message = '-',
   String stack = '-',
+  String relatedRefreshId = '-',
 }) {
-  return '$timestamp | level=$level | refreshId=$refreshId | source=$source | '
-      'module=$module | operation=$operation | url=$url | status=$status | '
+  return '$timestamp | level=$level | refreshId=$refreshId | '
+      'relatedRefreshId=$relatedRefreshId | source=$source | module=$module | '
+      'operation=$operation | url=$url | status=$status | '
       'contentType=- | location=- | durationMs=$durationMs | '
       'relogged=$relogged | retried=$retried | cacheUsed=$cacheUsed | '
       'exceptionType=$exceptionType | exception=$exception | '
       'message=$message | stack=$stack';
+}
+
+String buildComprehensiveDiagnosticExportFixture() {
+  return [
+    'Celechron 诊断日志',
+    '=== 5. 完整原始日志（UTC） ===',
+    buildLatestDiagnosticFixture(),
+    diagnosticLine(
+      '2026-07-16T11:58:10.000Z',
+      refreshId: 'shared-caller',
+      relatedRefreshId: 'fg-success',
+      source: 'foreground',
+      module: 'refresh',
+      operation: 'shareFlight',
+      message: '同账号同操作已共享正在执行的 Future',
+    ),
+    diagnosticLine(
+      '2026-07-16T11:58:10.020Z',
+      refreshId: 'queued-login',
+      source: 'foreground',
+      module: 'refresh',
+      operation: 'queueOperation',
+      message: '同账号不同操作已按顺序等待',
+    ),
+  ].join('\n');
 }
 
 String buildLatestDiagnosticFixture() {

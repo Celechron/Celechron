@@ -1,4 +1,5 @@
 import 'package:celechron/services/diagnostic_report.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'diagnostic_log_fixture.dart';
@@ -119,6 +120,230 @@ void main() {
         DiagnosticReportSeverity.failed);
   });
 
+  test('顶层异常只记录一个 finish 并保留耗时和堆栈', () async {
+    final service = DiagnosticLogService.instance;
+    final before = service.currentText();
+    String? refreshId;
+
+    await expectLater(
+      service.runRefresh<void>(
+        origin: RefreshOrigin.foreground,
+        action: () async {
+          refreshId = service.currentRefreshId;
+          throw StateError('top-level-boom');
+        },
+      ),
+      throwsA(isA<StateError>()),
+    );
+
+    final current = service.currentText();
+    final appended =
+        before.isEmpty ? current : current.substring(before.length + 1);
+    final ownLines = appended
+        .split('\n')
+        .where((line) => line.contains('refreshId=$refreshId'))
+        .toList();
+    final finishes =
+        ownLines.where((line) => line.contains('operation=finish')).toList();
+    expect(finishes, hasLength(1));
+    expect(finishes.single, contains('level=error'));
+    expect(finishes.single, contains('durationMs='));
+    expect(finishes.single, contains('exceptionType=StateError'));
+    expect(finishes.single, contains('stack='));
+
+    final report = parser.parse(ownLines.join('\n')).latestReport!;
+    expect(report.severity, DiagnosticReportSeverity.failed);
+    expect(diagnosticReportTitle(report), '刷新失败');
+    expect(report.durationMs, isNotNull);
+    final issue = report.issues.singleWhere(
+      (issue) => issue.category == DiagnosticIssueCategory.refreshExecution,
+    );
+    expect(issue.title, '刷新执行异常');
+    expect(issue.details.stack, isNotNull);
+    expect(
+      report.issues.any(
+        (issue) => issue.category == DiagnosticIssueCategory.serverOrNetwork,
+      ),
+      isFalse,
+    );
+  });
+
+  test('旧格式 error finish 后跟普通 finish 仍判定顶层失败', () {
+    final raw = [
+      diagnosticLine(
+        '2026-07-16T12:00:00.000Z',
+        refreshId: 'legacy-top-error',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'start',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:00.050Z',
+        refreshId: 'legacy-top-error',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'finish',
+        level: 'error',
+        exceptionType: 'StateError',
+        exception: 'Bad state: legacy boom',
+        message: '完整刷新异常结束',
+        stack: r'#0 Scholar.refresh (scholar.dart:200)\n#1 main',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:00.073Z',
+        refreshId: 'legacy-top-error',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'finish',
+        durationMs: '73',
+        message: '完整刷新结束',
+      ),
+    ].join('\n');
+
+    final report = parser.parse(raw).latestReport!;
+    expect(report.severity, DiagnosticReportSeverity.failed);
+    expect(report.durationMs, 73);
+    expect(report.timeline.where((event) => event.title == '刷新异常结束'),
+        hasLength(1));
+    final issue = report.issues.singleWhere(
+      (issue) => issue.category == DiagnosticIssueCategory.refreshExecution,
+    );
+    expect(issue.title, '刷新执行异常');
+    expect(issue.details.stack, contains('scholar.dart:200'));
+  });
+
+  test('共享调用关联 owner 且不生成未执行模块', () {
+    final raw = [
+      diagnosticLine(
+        '2026-07-16T12:00:01.000Z',
+        refreshId: 'shared-caller',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'start',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:01.010Z',
+        refreshId: 'shared-caller',
+        relatedRefreshId: 'owner-refresh',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'shareFlight',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:01.100Z',
+        refreshId: 'shared-caller',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'finish',
+        durationMs: '100',
+      ),
+    ].join('\n');
+
+    final report = parser.parse(raw).latestReport!;
+    expect(report.disposition, DiagnosticRefreshDisposition.shared);
+    expect(report.severity, DiagnosticReportSeverity.coordinated);
+    expect(report.relatedRefreshId, 'owner-refresh');
+    expect(report.modules, isEmpty);
+    expect(diagnosticReportTitle(report), '已共享现有刷新');
+    expect(diagnosticReportDescription(report), contains('关联任务：owner-refresh'));
+  });
+
+  test('共享 Future 异常时共享调用显示失败', () {
+    final raw = [
+      diagnosticLine(
+        '2026-07-16T12:00:02.000Z',
+        refreshId: 'shared-failed',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'start',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:02.010Z',
+        refreshId: 'shared-failed',
+        relatedRefreshId: 'owner-failed',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'shareFlight',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:02.100Z',
+        refreshId: 'shared-failed',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'finish',
+        level: 'error',
+        durationMs: '100',
+        exceptionType: 'StateError',
+        exception: 'Bad state: owner failed',
+        message: '完整刷新异常结束',
+      ),
+    ].join('\n');
+
+    final report = parser.parse(raw).latestReport!;
+    expect(report.severity, DiagnosticReportSeverity.failed);
+    expect(diagnosticReportTitle(report), '共享任务失败');
+    expect(report.modules, isEmpty);
+    expect(report.issues.any((issue) => issue.title == '共享任务失败'), isTrue);
+  });
+
+  test('owner 返回模块失败结果时共享报告继承失败状态', () {
+    final raw = [
+      diagnosticLine(
+        '2026-07-16T12:00:03.000Z',
+        refreshId: 'owner-result-failed',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'start',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:03.010Z',
+        refreshId: 'shared-result-failed',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'start',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:03.020Z',
+        refreshId: 'shared-result-failed',
+        relatedRefreshId: 'owner-result-failed',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'shareFlight',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:03.050Z',
+        refreshId: 'owner-result-failed',
+        source: 'foreground',
+        module: '成绩',
+        operation: 'result',
+        message: '失败：没有可用数据',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:03.100Z',
+        refreshId: 'owner-result-failed',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'finish',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:00:03.110Z',
+        refreshId: 'shared-result-failed',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'finish',
+      ),
+    ].join('\n');
+
+    final shared = reportById(
+      parser.parse(raw),
+      'shared-result-failed',
+    );
+    expect(shared.severity, DiagnosticReportSeverity.failed);
+    expect(diagnosticReportTitle(shared), '共享任务失败');
+    expect(shared.modules, isEmpty);
+    expect(shared.issues.any((issue) => issue.title == '共享任务失败'), isTrue);
+  });
+
   test('901 和 922 生成克制的会话说明', () {
     final report = reportById(
       parser.parse(buildLatestDiagnosticFixture()),
@@ -175,7 +400,7 @@ void main() {
     expect(fallback.severity, DiagnosticIssueSeverity.info);
   });
 
-  test('后台正常让行不计失败或降级', () {
+  test('后台启动前和登录后让行均显示独立协调状态', () {
     final raw = [
       diagnosticLine(
         '2026-07-16T12:01:00.000Z',
@@ -200,12 +425,159 @@ void main() {
         operation: 'finish',
         durationMs: '20',
       ),
+      diagnosticLine(
+        '2026-07-16T12:01:01.000Z',
+        refreshId: 'yield-after-login',
+        source: 'background',
+        module: 'refresh',
+        operation: 'start',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:01:01.010Z',
+        refreshId: 'yield-after-login',
+        source: 'background',
+        module: 'refresh',
+        operation: 'backgroundYield',
+        message: '后台刷新登录完成后检测到活跃前台，已正常让行',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:01:01.020Z',
+        refreshId: 'yield-after-login',
+        source: 'background',
+        module: 'refresh',
+        operation: 'finish',
+        durationMs: '20',
+      ),
+    ].join('\n');
+    final reports = parser.parse(raw).reports;
+    expect(reports, hasLength(2));
+    for (final report in reports) {
+      expect(report.severity, DiagnosticReportSeverity.coordinated);
+      expect(
+          report.disposition, DiagnosticRefreshDisposition.backgroundYielded);
+      expect(diagnosticReportTitle(report), '后台已主动让行');
+      expect(report.modules, isEmpty);
+      expect(report.issues, isEmpty);
+      expect(
+          report.successCount + report.degradedCount + report.failedCount, 0);
+    }
+    expect(
+      reportById(parser.parse(raw), 'yield-after-login')
+          .timeline
+          .any((event) => event.title == '后台登录后检测到前台并让行'),
+      isTrue,
+    );
+  });
+
+  test('共享、排队和跨 isolate 锁等待使用不同时间线文案', () {
+    final raw = [
+      diagnosticLine(
+        '2026-07-16T12:01:10.000Z',
+        refreshId: 'coordination-copy',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'start',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:01:10.010Z',
+        refreshId: 'coordination-copy',
+        relatedRefreshId: 'owner',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'shareFlight',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:01:10.020Z',
+        refreshId: 'coordination-copy',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'queueOperation',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:01:10.030Z',
+        refreshId: 'coordination-copy',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'lockWait',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:01:10.040Z',
+        refreshId: 'coordination-copy',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'finish',
+      ),
+    ].join('\n');
+    final titles = parser
+        .parse(raw)
+        .latestReport!
+        .timeline
+        .map((event) => event.title)
+        .toSet();
+    expect(titles, contains('共享同账号同操作的刷新 Future'));
+    expect(titles, contains('同账号不同操作正在排队'));
+    expect(titles, contains('跨 isolate 等待账号文件锁'));
+  });
+
+  test('模块耗时使用模块边界或事件跨度并标记估算', () {
+    final raw = [
+      diagnosticLine(
+        '2026-07-16T12:02:10.000Z',
+        refreshId: 'module-duration',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'start',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:02:10.100Z',
+        refreshId: 'module-duration',
+        source: 'foreground',
+        module: '课表接口',
+        operation: 'httpResponse',
+        status: '200',
+        durationMs: '20',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:02:11.500Z',
+        refreshId: 'module-duration',
+        source: 'foreground',
+        module: '课表',
+        operation: 'result',
+        message: '实时成功',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:02:10.200Z',
+        refreshId: 'module-duration',
+        source: 'foreground',
+        module: '考试',
+        operation: 'moduleStart',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:02:11.200Z',
+        refreshId: 'module-duration',
+        source: 'foreground',
+        module: '考试',
+        operation: 'moduleFinish',
+        durationMs: '1000',
+        status: '200',
+      ),
+      diagnosticLine(
+        '2026-07-16T12:02:11.600Z',
+        refreshId: 'module-duration',
+        source: 'foreground',
+        module: 'refresh',
+        operation: 'finish',
+      ),
     ].join('\n');
     final report = parser.parse(raw).latestReport!;
-    expect(report.severity, DiagnosticReportSeverity.success);
-    expect(report.issues, isEmpty);
-    expect(
-        report.timeline.any((event) => event.title.contains('主动让行')), isTrue);
+    final timetable = moduleByName(report, '课表');
+    final exam = moduleByName(report, '考试');
+    expect(timetable.durationMs, 1400);
+    expect(timetable.durationEstimated, isTrue);
+    expect(formatModuleDuration(timetable), '耗时约 1.4 秒');
+    expect(exam.durationMs, 1000);
+    expect(exam.durationEstimated, isFalse);
+    expect(formatModuleDuration(exam), '耗时1.0 秒');
   });
 
   test('旧 busyResult 被标记为刷新协调异常', () {
@@ -266,6 +638,24 @@ void main() {
     );
     expect(damaged.reports, isEmpty);
     expect(damaged.damagedLineCount, 1);
+  });
+
+  test('接近真实导出格式的多行日志可解析且保留转义堆栈', () {
+    final bundle = parser.parse(buildComprehensiveDiagnosticExportFixture());
+    expect(bundle.reports, isNotEmpty);
+    expect(
+      bundle.reports.expand((report) => report.issues).any(
+            (issue) => issue.details.stack?.contains(r'\n') ?? false,
+          ),
+      isTrue,
+    );
+    expect(
+      bundle.reports.expand((report) => report.issues).where(
+            (issue) => issue.category == DiagnosticIssueCategory.session,
+          ),
+      hasLength(2),
+    );
+    expect(reportById(bundle, 'shared-caller').relatedRefreshId, 'fg-success');
   });
 
   test('导出按易读报告到完整原始日志排序并保留原文', () {
