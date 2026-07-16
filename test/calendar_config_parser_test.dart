@@ -1,4 +1,5 @@
 import 'package:celechron/http/calendar_config_parser.dart';
+import 'package:celechron/http/zjuServices/response_utils.dart';
 import 'package:celechron/model/semester.dart';
 import 'package:celechron/model/session.dart';
 import 'package:celechron/services/diagnostic_log_service.dart';
@@ -91,5 +92,46 @@ void main() {
     expect(sanitized, isNot(contains('session=abc')));
     expect(sanitized, isNot(contains('3201234567')));
     expect(sanitized, contains('/cas/login'));
+  });
+
+  test('response summary reports structure without business response values',
+      () {
+    final summary = responseSummary('''
+      {
+        "success": true,
+        "name": "张三",
+        "account": "1234567890",
+        "balance": 88.50,
+        "grade": 95,
+        "courseName": "高等数学",
+        "data": [{"examName": "期末考试"}]
+      }
+    ''');
+
+    expect(summary, contains('JSON对象'));
+    expect(summary, contains('字段数=7'));
+    expect(summary, contains('常见字段=success,data'));
+    for (final privateValue in [
+      '张三',
+      '1234567890',
+      '88.50',
+      '95',
+      '高等数学',
+      '期末考试'
+    ]) {
+      expect(summary, isNot(contains(privateValue)));
+    }
+  });
+
+  test('diagnostic sanitizer removes structured personal fields', () {
+    final sanitized = DiagnosticLogService.sanitizeForDiagnostic(
+      '{"name":"张三","balance":88.5,"grade":95,'
+      '"courseName":"高等数学"} | 姓名：李四 | 校园卡账户：12345678',
+    );
+
+    for (final privateValue in ['张三', '88.5', '95', '高等数学', '李四', '12345678']) {
+      expect(sanitized, isNot(contains(privateValue)));
+    }
+    expect(sanitized, contains('<已隐藏>'));
   });
 }

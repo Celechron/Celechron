@@ -130,12 +130,10 @@ class Scholar {
       origin: origin,
       action: () => RefreshCoordinator.run(
         account: username ?? '<unknown>',
+        operation: 'login',
         origin: origin,
         refreshId: DiagnosticLogService.instance.currentRefreshId ?? 'unknown',
         action: _loginInternal,
-        busyResult: [
-          degradedRefreshText('登录：同一账号已有登录或刷新任务，本次已跳过'),
-        ],
       ),
     );
   }
@@ -194,34 +192,50 @@ class Scholar {
   }
 
   // 刷新数据
-  var _mutex = 0;
-
   Future<List<String?>> refresh({
     RefreshOrigin origin = RefreshOrigin.foreground,
     void Function()? onPartialUpdate,
     void Function(List<ModuleFetchStatus> statuses)? onFetchStatus,
+    void Function()? onBackgroundYield,
   }) async {
     return DiagnosticLogService.instance.runRefresh(
       origin: origin,
       action: () => RefreshCoordinator.run(
         account: username ?? '<unknown>',
+        operation: 'refresh',
         origin: origin,
         refreshId: DiagnosticLogService.instance.currentRefreshId ?? 'unknown',
         action: () async {
-          if (!isLogan) {
+          // 从数据库恢复的 Scholar 只有缓存的登录标记，没有可持久化的 Spider
+          // 会话。把会话重建纳入完整刷新，启动自动刷新与手动刷新才能共享
+          // 同一个 refresh Future。
+          if (!isLogan || _spider == null) {
             final loginErrors = await _loginInternal();
             if (loginErrors.any((error) => error != null)) {
               return loginErrors;
             }
+          }
+          // Workmanager 可能略早于前台 main isolate 启动。后台完成登录后
+          // 再检查一次前台租约，避免继续发起整套模块抓取并长期占锁。
+          if (origin == RefreshOrigin.background &&
+              await RefreshCoordinator.shouldYieldBackground()) {
+            DiagnosticLogService.instance.record(
+              module: 'refresh',
+              operation: 'backgroundYield',
+              message: '后台刷新登录完成后检测到活跃前台，已正常让行',
+            );
+            onBackgroundYield?.call();
+            return <String?>[];
           }
           return _refreshInternal(
             onPartialUpdate: onPartialUpdate,
             onFetchStatus: onFetchStatus,
           );
         },
-        busyResult: [
-          degradedRefreshText('刷新：同一账号已有刷新任务，本次已跳过'),
-        ],
+        backgroundYieldResult: () {
+          onBackgroundYield?.call();
+          return <String?>[];
+        },
       ),
     );
   }
@@ -233,14 +247,6 @@ class Scholar {
     if (!isLogan) {
       return ["未登录"];
     }
-    if (_mutex > 0) {
-      // Wait until the mutex is released.
-      while (_mutex > 0) {
-        await Future.delayed(const Duration(milliseconds: 100));
-      }
-      return [];
-    }
-    _mutex++;
     try {
       // 异步刷新：每完成一部分抓取就先合并进内存并通知界面，
       // 全部完成后仍会走下面的完整合并（含实践学分、时间戳、持久化与报错）
@@ -335,8 +341,6 @@ class Scholar {
         stackTrace: stackTrace,
       );
       return [exception.toString()];
-    } finally {
-      _mutex--;
     }
   }
 

@@ -159,8 +159,8 @@ class ScholarController extends GetxController {
   }
 
   Future<List<String?>> fetchData() async {
-    // scholar.refresh 内部有互斥，并发的后来者只会空等并返回 []；
-    // 这里计数以保证最后一个调用结束时才收起状态文案
+    // scholar.refresh 使用 single-flight；并发调用会共同等待同一个结果。
+    // 这里计数以保证最后一个调用结束时才收起状态文案。
     _activeFetchCount++;
     if (_activeFetchCount == 1) _startStatusFeed();
     try {

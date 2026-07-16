@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/services/diagnostic_log_service.dart';
+import 'package:celechron/services/refresh_coordinator.dart';
 import 'package:celechron/utils/json_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
@@ -26,6 +27,16 @@ void callbackDispatcher() {
 }
 
 Future<void> refreshScholar() async {
+  if (await RefreshCoordinator.shouldYieldBackground()) {
+    DiagnosticLogService.instance.record(
+      module: 'refresh',
+      operation: 'backgroundYield',
+      message: '后台任务启动时检测到活跃前台，已正常让行',
+      origin: RefreshOrigin.background,
+    );
+    return;
+  }
+
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   const initializationSettingsAndroid =
@@ -100,8 +111,12 @@ Future<void> refreshScholar() async {
       key: 'notifiedDdlIds', iOptions: secureStorageIOSOptions);
 
   try {
-    final refreshErrors =
-        await scholar.refresh(origin: RefreshOrigin.background);
+    var backgroundYielded = false;
+    final refreshErrors = await scholar.refresh(
+      origin: RefreshOrigin.background,
+      onBackgroundYield: () => backgroundYielded = true,
+    );
+    if (backgroundYielded) return;
     // 后台刷新拿到整体降级结果时不发通知，避免把旧缓存误判为新成绩或新作业。
     if (refreshErrors.whereType<String>().any((error) =>
         isDegradedRefreshText(error) && shortErrorText(error).contains('刷新'))) {

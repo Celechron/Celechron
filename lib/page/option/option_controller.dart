@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:get/get.dart';
@@ -7,6 +8,7 @@ import 'package:workmanager/workmanager.dart';
 
 import 'package:celechron/model/scholar.dart';
 import 'package:celechron/model/option.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
 import 'package:celechron/database/database_helper.dart';
 import 'package:celechron/worker/ecard_widget_messenger.dart';
 import 'package:celechron/worker/fuse.dart';
@@ -16,6 +18,10 @@ import 'package:celechron/model/calendar_to_system.dart';
 import 'package:celechron/model/calendar_to_ical.dart';
 
 import 'package:celechron/utils/utils.dart';
+
+const _backgroundScholarFetchTask =
+    'top.celechron.celechron.backgroundScholarFetch';
+const _backgroundScholarFetchInterval = Duration(minutes: 15);
 
 class OptionController extends GetxController {
   final _option = Get.find<Option>(tag: 'option');
@@ -34,17 +40,9 @@ class OptionController extends GetxController {
 
     if (PlatformFeatures.hasBackgroundRefresh) {
       if (_option.pushOnGradeChange.value || _option.pushOnDdlReminder.value) {
-        Workmanager()
-            .initialize(callbackDispatcher)
-            .then((value) => Workmanager().registerPeriodicTask(
-                  'top.celechron.celechron.backgroundScholarFetch',
-                  'top.celechron.celechron.backgroundScholarFetch',
-                  initialDelay: const Duration(seconds: 10),
-                  frequency: const Duration(minutes: 15),
-                ));
+        unawaited(_ensureBackgroundWorkerScheduled());
       } else {
-        Workmanager().cancelByUniqueName(
-            'top.celechron.celechron.backgroundScholarFetch');
+        unawaited(_cancelBackgroundWorker());
       }
     }
 
@@ -100,7 +98,7 @@ class OptionController extends GetxController {
       return;
     }
 
-    _updateBackgroundWorker(value || pushOnDdlReminder);
+    unawaited(_updateBackgroundWorker(value || pushOnDdlReminder));
   }
 
   bool get pushOnDdlReminder => _option.pushOnDdlReminder.value;
@@ -118,16 +116,61 @@ class OptionController extends GetxController {
       return;
     }
 
-    _updateBackgroundWorker(value || pushOnGradeChange);
+    unawaited(_updateBackgroundWorker(value || pushOnGradeChange));
   }
 
-  void _updateBackgroundWorker(bool enabled) {
-    Workmanager()
-        .cancelByUniqueName('top.celechron.celechron.backgroundScholarFetch')
-        .then((value) {
-      if (Platform.isIOS) return Workmanager().printScheduledTasks();
-    });
-    if (enabled) {
+  Future<void> _ensureBackgroundWorkerScheduled() async {
+    try {
+      final workmanager = Workmanager();
+      await workmanager.initialize(callbackDispatcher);
+      // Android 的周期任务会跨 App 启动持久化；不要每次页面控制器初始化时
+      // 重新排一个 10 秒后的任务。iOS 仍需提交 BGAppRefresh 请求，但最早
+      // 执行时间与正常周期一致，并由前台租约做最终保护。
+      if (Platform.isAndroid &&
+          await workmanager
+              .isScheduledByUniqueName(_backgroundScholarFetchTask)) {
+        return;
+      }
+      await workmanager.registerPeriodicTask(
+        _backgroundScholarFetchTask,
+        _backgroundScholarFetchTask,
+        frequency: _backgroundScholarFetchInterval,
+        initialDelay: _backgroundScholarFetchInterval,
+        existingWorkPolicy: ExistingWorkPolicy.keep,
+        constraints: Constraints(networkType: NetworkType.connected),
+      );
+    } on Object catch (error, stackTrace) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '后台刷新',
+        operation: 'schedule',
+        message: '后台刷新任务注册失败',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _cancelBackgroundWorker() async {
+    try {
+      await Workmanager().cancelByUniqueName(_backgroundScholarFetchTask);
+      if (Platform.isIOS) await Workmanager().printScheduledTasks();
+    } on Object catch (error, stackTrace) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '后台刷新',
+        operation: 'cancel',
+        message: '后台刷新任务取消失败',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<void> _updateBackgroundWorker(bool enabled) async {
+    await _cancelBackgroundWorker();
+    if (!enabled) return;
+    try {
       FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
           FlutterLocalNotificationsPlugin();
       const initializationSettingsAndroid =
@@ -140,17 +183,17 @@ class OptionController extends GetxController {
       const initializationSettings = InitializationSettings(
           android: initializationSettingsAndroid,
           iOS: initializationSettingsDarwin);
-      flutterLocalNotificationsPlugin.initialize(initializationSettings);
-      Workmanager()
-          .initialize(callbackDispatcher)
-          .then((value) => Workmanager().registerPeriodicTask(
-                'top.celechron.celechron.backgroundScholarFetch',
-                'top.celechron.celechron.backgroundScholarFetch',
-                frequency: const Duration(minutes: 15),
-                constraints: Constraints(
-                  networkType: NetworkType.connected,
-                ),
-              ));
+      await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+      await _ensureBackgroundWorkerScheduled();
+    } on Object catch (error, stackTrace) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '后台刷新',
+        operation: 'enable',
+        message: '启用后台刷新任务失败',
+        error: error,
+        stackTrace: stackTrace,
+      );
     }
   }
 

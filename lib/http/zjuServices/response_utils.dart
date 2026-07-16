@@ -8,13 +8,35 @@ import 'exceptions.dart';
 
 export 'package:celechron/utils/json_utils.dart';
 
-String responseSummary(String body, {int maxLength = 200}) {
-  // 摘要只用于诊断；调用方仍应避免把含个人数据的业务正文传入。
-  final compact = body.replaceAll(RegExp(r'\s+'), ' ').trim();
-  if (compact.isEmpty) return '<空响应>';
-  return compact.length <= maxLength
-      ? compact
-      : '${compact.substring(0, maxLength)}…';
+String responseSummary(String body) {
+  // 诊断摘要禁止复制业务正文，只保留定位格式问题所需的结构信息。
+  final trimmed = body.trim();
+  if (trimmed.isEmpty) return '<空响应>';
+  try {
+    final decoded = jsonDecode(trimmed);
+    if (decoded is Map) {
+      const commonKeys = [
+        'code',
+        'status',
+        'success',
+        'message',
+        'msg',
+        'data',
+        'result',
+        'items',
+        'rows',
+      ];
+      final presentKeys = commonKeys.where(decoded.containsKey).join(',');
+      return '<JSON对象；字段数=${decoded.length}；'
+          '常见字段=${presentKeys.isEmpty ? '无' : presentKeys}>';
+    }
+    if (decoded is List) return '<JSON数组；条目数=${decoded.length}>';
+    if (decoded is String) return '<JSON字符串；长度=${decoded.length}>';
+    return '<JSON标量；类型=${decoded.runtimeType}>';
+  } on FormatException {
+    if (_looksLikeHtml(trimmed)) return '<HTML响应；长度=${trimmed.length}>';
+    return '<文本响应；长度=${trimmed.length}>';
+  }
 }
 
 bool isHttpRedirectStatus(int status) {

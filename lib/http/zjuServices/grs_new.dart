@@ -100,9 +100,11 @@ class GrsNew {
         context: '研究生院 CAS 校验接口；HTTP ${validateResponse.statusCode}');
     if (jsonIndicatesAuthenticationFailure(loginInfo) ||
         asBool(loginInfo["success"]) != true) {
+      final hasMessage =
+          asString(loginInfo["message"])?.trim().isNotEmpty == true;
       throw AuthenticationExpiredException(
           '研究生院登录认证失败；HTTP ${validateResponse.statusCode}'
-          '；错误信息 ${asString(loginInfo["message"]) ?? '<缺失>'}'
+          '；message字段=${hasMessage ? '有' : '无'}'
           '；响应摘要：${responseSummary(loginJson)}');
     }
     final loginResult = asStringMap(loginInfo["result"]);
@@ -224,7 +226,8 @@ class GrsNew {
         asString(result["message"]) ?? asString(result["msg"]) ?? '服务端未提供错误信息';
     throw ExceptionWithMessage(
         '$context：接口返回失败；code=${asString(result["code"]) ?? '<缺失>'}'
-        '；message=$message；响应摘要：${responseSummary(jsonEncode(result))}');
+        '；message字段=${message.trim().isEmpty ? '空' : '有'}'
+        '；响应摘要：${responseSummary(jsonEncode(result))}');
   }
 
   Future<Tuple<Exception?, Iterable<Grade>>> getGrade(

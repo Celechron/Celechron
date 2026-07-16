@@ -125,6 +125,7 @@ class DiagnosticLogService {
     bool relogged = false,
     bool retried = false,
     bool cacheUsed = false,
+    RefreshOrigin? origin,
     Object? error,
     StackTrace? stackTrace,
   }) {
@@ -134,7 +135,7 @@ class DiagnosticLogService {
       DateTime.now().toUtc().toIso8601String(),
       'level=${level.name}',
       'refreshId=${context?.refreshId ?? '-'}',
-      'source=${context?.origin.name ?? 'foreground'}',
+      'source=${origin?.name ?? context?.origin.name ?? 'foreground'}',
       'module=${_sanitize(module)}',
       'operation=${_sanitize(operation)}',
       'url=${requestUri == null ? '-' : sanitizeUri(requestUri)}',
@@ -325,8 +326,28 @@ class DiagnosticLogService {
   }
 
   static String _sanitize(String value) {
-    // 规则覆盖常见凭据名、URL 查询串和连续账号数字；日志调用方仍应避免原文。
+    // 规则覆盖常见凭据、结构化个人字段、URL 查询串和连续账号数字；
+    // 日志调用方仍应避免传入完整业务正文。
     var result = value;
+    result = result.replaceAllMapped(
+      RegExp(
+        r'("(?:name|realName|studentName|xm|xh|studentId|account|cardAccount|'
+        r'balance|score|grade|courseName|examName)"\s*:\s*)'
+        r'("(?:\\.|[^"])*"|[-+]?\d+(?:\.\d+)?|true|false|null)',
+        caseSensitive: false,
+      ),
+      (match) => '${match.group(1)}"<已隐藏>"',
+    );
+    result = result.replaceAllMapped(
+      RegExp(
+        r'((?:姓名|学号|校园卡(?:账号|账户)?|余额|成绩|分数|课程(?:名称)?|'
+        r'考试(?:名称)?|realName|studentName|studentId|cardAccount|balance|'
+        r'score|grade|courseName|examName)\s*[:=：]\s*)'
+        r'[^,;；|\r\n}\]]+',
+        caseSensitive: false,
+      ),
+      (match) => '${match.group(1)}<已隐藏>',
+    );
     result = result.replaceAllMapped(
       RegExp(
         r'(authorization|proxy-authorization|cookie|set-cookie)'
