@@ -30,8 +30,7 @@ class ECard {
         "https://elife.zju.edu.cn/berserker-auth/cas/oauth2?resultUrl=https://elife.zju.edu.cn/plat-pc");
     for (var redirectCount = 0; redirectCount < 10; redirectCount++) {
       if (response.statusCode != 301 && response.statusCode != 302) {
-        final body =
-            await readResponseBody(response, context: '校园卡登录');
+        final body = await readResponseBody(response, context: '校园卡登录');
         throw AuthenticationExpiredException(
             "校园卡登录失败；HTTP ${response.statusCode}"
             "；Content-Type ${response.headers.value(HttpHeaders.contentTypeHeader) ?? '<缺失>'}"
@@ -80,8 +79,8 @@ class ECard {
     response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-    var accountJson = await readResponseText(response,
-        context: '校园卡账户接口', expectJson: true);
+    var accountJson =
+        await readResponseText(response, context: '校园卡账户接口', expectJson: true);
     final payload = decodeJsonMap(accountJson,
         context: '校园卡账户接口；HTTP ${response.statusCode}');
     final data = asStringMap(payload['data']);
@@ -119,8 +118,8 @@ class ECard {
     response = await request.close().timeout(const Duration(seconds: 8),
         onTimeout: () => throw ExceptionWithMessage("请求超时"));
 
-    var barcodeJson = await readResponseText(response,
-        context: '校园卡付款码接口', expectJson: true);
+    var barcodeJson =
+        await readResponseText(response, context: '校园卡付款码接口', expectJson: true);
     final payload = decodeJsonMap(barcodeJson,
         context: '校园卡付款码接口；HTTP ${response.statusCode}');
     final data = asStringMap(payload['data']);

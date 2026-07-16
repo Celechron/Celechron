@@ -99,8 +99,7 @@ class Session {
     final initial = asInt(json['djj']);
     final duration = asInt(json['skcd']);
     if (initial != null && duration != null && duration > 0) {
-      session.time =
-          List<int>.generate(duration, (index) => initial + index);
+      session.time = List<int>.generate(duration, (index) => initial + index);
     }
     if (session.time.isEmpty) {
       throw const FormatException('课表条目缺少有效节次');

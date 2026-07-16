@@ -47,8 +47,7 @@ class _CoursesProbePageState extends State<CoursesProbePage> {
 
   void _resetClient() {
     _httpClient = HttpClient()
-      ..userAgent =
-          'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
+      ..userAgent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) '
           'AppleWebKit/537.36 (KHTML, like Gecko) '
           'Chrome/122.0.0.0 Safari/537.36';
 
@@ -204,16 +203,12 @@ class _CoursesProbePageState extends State<CoursesProbePage> {
             ),
             const SizedBox(height: 20),
             CupertinoButton.filled(
-              onPressed: _running
-                  ? null
-                  : () => _runTest(clearSsoCache: false),
+              onPressed: _running ? null : () => _runTest(clearSsoCache: false),
               child: const Text('使用现有 SSO 缓存测试'),
             ),
             const SizedBox(height: 12),
             CupertinoButton(
-              onPressed: _running
-                  ? null
-                  : () => _runTest(clearSsoCache: true),
+              onPressed: _running ? null : () => _runTest(clearSsoCache: true),
               child: const Text('清除缓存后完整登录测试'),
             ),
             const SizedBox(height: 24),

@@ -209,8 +209,7 @@ class Course {
         course.grade = Grade.fromJson(gradeMap);
       } catch (_) {}
     }
-    for (final rawSession
-        in asDynamicList(json['sessions']) ?? const []) {
+    for (final rawSession in asDynamicList(json['sessions']) ?? const []) {
       final sessionMap = asStringMap(rawSession);
       if (sessionMap == null) continue;
       try {

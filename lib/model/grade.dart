@@ -91,13 +91,10 @@ class Grade {
   }
 
   void _completeDerivedFields() {
-    final numericScore =
-        RegExp(r'\d+').firstMatch(original)?.group(0);
-    hundredPoint = _toHundredPoint[original] ??
-        int.tryParse(numericScore ?? '') ??
-        0;
-    fourPoint =
-        fivePoint > 4.0 ? (_toFourPoint[fivePoint] ?? 4.0) : fivePoint;
+    final numericScore = RegExp(r'\d+').firstMatch(original)?.group(0);
+    hundredPoint =
+        _toHundredPoint[original] ?? int.tryParse(numericScore ?? '') ?? 0;
+    fourPoint = fivePoint > 4.0 ? (_toFourPoint[fivePoint] ?? 4.0) : fivePoint;
     fourPointLegacy = fivePoint > 4.0 ? 4.0 : fivePoint;
     creditIncluded = original != "弃修" &&
         original != "待录" &&
@@ -111,8 +108,7 @@ class Grade {
 
   // 从主修成绩查询处爬取，因此打上主修标记
   factory Grade.fromMajor(Map<String, dynamic> json) {
-    final grade = Grade(json)
-      ..major = true;
+    final grade = Grade(json)..major = true;
     return grade;
   }
 
