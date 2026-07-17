@@ -99,7 +99,7 @@ class GrsSpider implements Spider {
     }
   }
 
-  Future<List<String?>> _doLogin() async {
+  Future<List<String?>> _doLogin({bool retryOnSsoRejection = true}) async {
     // 候选客户端完成各子站登录后再替换，避免失败登录污染旧会话。
     final previousClient = _httpClient;
     final candidateClient = _createHttpClient();
@@ -107,7 +107,6 @@ class GrsSpider implements Spider {
     var loginErrorMessages = <String?>[null];
     final candidateSsoCookie =
         await ZjuAm.getSsoCookie(candidateClient, _username, _password)
-            .timeout(const Duration(seconds: 8))
             .catchError((Object error, StackTrace stackTrace) {
       loginErrorMessages[0] = exceptionFrom(
         error,
@@ -123,7 +122,7 @@ class GrsSpider implements Spider {
     Future<String?> captureLogin(Future<dynamic> future, String serviceName,
         {bool ignoreError = false}) async {
       try {
-        await future.timeout(const Duration(seconds: 8));
+        await future;
         return null;
       } on Object catch (error, stackTrace) {
         return ignoreError
@@ -136,7 +135,7 @@ class GrsSpider implements Spider {
       }
     }
 
-    loginErrorMessages.addAll(await Future.wait<String?>([
+    final serviceErrors = await Future.wait<String?>([
       captureLogin(_grsNew.login(candidateClient, candidateSsoCookie), "研究生院网"),
       captureLogin(_courses.login(candidateClient, candidateSsoCookie), "学在浙大"),
       /* _appService
@@ -147,10 +146,30 @@ class GrsSpider implements Spider {
                     .catchError((e) => "无法登录钉钉工作台，$e"), */
       captureLogin(_zdbk.login(candidateClient, candidateSsoCookie), "教务网",
           ignoreError: true),
-    ]).then((value) {
-      if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
-      return value;
-    }));
+    ]);
+    loginErrorMessages.addAll(serviceErrors);
+
+    final ssoRejected = serviceErrors.whereType<String>().any((error) {
+      final normalized = error.toLowerCase();
+      return normalized.contains('未获得 cas ticket') ||
+          normalized.contains('登录态失效') ||
+          normalized.contains('统一身份认证凭据无效');
+    });
+    if (retryOnSsoRejection && ssoRejected) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '研究生登录',
+        operation: 'retryFreshSso',
+        message: '子站拒绝了本轮 SSO，使用全新密码会话重试一次',
+        retried: true,
+      );
+      candidateClient.close(force: true);
+      return _doLogin(retryOnSsoRejection: false);
+    }
+
+    if (serviceErrors.every((error) => error == null)) {
+      _lastUpdateTime = DateTime.now();
+    }
     _httpClient = candidateClient;
     _loginGeneration++;
     previousClient.close();

@@ -83,6 +83,7 @@ class Sztz {
         httpClient,
         iPlanetDirectoryPro,
         _serviceUri,
+        context: '素质拓展登录',
       );
       await _visitCasCallback(httpClient, callback);
       await _verifyContext(httpClient);

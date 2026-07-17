@@ -9,89 +9,96 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'exceptions.dart';
 import 'response_utils.dart';
 
-/// 统一身份认证入口，负责共享 SSO Cookie 及按 service 签发的一次性回调。
+class _ActiveSsoCookie {
+  final Cookie cookie;
+  final DateTime expiresAt;
+
+  _ActiveSsoCookie(this.cookie, this.expiresAt);
+}
+
+class _SsoLoginKey {
+  final HttpClient httpClient;
+  final String username;
+
+  const _SsoLoginKey(this.httpClient, this.username);
+
+  @override
+  bool operator ==(Object other) =>
+      other is _SsoLoginKey &&
+      identical(httpClient, other.httpClient) &&
+      username == other.username;
+
+  @override
+  int get hashCode => Object.hash(identityHashCode(httpClient), username);
+}
+
+/// 统一身份认证入口。同一进程内的并发消费者共享一次密码登录，
+/// 但不再从持久化存储恢复 iPlanetDirectoryPro。该 Cookie 的服务端寿命和
+/// 轮换规则不可靠，1.2 引入的跨启动复用会把已失效值交给所有子站。
 class ZjuAm {
   static const _secureStorage = FlutterSecureStorage();
-  static final Map<String, Future<Cookie?>> _pendingLogins = {};
+  static const _processCookieLifetime = Duration(minutes: 2);
+  static final Map<_SsoLoginKey, Future<Cookie?>> _pendingLogins = {};
+  static final Map<_SsoLoginKey, _ActiveSsoCookie> _activeCookies = {};
+
+  static final Uri graduateServiceUri = Uri.parse('https://yjsy.zju.edu.cn/');
 
   static Future<Cookie?> getSsoCookie(
       HttpClient httpClient, String username, String password) async {
-    // 同一账号共享一次登录任务，避免并发提交密码和互相覆盖缓存。
-    final pending = _pendingLogins[username];
+    final key = _SsoLoginKey(httpClient, username);
+    final active = _activeSsoCookie(key);
+    if (active != null) {
+      return active;
+    }
+
+    // 同一 HttpClient、同一账号共享一次登录任务；不同客户端保持隔离。
+    final pending = _pendingLogins[key];
     if (pending != null) return await pending;
 
-    final login = _getOrCreateSsoCookie(httpClient, username, password);
-    _pendingLogins[username] = login;
+    final login = _createFreshSsoCookie(httpClient, username, password);
+    _pendingLogins[key] = login;
     try {
-      return await login;
+      final cookie = await login;
+      if (cookie != null) {
+        _activeCookies[key] = _ActiveSsoCookie(
+          cookie,
+          DateTime.now().add(_processCookieLifetime),
+        );
+      }
+      return cookie;
     } finally {
-      if (identical(_pendingLogins[username], login)) {
-        _pendingLogins.remove(username);
+      if (identical(_pendingLogins[key], login)) {
+        _pendingLogins.remove(key);
       }
     }
   }
 
-  static Future<Cookie?> _getOrCreateSsoCookie(
+  static Cookie? _activeSsoCookie(_SsoLoginKey key) {
+    final active = _activeCookies[key];
+    if (active == null) return null;
+    if (DateTime.now().isBefore(active.expiresAt)) {
+      return active.cookie;
+    }
+    _activeCookies.remove(key);
+    return null;
+  }
+
+  static Future<Cookie?> _createFreshSsoCookie(
       HttpClient httpClient, String username, String password) async {
-    // 缓存命中仍需向 CAS 验证；失效值先清除，再执行完整登录。
-    final cached = await _readCachedSsoCookie(username);
-    if (cached != null && await _isCachedSsoCookieValid(httpClient, cached)) {
-      return cached;
-    }
-    await clearCachedSsoCookie(username);
-    final cookie = await _getSsoCookie(httpClient, username, password);
-    if (cookie != null) {
-      await _saveSsoCookie(username, cookie);
-    }
-    return cookie;
+    // 先删除 1.2 时期留下的值，防止降级后的旧版本再读取。
+    await _deleteLegacyCachedSsoCookie(username);
+    return _getSsoCookie(httpClient, username, password);
   }
 
   static String _cookieStorageKey(String username) =>
       'zju_sso_cookie_$username';
 
-  static Future<Cookie?> _readCachedSsoCookie(String username) async {
-    try {
-      final raw = await _secureStorage.read(
-        key: _cookieStorageKey(username),
-        iOptions: secureStorageIOSOptions,
-      );
-      if (raw == null) return null;
-      final data = decodeJsonMap(raw, context: '统一身份认证共享登录态缓存');
-      final value = asString(data['value']);
-      final savedAt = asDateTime(data['savedAt']);
-      if (value == null ||
-          value.isEmpty ||
-          savedAt == null ||
-          DateTime.now().difference(savedAt) > const Duration(hours: 12)) {
-        return null;
-      }
-      return Cookie('iPlanetDirectoryPro', value)
-        ..domain = 'zju.edu.cn'
-        ..path = '/';
-    } on Object catch (error, stackTrace) {
-      DiagnosticLogService.instance.record(
-        level: CelechronLogLevel.warning,
-        module: '统一身份认证',
-        operation: 'readSharedSsoCache',
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return null;
-    }
-  }
-
-  static Future<void> _saveSsoCookie(String username, Cookie cookie) async {
-    await _secureStorage.write(
-      key: _cookieStorageKey(username),
-      value: jsonEncode({
-        'value': cookie.value,
-        'savedAt': DateTime.now().toIso8601String(),
-      }),
-      iOptions: secureStorageIOSOptions,
-    );
-  }
-
   static Future<void> clearCachedSsoCookie(String username) {
+    _activeCookies.removeWhere((key, _) => key.username == username);
+    return _deleteLegacyCachedSsoCookie(username);
+  }
+
+  static Future<void> _deleteLegacyCachedSsoCookie(String username) {
     return _secureStorage.delete(
       key: _cookieStorageKey(username),
       iOptions: secureStorageIOSOptions,
@@ -103,8 +110,9 @@ class ZjuAm {
   static Future<Uri> getServiceCallback(
     HttpClient httpClient,
     Cookie iPlanetDirectoryPro,
-    Uri service,
-  ) async {
+    Uri service, {
+    String context = 'CAS service 登录',
+  }) async {
     final uri = buildServiceLoginUri(service);
     final startedAt = DateTime.now();
     try {
@@ -123,37 +131,49 @@ class ZjuAm {
       final location = response.headers.value(HttpHeaders.locationHeader);
       final statusCode = response.statusCode;
       final contentType = response.headers.value(HttpHeaders.contentTypeHeader);
-      await response.drain<void>();
+      final body =
+          await readResponseBody(response, context: '$context CAS service');
       DiagnosticLogService.instance.record(
-        module: '素质拓展登录',
+        module: context,
         operation: 'casService',
         requestUri: uri,
         statusCode: statusCode,
         contentType: contentType,
+        location: location,
         durationMs: DateTime.now().difference(startedAt).inMilliseconds,
         message: 'CAS service ticket 响应已读取',
       );
       if (!isHttpRedirectStatus(statusCode) ||
           location == null ||
           location.isEmpty) {
-        throw AuthenticationExpiredException(
-          'CAS 未返回素质拓展 service 回调；HTTP $statusCode',
+        final details = 'HTTP $statusCode\n'
+            'Content-Type：${contentType ?? '<缺失>'}\n'
+            '响应摘要：${responseSummary(body)}';
+        // CAS returns its HTTP 200 login page (or an explicit auth status)
+        // when the SSO cookie is no longer usable. Other statuses are
+        // transport/protocol failures and must not invalidate a good cache.
+        if (statusCode == HttpStatus.ok ||
+            statusCode == HttpStatus.unauthorized ||
+            statusCode == HttpStatus.forbidden) {
+          throw AuthenticationExpiredException(
+            '$context：未获得 CAS ticket',
+            details: details,
+          );
+        }
+        throw ExceptionWithMessage(
+          '$context：CAS service 请求失败',
+          details: details,
         );
       }
       final callback = uri.resolve(location);
-      final ticket = callback.queryParameters['ticket'];
-      final validTarget = callback.scheme == service.scheme &&
-          callback.host == service.host &&
-          callback.port == service.port &&
-          callback.path == service.path;
-      if (!validTarget || ticket == null || ticket.isEmpty) {
-        throw AuthenticationExpiredException('CAS 返回的素质拓展 service 回调无效');
+      if (!_isValidServiceCallback(callback, service)) {
+        throw ExceptionWithMessage('$context：CAS service 回调无效');
       }
       return callback;
     } on Object catch (error, stackTrace) {
       throw exceptionFrom(
         error,
-        context: '素质拓展登录',
+        context: context,
         requestUri: uri,
         stackTrace: stackTrace,
       );
@@ -167,35 +187,14 @@ class ZjuAm {
         {'service': service.toString()},
       );
 
-  static Future<bool> _isCachedSsoCookieValid(
-      HttpClient httpClient, Cookie cookie) async {
-    // 验证请求只检查 CAS 是否能签发 ticket；ticket 本身不会被保存或消费。
-    final uri = Uri.parse(
-        'https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F');
-    try {
-      final request = await httpClient.getUrl(uri).timeout(
-          const Duration(seconds: 8),
-          onTimeout: () => throw requestTimeout());
-      request.followRedirects = false;
-      request.cookies.add(cookie);
-      final response = await request.close().timeout(const Duration(seconds: 8),
-          onTimeout: () => throw requestTimeout());
-      await response.drain();
-      final location = response.headers.value(HttpHeaders.locationHeader);
-      return isHttpRedirectStatus(response.statusCode) &&
-          location != null &&
-          Uri.tryParse(location)?.queryParameters['ticket']?.isNotEmpty == true;
-    } on Object catch (error, stackTrace) {
-      DiagnosticLogService.instance.record(
-        level: CelechronLogLevel.warning,
-        module: '统一身份认证',
-        operation: 'validateSharedSsoCache',
-        requestUri: uri,
-        error: error,
-        stackTrace: stackTrace,
-      );
-      return false;
-    }
+  static bool _isValidServiceCallback(Uri callback, Uri service) {
+    final ticket = callback.queryParameters['ticket'];
+    return callback.scheme == service.scheme &&
+        callback.host == service.host &&
+        callback.port == service.port &&
+        callback.path == service.path &&
+        ticket != null &&
+        ticket.isNotEmpty;
   }
 
   static Future<Cookie?> _getSsoCookie(
@@ -289,10 +288,24 @@ class ZjuAm {
           onTimeout: () => throw requestTimeout());
       body = await readResponseBody(response, context: '统一身份认证登录提交');
 
-      if (response.cookies
-          .any((element) => element.name == 'iPlanetDirectoryPro')) {
-        return response.cookies
-            .firstWhere((element) => element.name == 'iPlanetDirectoryPro');
+      final now = DateTime.now();
+      final ssoCookies = response.cookies
+          .where((cookie) =>
+              cookie.name == 'iPlanetDirectoryPro' &&
+              cookie.value.isNotEmpty &&
+              (cookie.maxAge == null || cookie.maxAge! > 0) &&
+              (cookie.expires == null || cookie.expires!.isAfter(now)))
+          .toList();
+      if (ssoCookies.isNotEmpty) {
+        // 取响应中最后一个未过期值，避免前面的删除 Cookie 被误用。
+        final cookie = ssoCookies.last;
+        if (cookie.domain == null || cookie.domain!.trim().isEmpty) {
+          cookie.domain = 'zju.edu.cn';
+        }
+        if (cookie.path == null || cookie.path!.trim().isEmpty) {
+          cookie.path = '/';
+        }
+        return cookie;
       } else {
         final location = response.headers.value(HttpHeaders.locationHeader);
         throw LoginException("统一身份认证失败，学号或密码错误，或认证会话已失效"

@@ -113,7 +113,7 @@ class UgrsSpider implements Spider {
     }
   }
 
-  Future<List<String?>> _doLogin() async {
+  Future<List<String?>> _doLogin({bool retryOnSsoRejection = true}) async {
     fetchGrs = false;
     // 所有子站完成本轮登录尝试后才整体替换旧客户端，
     // 避免登录过程中业务请求混用两套连接状态。
@@ -123,7 +123,6 @@ class UgrsSpider implements Spider {
     var loginErrorMessages = <String?>[null];
     final candidateSsoCookie =
         await ZjuAm.getSsoCookie(candidateClient, _username, _password)
-            .timeout(const Duration(seconds: 8))
             .catchError((Object error, StackTrace stackTrace) {
       loginErrorMessages[0] = exceptionFrom(
         error,
@@ -139,7 +138,7 @@ class UgrsSpider implements Spider {
     Future<String?> captureLogin(Future<dynamic> future, String serviceName,
         {void Function()? onSuccess, bool ignoreError = false}) async {
       try {
-        await future.timeout(const Duration(seconds: 8));
+        await future;
         onSuccess?.call();
         return null;
       } on Object catch (error, stackTrace) {
@@ -153,7 +152,7 @@ class UgrsSpider implements Spider {
       }
     }
 
-    loginErrorMessages.addAll(await Future.wait<String?>([
+    final serviceErrors = await Future.wait<String?>([
       captureLogin(_courses.login(candidateClient, candidateSsoCookie), "学在浙大"),
       captureLogin(_zdbk.login(candidateClient, candidateSsoCookie), "教务网"),
       captureLogin(_sztz.login(candidateClient, candidateSsoCookie), "素质拓展平台",
@@ -162,10 +161,30 @@ class UgrsSpider implements Spider {
           onSuccess: () {
         fetchGrs = true;
       }, ignoreError: true),
-    ]).then((value) {
-      if (value.every((e) => e == null)) _lastUpdateTime = DateTime.now();
-      return value;
-    }));
+    ]);
+    loginErrorMessages.addAll(serviceErrors);
+
+    final ssoRejected = serviceErrors.whereType<String>().any((error) {
+      final normalized = error.toLowerCase();
+      return normalized.contains('未获得 cas ticket') ||
+          normalized.contains('登录态失效') ||
+          normalized.contains('统一身份认证凭据无效');
+    });
+    if (retryOnSsoRejection && ssoRejected) {
+      DiagnosticLogService.instance.record(
+        level: CelechronLogLevel.warning,
+        module: '本科生登录',
+        operation: 'retryFreshSso',
+        message: '子站拒绝了本轮 SSO，使用全新密码会话重试一次',
+        retried: true,
+      );
+      candidateClient.close(force: true);
+      return _doLogin(retryOnSsoRejection: false);
+    }
+
+    if (serviceErrors.every((error) => error == null)) {
+      _lastUpdateTime = DateTime.now();
+    }
     _httpClient = candidateClient;
     _loginGeneration++;
     previousClient.close();
@@ -209,10 +228,7 @@ class UgrsSpider implements Spider {
     if (pending != null) return pending;
     final future = () async {
       await ZjuAm.clearCachedSsoCookie(_username);
-      return ZjuAm.getSsoCookie(_httpClient, _username, _password).timeout(
-        const Duration(seconds: 8),
-        onTimeout: () => throw requestTimeout('素质拓展重新认证超时'),
-      );
+      return ZjuAm.getSsoCookie(_httpClient, _username, _password);
     }();
     _sztzReauthFuture = future;
     try {

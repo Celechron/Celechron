@@ -11,9 +11,12 @@ import 'package:flutter/foundation.dart';
 
 import 'exceptions.dart';
 import 'response_utils.dart';
+import 'zjuam.dart';
 
 /// 研究生院接口客户端；CAS ticket 校验成功后以 X-Access-Token 访问业务 API。
 class GrsNew {
+  static final Uri serviceUri = ZjuAm.graduateServiceUri;
+
   String? _token;
   Cookie? _ssoCookie;
   Future<void>? _loginFuture;
@@ -24,11 +27,13 @@ class GrsNew {
     _db = db;
   }
 
-  Future<void> login(HttpClient httpClient, Cookie? ssoCookie) async {
+  Future<void> login(
+    HttpClient httpClient,
+    Cookie? ssoCookie,
+  ) async {
     if (ssoCookie == null) {
       throw AuthenticationExpiredException("研究生院：统一身份认证凭据无效");
     }
-    _ssoCookie = ssoCookie;
 
     // 登录单飞可避免并发 CAS ticket 校验生成多个互相替代的 token。
     final pending = _loginFuture;
@@ -36,6 +41,8 @@ class GrsNew {
       await pending;
       return;
     }
+    // 只有真正拥有本轮登录的调用才能替换重登录凭据。
+    _ssoCookie = ssoCookie;
     final login = _doLogin(httpClient, ssoCookie);
     _loginFuture = login;
     try {
@@ -47,31 +54,29 @@ class GrsNew {
 
   Future<void> _doLogin(HttpClient httpClient, Cookie ssoCookie) async {
     _token = null;
-    final casUri = Uri.parse(
-        "https://zjuam.zju.edu.cn/cas/login?service=https%3A%2F%2Fyjsy.zju.edu.cn%2F");
-    final request = await httpClient.getUrl(casUri).timeout(
-        const Duration(seconds: 8),
-        onTimeout: () => throw requestTimeout());
-    request.followRedirects = false;
-    request.cookies.add(ssoCookie);
-    final response = await request.close().timeout(const Duration(seconds: 8),
-        onTimeout: () => throw requestTimeout());
-    final body = await readResponseBody(response, context: '研究生院 CAS 登录');
-    final location = response.headers.value(HttpHeaders.locationHeader);
+    final ticketUri = await _requestServiceCallback(httpClient, ssoCookie);
+    await _exchangeServiceTicket(httpClient, ticketUri);
+  }
 
-    if (!response.isRedirect || location == null) {
-      throw AuthenticationExpiredException(
-          '研究生院登录：未获得 CAS ticket；HTTP ${response.statusCode}'
-          '；Content-Type ${response.headers.value(HttpHeaders.contentTypeHeader) ?? '<缺失>'}'
-          '${location == null ? '' : '；Location $location'}'
-          '；响应摘要：${responseSummary(body)}');
-    }
-    final ticketUri = casUri.resolve(location);
+  Future<Uri> _requestServiceCallback(
+    HttpClient httpClient,
+    Cookie ssoCookie,
+  ) {
+    return ZjuAm.getServiceCallback(
+      httpClient,
+      ssoCookie,
+      serviceUri,
+      context: '研究生院登录',
+    );
+  }
+
+  Future<void> _exchangeServiceTicket(
+    HttpClient httpClient,
+    Uri ticketUri,
+  ) async {
     final ticket = ticketUri.queryParameters['ticket'];
     if (ticket == null || ticket.isEmpty) {
-      throw AuthenticationExpiredException(
-          '研究生院登录：Location 中缺少 ticket；HTTP ${response.statusCode}'
-          '；Location $location；响应摘要：${responseSummary(body)}');
+      throw AuthenticationExpiredException('研究生院登录：CAS callback 中缺少 ticket');
     }
 
     // CAS Location 中的 ticket 必须立即交给研究生院校验接口换取业务 token。
@@ -80,7 +85,7 @@ class GrsNew {
       '/dataapi/sys/cas/client/validateLogin',
       {
         'ticket': ticket,
-        'service': 'https://yjsy.zju.edu.cn/',
+        'service': serviceUri.toString(),
       },
     );
     final validateRequest = await httpClient.getUrl(validateUri).timeout(

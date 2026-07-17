@@ -61,6 +61,8 @@ class ECardWidgetMessenger {
       }
     } catch (e) {
       return;
+    } finally {
+      httpClient.close(force: true);
     }
   }
 

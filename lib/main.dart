@@ -45,10 +45,15 @@ void main() async {
   if (scholar.value.isLogan) {
     // 启动恢复只有一个自动刷新入口；会话重建由 Scholar.refresh 内部完成。
     // 用户此时手动刷新会复用并等待这一个 refresh Future。
-    unawaited(_refreshRestoredScholar(scholar));
+    // 校园卡使用不同 HttpClient/User-Agent，等 Scholar 认证和抓取
+    // 完成后再启动，避免两套 CAS 链路在启动瞬间互相干扰。
+    unawaited(
+      _refreshRestoredScholar(scholar)
+          .whenComplete(ECardWidgetMessenger.update),
+    );
+  } else {
+    unawaited(ECardWidgetMessenger.update());
   }
-
-  ECardWidgetMessenger.update();
 }
 
 Future<void> _refreshRestoredScholar(Rx<Scholar> scholar) async {

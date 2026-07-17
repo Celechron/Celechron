@@ -13,6 +13,28 @@ import 'package:celechron/model/todo.dart';
 import 'package:flutter/foundation.dart';
 import 'response_utils.dart';
 
+@visibleForTesting
+Uri? coursesMetaRefreshTarget(String body, Uri source) {
+  final metaTags = RegExp(r'<meta\b[^>]*>', caseSensitive: false)
+      .allMatches(body)
+      .map((match) => match.group(0) ?? '');
+  final refreshAttribute =
+      RegExp(r'''http-equiv\s*=\s*["']?refresh''', caseSensitive: false);
+  final urlAttribute =
+      RegExp(r'''url\s*=\s*["']?([^"' >;]+)''', caseSensitive: false);
+  for (final tag in metaTags) {
+    if (!refreshAttribute.hasMatch(tag)) continue;
+    final rawTarget = urlAttribute.firstMatch(tag)?.group(1);
+    if (rawTarget == null || rawTarget.isEmpty) continue;
+    final target = source.resolve(rawTarget.replaceAll('&amp;', '&'));
+    final targetHost = target.host.toLowerCase();
+    final isZjuHost =
+        targetHost == 'zju.edu.cn' || targetHost.endsWith('.zju.edu.cn');
+    if (target.scheme == 'https' && isZjuHost) return target;
+  }
+  return null;
+}
+
 /// 学在浙大客户端；手动跟随 SSO 跳转并维护业务 SESSION，失败时回退作业缓存。
 class Courses {
   static final Uri _todoUri = Uri.parse("https://courses.zju.edu.cn/api/todos");
@@ -302,10 +324,12 @@ class Courses {
 
     // iPlanetDirectoryPro 的 domain 通常是 zju.edu.cn，
     // 因此可用于 identity、zjuam、courses 等子域。
-    storeCookie(
-      iPlanetDirectoryPro,
-      Uri.parse('https://zjuam.zju.edu.cn/'),
-    );
+    final trustedSsoCookie =
+        Cookie(iPlanetDirectoryPro.name, iPlanetDirectoryPro.value)
+          ..domain = 'zju.edu.cn'
+          ..path = '/'
+          ..secure = iPlanetDirectoryPro.secure;
+    storeCookie(trustedSsoCookie, Uri.parse('https://zjuam.zju.edu.cn/'));
 
     var current = Uri.parse(
       'https://courses.zju.edu.cn/user/index',
@@ -412,20 +436,20 @@ class Courses {
         continue;
       }
 
-      if (response.statusCode == HttpStatus.unauthorized ||
-          response.statusCode == HttpStatus.forbidden ||
-          bodyIndicatesAuthenticationFailure(body)) {
-        throw AuthenticationExpiredException(
-          '学在浙大登录态失效；HTTP ${response.statusCode}',
-          details: [
-            ...redirectTrace,
-            '响应摘要：${responseSummary(body)}',
-          ].join('\n'),
-        );
-      }
-
       final successStatus = response.statusCode >= HttpStatus.ok &&
           response.statusCode < HttpStatus.multipleChoices;
+
+      // Courses 现网登录链会返回 HTTP 200 meta-refresh，它仍是中间跳转。
+      final metaRefresh =
+          successStatus ? coursesMetaRefreshTarget(body, current) : null;
+      if (metaRefresh != null) {
+        redirectTrace.add(
+          'hop=$redirectCount；HTTP 200 meta-refresh='
+          '${sanitizedRequestUri(metaRefresh)}',
+        );
+        current = metaRefresh;
+        continue;
+      }
 
       final sessionCanAccessTodo =
           cookiesFor(_todoUri).any((cookie) => cookie.name == 'session');
@@ -437,6 +461,22 @@ class Courses {
           _session != null &&
           sessionCanAccessTodo) {
         return true;
+      }
+
+      final terminalIsAuthenticationPage =
+          (current.host == 'zjuam.zju.edu.cn' &&
+                  current.path.startsWith('/cas/login')) ||
+              current.host == 'identity.zju.edu.cn';
+      if (response.statusCode == HttpStatus.unauthorized ||
+          response.statusCode == HttpStatus.forbidden ||
+          (successStatus && terminalIsAuthenticationPage)) {
+        throw AuthenticationExpiredException(
+          '学在浙大登录态失效；HTTP ${response.statusCode}',
+          details: [
+            ...redirectTrace,
+            '响应摘要：${responseSummary(body)}',
+          ].join('\n'),
+        );
       }
 
       throw ExceptionWithMessage(
