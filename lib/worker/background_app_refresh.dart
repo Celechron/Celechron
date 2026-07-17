@@ -1,6 +1,11 @@
 import 'dart:convert';
 
+import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/model/scholar.dart';
+import 'package:celechron/services/diagnostic_log_service.dart';
+import 'package:celechron/services/refresh_coordinator.dart';
+import 'package:celechron/utils/json_utils.dart';
+import 'package:flutter/foundation.dart';
 import 'package:workmanager/workmanager.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -22,6 +27,16 @@ void callbackDispatcher() {
 }
 
 Future<void> refreshScholar() async {
+  if (await RefreshCoordinator.shouldYieldBackground()) {
+    DiagnosticLogService.instance.record(
+      module: 'refresh',
+      operation: 'backgroundYield',
+      message: '后台任务启动时检测到活跃前台，已正常让行',
+      origin: RefreshOrigin.background,
+    );
+    return;
+  }
+
   FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
   const initializationSettingsAndroid =
@@ -96,13 +111,23 @@ Future<void> refreshScholar() async {
       key: 'notifiedDdlIds', iOptions: secureStorageIOSOptions);
 
   try {
-    var error = await scholar.login();
-    if (error.any((e) => e != null)) return;
-    error = await scholar.refresh();
-    if (error.any((e) => e != null)) return;
+    var backgroundYielded = false;
+    final refreshErrors = await scholar.refresh(
+      origin: RefreshOrigin.background,
+      onBackgroundYield: () => backgroundYielded = true,
+    );
+    if (backgroundYielded) return;
+    // 后台刷新拿到整体降级结果时不发通知，避免把旧缓存误判为新成绩或新作业。
+    if (refreshErrors.whereType<String>().any((error) =>
+        isDegradedRefreshText(error) && shortErrorText(error).contains('刷新'))) {
+      return;
+    }
+    bool failed(String interfaceName) => refreshErrors
+        .whereType<String>()
+        .any((error) => shortErrorText(error).contains(interfaceName));
 
     // 成绩变动通知
-    if (pushOnGradeChange != 'false') {
+    if (pushOnGradeChange != 'false' && !failed('成绩')) {
       if (pushOnGradeChangeFuse == null) {
         await flutterLocalNotificationsPlugin.show(
             0,
@@ -129,10 +154,14 @@ Future<void> refreshScholar() async {
     }
 
     // DDL 截止提醒
-    if (pushOnDdlReminder != 'false') {
+    if (pushOnDdlReminder != 'false' && !failed('作业')) {
       Set<String> notifiedDdlIds = {};
       if (notifiedDdlIdsStr != null && notifiedDdlIdsStr.isNotEmpty) {
-        notifiedDdlIds = Set<String>.from(jsonDecode(notifiedDdlIdsStr));
+        final decoded = jsonDecode(notifiedDdlIdsStr);
+        notifiedDdlIds = (asDynamicList(decoded) ?? const [])
+            .map(asString)
+            .whereType<String>()
+            .toSet();
       }
 
       var now = DateTime.now();
@@ -171,7 +200,10 @@ Future<void> refreshScholar() async {
           value: jsonEncode(notifiedDdlIds.toList()),
           iOptions: secureStorageIOSOptions);
     }
-  } catch (e) {
+  } on Object catch (error, stackTrace) {
+    if (kDebugMode) {
+      debugPrint('后台学业刷新失败：${error.runtimeType}: $error\n$stackTrace');
+    }
     return;
   }
 }

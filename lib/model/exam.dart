@@ -1,4 +1,5 @@
 import 'package:celechron/utils/time_helper.dart';
+import 'package:celechron/utils/json_utils.dart';
 
 class Exam {
   String id;
@@ -48,18 +49,18 @@ class Exam {
   Exam._fromZdbk(this.id, this.name, Map<String, dynamic> json, this.type) {
     switch (type) {
       case ExamType.midterm:
-        final dateTimeText = json['qzkssj']?.toString() ?? '';
+        final dateTimeText = asString(json['qzkssj']) ?? '';
         time = TimeHelper.parseExamDateTime(dateTimeText);
         dateLabel = TimeHelper.parseExamDateLabel(dateTimeText);
-        location = json['qzjsmc'];
-        seat = json['qzzwxh'];
+        location = asString(json['qzjsmc']);
+        seat = asString(json['qzzwxh']);
         break;
       case ExamType.finalExam:
-        final dateTimeText = json['kssj']?.toString() ?? '';
+        final dateTimeText = asString(json['kssj']) ?? '';
         time = TimeHelper.parseExamDateTime(dateTimeText);
         dateLabel = TimeHelper.parseExamDateLabel(dateTimeText);
-        location = json['jsmc'];
-        seat = json['zwxh'];
+        location = asString(json['jsmc']);
+        seat = asString(json['zwxh']);
         break;
     }
   }
@@ -67,11 +68,15 @@ class Exam {
   static List<Exam> parseExamsFromZdbk(
       Map<String, dynamic> json, String id, String name) {
     var exams = <Exam>[];
-    if (json.containsKey("qzkssj")) {
-      exams.add(Exam._fromZdbk(id, name, json, ExamType.midterm));
+    if (asString(json["qzkssj"])?.isNotEmpty == true) {
+      try {
+        exams.add(Exam._fromZdbk(id, name, json, ExamType.midterm));
+      } catch (_) {}
     }
-    if (json.containsKey("kssj")) {
-      exams.add(Exam._fromZdbk(id, name, json, ExamType.finalExam));
+    if (asString(json["kssj"])?.isNotEmpty == true) {
+      try {
+        exams.add(Exam._fromZdbk(id, name, json, ExamType.finalExam));
+      } catch (_) {}
     }
     return exams;
   }
@@ -87,13 +92,18 @@ class Exam {
       };
 
   Exam.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        name = json['name'],
-        type = ExamType.values[json['type']],
-        time = (json['time'] as List).map((e) => DateTime.parse(e)).toList(),
-        dateLabel = json['dateLabel'] as String?,
-        location = json['location'],
-        seat = json['seat'];
+      : id = asString(json['id']) ?? '',
+        name = asString(json['name']) ?? '未知课程',
+        type = _examTypeFromJson(json['type']),
+        time = (asDynamicList(json['time']) ?? const [])
+            .map(asString)
+            .whereType<String>()
+            .map(DateTime.tryParse)
+            .whereType<DateTime>()
+            .toList(),
+        dateLabel = asString(json['dateLabel']),
+        location = asString(json['location']),
+        seat = asString(json['seat']);
 
   get chineseTime {
     if (dateLabel == null) return TimeHelper.chineseTime(time[0], time[1]);
@@ -105,6 +115,14 @@ class Exam {
 
   String _hourMinute(DateTime dateTime) =>
       '${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+}
+
+ExamType _examTypeFromJson(Object? value) {
+  final index = asInt(value);
+  if (index == null || index < 0 || index >= ExamType.values.length) {
+    return ExamType.finalExam;
+  }
+  return ExamType.values[index];
 }
 
 enum ExamType { midterm, finalExam }

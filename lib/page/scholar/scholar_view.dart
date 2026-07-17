@@ -1,5 +1,6 @@
 // Official packages
 import 'package:celechron/page/scholar/todo/todo_card.dart';
+import 'package:celechron/http/zjuServices/exceptions.dart';
 import 'package:celechron/utils/platform_features.dart';
 import 'package:extended_sliver/extended_sliver.dart';
 import 'package:flutter/cupertino.dart';
@@ -21,8 +22,73 @@ import 'course_list/course_list_view.dart';
 import 'course_schedule/course_schedule_view.dart';
 import 'exam_list/exam_list_view.dart';
 import 'grade_detail/grade_detail_view.dart';
+import 'practice_score/practice_score_page.dart';
 import 'scholar_controller.dart';
 import 'package:celechron/page/option/option_controller.dart';
+
+Future<void> showRefreshResultDialog(
+    BuildContext context, List<String?> results) async {
+  final messages = results.whereType<String>().toList();
+  // 完全成功只通过数据、更新时间和页面状态反馈，不主动打断用户。
+  if (messages.isEmpty) return;
+  final degraded =
+      messages.where(isDegradedRefreshText).toList(growable: false);
+  final failures = messages
+      .where((message) => !isDegradedRefreshText(message))
+      .toList(growable: false);
+  if (!context.mounted) return;
+  final summaryLines = messages.map((error) {
+    final compact =
+        shortErrorText(error).replaceAll(RegExp(r'\s+'), ' ').trim();
+    final prefix = isDegradedRefreshText(error) ? '降级：' : '失败：';
+    final line = '$prefix$compact';
+    return line.length <= 100 ? line : '${line.substring(0, 100)}…';
+  }).toList();
+
+  await showCupertinoDialog<void>(
+    context: context,
+    builder: (dialogContext) => CupertinoAlertDialog(
+      title: Text(
+        '刷新遇到问题：${degraded.length} 项降级，${failures.length} 项失败',
+      ),
+      content: Text(summaryLines.join('\n')),
+      actions: [
+        if (messages.isNotEmpty)
+          CupertinoDialogAction(
+            child: const Text('查看详情'),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              showCupertinoDialog<void>(
+                context: context,
+                builder: (detailContext) => CupertinoAlertDialog(
+                  title: const Text('刷新详情'),
+                  content: SingleChildScrollView(
+                    child: Text(
+                      messages.map((error) {
+                        final short = shortErrorText(error);
+                        final details = detailedErrorText(error);
+                        return details == short ? short : '$short\n$details';
+                      }).join('\n\n'),
+                    ),
+                  ),
+                  actions: [
+                    CupertinoDialogAction(
+                      child: const Text('确定'),
+                      onPressed: () => Navigator.of(detailContext).pop(),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
+        CupertinoDialogAction(
+          child: const Text('确定'),
+          onPressed: () => Navigator.of(dialogContext).pop(),
+        ),
+      ],
+    ),
+  );
+}
 
 class ScholarErrorHandler extends StatelessWidget {
   final FlutterErrorDetails errorDetails;
@@ -51,29 +117,10 @@ class ScholarErrorHandler extends StatelessWidget {
           children: [
             CupertinoButton(
               onPressed: () async {
-                var error = await _scholarController.fetchData();
-                if (error.any((e) => e != null)) {
-                  if (context.mounted) {
-                    showCupertinoDialog(
-                        context: context,
-                        builder: (context) {
-                          return CupertinoAlertDialog(
-                            title: const Text('刷新失败'),
-                            content: Text(error
-                                .where((e) => e != null)
-                                .fold('', (p, v) => '$p\n$v')
-                                .trim()),
-                            actions: [
-                              CupertinoDialogAction(
-                                child: const Text('确定'),
-                                onPressed: () async {
-                                  Navigator.of(context).pop();
-                                },
-                              )
-                            ],
-                          );
-                        });
-                  }
+                final results = await _scholarController.fetchData();
+                if (context.mounted &&
+                    results.any((result) => result != null)) {
+                  await showRefreshResultDialog(context, results);
                 }
               },
               child: const Text('重新获取数据'),
@@ -671,7 +718,7 @@ class ScholarPage extends StatelessWidget {
                                 Padding(
                                     padding: const EdgeInsets.only(
                                         left: 4, top: 4, bottom: 4, right: 16),
-                                    child: Text('获取实践分数时遇到问题',
+                                    child: Text('获取实践记点时遇到问题',
                                         style: TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.bold,
@@ -683,38 +730,10 @@ class ScholarPage extends StatelessWidget {
                         child: Column(
                           children: [
                             const SizedBox(height: 16),
-                            MultipleColumns(
-                              contents: [
-                                Obx(() => Text(
-                                    _scholarController.scholar.pt2
-                                        .toStringAsFixed(2),
-                                    style: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .navTitleTextStyle
-                                        .copyWith(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold))),
-                                Obx(() => Text(
-                                    _scholarController.scholar.pt3
-                                        .toStringAsFixed(2),
-                                    style: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .navTitleTextStyle
-                                        .copyWith(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold))),
-                                Obx(() => Text(
-                                    _scholarController.scholar.pt4
-                                        .toStringAsFixed(2),
-                                    style: CupertinoTheme.of(context)
-                                        .textTheme
-                                        .navTitleTextStyle
-                                        .copyWith(
-                                            fontSize: 18,
-                                            fontWeight: FontWeight.bold))),
-                              ],
-                              titles: const ["二课分", "三课分", "四课分"],
-                              onTaps: [() {}, () {}, () {}],
+                            Obx(
+                              () => PracticeScoreColumns(
+                                scholar: _scholarController.scholar,
+                              ),
                             ),
                             const SizedBox(height: 16),
                           ],
@@ -809,33 +828,18 @@ class ScholarPage extends StatelessWidget {
                                     ? null
                                     : () async {
                                         _isRefreshing.value = true;
-                                        var error = await _scholarController
-                                            .fetchData();
-                                        _isRefreshing.value = false;
-                                        if (error.any((e) => e != null)) {
-                                          if (context.mounted) {
-                                            showCupertinoDialog(
-                                                context: context,
-                                                builder: (context) {
-                                                  return CupertinoAlertDialog(
-                                                    title: const Text('刷新失败'),
-                                                    content: Text(error
-                                                        .where((e) => e != null)
-                                                        .fold('',
-                                                            (p, v) => '$p\n$v')
-                                                        .trim()),
-                                                    actions: [
-                                                      CupertinoDialogAction(
-                                                        child: const Text('确定'),
-                                                        onPressed: () async {
-                                                          Navigator.of(context)
-                                                              .pop();
-                                                        },
-                                                      )
-                                                    ],
-                                                  );
-                                                });
-                                          }
+                                        late final List<String?> results;
+                                        try {
+                                          results = await _scholarController
+                                              .fetchData();
+                                        } finally {
+                                          _isRefreshing.value = false;
+                                        }
+                                        if (context.mounted &&
+                                            results.any(
+                                                (result) => result != null)) {
+                                          await showRefreshResultDialog(
+                                              context, results);
                                         }
                                       },
                                 child: isRefreshing
@@ -954,29 +958,9 @@ class ScholarPage extends StatelessWidget {
                       message: _scholarController.refreshStatusMessage.value,
                     )),
             onRefresh: () async {
-              var error = await _scholarController.fetchData();
-              if (error.any((e) => e != null)) {
-                if (context.mounted) {
-                  showCupertinoDialog(
-                      context: context,
-                      builder: (context) {
-                        return CupertinoAlertDialog(
-                          title: const Text('刷新失败'),
-                          content: Text(error
-                              .where((e) => e != null)
-                              .fold('', (p, v) => '$p\n$v')
-                              .trim()),
-                          actions: [
-                            CupertinoDialogAction(
-                              child: const Text('确定'),
-                              onPressed: () async {
-                                Navigator.of(context).pop();
-                              },
-                            )
-                          ],
-                        );
-                      });
-                }
+              final results = await _scholarController.fetchData();
+              if (context.mounted && results.any((result) => result != null)) {
+                await showRefreshResultDialog(context, results);
               }
             },
           ),

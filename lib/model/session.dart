@@ -1,3 +1,5 @@
+import 'package:celechron/utils/json_utils.dart';
+
 class Session {
   String? id;
   late String name;
@@ -59,39 +61,50 @@ class Session {
     }
   }*/
 
-  Session.fromZdbk(Map<String, dynamic> json)
-      : confirmed = (json['sfqd'] as String) == '1',
-        dayOfWeek = int.parse(json['xqj']),
-        oddWeek = (json['dsz'] as String) != '1',
-        evenWeek = (json['dsz'] as String) != '0' {
+  factory Session.fromZdbk(Map<String, dynamic> json) {
+    // kcb 将课程名、教学班、教师和地点编码在 HTML 换行块中；
+    // xxq 表示半学期，djj/skcd 分别提供起始节次和连续节数。
+    final session = Session.empty()
+      ..confirmed = asString(json['sfqd']) == '1'
+      ..dayOfWeek = asInt(json['xqj']) ?? 1
+      ..oddWeek = asString(json['dsz']) != '1'
+      ..evenWeek = asString(json['dsz']) != '0'
+      ..name = '未知课程'
+      ..teacher = '未知教师'
+      ..time = <int>[];
     //名称、教师、地点
-    if (json.containsKey('kcb')) {
+    final courseBlock = asString(json['kcb']);
+    if (courseBlock != null) {
       var nameTeacherPosition = RegExp(r'(.*?)<br>(.*?)<br>(.*?)<br>(.*?)zwf')
-          .firstMatch(json['kcb'] as String);
+          .firstMatch(courseBlock);
       if (nameTeacherPosition != null) {
         // ZDBK上，课程名称中的括号有时会变成英文括号，此处统一改成中文括号
-        name = nameTeacherPosition
+        session.name = nameTeacherPosition
             .group(1)!
             .replaceAll('(', '（')
             .replaceAll(')', '）');
-        teacher = nameTeacherPosition.group(3)!;
-        location = nameTeacherPosition.group(4) == ''
+        session.teacher = nameTeacherPosition.group(3) ?? '未知教师';
+        session.location = nameTeacherPosition.group(4) == ''
             ? null
             : nameTeacherPosition.group(4);
       }
     }
     // 短学期 or 长学期
-    if (json.containsKey('xxq')) {
-      var semester = json['xxq'] as String;
-      firstHalf = semester.contains("秋") || semester.contains("春");
-      secondHalf = semester.contains("冬") || semester.contains("夏");
+    final semester = asString(json['xxq']);
+    if (semester != null) {
+      session.firstHalf = semester.contains("秋") || semester.contains("春");
+      session.secondHalf = semester.contains("冬") || semester.contains("夏");
     }
     // 第几节
-    if (json.containsKey('djj') && json.containsKey('skcd')) {
-      var initial = int.parse(json['djj'] as String);
-      var duration = int.parse(json['skcd'] as String);
-      time = List<int>.generate(duration, (index) => initial + index);
+    final initial = asInt(json['djj']);
+    final duration = asInt(json['skcd']);
+    if (initial != null && duration != null && duration > 0) {
+      session.time = List<int>.generate(duration, (index) => initial + index);
     }
+    if (session.time.isEmpty) {
+      throw const FormatException('课表条目缺少有效节次');
+    }
+    return session;
   }
 
   Map<String, dynamic> toJson() => {
@@ -115,23 +128,30 @@ class Session {
       };
 
   Session.fromJson(Map<String, dynamic> json)
-      : id = json['id'],
-        name = json['name'],
-        teacher = json['teacher'],
-        teacherId = json['teacherId'] as String?,
-        confirmed = json['confirmed'],
-        firstHalf = json['firstHalf'],
-        secondHalf = json['secondHalf'],
-        oddWeek = json['oddWeek'],
-        evenWeek = json['evenWeek'],
-        dayOfWeek = json['day'],
-        time = List<int>.from(json['time']),
-        location = json['location'],
-        customRepeat = json['customRepeat'] ?? false,
-        customRepeatWeeks = List<int>.from(json['customRepeatWeeks'] ?? []),
-        credit = json['credit'] as double?,
-        online = json['online'] as bool?,
-        type = json['type'] as String?;
+      : id = asString(json['id']),
+        name = asString(json['name']) ?? '未知课程',
+        teacher = asString(json['teacher']) ?? '未知教师',
+        teacherId = asString(json['teacherId']),
+        confirmed = asBool(json['confirmed']) ?? true,
+        firstHalf = asBool(json['firstHalf']) ?? false,
+        secondHalf = asBool(json['secondHalf']) ?? false,
+        oddWeek = asBool(json['oddWeek']) ?? true,
+        evenWeek = asBool(json['evenWeek']) ?? true,
+        dayOfWeek = asInt(json['day']) ?? 1,
+        time = (asDynamicList(json['time']) ?? const [])
+            .map(asInt)
+            .whereType<int>()
+            .toList(),
+        location = asString(json['location']),
+        customRepeat = asBool(json['customRepeat']) ?? false,
+        customRepeatWeeks =
+            (asDynamicList(json['customRepeatWeeks']) ?? const [])
+                .map(asInt)
+                .whereType<int>()
+                .toList(),
+        credit = asDouble(json['credit']),
+        online = asBool(json['online']),
+        type = asString(json['type']);
 
   String get chineseTime {
     var timeString =
