@@ -43,7 +43,8 @@ class CalendarToSystemManager {
   // Celechron课表日历的ID
   String? _celechronCalendarId;
 
-  final Scholar scholar;
+  // 持有 Rx 本体而非 Scholar 对象，账号切换后自动指向新账号
+  final Rx<Scholar> scholar;
 
   // 日历同步状态
   final RxBool _calendarSyncEnabled = false.obs;
@@ -171,10 +172,10 @@ class CalendarToSystemManager {
 
       if (syncAllSemesters) {
         // 同步所有学期
-        allPeriods = scholar.periods;
+        allPeriods = scholar.value.periods;
       } else {
         // 同步指定学期或当前学期
-        var targetSemester = semester ?? scholar.thisSemester;
+        var targetSemester = semester ?? scholar.value.thisSemester;
         allPeriods = targetSemester.periods;
       }
 
@@ -318,12 +319,13 @@ class CalendarToSystemManager {
 
   /// 获取可用学期列表（供UI使用）
   List<String> getAvailableSemesters() {
-    return scholar.semesters.map((semester) => semester.name).toList();
+    return scholar.value.semesters.map((semester) => semester.name).toList();
   }
 
   /// 根据学期名称获取学期对象
   Semester? getSemesterByName(String semesterName) {
-    return scholar.semesters.firstWhereOrNull((s) => s.name == semesterName);
+    return scholar.value.semesters
+        .firstWhereOrNull((s) => s.name == semesterName);
   }
 
   /// 删除整个Celechron日历
@@ -395,6 +397,18 @@ class CalendarToSystemManager {
         ),
         barrierDismissible: true,
       );
+    }
+  }
+
+  /// 账号切换后静默重建日历内容：未开启同步或无权限时不做任何事，不弹窗
+  Future<void> resyncSilently() async {
+    if (!_calendarSyncEnabled.value) return;
+    try {
+      if (!await checkPermissions()) return;
+      await clearSyncedEvents();
+      await syncScholarToSystemCalendar();
+    } catch (e) {
+      // 静默失败，用户可在设置页手动重新同步
     }
   }
 
@@ -622,7 +636,7 @@ class CalendarToSystemManager {
       }
 
       // 检查是否已登录
-      if (!scholar.isLogan) {
+      if (!scholar.value.isLogan) {
         _showAlert(context, '提示', '请先登录后再开启日历同步功能');
         return;
       }
