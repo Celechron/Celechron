@@ -240,13 +240,17 @@ class ScholarController extends GetxController {
     }
   }
 
-  @override
-  void onReady() {
-    super.onReady();
-    // 在生命周期方法中正确初始化 semesterIndex
+  /// 按当前学期重置学期下标；进页初始化与账号切换后都走这里
+  void resetSemesterIndex() {
     final thisSemesterIndex =
         semesters.indexWhere((e) => e.name == _scholar.value.thisSemester.name);
     semesterIndex.value = thisSemesterIndex >= 0 ? thisSemesterIndex : 0;
+  }
+
+  @override
+  void onReady() {
+    super.onReady();
+    resetSemesterIndex();
 
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       _updateDurations();

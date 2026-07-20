@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:get/get.dart';
 import 'package:hive/hive.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -58,6 +60,36 @@ class DatabaseHelper {
       await secureStorage.write(
           key: e.key, value: e.value, iOptions: secureStorageIOSOptions);
     });
+    // 多账号迁移：把既有单账号播种进账号列表，并把后台推送状态键复制到
+    // 账号命名空间。最后写 accountList 作为提交点，中途崩溃则下次整体重跑。
+    var accountListRaw = await secureStorage.read(
+        key: kAccountList, iOptions: secureStorageIOSOptions);
+    if (accountListRaw == null) {
+      var legacyUsername = await secureStorage.read(
+          key: kUsername, iOptions: secureStorageIOSOptions);
+      var legacyPassword = await secureStorage.read(
+          key: kPassword, iOptions: secureStorageIOSOptions);
+      if (legacyUsername != null &&
+          legacyUsername.isNotEmpty &&
+          legacyPassword != null) {
+        for (var key in backgroundStateKeys) {
+          var value = await secureStorage.read(
+              key: key, iOptions: secureStorageIOSOptions);
+          if (value != null) {
+            await secureStorage.write(
+                key: '${key}_$legacyUsername',
+                value: value,
+                iOptions: secureStorageIOSOptions);
+          }
+        }
+        await secureStorage.write(
+            key: kAccountList,
+            value: jsonEncode([
+              {'username': legacyUsername, 'password': legacyPassword}
+            ]),
+            iOptions: secureStorageIOSOptions);
+      }
+    }
   }
 
   // Options
@@ -251,6 +283,15 @@ class DatabaseHelper {
   final String dbScholar = 'dbUser';
   final String kUsername = 'username';
   final String kPassword = 'password';
+  final String kAccountList = 'accountList';
+
+  /// 后台推送状态键（仅由 background_app_refresh 读写），迁移后按账号命名空间隔离
+  static const List<String> backgroundStateKeys = [
+    'gpa',
+    'gradedCourseCount',
+    'pushOnGradeChangeFuse',
+    'notifiedDdlIds'
+  ];
 
   Future<Scholar> getScholar() async {
     var scholar = scholarBox.get('user', defaultValue: Scholar());
@@ -289,6 +330,104 @@ class DatabaseHelper {
       scholarBox.delete('user'),
       secureStorage.delete(key: kUsername, iOptions: secureStorageIOSOptions),
       secureStorage.delete(key: kPassword, iOptions: secureStorageIOSOptions)
+    ]);
+  }
+
+  // 多账号：账号列表存 secure storage，MRU 排序，首元素恒为当前账号；
+  // 非活跃账号的数据归档在各 box 的 <活动键>_<username> 键下
+
+  Future<List<Map<String, String>>> getAccountList() async {
+    var raw = await secureStorage.read(
+        key: kAccountList, iOptions: secureStorageIOSOptions);
+    if (raw == null) return <Map<String, String>>[];
+    try {
+      return (jsonDecode(raw) as List)
+          .map((e) => Map<String, String>.from(e as Map))
+          .toList();
+    } catch (_) {
+      return <Map<String, String>>[];
+    }
+  }
+
+  Future<void> setAccountList(List<Map<String, String>> accounts) async {
+    await secureStorage.write(
+        key: kAccountList,
+        value: jsonEncode(accounts),
+        iOptions: secureStorageIOSOptions);
+    // 首元素为当前账号，镜像到 legacy 键位，后台刷新与 e-card 组件按原键读取；
+    // 空表不动镜像键，由登出流程自行清理
+    if (accounts.isNotEmpty) {
+      await Future.wait([
+        secureStorage.write(
+            key: kUsername,
+            value: accounts.first['username'],
+            iOptions: secureStorageIOSOptions),
+        secureStorage.write(
+            key: kPassword,
+            value: accounts.first['password'],
+            iOptions: secureStorageIOSOptions),
+      ]);
+    }
+  }
+
+  /// 把活动槽位数据归档到 <key>_<username>，供切换账号时保存切出账号的档案
+  Future<void> archiveActiveProfile(
+      String username,
+      Scholar scholar,
+      List<Task> taskList,
+      DateTime taskListUpdateTime,
+      List<Period> flowList,
+      DateTime flowListUpdateTime) async {
+    await Future.wait([
+      scholarBox.put('user_$username', scholar),
+      taskBox.put('${kTaskList}_$username', taskList),
+      taskBox.put('${kTaskListUpdateTime}_$username', taskListUpdateTime),
+      flowBox.put('${kFlowList}_$username', flowList),
+      flowBox.put('${kFlowListUpdateTime}_$username', flowListUpdateTime),
+      customGpaBox.put('selectList_$username', getCustomGpa()),
+      customGpaBox.put('weightedGpa_$username', getWeightedGpa()),
+    ]);
+  }
+
+  ArchivedProfile readArchivedProfile(String username) {
+    var weightedRaw = customGpaBox.get('weightedGpa_$username') as Map?;
+    return ArchivedProfile(
+      scholar: scholarBox.get('user_$username') as Scholar?,
+      taskList:
+          List<Task>.from(taskBox.get('${kTaskList}_$username') ?? <Task>[]),
+      taskListUpdateTime: taskBox.get('${kTaskListUpdateTime}_$username') ??
+          DateTime.fromMicrosecondsSinceEpoch(0),
+      flowList: List<Period>.from(
+          flowBox.get('${kFlowList}_$username') ?? <Period>[]),
+      flowListUpdateTime: flowBox.get('${kFlowListUpdateTime}_$username') ??
+          DateTime.fromMicrosecondsSinceEpoch(0),
+      customGpa: Map<String, bool>.from(
+          customGpaBox.get('selectList_$username') ?? {}),
+      weightedGpa: weightedRaw == null
+          ? <String, double>{}
+          : Map<String, double>.from(weightedRaw.map((key, value) =>
+              MapEntry(key.toString(), (value as num).toDouble()))),
+    );
+  }
+
+  Future<void> deleteArchivedProfile(String username) async {
+    await Future.wait([
+      scholarBox.delete('user_$username'),
+      taskBox.delete('${kTaskList}_$username'),
+      taskBox.delete('${kTaskListUpdateTime}_$username'),
+      flowBox.delete('${kFlowList}_$username'),
+      flowBox.delete('${kFlowListUpdateTime}_$username'),
+      customGpaBox.delete('selectList_$username'),
+      customGpaBox.delete('weightedGpa_$username'),
+    ]);
+  }
+
+  /// 删除某账号的后台推送状态键（成绩基线、首推熔断、已提醒 DDL 集合）
+  Future<void> deleteBackgroundStateFor(String username) async {
+    await Future.wait([
+      for (var key in backgroundStateKeys)
+        secureStorage.delete(
+            key: '${key}_$username', iOptions: secureStorageIOSOptions)
     ]);
   }
 
@@ -350,4 +489,25 @@ class DatabaseHelper {
   Future<void> setWeightedGpa(Map<String, double> weightedMap) async {
     await customGpaBox.put('weightedGpa', weightedMap);
   }
+}
+
+/// 一个非活跃账号的归档档案快照。scholar 为空表示该账号从未归档过（新添账号）
+class ArchivedProfile {
+  final Scholar? scholar;
+  final List<Task> taskList;
+  final DateTime taskListUpdateTime;
+  final List<Period> flowList;
+  final DateTime flowListUpdateTime;
+  final Map<String, bool> customGpa;
+  final Map<String, double> weightedGpa;
+
+  ArchivedProfile({
+    required this.scholar,
+    required this.taskList,
+    required this.taskListUpdateTime,
+    required this.flowList,
+    required this.flowListUpdateTime,
+    required this.customGpa,
+    required this.weightedGpa,
+  });
 }

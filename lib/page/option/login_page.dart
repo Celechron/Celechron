@@ -1,9 +1,6 @@
-import 'package:celechron/utils/platform_features.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
-import 'package:celechron/model/scholar.dart';
 
-import '../../worker/ecard_widget_messenger.dart';
 import 'option_controller.dart';
 
 class LoginForm extends StatelessWidget {
@@ -90,48 +87,41 @@ class LoginForm extends StatelessWidget {
                     const SizedBox(height: 16),
                     Obx(() => CupertinoButton(
                         onPressed: () async {
+                          if (buttonPressed.value) return;
                           buttonPressed.value = true;
-                          var scholar = Get.find<Rx<Scholar>>(tag: 'scholar');
-                          scholar.update((val) {
-                            val!.username = usernameController.value.text;
-                            val.password = passwordController.value.text;
-                            val.login().then((value) async {
-                              if (value.every((e) => e == null)) {
-                                await val.refresh(
-                                    onPartialUpdate: scholar.refresh);
-                                scholar.refresh();
-                                buttonPressed.value = false;
-                                _optionController.pushOnGradeChange =
-                                    PlatformFeatures.hasBackgroundRefresh;
-                                if (context.mounted) {
-                                  Navigator.of(context).pop();
-                                }
-                              } else {
-                                buttonPressed.value = false;
-                                if (!context.mounted) return;
-                                showCupertinoDialog(
-                                    context: context,
-                                    builder: (context) {
-                                      return CupertinoAlertDialog(
-                                        title: const Text('登录失败'),
-                                        content: Text(value
-                                            .where((e) => e != null)
-                                            .fold('', (p, v) => '$p\n$v')
-                                            .trim()),
-                                        actions: [
-                                          CupertinoDialogAction(
-                                            child: const Text('确定'),
-                                            onPressed: () async {
-                                              Navigator.of(context).pop();
-                                            },
-                                          )
-                                        ],
-                                      );
-                                    });
-                              }
-                              ECardWidgetMessenger.update();
-                            });
-                          });
+                          // 试登录、归档与账号列表维护都在控制器里完成；
+                          // 登录失败不会碰当前账号的任何数据
+                          var errors =
+                              await _optionController.addOrUpdateAccount(
+                                  usernameController.value.text,
+                                  passwordController.value.text);
+                          buttonPressed.value = false;
+                          if (errors.every((e) => e == null)) {
+                            if (context.mounted) {
+                              Navigator.of(context).pop();
+                            }
+                          } else {
+                            if (!context.mounted) return;
+                            showCupertinoDialog(
+                                context: context,
+                                builder: (context) {
+                                  return CupertinoAlertDialog(
+                                    title: const Text('登录失败'),
+                                    content: Text(errors
+                                        .where((e) => e != null)
+                                        .fold('', (p, v) => '$p\n$v')
+                                        .trim()),
+                                    actions: [
+                                      CupertinoDialogAction(
+                                        child: const Text('确定'),
+                                        onPressed: () async {
+                                          Navigator.of(context).pop();
+                                        },
+                                      )
+                                    ],
+                                  );
+                                });
+                          }
                         },
                         color: buttonPressed.value
                             ? CupertinoColors.inactiveGray

@@ -9,6 +9,7 @@ import 'package:celechron/model/option.dart';
 import 'package:celechron/design/cupertino_async_switch.dart';
 
 import 'allow_time_edit_page.dart';
+import 'account_manage_page.dart';
 import 'course_id_mapping_edit_page.dart';
 import 'credits_page.dart';
 import 'package:get/get.dart';
@@ -81,37 +82,17 @@ class OptionPage extends StatelessWidget {
                             title: Text(
                                 '已登录: ${_optionController.scholar.value.username}'),
                             trailing: BackChervonRow(
-                                child: Text('退出',
+                                child: Text('管理',
                                     style: TextStyle(
                                         color: CupertinoDynamicColor.resolve(
                                             CupertinoColors.secondaryLabel,
                                             context),
                                         fontSize: 16))),
                             onTap: () async {
-                              await showCupertinoDialog(
-                                  context: context,
-                                  builder: (BuildContext dialogContext) {
-                                    return CupertinoAlertDialog(
-                                      title: const Text('退出登录'),
-                                      content: const Text('确定要退出当前账号吗？'),
-                                      actions: [
-                                        CupertinoDialogAction(
-                                          child: const Text('取消'),
-                                          onPressed: () {
-                                            Navigator.of(dialogContext).pop();
-                                          },
-                                        ),
-                                        CupertinoDialogAction(
-                                          isDestructiveAction: true,
-                                          child: const Text('退出'),
-                                          onPressed: () async {
-                                            Navigator.of(dialogContext).pop();
-                                            await _optionController.logout();
-                                          },
-                                        ),
-                                      ],
-                                    );
-                                  });
+                              Navigator.of(context, rootNavigator: true).push(
+                                  CupertinoPageRoute(
+                                      builder: (context) =>
+                                          AccountManagePage()));
                             }),
                         CupertinoListTile(
                           title: const Text('重修绩点计算'),
