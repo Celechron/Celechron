@@ -25,7 +25,7 @@ class AccountManagePage extends StatelessWidget {
             const CelechronSliverTextHeader(subtitle: '账号管理'),
             SliverToBoxAdapter(
               child: Obx(() {
-                var accounts = _optionController.accounts;
+                var accounts = _optionController.accountsSortedById;
                 var currentUsername = _optionController.scholar.value.username;
                 var isLogan = _optionController.scholar.value.isLogan;
                 return Column(children: [
@@ -153,7 +153,7 @@ class AccountManagePage extends StatelessWidget {
           return CupertinoAlertDialog(
             title: const Text('退出当前账号'),
             content: Text(hasOthers
-                ? '将删除该账号在本机的全部数据（包括任务与规划），并切换到下一个账号。'
+                ? '将删除该账号在本机的全部数据（包括任务与规划），并切换到最近使用的另一个账号。'
                 : '将删除该账号在本机的全部数据（包括任务与规划）。'),
             actions: [
               CupertinoDialogAction(

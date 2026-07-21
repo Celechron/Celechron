@@ -244,6 +244,19 @@ class OptionController extends GetxController {
   // <键>_<username> 下。切换的核心是一个不含 await 的同步交换块，
   // 保证 TaskController/FlowController 的秒级 tick 观察不到混合态。
 
+  /// 账号管理页展示用：按学号从小到大排序，不随切换变化。
+  /// 底层 accounts 仍为 MRU 序——首元素镜像凭据、退出后回退都依赖它
+  List<Map<String, String>> get accountsSortedById {
+    var sorted = accounts.toList();
+    sorted.sort((a, b) {
+      var ua = a['username'] ?? '';
+      var ub = b['username'] ?? '';
+      // 学号均为数字串，先比长度再比字典序即数值序
+      return ua.length != ub.length ? ua.length - ub.length : ua.compareTo(ub);
+    });
+    return sorted;
+  }
+
   /// 切换到已存账号。瞬间换上其缓存档案，随后复刻启动逻辑后台登录刷新
   Future<void> switchAccount(String username) async {
     if (accountBusy.value) return;
