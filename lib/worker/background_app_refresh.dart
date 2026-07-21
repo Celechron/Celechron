@@ -95,20 +95,26 @@ Future<void> refreshScholar() async {
       key: 'username', iOptions: secureStorageIOSOptions);
   scholar.password = await secureStorage.read(
       key: 'password', iOptions: secureStorageIOSOptions);
-  var oldGpa =
-      await secureStorage.read(key: 'gpa', iOptions: secureStorageIOSOptions) ??
-          '0.0';
+  if (scholar.username == null) return;
+  // 多账号：迁移后（accountList 已写入）推送状态键按当前账号命名空间隔离，
+  // 各账号保有各自的成绩基线与已提醒集合；未迁移时沿用 legacy 键，行为不变
+  var accountListRaw = await secureStorage.read(
+      key: 'accountList', iOptions: secureStorageIOSOptions);
+  var ns = accountListRaw == null ? '' : '_${scholar.username}';
+  var oldGpa = await secureStorage.read(
+          key: 'gpa$ns', iOptions: secureStorageIOSOptions) ??
+      '0.0';
   var gradedCourseCount = await secureStorage.read(
-          key: 'gradedCourseCount', iOptions: secureStorageIOSOptions) ??
+          key: 'gradedCourseCount$ns', iOptions: secureStorageIOSOptions) ??
       '0';
   var pushOnGradeChangeFuse = await secureStorage.read(
-      key: 'pushOnGradeChangeFuse', iOptions: secureStorageIOSOptions);
+      key: 'pushOnGradeChangeFuse$ns', iOptions: secureStorageIOSOptions);
   var pushOnGradeChange = await secureStorage.read(
       key: 'pushOnGradeChange', iOptions: secureStorageIOSOptions);
   var pushOnDdlReminder = await secureStorage.read(
       key: 'pushOnDdlReminder', iOptions: secureStorageIOSOptions);
   var notifiedDdlIdsStr = await secureStorage.read(
-      key: 'notifiedDdlIds', iOptions: secureStorageIOSOptions);
+      key: 'notifiedDdlIds$ns', iOptions: secureStorageIOSOptions);
 
   try {
     var backgroundYielded = false;
@@ -135,7 +141,7 @@ Future<void> refreshScholar() async {
             '若有新出分的课程，Celechron 将会通知您。若不需要此功能，可在 Celechron 的设置页面中关闭。',
             gradeNotificationDetails);
         await secureStorage.write(
-            key: 'pushOnGradeChangeFuse',
+            key: 'pushOnGradeChangeFuse$ns',
             value: '1',
             iOptions: secureStorageIOSOptions);
       } else if (scholar.gpa[0] != double.tryParse(oldGpa) ||
@@ -144,11 +150,11 @@ Future<void> refreshScholar() async {
             '有新出分的课程，可在 Celechron 的学业页面中刷新查看。', gradeNotificationDetails);
       }
       await secureStorage.write(
-          key: 'gpa',
+          key: 'gpa$ns',
           value: scholar.gpa[0].toString(),
           iOptions: secureStorageIOSOptions);
       await secureStorage.write(
-          key: 'gradedCourseCount',
+          key: 'gradedCourseCount$ns',
           value: scholar.gradedCourseCount.toString(),
           iOptions: secureStorageIOSOptions);
     }
@@ -196,7 +202,7 @@ Future<void> refreshScholar() async {
       });
 
       await secureStorage.write(
-          key: 'notifiedDdlIds',
+          key: 'notifiedDdlIds$ns',
           value: jsonEncode(notifiedDdlIds.toList()),
           iOptions: secureStorageIOSOptions);
     }
