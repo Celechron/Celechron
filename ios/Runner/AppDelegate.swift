@@ -12,10 +12,16 @@ private class FlowMessengerImplementation: FlowMessenger {
 #else
         let userDefaults = UserDefaults(suiteName: "group.top.celechron.celechron")
 #endif
-        userDefaults?.set(try? JSONEncoder().encode(data.flowListDto), forKey: "flowList")
+        let encoded = try? JSONEncoder().encode(data.flowListDto)
+        userDefaults?.set(encoded, forKey: "flowList")
+        if let encoded {
+            WatchConnectivityBridge.shared.syncFlowList(encoded)
+        }
+        WatchConnectivityBridge.shared.syncFromAppGroup()
         if #available(iOS 14.0, *) {
             WidgetCenter.shared.reloadTimelines(ofKind: "FlowWidget")
         }
+        completion(.success(true))
     }
 }
 
@@ -38,6 +44,10 @@ private class FlowMessengerImplementation: FlowMessenger {
             GeneratedPluginRegistrant.register(with: registry)
         }
 
+        // Apple Watch 数据同步
+        WatchConnectivityBridge.shared.activate()
+        WatchConnectivityBridge.shared.syncFromAppGroup()
+
         return super.application(application, didFinishLaunchingWithOptions: launchOptions)
     }
 
@@ -54,6 +64,11 @@ private class FlowMessengerImplementation: FlowMessenger {
             if #available(iOS 14.0, *) {
                 WidgetCenter.shared.reloadTimelines(ofKind: "ECardWidget")
             }
+            // 小组件刷新后会写入余额缓存；稍后再同步到手表
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                WatchConnectivityBridge.shared.syncFromAppGroup()
+            }
+            result(nil)
         })
     }
 }

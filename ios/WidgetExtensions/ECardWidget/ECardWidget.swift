@@ -43,6 +43,7 @@ struct ECardWidgetProvider: TimelineProvider {
             &ref
         )
         if (status == errSecItemNotFound) {
+            cacheBalance(-1)
             completion(Timeline(entries: [ECardEntry(date: Date(), balance: -1)], policy: .after(Date(timeIntervalSinceNow: 1800))))
             return
         }
@@ -53,11 +54,14 @@ struct ECardWidgetProvider: TimelineProvider {
         }
         
         if (value == nil) {
+            cacheBalance(-1)
             completion(Timeline(entries: [ECardEntry(date: Date(), balance: -1)], policy: .after(Date(timeIntervalSinceNow: 1800))))
             return
         } else if (value == "3200000000") {
             // 如果是测试账号，直接显示18.97元
+            cacheBalance(1897)
             completion(Timeline(entries: [ECardEntry(date: Date(), balance: 1897)], policy: .after(Date(timeIntervalSinceNow: 1800))))
+            return
         }
         
         var request = URLRequest(url: URL(string: "https://elife.zju.edu.cn/berserker-app/ykt/tsm/getCampusCards")!)
@@ -93,6 +97,7 @@ struct ECardWidgetProvider: TimelineProvider {
                     let balanceList = cardList!.map { card in card["db_balance"] as! Int }
                     let balance = balanceList.max()
                     if(balance == nil) { return }
+                    cacheBalance(balance!)
                     completion(Timeline(entries: [ECardEntry(date: Date(), balance: balance!)], policy: .after(Date(timeIntervalSinceNow: 1800))))
                 } else {
                     return
@@ -101,6 +106,18 @@ struct ECardWidgetProvider: TimelineProvider {
                 return
             }
         }
+    }
+
+    /// 缓存余额到 App Group，供 Apple Watch 经 iPhone 同步读取
+    private func cacheBalance(_ balance: Int) {
+        #if DEBUG
+        let suiteName = "group.top.celechron.celechron.debug"
+        #else
+        let suiteName = "group.top.celechron.celechron"
+        #endif
+        let defaults = UserDefaults(suiteName: suiteName)
+        defaults?.set(balance, forKey: "ecardBalance")
+        defaults?.set(Date(), forKey: "ecardUpdateTime")
     }
 }
 

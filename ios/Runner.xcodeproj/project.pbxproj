@@ -24,6 +24,26 @@
 		E08278D82BF2085100F840B8 /* FlowMessenger.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08278D72BF2085100F840B8 /* FlowMessenger.swift */; };
 		E08278DA2BF20ECD00F840B8 /* FlowWidgetView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E08278D92BF20ECD00F840B8 /* FlowWidgetView.swift */; };
 		78A318202AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage in Frameworks */ = {isa = PBXBuildFile; productRef = 78A3181F2AECB46A00862997 /* FlutterGeneratedPluginSwiftPackage */; };
+
+		A10000000000000000000030 /* WidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* WidgetShared.swift */; };
+		A10000000000000000000031 /* WidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* WidgetShared.swift */; };
+		A10000000000000000000032 /* WidgetShared.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000010 /* WidgetShared.swift */; };
+		A10000000000000000000033 /* CelechronWatchApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000011 /* CelechronWatchApp.swift */; };
+		A10000000000000000000034 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000013 /* Assets.xcassets */; };
+		A10000000000000000000035 /* WatchWidgetBundle.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000020 /* WatchWidgetBundle.swift */; };
+		A10000000000000000000036 /* WatchFlowWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000021 /* WatchFlowWidget.swift */; };
+		A10000000000000000000037 /* WatchECardWidget.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000022 /* WatchECardWidget.swift */; };
+		A10000000000000000000038 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000024 /* Assets.xcassets */; };
+		A10000000000000000000039 /* WatchConnectivityBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10000000000000000000028 /* WatchConnectivityBridge.swift */; };
+		A10000000000000000000040 /* CelechronWatch.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = A10000000000000000000001 /* CelechronWatch.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		A10000000000000000000041 /* WatchWidgetExtensions.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = A10000000000000000000002 /* WatchWidgetExtensions.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, CodeSignOnCopy, ); }; };
+		A10000000000000000000052 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000050 /* WidgetKit.framework */; };
+		A10000000000000000000053 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10000000000000000000051 /* SwiftUI.framework */; };
+		A100000000000000000000C2 /* SimpleQRCode.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000C1 /* SimpleQRCode.swift */; };
+		A100000000000000000000D2 /* WatchDeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000D1 /* WatchDeepLink.swift */; };
+		A100000000000000000000D3 /* WatchDeepLink.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000D1 /* WatchDeepLink.swift */; };
+		A100000000000000000000E2 /* AppLogo.png in Resources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000E1 /* AppLogo.png */; };
+		A100000000000000000000F2 /* WatchAccessoryViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = A100000000000000000000F1 /* WatchAccessoryViews.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -33,6 +53,21 @@
 			proxyType = 1;
 			remoteGlobalIDString = E052FFA22BE287E600031D98;
 			remoteInfo = WidgetExtensionsExtension;
+		};
+
+		A10000000000000000000090 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000070;
+			remoteInfo = CelechronWatch;
+		};
+		A10000000000000000000091 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 97C146E61CF9000F007C117D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A10000000000000000000071;
+			remoteInfo = WatchWidgetExtensions;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -54,6 +89,29 @@
 			dstSubfolderSpec = 13;
 			files = (
 				E052FFB62BE287E800031D98 /* WidgetExtensions.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
+		A10000000000000000000087 /* Embed Watch Content */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(CONTENTS_FOLDER_PATH)/Watch";
+			dstSubfolderSpec = 16;
+			files = (
+				A10000000000000000000040 /* CelechronWatch.app in Embed Watch Content */,
+			);
+			name = "Embed Watch Content";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000083 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				A10000000000000000000041 /* WatchWidgetExtensions.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -99,6 +157,31 @@
 		EE0A33BB98C76A6434616114 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		FAFE8E654B147157FE62BD36 /* Pods-Runner.profile.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.profile.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.profile.xcconfig"; sourceTree = "<group>"; };
 		78E0A7A72DC9AD7400C4905E /* FlutterGeneratedPluginSwiftPackage */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = FlutterGeneratedPluginSwiftPackage; path = Flutter/ephemeral/Packages/FlutterGeneratedPluginSwiftPackage; sourceTree = "<group>"; };
+
+		A10000000000000000000001 /* CelechronWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = CelechronWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000002 /* WatchWidgetExtensions.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = WatchWidgetExtensions.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10000000000000000000010 /* WidgetShared.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WidgetShared.swift; sourceTree = "<group>"; };
+		A10000000000000000000011 /* CelechronWatchApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CelechronWatchApp.swift; sourceTree = "<group>"; };
+		A10000000000000000000012 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10000000000000000000013 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A10000000000000000000014 /* CelechronWatch.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CelechronWatch.entitlements; sourceTree = "<group>"; };
+		A10000000000000000000015 /* CelechronWatchDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CelechronWatchDebug.entitlements; sourceTree = "<group>"; };
+		A10000000000000000000016 /* CelechronWatchProfile.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CelechronWatchProfile.entitlements; sourceTree = "<group>"; };
+		A10000000000000000000020 /* WatchWidgetBundle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchWidgetBundle.swift; sourceTree = "<group>"; };
+		A10000000000000000000021 /* WatchFlowWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchFlowWidget.swift; sourceTree = "<group>"; };
+		A10000000000000000000022 /* WatchECardWidget.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchECardWidget.swift; sourceTree = "<group>"; };
+		A10000000000000000000023 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A10000000000000000000024 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A10000000000000000000025 /* WatchWidgetExtensions.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchWidgetExtensions.entitlements; sourceTree = "<group>"; };
+		A10000000000000000000026 /* WatchWidgetExtensionsDebug.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchWidgetExtensionsDebug.entitlements; sourceTree = "<group>"; };
+		A10000000000000000000027 /* WatchWidgetExtensionsProfile.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchWidgetExtensionsProfile.entitlements; sourceTree = "<group>"; };
+		A10000000000000000000028 /* WatchConnectivityBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityBridge.swift; sourceTree = "<group>"; };
+		A10000000000000000000050 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		A10000000000000000000051 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		A100000000000000000000C1 /* SimpleQRCode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleQRCode.swift; sourceTree = "<group>"; };
+		A100000000000000000000D1 /* WatchDeepLink.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchDeepLink.swift; sourceTree = "<group>"; };
+		A100000000000000000000E1 /* AppLogo.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = AppLogo.png; sourceTree = "<group>"; };
+		A100000000000000000000F1 /* WatchAccessoryViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchAccessoryViews.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -117,6 +200,23 @@
 			files = (
 				E052FFA72BE287E600031D98 /* SwiftUI.framework in Frameworks */,
 				E052FFA52BE287E600031D98 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
+		A10000000000000000000081 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000085 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000053 /* SwiftUI.framework in Frameworks */,
+				A10000000000000000000052 /* WidgetKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -141,6 +241,9 @@
 				9740EEB11CF90186004384FC /* Flutter */,
 				97C146F01CF9000F007C117D /* Runner */,
 				E052FFA82BE287E600031D98 /* WidgetExtensions */,
+				A10000000000000000000060 /* Shared */,
+				A10000000000000000000061 /* CelechronWatch */,
+				A10000000000000000000062 /* WatchWidgetExtensions */,
 				97C146EF1CF9000F007C117D /* Products */,
 				C2D4A98BB2D89967B4CEFFCC /* Pods */,
 				B899282DF49D0F7A6D10EE10 /* Frameworks */,
@@ -152,6 +255,8 @@
 			children = (
 				97C146EE1CF9000F007C117D /* Runner.app */,
 				E052FFA32BE287E600031D98 /* WidgetExtensions.appex */,
+				A10000000000000000000001 /* CelechronWatch.app */,
+				A10000000000000000000002 /* WatchWidgetExtensions.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -169,6 +274,7 @@
 				1498D2321E8E86230040F4C2 /* GeneratedPluginRegistrant.h */,
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
+				A10000000000000000000028 /* WatchConnectivityBridge.swift */,
 				E08278D72BF2085100F840B8 /* FlowMessenger.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
 			);
@@ -231,6 +337,63 @@
 			path = FlowWidget;
 			sourceTree = "<group>";
 		};
+
+		A10000000000000000000060 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000010 /* WidgetShared.swift */,
+				A100000000000000000000D1 /* WatchDeepLink.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000061 /* CelechronWatch */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000011 /* CelechronWatchApp.swift */,
+				A100000000000000000000E1 /* AppLogo.png */,
+				A100000000000000000000C1 /* SimpleQRCode.swift */,
+				A10000000000000000000013 /* Assets.xcassets */,
+				A10000000000000000000012 /* Info.plist */,
+				A10000000000000000000014 /* CelechronWatch.entitlements */,
+				A10000000000000000000015 /* CelechronWatchDebug.entitlements */,
+				A10000000000000000000016 /* CelechronWatchProfile.entitlements */,
+			);
+			path = CelechronWatch;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000062 /* WatchWidgetExtensions */ = {
+			isa = PBXGroup;
+			children = (
+				A100000000000000000000F1 /* WatchAccessoryViews.swift */,
+				A10000000000000000000064 /* ECardWidget */,
+				A10000000000000000000063 /* FlowWidget */,
+				A10000000000000000000020 /* WatchWidgetBundle.swift */,
+				A10000000000000000000024 /* Assets.xcassets */,
+				A10000000000000000000023 /* Info.plist */,
+				A10000000000000000000025 /* WatchWidgetExtensions.entitlements */,
+				A10000000000000000000026 /* WatchWidgetExtensionsDebug.entitlements */,
+				A10000000000000000000027 /* WatchWidgetExtensionsProfile.entitlements */,
+			);
+			path = WatchWidgetExtensions;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000063 /* FlowWidget */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000021 /* WatchFlowWidget.swift */,
+			);
+			path = FlowWidget;
+			sourceTree = "<group>";
+		};
+		A10000000000000000000064 /* ECardWidget */ = {
+			isa = PBXGroup;
+			children = (
+				A10000000000000000000022 /* WatchECardWidget.swift */,
+			);
+			path = ECardWidget;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -247,6 +410,7 @@
 				97C146EB1CF9000F007C117D /* Frameworks */,
 				97C146EC1CF9000F007C117D /* Resources */,
 				E052FFB72BE287E800031D98 /* Embed Foundation Extensions */,
+				A10000000000000000000087 /* Embed Watch Content */,
 				9705A1C41CF9048500538489 /* Embed Frameworks */,
 				3B06AD1E1E4923F5004D2608 /* Thin Binary */,
 				89B3BF0B850E8ED91BF5E879 /* [CP] Embed Pods Frameworks */,
@@ -255,6 +419,7 @@
 			);
 			dependencies = (
 				E052FFB52BE287E800031D98 /* PBXTargetDependency */,
+				A10000000000000000000092 /* PBXTargetDependency */,
 			);
 			name = Runner;
 			productName = Runner;
@@ -278,6 +443,44 @@
 			productReference = E052FFA32BE287E600031D98 /* WidgetExtensions.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+
+		A10000000000000000000070 /* CelechronWatch */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A100000000000000000000B0 /* Build configuration list for PBXNativeTarget "CelechronWatch" */;
+			buildPhases = (
+				A10000000000000000000080 /* Sources */,
+				A10000000000000000000081 /* Frameworks */,
+				A10000000000000000000082 /* Resources */,
+				A10000000000000000000083 /* Embed Foundation Extensions */,
+				A100000000000000000000F0 /* Inject App Icon */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10000000000000000000093 /* PBXTargetDependency */,
+			);
+			name = CelechronWatch;
+			productName = CelechronWatch;
+			productReference = A10000000000000000000001 /* CelechronWatch.app */;
+			productType = "com.apple.product-type.application";
+		};
+		A10000000000000000000071 /* WatchWidgetExtensions */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A100000000000000000000B1 /* Build configuration list for PBXNativeTarget "WatchWidgetExtensions" */;
+			buildPhases = (
+				A10000000000000000000084 /* Sources */,
+				A10000000000000000000085 /* Frameworks */,
+				A10000000000000000000086 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = WatchWidgetExtensions;
+			productName = WatchWidgetExtensions;
+			productReference = A10000000000000000000002 /* WatchWidgetExtensions.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -299,6 +502,12 @@
 					E052FFA22BE287E600031D98 = {
 						CreatedOnToolsVersion = 15.3;
 					};
+					A10000000000000000000070 = {
+						CreatedOnToolsVersion = 16.0;
+					};
+					A10000000000000000000071 = {
+						CreatedOnToolsVersion = 16.0;
+					};
 				};
 			};
 			buildConfigurationList = 97C146E91CF9000F007C117D /* Build configuration list for PBXProject "Runner" */;
@@ -316,6 +525,8 @@
 			targets = (
 				97C146ED1CF9000F007C117D /* Runner */,
 				E052FFA22BE287E600031D98 /* WidgetExtensions */,
+				A10000000000000000000070 /* CelechronWatch */,
+				A10000000000000000000071 /* WatchWidgetExtensions */,
 			);
 		};
 /* End PBXProject section */
@@ -337,6 +548,24 @@
 			buildActionMask = 2147483647;
 			files = (
 				E052FFB22BE287E800031D98 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+
+		A10000000000000000000082 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000034 /* Assets.xcassets in Resources */,
+				A100000000000000000000E2 /* AppLogo.png in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000086 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000038 /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -437,6 +666,31 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+
+		A10000000000000000000080 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000033 /* CelechronWatchApp.swift in Sources */,
+				A100000000000000000000C2 /* SimpleQRCode.swift in Sources */,
+				A100000000000000000000D2 /* WatchDeepLink.swift in Sources */,
+				A10000000000000000000030 /* WidgetShared.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10000000000000000000084 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10000000000000000000035 /* WatchWidgetBundle.swift in Sources */,
+				A10000000000000000000036 /* WatchFlowWidget.swift in Sources */,
+				A10000000000000000000037 /* WatchECardWidget.swift in Sources */,
+				A100000000000000000000F2 /* WatchAccessoryViews.swift in Sources */,
+				A10000000000000000000031 /* WidgetShared.swift in Sources */,
+				A100000000000000000000D3 /* WatchDeepLink.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -444,6 +698,17 @@
 			isa = PBXTargetDependency;
 			target = E052FFA22BE287E600031D98 /* WidgetExtensions */;
 			targetProxy = E052FFB42BE287E800031D98 /* PBXContainerItemProxy */;
+		};
+
+		A10000000000000000000092 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000070 /* CelechronWatch */;
+			targetProxy = A10000000000000000000090 /* PBXContainerItemProxy */;
+		};
+		A10000000000000000000093 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A10000000000000000000071 /* WatchWidgetExtensions */;
+			targetProxy = A10000000000000000000091 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -851,6 +1116,194 @@
 			};
 			name = Profile;
 		};
+		A100000000000000000000A0 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = CelechronWatch/CelechronWatchDebug.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				COMPANION_BUNDLE_IDENTIFIER = top.celechron.celechron.debug;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=watchos*]" = LAWWU6DFXL;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CelechronWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = top.celechron.celechron.debug.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		A100000000000000000000A1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = CelechronWatch/CelechronWatch.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				COMPANION_BUNDLE_IDENTIFIER = top.celechron.celechron;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LAWWU6DFXL;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CelechronWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = top.celechron.celechron.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		A100000000000000000000A2 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = CelechronWatch/CelechronWatchProfile.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				COMPANION_BUNDLE_IDENTIFIER = top.celechron.celechron.debug;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=watchos*]" = LAWWU6DFXL;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = CelechronWatch/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = top.celechron.celechron.debug.watchkitapp;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Profile;
+		};
+		A100000000000000000000A3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = WatchWidgetExtensions/WatchWidgetExtensionsDebug.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=watchos*]" = LAWWU6DFXL;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchWidgetExtensions/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Celechron;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = top.celechron.celechron.debug.watchkitapp.WatchWidgetExtensions;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Debug;
+		};
+		A100000000000000000000A4 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = WatchWidgetExtensions/WatchWidgetExtensions.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = LAWWU6DFXL;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchWidgetExtensions/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Celechron;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = top.celechron.celechron.watchkitapp.WatchWidgetExtensions;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Release;
+		};
+		A100000000000000000000A5 /* Profile */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_ENTITLEMENTS = WatchWidgetExtensions/WatchWidgetExtensionsProfile.entitlements;
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=watchos*]" = LAWWU6DFXL;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = WatchWidgetExtensions/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = Celechron;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = top.celechron.celechron.debug.watchkitapp.WatchWidgetExtensions;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SDKROOT = watchos;
+				SKIP_INSTALL = YES;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 10.0;
+			};
+			name = Profile;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -880,6 +1333,27 @@
 				E052FFB82BE287E800031D98 /* Debug */,
 				E052FFB92BE287E800031D98 /* Release */,
 				E052FFBA2BE287E800031D98 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+
+		A100000000000000000000B0 /* Build configuration list for PBXNativeTarget "CelechronWatch" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000000000000000000A0 /* Debug */,
+				A100000000000000000000A1 /* Release */,
+				A100000000000000000000A2 /* Profile */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A100000000000000000000B1 /* Build configuration list for PBXNativeTarget "WatchWidgetExtensions" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A100000000000000000000A3 /* Debug */,
+				A100000000000000000000A4 /* Release */,
+				A100000000000000000000A5 /* Profile */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

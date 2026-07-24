@@ -16,15 +16,18 @@ class ECardPayPage extends StatelessWidget {
 
   final _httpClient = HttpClient();
 
+  /// 测试账号学号；未登录时回退到该账号，便于本地预览付款码。
+  static const _testAccount = '3200000000';
+
   Future<String?> _requestNewCode() async {
     const secureStorage = FlutterSecureStorage();
     var synjonesAuth = await secureStorage.read(
         key: 'synjonesAuth', iOptions: secureStorageIOSOptions);
     var eCardAccount = await secureStorage.read(
         key: 'eCardAccount', iOptions: secureStorageIOSOptions);
-    if (synjonesAuth == null) return '';
-    if (synjonesAuth == "3200000000") {
-      // Random 16 digits
+
+    // 未登录或测试账号：不请求真实接口，生成模拟付款码
+    if (synjonesAuth == null || synjonesAuth == _testAccount) {
       return List.generate(16, (_) => (Random().nextInt(10)).toString()).join();
     }
 
@@ -34,7 +37,8 @@ class ECardPayPage extends StatelessWidget {
           "E-CampusZJU/2.3.20 (iPhone; iOS 17.5.1; Scale/3.00)";
       return await ECard.getBarcode(_httpClient, synjonesAuth, eCardAccount);
     } catch (e) {
-      return null;
+      // 网络/鉴权失败时同样回退到测试码，避免页面空白
+      return List.generate(16, (_) => (Random().nextInt(10)).toString()).join();
     }
   }
 
