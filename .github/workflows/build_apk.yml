@@ -1,0 +1,75 @@
+name: Build Android APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.38.1'
+          channel: 'stable'
+          cache: true
+
+      - name: Get dependencies
+        run: flutter pub get
+
+      - name: Read app version
+        run: |
+          APP_FULL_VERSION=$(grep '^version: ' pubspec.yaml | awk '{print $2}')
+          APP_VERSION=${APP_FULL_VERSION%%+*}
+          APP_BUILD_NUMBER=${APP_FULL_VERSION#*+}
+          if [ "$APP_BUILD_NUMBER" = "$APP_FULL_VERSION" ]; then
+            APP_BUILD_NUMBER=1
+          fi
+
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "APP_BUILD_NUMBER=$APP_BUILD_NUMBER" >> "$GITHUB_ENV"
+          echo "Current version is: $APP_VERSION+$APP_BUILD_NUMBER"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+        with:
+          gradle-version: '8.13'
+
+      - name: Generate Gradle wrapper
+        run: gradle --no-daemon -p android wrapper --gradle-version 8.13
+
+      - name: Generate launcher icons
+        run: dart run flutter_launcher_icons
+
+      - name: Build APK
+        run: >
+          flutter build apk
+          --release
+          --split-per-abi
+          --build-name "${{ env.APP_VERSION }}"
+          --build-number "${{ env.APP_BUILD_NUMBER }}"
+
+      - name: Rename APKs
+        run: |
+          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+            abi=$(basename "$apk" | sed -E 's/app-(.*)-release\.apk/\1/')
+            mv "$apk" "build/app/outputs/flutter-apk/celechron-v${APP_VERSION}-${abi}.apk"
+          done
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: celechron-v${{ env.APP_VERSION }}-apk
+          path: build/app/outputs/flutter-apk/celechron-v${{ env.APP_VERSION }}-*.apk
