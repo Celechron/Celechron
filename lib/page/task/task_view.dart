@@ -175,6 +175,21 @@ class TaskPage extends StatelessWidget {
     }
   }
 
+  /// 删除任务：标记状态、落盘并重排规划。
+  /// 左滑删除与编辑页里的“删除任务”共用这一份实现，避免两条路径行为分叉。
+  void removeTask(Task deadline) {
+    deadline.status = TaskStatus.deleted;
+    _taskController.updateDeadlineList();
+    _taskController.updateDeadlineListTime();
+    // 重新规划
+    _flowController.removeFlowInFlowList();
+    DateTime now = DateTime.now();
+    DateTime startsAt =
+        DateTime(now.year, now.month, now.day, now.hour, now.minute);
+    _flowController.generateNewFlowList(startsAt);
+    _taskController.taskList.refresh();
+  }
+
   Widget createCard(context, Task deadline, Color color, String? title) {
     double progress = deadline.getProgress();
 
@@ -277,16 +292,7 @@ class TaskPage extends StatelessWidget {
             // 只有删除操作会真正 dismiss
             if (direction == DismissDirection.endToStart) {
               // 向左滑（从右到左）：删除
-              deadline.status = TaskStatus.deleted;
-              _taskController.updateDeadlineList();
-              _taskController.updateDeadlineListTime();
-              // 重新规划
-              _flowController.removeFlowInFlowList();
-              DateTime now = DateTime.now();
-              DateTime startsAt =
-                  DateTime(now.year, now.month, now.day, now.hour, now.minute);
-              _flowController.generateNewFlowList(startsAt);
-              _taskController.taskList.refresh();
+              removeTask(deadline);
             }
           },
           child: RoundRectangleCard(
@@ -297,18 +303,22 @@ class TaskPage extends StatelessWidget {
                   builder: (context) => TaskEditPage(deadline),
                 ),
               );
-              if (res != null && res.status != TaskStatus.deleted) {
-                deadline.copy(res);
-                _taskController.updateDeadlineList();
-                _taskController.updateDeadlineListTime();
-                // 重新规划
-                _flowController.removeFlowInFlowList();
-                DateTime now = DateTime.now();
-                DateTime startsAt = DateTime(
-                    now.year, now.month, now.day, now.hour, now.minute);
-                _flowController.generateNewFlowList(startsAt);
-                _taskController.taskList.refresh();
+              if (res == null) return;
+              if (res.status == TaskStatus.deleted) {
+                // 编辑页的“删除任务”会把状态置为 deleted 后返回
+                removeTask(deadline);
+                return;
               }
+              deadline.copy(res);
+              _taskController.updateDeadlineList();
+              _taskController.updateDeadlineListTime();
+              // 重新规划
+              _flowController.removeFlowInFlowList();
+              DateTime now = DateTime.now();
+              DateTime startsAt = DateTime(
+                  now.year, now.month, now.day, now.hour, now.minute);
+              _flowController.generateNewFlowList(startsAt);
+              _taskController.taskList.refresh();
             },
             child: Padding(
               padding: const EdgeInsets.only(left: 8, right: 8),
@@ -620,10 +630,17 @@ class TaskPage extends StatelessWidget {
                 ],
               ),
             ),
-            if (_taskController.todoDeadlineList.isEmpty &&
-                _taskController.doneDeadlineList.isEmpty &&
-                _taskController.fixedDeadlineList.isEmpty)
-              SliverToBoxAdapter(
+            // 空状态要随任务列表变化，必须放在 Obx 里：本页是常驻页面
+            // （_pages 保存稳定 widget 实例 + KeepAlive），build 不会再跑，
+            // 非响应式判断会让“没有任务”在列表变非空后残留在列表上方。
+            Obx(() {
+              final bool isEmpty = _taskController.todoDeadlineList.isEmpty &&
+                  _taskController.doneDeadlineList.isEmpty &&
+                  _taskController.fixedDeadlineList.isEmpty;
+              if (!isEmpty) {
+                return const SliverToBoxAdapter(child: SizedBox());
+              }
+              return SliverToBoxAdapter(
                 child: SizedBox(
                   height: 500,
                   child: Column(
@@ -638,7 +655,8 @@ class TaskPage extends StatelessWidget {
                     ],
                   ),
                 ),
-              ),
+              );
+            }),
             Obx(
               () => SliverList(
                 delegate: SliverChildBuilderDelegate(
