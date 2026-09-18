@@ -47,6 +47,20 @@ jobs:
         with:
           gradle-version: '8.13'
 
+      - name: Restore signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::Set the ANDROID_KEYSTORE_BASE64 repository secret to the base64-encoded existing signing keystore."
+            exit 1
+          fi
+          mkdir -p "$HOME/.android"
+          umask 077
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
+          chmod 600 "$HOME/.android/debug.keystore"
+          keytool -list -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey > /dev/null
+
       - name: Generate Gradle wrapper
         run: gradle --no-daemon -p android wrapper --gradle-version 8.13
 
