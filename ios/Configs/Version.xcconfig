@@ -1,7 +1,7 @@
 // Shared version settings for the satellite targets:
 // WidgetExtensions, CelechronWatch, WatchWidgetExtensions.
 //
-// Runner derives its version from Generated.xcconfig, which Flutter rewrites
+// Celechron derives its version from Generated.xcconfig, which Flutter rewrites
 // from pubspec.yaml on every `flutter pub get` / build. Pointing the embedded
 // bundles at the same source keeps them in lockstep: App Store validation
 // rejects an .appex or watch app whose CFBundleShortVersionString disagrees

@@ -1,6 +1,6 @@
 //
 //  WatchConnectivityBridge.swift
-//  Runner
+//  Celechron
 //
 //  iPhone → Apple Watch 数据同步（日程列表、校园卡余额、付款码请求）
 //

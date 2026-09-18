@@ -18,7 +18,7 @@
                BlueprintIdentifier = "A10000000000000000000071"
                BuildableName = "WatchWidgetExtensions.appex"
                BlueprintName = "WatchWidgetExtensions"
-               ReferencedContainer = "container:Runner.xcodeproj">
+               ReferencedContainer = "container:Celechron.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -32,7 +32,7 @@
                BlueprintIdentifier = "A10000000000000000000070"
                BuildableName = "CelechronWatch.app"
                BlueprintName = "CelechronWatch"
-               ReferencedContainer = "container:Runner.xcodeproj">
+               ReferencedContainer = "container:Celechron.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -49,7 +49,7 @@
             BlueprintIdentifier = "A10000000000000000000070"
             BuildableName = "CelechronWatch.app"
             BlueprintName = "CelechronWatch"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            ReferencedContainer = "container:Celechron.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -71,8 +71,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A10000000000000000000071"
             BuildableName = "WatchWidgetExtensions.appex"
-            BlueprintName = "WatchWidgetExtensions"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            ReferencedContainer = "container:Celechron.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <MacroExpansion>
@@ -81,7 +80,7 @@
             BlueprintIdentifier = "A10000000000000000000070"
             BuildableName = "CelechronWatch.app"
             BlueprintName = "CelechronWatch"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            ReferencedContainer = "container:Celechron.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <EnvironmentVariables>
@@ -116,8 +115,7 @@
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "A10000000000000000000071"
             BuildableName = "WatchWidgetExtensions.appex"
-            BlueprintName = "WatchWidgetExtensions"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            ReferencedContainer = "container:Celechron.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

@@ -16,9 +16,9 @@
                   <BuildableReference
                      BuildableIdentifier = "primary"
                      BlueprintIdentifier = "97C146ED1CF9000F007C117D"
-                     BuildableName = "Runner.app"
-                     BlueprintName = "Runner"
-                     ReferencedContainer = "container:Runner.xcodeproj">
+                     BuildableName = "Celechron.app"
+                     BlueprintName = "Celechron"
+                     ReferencedContainer = "container:Celechron.xcodeproj">
                   </BuildableReference>
                </EnvironmentBuildable>
             </ActionContent>
@@ -36,7 +36,7 @@
                BlueprintIdentifier = "E052FFA22BE287E600031D98"
                BuildableName = "WidgetExtensions.appex"
                BlueprintName = "WidgetExtensions"
-               ReferencedContainer = "container:Runner.xcodeproj">
+               ReferencedContainer = "container:Celechron.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -48,9 +48,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "97C146ED1CF9000F007C117D"
-               BuildableName = "Runner.app"
-               BlueprintName = "Runner"
-               ReferencedContainer = "container:Runner.xcodeproj">
+               BuildableName = "Celechron.app"
+               BlueprintName = "Celechron"
+               ReferencedContainer = "container:Celechron.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -65,9 +65,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "97C146ED1CF9000F007C117D"
-            BuildableName = "Runner.app"
-            BlueprintName = "Runner"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            BuildableName = "Celechron.app"
+            BlueprintName = "Celechron"
+            ReferencedContainer = "container:Celechron.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -91,16 +91,16 @@
             BlueprintIdentifier = "E052FFA22BE287E600031D98"
             BuildableName = "WidgetExtensions.appex"
             BlueprintName = "WidgetExtensions"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            ReferencedContainer = "container:Celechron.xcodeproj">
          </BuildableReference>
       </RemoteRunnable>
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "97C146ED1CF9000F007C117D"
-            BuildableName = "Runner.app"
-            BlueprintName = "Runner"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            BuildableName = "Celechron.app"
+            BlueprintName = "Celechron"
+            ReferencedContainer = "container:Celechron.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <EnvironmentVariables>
@@ -137,7 +137,7 @@
             BlueprintIdentifier = "E052FFA22BE287E600031D98"
             BuildableName = "WidgetExtensions.appex"
             BlueprintName = "WidgetExtensions"
-            ReferencedContainer = "container:Runner.xcodeproj">
+            ReferencedContainer = "container:Celechron.xcodeproj">
          </BuildableReference>
       </RemoteRunnable>
    </ProfileAction>

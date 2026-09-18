@@ -4,7 +4,7 @@ import 'package:pigeon/pigeon.dart';
 @ConfigurePigeon(PigeonOptions(
   dartOut: 'lib/pigeon/flow_messenger.dart',
   dartOptions: DartOptions(),
-  swiftOut: 'ios/Runner/FlowMessenger.swift',
+  swiftOut: 'ios/Celechron/FlowMessenger.swift',
   swiftOptions: SwiftOptions(),
 ))
 enum PeriodTypeDto {
