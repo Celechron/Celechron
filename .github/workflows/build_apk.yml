@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_SIGNING_SHA256: 20ebb2a729fb56f041f49b95cabb63d6cfa85e85890c1037f13c1bad2483367c
 
     steps:
       - name: Checkout repository
@@ -59,7 +61,13 @@ jobs:
           umask 077
           printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$HOME/.android/debug.keystore"
           chmod 600 "$HOME/.android/debug.keystore"
-          keytool -list -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey > /dev/null
+          # AGP otherwise prefers the runner's XDG_CONFIG_HOME over HOME.
+          echo "ANDROID_USER_HOME=$HOME/.android" >> "$GITHUB_ENV"
+          certificate_sha256=$(keytool -exportcert -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey | sha256sum | cut -d ' ' -f 1)
+          if [ "$certificate_sha256" != "$ANDROID_SIGNING_SHA256" ]; then
+            echo "::error::The signing secret does not match the existing Celechron signing certificate."
+            exit 1
+          fi
 
       - name: Generate Gradle wrapper
         run: gradle --no-daemon -p android wrapper --gradle-version 8.13
@@ -74,6 +82,24 @@ jobs:
           --split-per-abi
           --build-name "${{ env.APP_VERSION }}"
           --build-number "${{ env.APP_BUILD_NUMBER }}"
+
+      - name: Verify APK signing certificates
+        shell: bash
+        run: |
+          apksigner=$(find "$ANDROID_HOME/build-tools" -mindepth 2 -maxdepth 2 -name apksigner | sort -V | tail -n 1)
+          if [ -z "$apksigner" ]; then
+            echo "::error::Android SDK apksigner was not found."
+            exit 1
+          fi
+          for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
+            certificate_info=$("$apksigner" verify --print-certs "$apk")
+            printf '%s\n' "$certificate_info"
+            certificate_sha256=$(printf '%s\n' "$certificate_info" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            if [ "$certificate_sha256" != "$ANDROID_SIGNING_SHA256" ]; then
+              echo "::error::$apk does not match the existing Celechron signing certificate."
+              exit 1
+            fi
+          done
 
       - name: Rename APKs
         run: |
