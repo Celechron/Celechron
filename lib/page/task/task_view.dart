@@ -315,8 +315,8 @@ class TaskPage extends StatelessWidget {
               // 重新规划
               _flowController.removeFlowInFlowList();
               DateTime now = DateTime.now();
-              DateTime startsAt = DateTime(
-                  now.year, now.month, now.day, now.hour, now.minute);
+              DateTime startsAt =
+                  DateTime(now.year, now.month, now.day, now.hour, now.minute);
               _flowController.generateNewFlowList(startsAt);
               _taskController.taskList.refresh();
             },
