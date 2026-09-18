@@ -94,7 +94,7 @@ jobs:
           for apk in build/app/outputs/flutter-apk/app-*-release.apk; do
             certificate_info=$("$apksigner" verify --print-certs "$apk")
             printf '%s\n' "$certificate_info"
-            certificate_sha256=$(printf '%s\n' "$certificate_info" | sed -n 's/^Signer #1 certificate SHA-256 digest: //p')
+            certificate_sha256=$(printf '%s\n' "$certificate_info" | sed -nE 's/^(Signer #[0-9]+|V[0-9.]+ Signer):? certificate SHA-256 digest: ([[:xdigit:]]{64})[[:space:]]*$/\2/p' | tr '[:upper:]' '[:lower:]' | sort -u)
             if [ "$certificate_sha256" != "$ANDROID_SIGNING_SHA256" ]; then
               echo "::error::$apk does not match the existing Celechron signing certificate."
               exit 1
