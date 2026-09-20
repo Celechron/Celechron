@@ -17,6 +17,10 @@ import 'response_utils.dart';
 
 /// 本科教务网客户端；统一管理 CAS 业务会话、并发限流与按接口缓存降级。
 class Zdbk {
+  // 课表接口零间隔连发会触发教务网 HTTP 921 限流；实测完成后间隔 ≥0.9s 安全，取 1s 留裕量。
+  static const Duration _timetableRequestInterval = Duration(seconds: 1);
+  DateTime? _lastTimetableCompletedAt;
+
   Cookie? _jSessionId;
   Cookie? _route;
   Cookie? _iPlanetDirectoryPro;
@@ -477,9 +481,30 @@ class Zdbk {
     });
   }
 
+  /// 调用方（ugrs/grs 编排器）已把课表请求串成单链，此处只保证相邻两次
+  /// 请求完成后再隔 [_timetableRequestInterval]，不做并发排队。
+  Future<void> _paceTimetableRequest() async {
+    final lastCompletedAt = _lastTimetableCompletedAt;
+    if (lastCompletedAt == null) return;
+    final wait = lastCompletedAt
+        .add(_timetableRequestInterval)
+        .difference(DateTime.now());
+    if (wait <= Duration.zero) return;
+    DiagnosticLogService.instance.record(
+      module: '教务网课表',
+      operation: 'throttleWait',
+      durationMs: wait.inMilliseconds,
+      message: '距上次课表请求完成不足 '
+          '${_timetableRequestInterval.inMilliseconds} ms，'
+          '等待 ${wait.inMilliseconds} ms',
+    );
+    await Future<void>.delayed(wait);
+  }
+
   Future<Tuple<Exception?, Iterable<Session>>> getTimetable(
       HttpClient httpClient, String year, String semester) async {
     return await _withAutoRelogin(httpClient, (relogged, retried) async {
+      await _paceTimetableRequest();
       late HttpClientRequest request;
       late HttpClientResponse response;
       final uri =
@@ -565,6 +590,8 @@ class Zdbk {
           _cacheAwareException(exception, cached, context),
           _parseSessions(cached.data, '$context 缓存'),
         );
+      } finally {
+        _lastTimetableCompletedAt = DateTime.now();
       }
     });
   }
