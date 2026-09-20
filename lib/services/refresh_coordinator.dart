@@ -416,7 +416,7 @@ class RefreshCoordinator {
           }
           if (origin == RefreshOrigin.background &&
               backgroundYieldResult != null) {
-            return _yieldBackground(backgroundYieldResult);
+            return await _yieldBackground(backgroundYieldResult);
           }
           await store.waitBeforeRetry();
         }
@@ -475,7 +475,7 @@ class RefreshCoordinator {
       if (origin == RefreshOrigin.background &&
           backgroundYieldResult != null &&
           await _hasActiveForeground(store)) {
-        return _yieldBackground(backgroundYieldResult);
+        return await _yieldBackground(backgroundYieldResult);
       }
       return await action();
     } finally {

@@ -484,7 +484,7 @@ class UgrsSpider implements Spider {
       Future<String?> handleTimetable(season) async {
         if (cancelTimetableFetch) {
           if (isProbeYear) probeHadUnexpectedFailure = true;
-          return Future.value("已取消");
+          return "已取消";
         }
         try {
           var value = await _fetchWithRetry(
@@ -521,14 +521,13 @@ class UgrsSpider implements Spider {
           if (isProbeYear && value.item1 != null) {
             probeHadUnexpectedFailure = true;
           }
-          return Future.value(value.item1?.toString());
+          return value.item1?.toString();
         } on Object catch (error, stackTrace) {
           if (isProbeYear && isExpectedTimetableProbeMiss(error)) {
             return null;
           }
           if (isProbeYear) probeHadUnexpectedFailure = true;
-          return Future.value(
-              _describeRefreshFailure(error, stackTrace, source: '课表'));
+          return _describeRefreshFailure(error, stackTrace, source: '课表');
         }
       }
 
