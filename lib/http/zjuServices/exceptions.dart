@@ -87,13 +87,11 @@ class SessionExpiredException extends LoginExpiredException {
 class CalendarConfigUnavailableException extends ExceptionWithMessage {
   CalendarConfigUnavailableException({
     required String details,
-    Object? originalError,
-    StackTrace? stackTrace,
+    super.originalError,
+    super.stackTrace,
   }) : super(
           '当前学期校历配置暂未发布',
           details: details,
-          originalError: originalError,
-          stackTrace: stackTrace,
         );
 }
 
