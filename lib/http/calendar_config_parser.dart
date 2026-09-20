@@ -70,6 +70,25 @@ bool isExpectedTimetableProbeMiss(Object? error) {
       text.contains('缺少 kblist');
 }
 
+/// 该学年学期在 [now] 时是否尚未开学；未开学学期的校历配置未发布属预期状态。
+/// 秋冬按 9 月 1 日、春夏按次年 2 月 20 日估算名义开学，日期故意取早：
+/// 临近开学时宁可判为“已开始”，让配置缺失照常按降级暴露。
+/// 格式非法时返回 false，保持降级报警的保守行为。
+bool isFutureSemester(String semesterId, DateTime now) {
+  if (semesterId.length < 6) return false;
+  final yearStart = int.tryParse(semesterId.substring(0, 4));
+  if (yearStart == null) return false;
+  final DateTime nominalStart;
+  if (semesterId.endsWith('-1')) {
+    nominalStart = DateTime(yearStart, DateTime.september, 1);
+  } else if (semesterId.endsWith('-2')) {
+    nominalStart = DateTime(yearStart + 1, DateTime.february, 20);
+  } else {
+    return false;
+  }
+  return now.isBefore(nominalStart);
+}
+
 String calendarObjectKeyForSemester(String semesterId) {
   if (!RegExp(r'^\d{4}-\d{4}-[12]$').hasMatch(semesterId)) {
     throw FormatException('无效的学年学期：$semesterId');
