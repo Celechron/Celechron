@@ -524,8 +524,10 @@ class UgrsSpider implements Spider {
           return "已取消";
         }
         try {
-          var value = await _fetchWithRetry(
-              () => _zdbk.getTimetable(_httpClient, queryAcademicYear, season));
+          // 已结束学年的课表不会再变，优先用缓存以减少触发限频的请求
+          var value = await _fetchWithRetry(() => _zdbk.getTimetable(
+              _httpClient, queryAcademicYear, season,
+              preferCache: queryAcademicYearStart < academicYearStartFor(now)));
 
           var semKey = season.startsWith('1')
               ? '$queryAcademicYear-1'
@@ -569,6 +571,8 @@ class UgrsSpider implements Spider {
       }
 
       for (var season in ['1|秋', '1|冬', '2|春', '2|夏']) {
+        // 探测学年只为判断下一学年是否开放，查第一个学期就够了
+        if (isProbeYear && season != '1|秋') continue;
         if (timetableFetches.isEmpty) {
           timetableFetches.add(handleTimetable(season));
         } else {

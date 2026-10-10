@@ -5,6 +5,8 @@ import 'package:celechron/utils/tuple.dart';
 import 'package:flutter/foundation.dart';
 
 import 'package:celechron/database/database_helper.dart';
+import 'package:celechron/http/calendar_config_parser.dart'
+    show isFutureSemester;
 import 'package:celechron/utils/gpa_helper.dart';
 import 'package:celechron/model/grade.dart';
 import 'package:celechron/model/session.dart';
@@ -24,8 +26,24 @@ class Zdbk {
   DatabaseHelper? _db;
   Future<bool>? _loginFuture;
   int _sessionGeneration = 0;
-  int _activeSiteRequests = 0;
+  bool _siteBusy = false;
   final List<Completer<void>> _siteWaiters = [];
+  DateTime? _lastSiteRequestAt;
+  bool _throttledDuringAction = false;
+
+  /// 相邻两个教务请求的最小间隔。教务网按滑动窗口限频（HTTP 921/922）：
+  /// 实测约 170 ms 一发时第 6~7 个请求开始被拒，issue #181 实测 0.9 s 稳定。
+  static const Duration _baseRequestGap = Duration(milliseconds: 1000);
+
+  /// 本次运行中触发过限频后放宽的间隔，避免同一窗口内再次撞墙。
+  static const Duration _throttledRequestGap = Duration(milliseconds: 2000);
+
+  /// 被限频后依次等待的时长；等待期间占住队列，其他请求不会插队。
+  static const List<Duration> _throttleBackoffs = [
+    Duration(seconds: 3),
+    Duration(seconds: 6),
+  ];
+  Duration _requestGap = _baseRequestGap;
 
   set db(DatabaseHelper? db) {
     _db = db;
@@ -138,6 +156,11 @@ class Zdbk {
       bool expectJson = true,
       bool relogged = false,
       bool retried = false}) {
+    // 教务网用 9xx 非标准状态码表示限频（921 "请求过于频繁"、922 并发被拒等），
+    // 由 _withSitePermit 统一退避重试
+    if (response.statusCode >= 900 && response.statusCode <= 999) {
+      _throttledDuringAction = true;
+    }
     try {
       validateResponse(
         response: response,
@@ -205,18 +228,49 @@ class Zdbk {
     throw LoginExpiredException("教务网会话已过期，请手动重新登录");
   }
 
+  /// 教务站请求严格串行（FIFO）且两次请求间至少隔 [_requestGap]。
+  ///
+  /// 原先允许 3 个并发且无间隔，一次刷新十余个请求挤在 1~2 秒内，
+  /// 必然触发教务网限频（921）或首批并发被拒（922），随后整块落缓存。
+  /// 被限频时在持有队列的情况下退避重试，退避期间不会有别的请求插队。
   Future<T> _withSitePermit<T>(Future<T> Function() action) async {
-    // 限制同时访问教务站的请求数，避免刷新时多个模块共同放大瞬时压力。
-    if (_activeSiteRequests >= 3) {
+    while (_siteBusy) {
       final waiter = Completer<void>();
       _siteWaiters.add(waiter);
       await waiter.future;
     }
-    _activeSiteRequests++;
+    _siteBusy = true;
     try {
-      return await action();
+      for (var attempt = 0;; attempt++) {
+        final last = _lastSiteRequestAt;
+        if (last != null) {
+          final elapsed = DateTime.now().difference(last);
+          if (elapsed < _requestGap) {
+            await Future.delayed(_requestGap - elapsed);
+          }
+        }
+        _throttledDuringAction = false;
+        _lastSiteRequestAt = DateTime.now();
+        final result = await action();
+        if (!_throttledDuringAction || attempt >= _throttleBackoffs.length) {
+          return result;
+        }
+        _requestGap = _throttledRequestGap;
+        final backoff = _throttleBackoffs[attempt];
+        DiagnosticLogService.instance.record(
+          level: CelechronLogLevel.warning,
+          module: '教务网',
+          operation: 'rateLimitBackoff',
+          retried: true,
+          message: '教务网限频，${backoff.inSeconds} 秒后重试'
+              '（第 ${attempt + 1} 次），之后请求间隔放宽到 '
+              '${_requestGap.inMilliseconds} ms',
+        );
+        await Future.delayed(backoff);
+        _lastSiteRequestAt = null;
+      }
     } finally {
-      _activeSiteRequests--;
+      _siteBusy = false;
       if (_siteWaiters.isNotEmpty) {
         _siteWaiters.removeAt(0).complete();
       }
@@ -477,8 +531,48 @@ class Zdbk {
     });
   }
 
+  static String _localDayStamp(DateTime now) =>
+      '${now.year}-${now.month.toString().padLeft(2, '0')}-'
+      '${now.day.toString().padLeft(2, '0')}';
+
+  /// 缓存是否写于学年 [year]（如 2024-2025）结束之后；学年中途写入的缓存可能不完整。
+  static bool _cachedAfterAcademicYear(String? cachedAt, String year) {
+    final endYear = int.tryParse(year.length >= 9 ? year.substring(5, 9) : '');
+    final at = cachedAt == null ? null : DateTime.tryParse(cachedAt);
+    if (endYear == null || at == null) return false;
+    return at.isAfter(DateTime.utc(endYear, DateTime.august, 1));
+  }
+
+  /// [preferCache] 用于已结束的学年：其课表不会再变，有学年结束后写入的
+  /// 非空缓存就直接使用，不再请求教务网，以减少触发限频的请求数。
   Future<Tuple<Exception?, Iterable<Session>>> getTimetable(
-      HttpClient httpClient, String year, String semester) async {
+      HttpClient httpClient, String year, String semester,
+      {bool preferCache = false}) async {
+    final cacheKey = 'zdbk_Timetable$year$semester';
+    final emptyStampKey = '${cacheKey}_emptyOn';
+    final isFuture =
+        isFutureSemester('$year-${semester.substring(0, 1)}', DateTime.now());
+
+    if (preferCache) {
+      final cached = _cachedList(cacheKey, '教务网课表缓存（学年 $year，学期 $semester）');
+      if (cached.data.isNotEmpty &&
+          _cachedAfterAcademicYear(cached.cachedAt, year)) {
+        return Tuple(null, _parseSessions(cached.data, '教务网课表缓存'));
+      }
+    }
+    // 未开学的学期当天已确认为空就不再重复请求；当前学期不受此限，
+    // 选课期间随时可能出新课
+    if (isFuture &&
+        _db?.getCachedWebPage(emptyStampKey) ==
+            _localDayStamp(DateTime.now())) {
+      DiagnosticLogService.instance.record(
+        module: '课表',
+        operation: 'skipKnownEmpty',
+        message: '$year $semester 尚未开学且今天已确认为空，本次跳过',
+      );
+      return Tuple(null, <Session>[]);
+    }
+
     return await _withAutoRelogin(httpClient, (relogged, retried) async {
       late HttpClientRequest request;
       late HttpClientResponse response;
@@ -536,17 +630,45 @@ class Zdbk {
             continue;
           }
 
-          if (responseText.trim() == "null") return Tuple(null, <Session>[]);
-          final payload = decodeJsonMap(responseText,
-              context: '$context；HTTP ${response.statusCode}');
-          final items = asDynamicList(payload['kbList']);
-          if (items == null) {
-            throw ExceptionWithMessage(
-                '$context：缺少 kbList 数组；HTTP ${response.statusCode}'
-                '；响应摘要：${responseSummary(responseText)}');
+          final List<dynamic> items;
+          if (responseText.trim() == "null") {
+            items = const [];
+          } else {
+            final payload = decodeJsonMap(responseText,
+                context: '$context；HTTP ${response.statusCode}');
+            final kbList = asDynamicList(payload['kbList']);
+            if (kbList == null) {
+              throw ExceptionWithMessage(
+                  '$context：缺少 kbList 数组；HTTP ${response.statusCode}'
+                  '；响应摘要：${responseSummary(responseText)}');
+            }
+            items = kbList;
           }
+
+          // 选课/筛课期间教务网会 HTTP 200 但返回 0 行（issue #174）。
+          // 空结果不写缓存，有上次的非空课表就沿用，避免课表被一次刷新清空
+          if (items.isEmpty) {
+            if (isFuture) {
+              await _db?.setCachedWebPage(
+                  emptyStampKey, _localDayStamp(DateTime.now()));
+            }
+            final cached = _cachedList(cacheKey, '$context 缓存');
+            if (cached.data.isNotEmpty) {
+              DiagnosticLogService.instance.record(
+                level: CelechronLogLevel.warning,
+                module: '课表',
+                operation: 'emptyResponse',
+                cacheUsed: true,
+                message: '$context：返回 0 行（选课期间常见），沿用上次的课表'
+                    '（${cached.data.length} 条，缓存时间 ${cached.cachedAt}）',
+              );
+              return Tuple(null, _parseSessions(cached.data, '$context 缓存'));
+            }
+            return Tuple(null, <Session>[]);
+          }
+
           final sessions = _parseSessions(items, context);
-          _writeCache('zdbk_Timetable$year$semester', jsonEncode(items));
+          _writeCache(cacheKey, jsonEncode(items));
           return Tuple(null, sessions);
         }
         throw ExceptionWithMessage("验证码识别失败");
